@@ -24,9 +24,20 @@ The core HSON is a set of seven transformers that convert data between HTML, JSO
 
 ### Installation
 // NOT LIVE ON NPM
-// ```bash 
+```bash 
 // npm install hson
 // THIS DOESNT EXIST
+
+This project uses TypeScript. To build:
+
+1. Install dependencies:
+   ```bash
+   npm install
+2. Compile the source:
+```bash
+npx tsc
+
+This will output compiled JavaScript to the dist/ directory.
 
 
 Quick Start
@@ -72,6 +83,8 @@ console.log(jsonObject);
 }
 */
 ```
+
+
 Documentation
 
-For HSON's syntax, API, and core concepts, please see the /docs directory.
+For HSON's syntax, liveTree API, and core concepts, please see the src//docs directory.

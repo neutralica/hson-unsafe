@@ -54,5 +54,5 @@ export type HsonAttrs = {
     'style'?: string | Record<string, string> 
 } & Record<string, BasicValue>;
 
-/* TODO: deprecate (see above) */
+/* deprecated (see above) TODO */
 export type HsonFlags = Array<string | Record<string, BasicValue>>;

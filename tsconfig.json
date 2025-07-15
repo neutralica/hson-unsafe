@@ -1,6 +1,5 @@
 {
     "compilerOptions": {
-        /* Visit https://aka.ms/tsconfig to read more about this file */
         "strict": true /* Enable all strict type-checking options. */,
         "target": "ESNext" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
         "module": "ESNext" /* Specify what module code is generated. */,
