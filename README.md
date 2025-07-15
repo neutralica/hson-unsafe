@@ -1,10 +1,6 @@
 // readme.hson.md
 
-```text
-▗▖ ▗▖ ▗▄▄▖ ▗▄▖ ▗▖ ▗▖ ▐▌ ▐▌▐▌ ▐▌ ▐▌▐▛▚▖▐▌ ▐▛▀▜▌ ▝▀▚▖▐▌ ▐▌▐▌ ▝▜▌
-pre-alpha demo ▐▌ ▐▌▗▄▄▞▘▝▚▄▞▘▐▌ ▐▌ Hypertext Structured Object Notation
-```
-
+<pre> ``` ▗▖ ▗▖ ▗▄▄▖ ▗▄▖ ▗▖ ▗▖ ▐▌ ▐▌▐▌ ▐▌ ▐▌▐▛▚▖▐▌ ▐▛▀▜▌ ▝▀▚▖▐▌ ▐▌▐▌ ▝▜▌ pre-alpha demo ▐▌ ▐▌▗▄▄▞▘▝▚▄▞▘▐▌ ▐▌ Hypertext Structured Object Notation ---------------------------------------------------------------- ``` </pre>
 
 > [!WARNING]
 > **UNSAFE - EXPERIMENTAL**
