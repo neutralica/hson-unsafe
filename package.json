@@ -3,7 +3,15 @@
   "version": "1.0.0",
   "description": "Hypertext Structured Object Notation pre-alpha demo",
   "author": "neutralica @ terminal_gothic",
-  "keywords": ["html", "json", "custom format", "hson", "parser", "markup", "glue format"],
+  "keywords": [
+    "html",
+    "json",
+    "custom format",
+    "hson",
+    "parser",
+    "markup",
+    "glue format"
+  ],
   "type": "module",
   "scripts": {
     "clean": "echo 'Cleaning dist…' && rm -rf dist",
