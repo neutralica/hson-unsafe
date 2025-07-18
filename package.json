@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Hypertext Structured Object Notation pre-alpha demo",
   "author": "neutralica @ terminal_gothic",
+  "license": "Parity-7.0.0",
+    "main": "dist/api/api.hson.js",
+  "types": "dist/api/api.hson.d.ts",
   "keywords": [
     "html",
     "json",
@@ -23,7 +26,6 @@
     "watch": "npm-run-all --parallel watch:ts watch:assets",
     "dev": "npm run build && npm run watch"
   },
-  "license": "Parity-7.0.0",
   "devDependencies": {
     "@types/node": "^22.16.3",
     "chokidar-cli": "^3.0.0",

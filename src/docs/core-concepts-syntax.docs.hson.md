@@ -2,13 +2,31 @@
 
 ### HSON: Hypertext Structured Object Notation
 
-HSON is a markup language designed for representing nested data structures. Its primary purpose is to serve as a readable and authorable bridge between data-centric formats like JSON and document-centric formats like HTML, using a universal tree structure called an HsonNode as the intermediary.
+> !UNSAFE !EXPERIMENTAL
+> pre-alpha demo: for research, education, and exploration only
+> this is a proof of concept and not a finished product
+> do not use with sensitive or important data
+> do not use with unknown or untrusted third-party data
+
+
+HSON is a markup format that unifies data (JSON) and document (HTML), using an internal 'HsonNode' tree as the intermediary structure underlying both.
+
+The core of the HSON library (HSON.transform) is a set of 7 transformers that convert JSON, HTML, and HSON itself to and from the internal HSON Node structure common to all three.
+
+This pre-alpha demo of HSON also includes a simple yet powerful API (.liveTree) that allows for the manipulation of this data in ways that make traditional DOM query and manipulation methods largely unnecessary. Though lightweight, the pre-alpha API allows for complex manipulation and automatic updating of the DOM via standard JS Object methods and dot notation access. 
 
 ## Core Concepts
 
-# 1. The HsonNode
+# 0. HSON & paredHTML
 
-The HsonNode is the universal, in-memory representation of all data. Every format (JSON, HSON, HTML) is parsed into this structure, and every serializer uses this structure to generate its output string. It has three key properties:
+HSON is the universal format that unifies both JSON and HTML, written in a concise, minimalist syntax of HHTML called paredHTML (see below for syntax and rules). By drawing a direct analogy between JSON's key:value pairs and HTML's parent/child nodes, HSON can represent either and, crucially, transform one to the other and back with no data loss or noise.
+
+While HSON.transform is able to serialize HTML into JSON and vice versa, the HSON syntax natively and most concisely expresses both/either in a human-readable format, a crucial conceptual step in the creation of this library.
+
+
+# 1. HSON Nodes
+
+The HsonNode type is the universal, in-memory structure common to all three formats. JSON and HTML both are parsed into this structure, and every serializer uses this structure to generate its output string. It has three key properties:
 
 tag: A string representing the element's name (p, div, name) or its VSN type (_obj, _elem, _str/_prim).
 content: An array of child nodes, which can be other HsonNodes or Primitives.

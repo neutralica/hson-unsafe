@@ -1,3 +1,5 @@
+// constructors.types.hson.ts
+
 import { HsonNode, JSONShape } from "./base.types.hson.js";
 import { RenderΔ, HSON_FrameΔ} from "./constants.types.hson.js";
 import { AllTokens } from "./tokens.types.hson.js";
