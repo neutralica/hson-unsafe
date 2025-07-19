@@ -19,10 +19,10 @@
   "scripts": {
     "clean": "echo 'Cleaning dist…' && rm -rf dist",
     "build:ts": "tsc --project tsconfig.json",
-    "copy:assets": "rsync -a --delete --exclude='*.ts' --exclude='*.js' --exclude='*.scss' --exclude='*.css' src/ dist/",
+    "copy:assets": "rsync -a --delete --exclude='*.ts' --exclude='*.js' --exclude='*._docs.md' --exclude='*.scss' --exclude='*.css' src/ dist/",
     "build": "npm run clean && npm run build:ts && npm run copy:assets",
     "watch:ts": "tsc --watch --project tsconfig.json",
-    "watch:assets": "chokidar 'src/**/*'  -i '**/*.ts' -i '**/*.scss'  --initial --awaitWriteFinish -c \"rsync -a --delete --exclude='*.ts' --exclude='*.js' --exclude='*.scss' --exclude='*.css' src/ dist/\"",
+    "watch:assets": "chokidar 'src/**/*'  -i '**/*.ts' -i '**/*.scss'  --initial --awaitWriteFinish -c \"rsync -a --delete --exclude='*._docs.md' --exclude='*.ts' --exclude='*.js' --exclude='*.scss' --exclude='*.css' src/ dist/\"",
     "watch": "npm-run-all --parallel watch:ts watch:assets",
     "dev": "npm run build && npm run watch"
   },

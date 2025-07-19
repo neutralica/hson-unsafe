@@ -12,12 +12,12 @@ export interface HsonQuery {
   text?: string | RegExp;
 }
 
-export class HsonTree {
+export class LiveTree {
   /*  holds an array of HsonNodes */
   private selectedNodes: HsonNode[];
 
-  constructor($nodes: HsonNode | HsonNode[] | HsonTree) {
-    if ($nodes instanceof HsonTree) {
+  constructor($nodes: HsonNode | HsonNode[] | LiveTree) {
+    if ($nodes instanceof LiveTree) {
       this.selectedNodes = $nodes.selectedNodes;
     } else {
       this.selectedNodes = Array.isArray($nodes) ? $nodes : [$nodes].filter(is_Node);
@@ -28,25 +28,25 @@ export class HsonTree {
 
   /**
    * searches descendants for the first element matching the query
-   * @returns{HsonTree} a new HsonTree instance wrapping the found node OR an empty HsonTree
+   * @returns{LiveTree} a new HsonTree instance wrapping the found node OR an empty HsonTree
    */
 
-  find(query: HsonQuery | string): HsonTree {
+  find(query: HsonQuery | string): LiveTree {
     const queryObject = typeof query === 'string' ? parseSelector(query) : query;
     const foundNode = this.search(this.selectedNodes, queryObject, { findFirst: true });
     if (!foundNode) console.warn('no node found; returning empty');
-    return new HsonTree(foundNode);
+    return new LiveTree(foundNode);
   }
 
   /**
    * searches for all descendant elements matching the query
-   * @returns {HsonTree} a new HsonTree instance containing all found nodes
+   * @returns {LiveTree} a new HsonTree instance containing all found nodes
    */
 
-  findAll(query: HsonQuery | string): HsonTree {
+  findAll(query: HsonQuery | string): LiveTree {
     const queryObject = typeof query === 'string' ? parseSelector(query) : query;
     const foundNodes = this.search(this.selectedNodes, queryObject, { findFirst: false });
-    return new HsonTree(foundNodes);
+    return new LiveTree(foundNodes);
   }
 
   /**
@@ -55,12 +55,10 @@ export class HsonTree {
    *    (the search priority is: flags > attributes)
    *
    * @param name the attribute or flag to retrieve
-   * @returns {HsonTree} the attribute's value (`true` if the name exists, `null` if not found)
+   * @returns {LiveTree} the attribute's value (`true` if the name exists, `null` if not found)
    */
 
-  // EDIT 12JUL2025 --
-  // just noticed these were returning null when unsuccessful; changed to undefined which could break something
-  // (just caught some errors, might have resolved this)
+  
   getAttr(name: string): BasicValue | undefined {
     if (this.selectedNodes.length === 0) {
       return undefined;
@@ -163,7 +161,7 @@ export class HsonTree {
    * convenience method to remove an attribute or flag
    * equivalent to `setAttr(name, null)`
    * @param name The name of the attribute or flag to remove
-   * @returns {HsonTree} The current HsonTree instance to allow chaining
+   * @returns {LiveTree} The current HsonTree instance to allow chaining
    */
   removeAttr(name: string): this {
     return this.setAttr(name, null);
@@ -175,17 +173,17 @@ export class HsonTree {
    * as a child to each node in the current selection
    *
    * @param content a partial HsonNode object, a raw string, or another HsonTree instance
-   * @returns {HsonTree} the current HsonTree instance to allow for chaining
+   * @returns {LiveTree} the current HsonTree instance to allow for chaining
    */
 
   // TODO-- this should maybe be BasicValue as the passed arg
-  append(content: Partial<HsonNode> | string | HsonTree): this {
+  append(content: Partial<HsonNode> | string | LiveTree): this {
     /* normalize input */
     let nodesToAppend: HsonNode[];
 
     if (typeof content === 'string') {
       nodesToAppend = [NEW_NODE({ tag: STRING_TAG, content: [content] })];
-    } else if (content instanceof HsonTree) {
+    } else if (content instanceof LiveTree) {
       nodesToAppend = content.selectedNodes;
     } else if (is_Node(content)) {
       nodesToAppend = [content];
@@ -348,14 +346,14 @@ export class HsonTree {
   /**
    * reduces the set of matched nodes to the one at the specified index
    * @param index The (zero-based) index of the element to retrieve
-   * @returns {HsonTree} new HsonTree instance containing only the element at the specified index, or 
+   * @returns {LiveTree} new HsonTree instance containing only the element at the specified index, or 
    *   an empty HsonTree if the index is out of bounds
    */
-  at(index: number): HsonTree {
+  at(index: number): LiveTree {
     const node = this.selectedNodes[index];
     /* If a node exists at that index, wrap it in an HsonTree
        otherwise return a new, empty tree. */
-    return new HsonTree(node || []);
+    return new LiveTree(node || []);
   }
 
 

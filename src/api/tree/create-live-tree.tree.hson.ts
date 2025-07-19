@@ -44,7 +44,7 @@ export function create_live_tree($node: HsonNode | BasicValue): Node {
         }
     }
 
-    /* 4. if container, add to its content; if not, render the content directly. */
+    /* 4. if container, add to its content; if not, render the content directly */
     if (graft.content) {
 
         const container = graft.content.find(
@@ -62,8 +62,8 @@ export function create_live_tree($node: HsonNode | BasicValue): Node {
             }
         } else {
             /* case B: no VSN container found
-                This means the content is a direct list of nodes/primitives.
-                This handles nodes created by your `.append()` method. */
+                the content is a direct list of nodes/primitives
+                (handles nodes created by `.append()`) */
 
             for (const childNode of graft.content) {
                 el.appendChild(create_live_tree(childNode));
