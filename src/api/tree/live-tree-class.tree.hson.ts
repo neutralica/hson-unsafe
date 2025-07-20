@@ -157,6 +157,9 @@ export class LiveTree {
     return this; /* enable chaining */
   }
 
+// TODO - add classListAdd, classListReplace, classListRemove -- shortcuts for class specifically
+
+
   /**
    * convenience method to remove an attribute or flag
    * equivalent to `setAttr(name, null)`

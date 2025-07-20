@@ -1,219 +1,103 @@
 // hson-live-tree.docs.hson.md
 
-## HSON's liveTree interface 
+### HSON's liveTree interface ### 
 
 # Overview
 
-HSON's data transformation capabilities enable a stateful, interactive interface for manipulating the live browser DOM in real time. 
+    HSON's liveTree API provides a stateful, interactive interface for manipulating the live 
+    browser DOM in real time. It allows developers to create and manage components, treating 
+    the DOM exactly like a JS Object.
 
-This system is composed of two main layers: a low-level Proxy Engine that reads and writes data, and a high-level Query Builder (HsonTree) that provides a robust and ergonomic API for developers.
+The entry point is the hson.liveTree API, a chainable, set of methods for creating LiveTree instances. liveTree is a controller object that clones and then replaces parts of the DOM or the entire document.body, allowing for complex queries and manipulations directly on the markup itself. 
 
-liveTree is called via hson.liveTree(el: HTMLElement). If no argument is passed to liveTree, it will target document.body.
+Part 1: Creating a LiveTree
 
-##  1: Core Engine (  create_proxy()  )
+two ways to create a LiveTree:
+    - graft(): parsing and replacing an existing element in the DOM
+    - branch(): creating a new, detached component from a data source.
 
-The HSON liveTree is an implementation of the Proxy pattern.  create_proxy() ultimately returns an object, { proxy, sourceNode }, which cleanly separates the interactive tool from its underlying data source.
+ .graft(): 'ingest' DOM elements and replace them with a live-updating clone
 
+ makes an existing plain HTML element interactive. query the DOM for a target via queryDom or use queryBody() to target document.body and then "graft" the LiveTree onto it. The element and its child nodes will be fully parsed and replaced with a clone created from the Node representation of the original HTML.
 
-  # the get Handler (The "Read" Operation)
+ usage:
 
-The get handler intercepts requests to properties like tree.body.class and follows a simple process:
+TypeScript
+// THIS DOES NOT EXIST YET
+// import { hson } from 'hson';
 
--> check special methods: it first checks for built-in utility methods like .sourceNode() to get the raw HsonNode, or .asTree() to get the clean, VSN-shorn TypeScript object
+// target #app and replace its content with a live tree.
+// By default, this is SAFE and will sanitize the element's HTML.
 
--> check attributes: if the property name is not a special method, it checks the targetNode._meta.attrs object. If a matching key is found, it returns the value.
+const appTree = hson.liveTree.queryDOM('#hson-app-container').graft();
 
--> check 'flags': if the get handler finds an attribute whose key and value are the same (e.g., { disabled: "disabled" } or <tag disabled="disabled"> in XML), it correctly returns the boolean true, providing an intuitive TypeScript-like experience.
+// For developer-authored content that you trust completely (e.g., your main app shell),
+// use the UNSAFE namespace to prevent the sanitizer from stripping necessary tags like <script>.
+const trustedAppTree = hson.UNSAFE.liveTree.queryDOM('#app').graft();
+Path 2: Creating a Detached Component (.asBranch())
 
--> check child nodes & unwrap: if the property is not an attribute, it searches for a child node with a matching tag. If the found child is "self-closing" (contains no attributes and only a single content node), the handler unwraps it and returns the raw primitive value (e.g., the string "Invertebrate Explorer" instead of another proxy). This is accomplished via the isSimpleUnwrappable and getPrimitiveContent helpers.
+This method allows you to create a component from a data source (like an HTML or JSON string) without immediately attaching it to the page. This creates a detached "branch" that can be appended to another LiveTree.
 
--> If the child is complex, it creates and returns a new proxy for that child, allowing for method chaining (tree.body.header...).
+TypeScript
+const htmlString = `<p class="welcome">hello world</p>`;
 
-# The set Handler (The "Write" and "Sync" Operation)
+// Create a new, unattached LiveTree instance from the HTML string.
+// This is the primary way to create reusable components.
+const newBranch = hson.liveTree.fromHTML(htmlString).asBranch();
+Part 2: Component Composition
 
-The set handler intercepts assignments like `tree.body.class = 'dark-theme'`. It is type-aware:
+Once you have a main LiveTree, you can dynamically add to it by appending detached branches. The .append() method is smart enough to accept another LiveTree instance, which allows you to compose complex UIs from smaller pieces.
 
--> If the value is a Primitive (string, number, boolean):
+TypeScript
+// Assume 'appTree' is an existing LiveTree instance.
+// Assume 'newBranch' is a detached branch we created.
 
-It first checks if a child node exists with that property name. If so, it updates that child's content.
+// Append the new component to the main application tree.
+// HSON handles grafting the nodes, DOM elements, and internal maps.
+appTree.append(newBranch);
+Part 3: LiveTree Method Reference
 
-// TODO -- separate these
-// (TODO -- also this might be slightly misconfigured)
-If not, it assumes you mean to set an attribute on the current node. It correctly handles setting string values versus adding/removing boolean flags.
+Once you have a LiveTree instance, you can use the following methods to query and manipulate it.
 
--> If the value is an object:
+Finding Nodes
 
-This triggers the node creation/replacement features.
+These methods allow you to query the tree and return a new LiveTree instance scoped to the selection.
 
-It uses JSON.stringify() on the object and feeds it to parse_json(). This correctly parses the simple object back into a valid, VSN-rich HsonNode tree.
+.find(query): Searches descendants and returns a new LiveTree containing the first node that matches the query.
 
-It then uses splice() to swap this new node into the parent's content array.
+.findAll(query): Searches descendants and returns a new LiveTree containing all nodes that match the query.
 
-## Part 2: The Live DOM Connection (The HSON.liveTree() Method)
+.at(index): Reduces a selection of multiple nodes down to the single node at a specific index.
 
-The "live" DOM link is enabled via a central, shared `nodeElementMap = new WeakMap()`. This map creates an external, memory-safe link from each HsonNode to its live HTMLElement.
+Modifying Nodes
 
-The liveTree() Workflow: HSON.liveTree(element) method encapsulates the entire live-sync process into a single, elegant command:
+These methods mutate the nodes in the current selection.
 
-- copies the target element's innerHTML
-- uses parse_html to create the HSON model
-- calls a create_live_tree utility, which recursively builds the new DOM elements and, populates the nodeElementMap
-- replaces the original element on the page with this new, HSON-controlled version
-- calls create_proxy and returns the final, interactive object
+.setContent(content): Replaces the inner content of all selected nodes with a new text value (this is safe and performs escaping).
 
-liveTree() defaults to ingesting and cloning document.body if no DOM HTMLElement is provided.
+.setAttr(name, value): Sets an attribute or a boolean flag on all selected nodes.
 
-## Part 3: Using liveTree()
+.removeAttr(name): Removes an attribute or flag.
 
-```TypeScript 
-import { hson } from 'hson';
+.append(content): Appends new content to all selected nodes. The content can be an HTML string, a primitive, or another LiveTree instance.
 
-// Create a live tree by grafting onto a DOM element
-const tree = hson.liveTree(document.getElementById('app'));
-```
+Reading Data & Accessing the DOM
 
-# Finding Nodes
+These methods extract information from the current selection.
 
-These methods allow you to query the tree and change the current selection of nodes.
+.getAttr(name): Gets the value of an attribute or flag.
 
+.getFirstText(): Gets the text content of the first node in the selection.
 
-.find()
+.getValue(): Gets the value from a form element (<input>, etc.).
 
-```TypeScript 
-.find(query)
-```
+.count(): Returns the number of nodes in the current selection.
 
-Searches the descendants of the current selection and returns a new HsonTree instance containing the first node that matches the query.
+.domElement(): (New) Returns the underlying, raw HTMLElement for the first selected node. This is the "escape hatch" used for attaching event listeners or using other native browser APIs.
 
-```TypeScript 
-// Find the first <p> tag
-const firstParagraph = tree.find('p');
-
-// Find the first node with the attribute id="main"
-const mainContent = tree.find({ attrs: { id: 'main' } });
-```
-
-
-.findAll()
-
-```TypeScript 
-.findAll(query)
-```
-
-Searches the descendants of the current selection and returns a new HsonTree instance containing all nodes that match the query.
-
-```TypeScript 
-// Find all list items with the class 'active'
-const allActiveItems = tree.findAll({ tag: 'li', attrs: { class: 'active' } });
-```
-
-
-.at(index)
-
-Reduces a selection of multiple nodes down to a single node at a specific index.
-
-```TypeScript 
-// Get the third 'li' element from the previous selection
-const thirdActiveItem = allActiveItems.at(2);
-```
-
-# Modifying Nodes
-
-These methods mutate the nodes in the current selection and return the same HsonTree instance for chaining.
-
-
-.setContent(content)
-
-Replaces the entire inner content of all selected nodes with a new text value.
-
-```TypeScript 
-tree.find('#header').setContent('Welcome to HSON');
-```
-
-
-.setAttr(name, value)
-
-Sets an attribute or a boolean flag on all selected nodes.
-
-```TypeScript 
-// Set a standard attribute
-tree.find('a').setAttr('href', '/about');
-
-// Set a boolean flag
-tree.find('input').setAttr('disabled', true);
-
-// Remove an attribute
-tree.find('input').setAttr('disabled', null);
-```
-
-
-.removeAttr(name)
-
-A convenience method for removing an attribute or flag. Equivalent to .setAttr(name, null).
-
-```TypeScript 
-tree.find('input').removeAttr('disabled');
-```
-
-
-.append(content)
-
-Parses the given content and appends it as a new child to all selected nodes.
-
-```TypeScript 
-// Append a new paragraph with a string
-tree.find('#main-content').append('<p>This is a new paragraph.</p>');
-
-// Append a new node from a primitive value
-tree.find('#user-age').append(42);
-```
-
-
-# Reading Data & Values
-
-These methods extract information from the current selection. They typically operate on the first node if the selection contains multiple nodes.
-
-
-.getAttr(name)
-
-Gets the value of an attribute or flag from the first node in the selection.
-
-```TypeScript 
-// Returns the string 'submit'
-const buttonType = tree.find('button').getAttr('type');
-
-// Returns `true` if the button has the 'disabled' flag
-const isDisabled = tree.find('button').getAttr('disabled');
-```
-
-
-.getFirstText()
-
-Gets the text content of the first node in the selection.
-
-```TypeScript 
-const pageTitle = tree.find('h1').getFirstText();
-```
-
-
-.getValue()
-
-Gets the value from a form element (<input>, <textarea>, etc.). Consistent with the browser DOM, this always returns a string.
-
-```TypeScript 
-const username = tree.find('#username-input').getValue();
-```
-
-.count()
-
-Returns the number of nodes in the current selection.
-
-```TypeScript 
-const numItems = tree.findAll('li').count(); // Returns 3
-```
-
-
-.sourceNode()
-
-Returns the raw, underlying HsonNode for the first item in the selection, with all VSNs intact; usually used for debugging.
-
+TypeScript
+// Use .domElement() to get the button to attach a click listener.
+const buttonEl = appTree.find('button').domElement();
+if (buttonEl) {
+  buttonEl.addEventListener('click', () => console.log('clicked!'));
+}

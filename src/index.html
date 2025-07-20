@@ -95,7 +95,7 @@
             import { NODE_ELEMENT_MAP } from './types-consts/constants.types.hson.js';
 
             // graft onto the document body once to create the main interactive tree
-            const tree = hson.UNSAFE.liveTree
+            const tree = hson.liveTree
                 .queryDom('#hson-app-container')
                 .graft();
             // --- Use the find method with CSS selectors ---
@@ -108,15 +108,12 @@
             }
 
             function updateMock() {
-                // Use the HsonTree instance to get its text content
+                /* use liveTree instance to get its text content */
 
-                // console.log('updating mock, ', JSON.stringify(jsonInput, null, 2));
                 const jsonText = jsonInput.getValue();
 
-                // console.log(jsonText);
                 if (!jsonText.trim()) {
-                    // console.log('no text');
-                    jsonInput.setAttr('class', ''); // Use setAttr to modify class
+                    jsonInput.setAttr('class', ''); /* Use setAttr modifies class */
                     hsonOutput.setContent('');
                     htmlOutput.setContent('');
                     nodeOutput.setContent('');

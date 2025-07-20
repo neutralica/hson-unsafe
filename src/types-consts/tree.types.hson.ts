@@ -6,7 +6,7 @@ import { JSONShape } from "./base.types.hson.js";
 export interface BranchConstructor {
   /* returns the created LiveTree instance as a detached "branch"
          ready to be appended to another tree */
-  asBranch(): LiveTree;
+  branch(): LiveTree;
 }
 
 /* graft: creating a tree from a live DOM element and replacing it in-DOM; 

@@ -9,7 +9,7 @@
  * @returns - the next step in the processing chain
  */
 
-export function sanitize_html($input: string | Element): string {
+export function normalize_html($input: string | Element): string {
    /* 1) wrap in root so unbalanced tags get closed */
    const wrapped = `<root>${$input}</root>`;
 

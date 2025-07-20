@@ -38,7 +38,7 @@ export interface OutputConstructor_2 {
     toHTML(): OptionsConstructor_3 & RenderConstructor_4;
     toHSON(): OptionsConstructor_3 & RenderConstructor_4;
    /*  "dev mode" only? */
-    asTree(): ProxyBackdoor;
+    DEBUG_TREE(): ProxyBackdoor;
 }
 
 /* step 3: The optional configuration methods. Each one returns the final step */

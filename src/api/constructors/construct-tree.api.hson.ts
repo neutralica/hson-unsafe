@@ -1,7 +1,7 @@
 import { HsonNode, JSONShape } from "../../types-consts/base.types.hson.js";
 import { _ERROR, _FALSE, BLANK_META } from "../../types-consts/constants.types.hson.js";
 import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../../types-consts/tree.types.hson.js";
-import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
+import { normalize_html } from "../../utils/normalize-html.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
 import { parse_json } from "../parsers/parse-json.transform.hson.js";
 import { parse_tokens } from "../parsers/parse-tokens.transform.hson.js";
@@ -32,11 +32,11 @@ export function construct_tree(
     /* methods for creating detached branches from data */
 
     fromHTML($htmlString: string): BranchConstructor {
-      const cleanHtml = $options.unsafe ? $htmlString : sanitize_html($htmlString);
+      const cleanHtml = $options.unsafe ? $htmlString : normalize_html($htmlString);
       const rootNode = parse_html(cleanHtml);
       const branch = createBranch(rootNode);
       return {
-        asBranch: () => branch,
+        branch: () => branch,
       };
     },
 
@@ -44,7 +44,7 @@ export function construct_tree(
       const rootNode = parse_json($json as string);
       const branch = createBranch(rootNode);
       return {
-        asBranch: () => branch,
+        branch: () => branch,
       };
     },
 
@@ -55,7 +55,7 @@ export function construct_tree(
       const rootNode = parse_tokens(tokens);
       const branch = createBranch(rootNode);
       return {
-        asBranch: () => branch,
+        branch: () => branch,
       };
     },
 

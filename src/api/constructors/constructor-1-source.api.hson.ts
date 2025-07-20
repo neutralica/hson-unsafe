@@ -2,7 +2,7 @@
 import { JSONShape } from "../../types-consts/base.types.hson.js";
 import { FrameConstructor, OutputConstructor_2, SourceConstructor_1 } from "../../types-consts/constructors.types.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
-import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
+import { sanitize_html } from "../../utils/semi-sanitize-html.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
 import { parse_json } from "../parsers/parse-json.transform.hson.js";
 import { parse_tokens } from "../parsers/parse-tokens.transform.hson.js";

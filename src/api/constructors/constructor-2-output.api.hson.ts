@@ -49,7 +49,7 @@ export function construct_output_2($frame: FrameConstructor): OutputConstructor_
         },
 
         /* or: access the data directly as a proxy */
-        asTree() {
+        DEBUG_TREE() {
             return create_proxy($frame.node);
         }
     };

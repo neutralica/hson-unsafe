@@ -5,7 +5,7 @@ import { is_Node, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
 import { LiveTree } from "./live-tree-class.tree.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
-import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
+import { normalize_html } from "../../utils/normalize-html.utils.hson.js";
 
   
   /**
@@ -28,7 +28,7 @@ export function graft(
     const sourceHTML = targetElement.innerHTML;
   
     /* parse html into nodes */
-    const cleanHTML = $options.unsafe ? sourceHTML : sanitize_html(sourceHTML);
+    const cleanHTML = $options.unsafe ? sourceHTML : normalize_html(sourceHTML);
   
     // The rest of your function remains exactly the same.
     const rootNode = parse_html(cleanHTML);
