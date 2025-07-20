@@ -26,6 +26,8 @@ export interface SourceConstructor_1 {
     fromHSON(input: string): OutputConstructor_2;
     fromJSON(input: string | JSONShape): OutputConstructor_2;
     fromHTML(input: string | HTMLElement): OutputConstructor_2;
+    queryDOM(selector: string): OutputConstructor_2;
+    queryBody(): OutputConstructor_2;
 }
 
 /* step 2: the output format selection

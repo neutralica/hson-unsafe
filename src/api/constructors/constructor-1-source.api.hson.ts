@@ -27,7 +27,9 @@ const $log = VERBOSE
  * this is the entry point for the fluent data transformation API.
  * * @returns {source_constructor_1} an object with methods to specify the input data.
  */
-export function construct_source_1(): SourceConstructor_1 {
+export function construct_source_1(
+  options: { unsafe: boolean } = { unsafe: false }
+): SourceConstructor_1 {
   return {
     /**
      * accepts an html string or HTMLElement and converts to hson nodes
@@ -85,6 +87,22 @@ export function construct_source_1(): SourceConstructor_1 {
       const node = parse_tokens(tokens);
       const frame: FrameConstructor = { input: $input, tokens, node };
       return construct_output_2(frame);
-    }
+    },
+
+    queryDOM(selector: string): OutputConstructor_2 {
+      const element = document.querySelector(selector);
+      const html = element ? element.innerHTML : '';
+      // re-uses fromHTML to respect the unsafe flag
+      return this.fromHTML(html);
+    },
+
+    /* new: uses document.body.innerHTML as the source */
+    queryBody(): OutputConstructor_2 {
+      const html = document.body.innerHTML;
+      // re-uses fromHTML to respect the unsafe flag
+      return this.fromHTML(html);
+    },
+
+
   };
 }

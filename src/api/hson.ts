@@ -1,44 +1,52 @@
-import { SourceConstructor_1 } from "../types-consts/constructors.types.hson.js";
+import { construct_tree } from "./constructors/construct-tree.api.hson.js";
 import { construct_source_1 } from "./constructors/constructor-1-source.api.hson.js";
-import { graft } from "./tree/graft.tree.hson.js";
-import { LiveTree } from "./tree/hson-tree-class.tree.hson.js";
 
 /** import hson 
- *    current methods: 
- *    - transform() (for simple conversions from format to format)
- *    - liveTree() (returns a manipulable JSON tree 'grafted' into the DOM)
+ * current methods: 
+ * - transform() (for simple conversions from format to format)
+ * - liveTree() (returns a manipulable JSON tree 'grafted' into the DOM)
+ * - unsafe (provides access to non-sanitized versions of the pipelines)
  */
-
 export const hson = {
   /**
-   * the entry point for all stateless data transformations.
-   *    returns a chainable object to convert between formats.
-   * 
-   * @param {HTMLElement | JsonShape | string}
-   * @returns {SourceConstructor_1} (need to type this better) - the first stage of the conversion API 
-   *   carries 'source' methods like 'fromHTML($html: string)`, `fromHSON($hson: string)`
-   * @example 
-   *   const rawJSON =  
-   *     HSON.generate
-   *      .fromHTML(string)
-   *      .toJSON()
-   *      .serialize()  //--- returns HTML in JSON form, with all structural VSNs
+   * the entry point for all stateless data transformations
+   * returns a chainable object to convert between formats
+   * sanitizes html by default
    */
-  get transform(): SourceConstructor_1 {
-    return construct_source_1(); // Your existing, working constructor
+  get transform() {
+    return construct_source_1({ unsafe: false });
   },
 
+  /**
+   * the entry point for the stateful dom interaction pipeline
+   * returns a chainable object for creating and manipulating live trees
+   * sanitizes html by default
+   */
+  get liveTree() {
+    return construct_tree({ unsafe: false });
+  },
 
   /**
-   * - takes control of a live DOM element and replaces with a 'HsonTree'
-   *    object (stripped of its structural VSN clutter) for querying & manipulation
-   * - changes made to the data in JSON are instantly parsed and pushed to the HTML live tree
-   * 
-   * @param {HTMLElement} element - the node to replace with the liveTree; 
-   * @returns {LiveTree} the JSON object + chainable methods to query and manipulate
-   * usage ex: 
-   *    const tree = HSON.tree().
-   *    tree.find(...).setAttr(...);
+   * provides access to unsafe, non-sanitized versions of the pipelines
+   * use with trusted, developer-authored content only
    */
-  liveTree: graft,
+  unsafe: {
+    /**
+     * accesses the unsafe stateless data transformation pipeline
+     */
+    get transform() {
+      return construct_source_1({ unsafe: true });
+    },
+    /**
+     * accesses the unsafe stateful dom interaction pipeline
+     */
+    get liveTree() {
+      return construct_tree({ unsafe: true });
+    }
+  },
+  
+  /**
+   * stubbed out for future development
+   */
+  liveMap: {},
 };

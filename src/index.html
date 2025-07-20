@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-       <link rel="icon" href="./assets/hson-favicon-dark.hson.png">
+        <link rel="icon" href="./assets/hson-favicon-dark.hson.png" />
         <title>HSON Live Tree Test</title>
         <style>
             /* Basic styles and layout */
@@ -98,16 +98,15 @@
             const appContainer = document.getElementById('hson-app-container');
             if (!appContainer) throw new Error('could not find app container');
             // make proxy from  onto the container
-            const tree = hson.liveTree(appContainer);
-
+            const tree = hson.unsafe.liveTree.queryDom('#hson-app-container').graft();
             // --- Use the find method with CSS selectors ---
             const jsonInput = tree.find('textarea#json-input');
             const hsonOutput = tree.find('#hson-output');
             const htmlOutput = tree.find('#html-output');
             const nodeOutput = tree.find('#node-output');
-            if (!jsonInput || !hsonOutput || !htmlOutput || !nodeOutput){
-                console.error("tree error")
-            } 
+            if (!jsonInput || !hsonOutput || !htmlOutput || !nodeOutput) {
+                console.error('tree error');
+            }
 
             function updateMock() {
                 // Use the HsonTree instance to get its text content
@@ -152,8 +151,7 @@
                     // console.log('setContent hson');
                     htmlOutput.setContent(htmlString);
                     // console.log('setContent html');
-                    nodeOutput.setContent(nodeString)
-
+                    nodeOutput.setContent(nodeString);
                 } catch (error) {
                     jsonInput.setAttr('class', 'invalid');
                     hsonOutput.setAttr('color', 'red');
