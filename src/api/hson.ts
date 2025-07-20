@@ -30,7 +30,7 @@ export const hson = {
    * provides access to unsafe, non-sanitized versions of the pipelines
    * use with trusted, developer-authored content only
    */
-  unsafe: {
+  UNSAFE: {
     /**
      * accesses the unsafe stateless data transformation pipeline
      */

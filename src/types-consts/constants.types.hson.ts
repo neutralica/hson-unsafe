@@ -33,6 +33,8 @@ export const BLANK_META = {
 export const _FALSE = '_false' as const;
 export type FALSE_TYPE = typeof _FALSE;
 
+export const _ERROR = '_error' as const;
+
 /* VSN tags & some common combinations */
 export const STRING_TAG = '_str' as const;
 export const PRIM_TAG = '_prim' as const;

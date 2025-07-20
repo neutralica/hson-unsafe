@@ -95,10 +95,9 @@
             import { NODE_ELEMENT_MAP } from './types-consts/constants.types.hson.js';
 
             // graft onto the document body once to create the main interactive tree
-            const appContainer = document.getElementById('hson-app-container');
-            if (!appContainer) throw new Error('could not find app container');
-            // make proxy from  onto the container
-            const tree = hson.unsafe.liveTree.queryDom('#hson-app-container').graft();
+            const tree = hson.UNSAFE.liveTree
+                .queryDom('#hson-app-container')
+                .graft();
             // --- Use the find method with CSS selectors ---
             const jsonInput = tree.find('textarea#json-input');
             const hsonOutput = tree.find('#hson-output');

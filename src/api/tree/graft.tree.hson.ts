@@ -5,6 +5,7 @@ import { is_Node, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
 import { LiveTree } from "./live-tree-class.tree.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
+import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 
   
   /**
@@ -16,7 +17,10 @@ import { create_live_tree } from "./create-live-tree.tree.hson.js";
    */
 
   /* TODO TASK BUG **wire in sanitize ASAP** */
-  export function graft($element?: HTMLElement): LiveTree {
+export function graft(
+  $element?: HTMLElement,
+  $options: { unsafe: boolean } = { unsafe: false }
+): LiveTree {
     /* get target element or document.body if no arg */
     const targetElement = $element || document.body;
   
@@ -24,7 +28,10 @@ import { create_live_tree } from "./create-live-tree.tree.hson.js";
     const sourceHTML = targetElement.innerHTML;
   
     /* parse html into nodes */
-    const rootNode = parse_html(sourceHTML);
+    const cleanHTML = $options.unsafe ? sourceHTML : sanitize_html(sourceHTML);
+  
+    // The rest of your function remains exactly the same.
+    const rootNode = parse_html(cleanHTML);
   
     /* recursively render the HsonNode tree back into live DOM elements,
         then populate the `nodeElementMap`, linking the two */
