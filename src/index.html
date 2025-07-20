@@ -95,6 +95,7 @@
             import {
                 is_valid_json,
                 is_valid_hson,
+                is_valid_html,
             } from './utils/is-helpers.utils.hson.js';
             import { NODE_ELEMENT_MAP } from './types-consts/constants.types.hson.js';
             window._hson = hson;
@@ -147,7 +148,7 @@
                 }
 
                 // 2. Use the validators to make an educated guess
-                const format = detectFormat(inputText); // This will return 'json', 'hson', or default to 'html'
+                const format = detectFormat(inputText); // returns 'json', 'hson', 'html', or 'invalid'
 
                 let isValid = true;
                 let hsonString, htmlString, nodeString;
@@ -175,7 +176,6 @@
                             nodeString = inputText;
                             break;
                         case 'html':
-                        default:
                             // This is our last chance. If fromHTML fails, the catch block will handle it.
                             hsonString = hson.transform
                                 .fromHTML(inputText)
@@ -183,6 +183,9 @@
                                 .serialize();
                             htmlString = inputText;
                             nodeString = hsonString;
+                            break;
+                        default:
+                            isValid = false;
                             break;
                     }
                 } catch (e) {
@@ -192,13 +195,13 @@
 
                 // 4. Update the UI based on whether the transformation succeeded
                 if (isValid) {
-                    console.log('VALID!')
-                    console.log(format)
+                    console.log('VALID!');
+                    console.log(format);
                     jsonInput.setAttr('class', `valid-${format}`);
                     hsonOutput.setContent(hsonString);
                     htmlOutput.setContent(htmlString);
                     nodeOutput.setContent(nodeString);
-                    
+
                     // Update UI
                     jsonInput.setAttr('class', `valid-${format}`);
                     hsonOutput.setContent(hsonString);
