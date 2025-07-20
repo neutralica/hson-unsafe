@@ -3,18 +3,17 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="./assets/hson-favicon-dark.hson.png" />
+        <link rel="icon" href="./assets/hson-favicon-light.hson.ico" />
         <title>HSON Live Tree Test</title>
         <style>
             /* Basic styles and layout */
             body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
-                    Roboto, Helvetica, Arial, sans-serif;
+                font-family: Georgia, 'Times New Roman', Times, serif;
                 margin: 0;
                 background-color: #f0f2f5;
                 color: #1c1e21;
             }
-            .playground {
+            .field {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 grid-template-rows: 50vh 50vh;
@@ -66,11 +65,12 @@
     </head>
     <body>
         <div id="hson-app-container">
-            <div class="playground">
-                <div class="pane">
-                    <h2>1. JSON Input</h2>
+            <div class="field">
+                <div class="pane invalid">
+                    <h2>enter valid JSON, HTML, or HSON</h2>
                     <textarea
                         id="json-input"
+                        class="invalid"
                         spellcheck="false"
                         placeholder='Try: { "user": { "name": "Alex", "active": true } }'
                     ></textarea>
@@ -93,11 +93,17 @@
         <script type="module" defer>
             import { hson } from './api/hson.js';
             import { NODE_ELEMENT_MAP } from './types-consts/constants.types.hson.js';
+            window._hson = hson;
 
-            // graft onto the document body once to create the main interactive tree
-            const tree = hson.liveTree
+
+            const appTree = hson.liveTree
                 .queryDom('#hson-app-container')
                 .graft();
+
+
+
+            // graft onto the document body once to create the main interactive tree
+            const tree = hson.liveTree.queryDom('#hson-app-container').graft();
             // --- Use the find method with CSS selectors ---
             const jsonInput = tree.find('textarea#json-input');
             const hsonOutput = tree.find('#hson-output');
@@ -107,55 +113,88 @@
                 console.error('tree error');
             }
 
-            function updateMock() {
-                /* use liveTree instance to get its text content */
+            
+function updateMock() {
+    const inputText = jsonInput.getValue(); // Let's rename this variable to be more generic
 
-                const jsonText = jsonInput.getValue();
+    if (!inputText.trim()) {
+        jsonInput.setAttr('class', '');
+        hsonOutput.setContent('');
+        htmlOutput.setContent('');
+        nodeOutput.setContent('');
+        return;
+    }
 
-                if (!jsonText.trim()) {
-                    jsonInput.setAttr('class', ''); /* Use setAttr modifies class */
-                    hsonOutput.setContent('');
-                    htmlOutput.setContent('');
-                    nodeOutput.setContent('');
-                    return;
-                }
+    let sourceFormat = 'invalid';
+    let hsonString, htmlString, nodeString;
 
-                try {
-                    // console.log('parsing');
-                    JSON.parse(jsonText);
-                    jsonInput.setAttr('class', '');
+    // --- Waterfall Detection Logic ---
 
-                    const hsonString = hson.transform
-                        .fromJSON(jsonText)
-                        .toHSON()
-                        .serialize();
-                    // console.log('made HSON string');
+    // 1. Try to parse as JSON
+    try {
+        // We just need to validate it's JSON. The transform will handle the real parsing.
+        JSON.parse(inputText); 
+        
+        hsonString = hson.transform.fromJSON(inputText).toHSON().serialize();
+        htmlString = hson.transform.fromJSON(inputText).toHTML().serialize();
+        nodeString = hsonString; // For the node view, HSON is the clearest representation
+        sourceFormat = 'json';
+    } catch (e) {
+        console.log('not json');
+        // Not JSON, fall through to the next check
+    }
 
-                    const htmlString = hson.transform
-                        .fromJSON(jsonText)
-                        .toHTML()
-                        .serialize();
-                    // console.log('made HTML string');
+    // 2. If not JSON, try to parse as HSON
+    if (sourceFormat === 'invalid') {
+        try {
+            // The hson parser will throw an error if the syntax is invalid
+            htmlString = hson.transform.fromHSON(inputText).toHTML().serialize();
+            console.log('inputText')
+            console.log(inputText)
+            // If that succeeds, we know it was HSON
+            hsonString = inputText; // The source is already HSON
+            nodeString = inputText;
+            sourceFormat = 'hson';
+            console.log(sourceFormat)
+        } catch (e) {
+            // Not HSON, fall through to the final check
+        }
+    }
 
-                    const nodeString = hson.transform
-                        .fromJSON(jsonText)
-                        .toHSON()
-                        .serialize();
+    // 3. If nothing else, try to parse as HTML
+    if (sourceFormat === 'invalid') {
+        try {
+            // Use the default, SAFE transform method
+            hsonString = hson.transform.fromHTML(inputText).toHSON().serialize();
+            
+            // If that succeeds, it was HTML
+            htmlString = inputText; // The source is already HTML
+            nodeString = hsonString;
+            sourceFormat = 'html';
+        } catch (e) {
+            // If all parsers fail, it's truly invalid input
+            sourceFormat = 'invalid';
+        }
+    }
 
-                    // use setContent
-                    hsonOutput.setContent(hsonString);
-                    // console.log('setContent hson');
-                    htmlOutput.setContent(htmlString);
-                    // console.log('setContent html');
-                    nodeOutput.setContent(nodeString);
-                } catch (error) {
-                    jsonInput.setAttr('class', 'invalid');
-                    hsonOutput.setAttr('color', 'red');
-                    htmlOutput.setAttr('color', 'red');
-                    nodeOutput.setAttr('color', 'red');
-                }
-            }
+    // --- Update UI based on detection result ---
+    if (sourceFormat !== 'invalid') {
+        console.warn('sourceFormat:')
+        console.warn(sourceFormat)
+        jsonInput.setAttr('class', ''); // Use a class to indicate format, e.g., 'valid-json'
+        hsonOutput.setContent(hsonString);
+        htmlOutput.setContent(htmlString);
+        nodeOutput.setContent(nodeString);
+    } else {
+        jsonInput.setAttr('class', 'invalid');
+        // Clear other panes on invalid input
+        console.warn('INVALID')
 
+        hsonOutput.setContent('');
+        htmlOutput.setContent('');
+        nodeOutput.setContent('');
+    }
+}
             // To attach the event listener, we need to get the live element
             const liveJsonInput = jsonInput.sourceNode()
                 ? NODE_ELEMENT_MAP.get(jsonInput.sourceNode())
