@@ -24,6 +24,7 @@ export interface TreeConstructor_Source {
   /* for creating new tree content from data */
   fromHTML(htmlString: string): BranchConstructor;
   fromJSON(json: string | JSONShape): BranchConstructor;
+  fromHSON(hsonString: string): BranchConstructor; 
 
 /* for targeting the existing DOM (not a LiveTree) and replcaing with graft() */
   queryDom(selector: string): GraftConstructor;

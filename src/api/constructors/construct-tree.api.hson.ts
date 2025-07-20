@@ -4,6 +4,8 @@ import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
 import { parse_json } from "../parsers/parse-json.transform.hson.js";
+import { parse_tokens } from "../parsers/parse-tokens.transform.hson.js";
+import { tokenize_hson } from "../parsers/tokenize-hson.transform.hson.js";
 import { create_live_tree } from "../tree/create-live-tree.tree.hson.js";
 import { graft } from "../tree/graft.tree.hson.js";
 import { LiveTree } from "../tree/live-tree-class.tree.hson.js";
@@ -40,6 +42,17 @@ export function construct_tree(
 
     fromJSON($json: string | JSONShape): BranchConstructor {
       const rootNode = parse_json($json as string);
+      const branch = createBranch(rootNode);
+      return {
+        asBranch: () => branch,
+      };
+    },
+
+
+    fromHSON(hsonString: string): BranchConstructor {
+      // assumes you have tokenize_hson and parse_tokens available
+      const tokens = tokenize_hson(hsonString);
+      const rootNode = parse_tokens(tokens);
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,

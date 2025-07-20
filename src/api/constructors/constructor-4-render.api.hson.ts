@@ -2,6 +2,7 @@ import { HsonNode, JSONShape, BasicValue } from "../../types-consts/base.types.h
 import { RenderΔ } from "../../types-consts/constants.types.hson.js";
 import { FrameRender, RenderConstructor_4 } from "../../types-consts/constructors.types.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
+import { hson } from "../hson.js";
 import { create_proxy } from "../tree/create-proxy.tree.hson.js";
 
 
@@ -72,6 +73,7 @@ export function construct_render_4($context: FrameRender): RenderConstructor_4 {
          *  intuitive dot-notation access & hiding VSN clutter
          */
         asTree(): any {
+            return hson.transform.fromHSON
             return create_proxy(frame.node);
         }
     };
