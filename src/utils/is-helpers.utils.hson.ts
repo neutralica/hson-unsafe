@@ -1,5 +1,7 @@
 // is-helpers.hson.util.ts
 
+import { parse_tokens } from "../api/parsers/parse-tokens.transform.hson.js";
+import { tokenize_hson } from "../api/parsers/tokenize-hson.transform.hson.js";
 import { HsonNode, JSONShape, NodeContent, BasicValue } from "../types-consts/base.types.hson.js";
 import {INDEX_TAG, PRIM_TAG, STRING_TAG } from "../types-consts/constants.types.hson.js";
 
@@ -45,4 +47,43 @@ export function is_indexed(node: HsonNode): boolean {
 /* identifies nodes with no content */
 export function is_void(content: NodeContent) {
   return (content.length === 0);
+}
+
+/**
+ * Checks if a string is valid, parsable JSON.
+ * @returns {boolean}
+ */
+export function is_valid_json(text: string): boolean {
+  try {
+    JSON.parse(text);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Checks if a string is valid, parsable HSON by running it
+ * through the actual HSON tokenizer and parser.
+ * @returns {boolean}
+ */
+export function is_valid_hson(text: string): boolean {
+  try {
+    const tokens = tokenize_hson(text);
+    parse_tokens(tokens); // If this completes without error, it's valid.
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * checks if a string contains html-like tag structures
+ * this is a heuristic, not a full validation
+ * @returns {boolean}
+ */
+function is_valid_html(text: string): boolean {
+  // a simple regex to check for the presence of <tag> or </tag>
+  // this is enough to distinguish it from plain text for our purposes
+  return /<[a-z][\s\S]*>/i.test(text);
 }

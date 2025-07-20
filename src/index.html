@@ -92,15 +92,16 @@
 
         <script type="module" defer>
             import { hson } from './api/hson.js';
+            import {
+                is_valid_json,
+                is_valid_hson,
+            } from './utils/is-helpers.utils.hson.js';
             import { NODE_ELEMENT_MAP } from './types-consts/constants.types.hson.js';
             window._hson = hson;
-
 
             const appTree = hson.liveTree
                 .queryDom('#hson-app-container')
                 .graft();
-
-
 
             // graft onto the document body once to create the main interactive tree
             const tree = hson.liveTree.queryDom('#hson-app-container').graft();
@@ -113,88 +114,104 @@
                 console.error('tree error');
             }
 
-            
-function updateMock() {
-    const inputText = jsonInput.getValue(); // Let's rename this variable to be more generic
+            function detectFormat($text) {
+                const trimmedText = $text.trim();
 
-    if (!inputText.trim()) {
-        jsonInput.setAttr('class', '');
-        hsonOutput.setContent('');
-        htmlOutput.setContent('');
-        nodeOutput.setContent('');
-        return;
-    }
+                // Strictest format first.
+                if (is_valid_json(trimmedText)) {
+                    return 'json';
+                }
 
-    let sourceFormat = 'invalid';
-    let hsonString, htmlString, nodeString;
+                // Then check for HSON.
+                if (is_valid_hson(trimmedText)) {
+                    return 'hson';
+                }
 
-    // --- Waterfall Detection Logic ---
+                if (is_valid_html(trimmedText)) {
+                    return 'html';
+                }
+                // If all else fails, assume it's an HTML fragment.
+                return 'invalid';
+            }
 
-    // 1. Try to parse as JSON
-    try {
-        // We just need to validate it's JSON. The transform will handle the real parsing.
-        JSON.parse(inputText); 
-        
-        hsonString = hson.transform.fromJSON(inputText).toHSON().serialize();
-        htmlString = hson.transform.fromJSON(inputText).toHTML().serialize();
-        nodeString = hsonString; // For the node view, HSON is the clearest representation
-        sourceFormat = 'json';
-    } catch (e) {
-        console.log('not json');
-        // Not JSON, fall through to the next check
-    }
+            function updateMock() {
+                const inputText = jsonInput.getValue();
 
-    // 2. If not JSON, try to parse as HSON
-    if (sourceFormat === 'invalid') {
-        try {
-            // The hson parser will throw an error if the syntax is invalid
-            htmlString = hson.transform.fromHSON(inputText).toHTML().serialize();
-            console.log('inputText')
-            console.log(inputText)
-            // If that succeeds, we know it was HSON
-            hsonString = inputText; // The source is already HSON
-            nodeString = inputText;
-            sourceFormat = 'hson';
-            console.log(sourceFormat)
-        } catch (e) {
-            // Not HSON, fall through to the final check
-        }
-    }
+                // 1. Handle empty input
+                if (!inputText.trim()) {
+                    jsonInput.setAttr('class', '');
+                    hsonOutput.setContent('');
+                    htmlOutput.setContent('');
+                    nodeOutput.setContent('');
+                    return;
+                }
 
-    // 3. If nothing else, try to parse as HTML
-    if (sourceFormat === 'invalid') {
-        try {
-            // Use the default, SAFE transform method
-            hsonString = hson.transform.fromHTML(inputText).toHSON().serialize();
-            
-            // If that succeeds, it was HTML
-            htmlString = inputText; // The source is already HTML
-            nodeString = hsonString;
-            sourceFormat = 'html';
-        } catch (e) {
-            // If all parsers fail, it's truly invalid input
-            sourceFormat = 'invalid';
-        }
-    }
+                // 2. Use the validators to make an educated guess
+                const format = detectFormat(inputText); // This will return 'json', 'hson', or default to 'html'
 
-    // --- Update UI based on detection result ---
-    if (sourceFormat !== 'invalid') {
-        console.warn('sourceFormat:')
-        console.warn(sourceFormat)
-        jsonInput.setAttr('class', ''); // Use a class to indicate format, e.g., 'valid-json'
-        hsonOutput.setContent(hsonString);
-        htmlOutput.setContent(htmlString);
-        nodeOutput.setContent(nodeString);
-    } else {
-        jsonInput.setAttr('class', 'invalid');
-        // Clear other panes on invalid input
-        console.warn('INVALID')
+                let isValid = true;
+                let hsonString, htmlString, nodeString;
 
-        hsonOutput.setContent('');
-        htmlOutput.setContent('');
-        nodeOutput.setContent('');
-    }
-}
+                // 3. Attempt the transformation inside a try...catch block
+                try {
+                    switch (format) {
+                        case 'json':
+                            hsonString = hson.transform
+                                .fromJSON(inputText)
+                                .toHSON()
+                                .serialize();
+                            htmlString = hson.transform
+                                .fromJSON(inputText)
+                                .toHTML()
+                                .serialize();
+                            nodeString = hsonString;
+                            break;
+                        case 'hson':
+                            htmlString = hson.transform
+                                .fromHSON(inputText)
+                                .toHTML()
+                                .serialize();
+                            hsonString = inputText;
+                            nodeString = inputText;
+                            break;
+                        case 'html':
+                        default:
+                            // This is our last chance. If fromHTML fails, the catch block will handle it.
+                            hsonString = hson.transform
+                                .fromHTML(inputText)
+                                .toHSON()
+                                .serialize();
+                            htmlString = inputText;
+                            nodeString = hsonString;
+                            break;
+                    }
+                } catch (e) {
+                    // If any of the parsers failed, we mark the input as invalid.
+                    isValid = false;
+                }
+
+                // 4. Update the UI based on whether the transformation succeeded
+                if (isValid) {
+                    console.log('VALID!')
+                    console.log(format)
+                    jsonInput.setAttr('class', `valid-${format}`);
+                    hsonOutput.setContent(hsonString);
+                    htmlOutput.setContent(htmlString);
+                    nodeOutput.setContent(nodeString);
+                    
+                    // Update UI
+                    jsonInput.setAttr('class', `valid-${format}`);
+                    hsonOutput.setContent(hsonString);
+                    htmlOutput.setContent(htmlString);
+                    nodeOutput.setContent(nodeString);
+                } else {
+                    // This is the 'invalid' state you wanted.
+                    jsonInput.setAttr('class', 'invalid');
+                    hsonOutput.setContent('');
+                    htmlOutput.setContent('');
+                    nodeOutput.setContent('');
+                }
+            }
             // To attach the event listener, we need to get the live element
             const liveJsonInput = jsonInput.sourceNode()
                 ? NODE_ELEMENT_MAP.get(jsonInput.sourceNode())
