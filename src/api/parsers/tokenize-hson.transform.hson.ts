@@ -7,6 +7,8 @@ import { is_not_string, is_BasicValue, is_Node } from "../../utils/is-helpers.ut
 import { parse_css_attrs } from "../../utils/parse-css.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { splitTopLevel } from "../../utils/split-top-level.utils.hson.js";
+import { triage_parse_err } from "../../utils/triage-parser-err.utils.hson.js";
+
 
 
 
@@ -24,8 +26,18 @@ const _VERBOSE = false;
 const $log = _VERBOSE
     ? console.log
     : () => { };
+let _STRICT = true;
+const PARSER_ERR = (err: string) => triage_parse_err(err, _STRICT);
+
+
 let tokenFirst: boolean = true;
-export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
+export function tokenize_hson(
+    $hson: string,
+    $depth = 0,
+    { strict }: { strict: boolean } = { strict: true }
+): AllTokens[] {
+    if (strict === false) { _STRICT = false; }
+
     const maxDepth = 50;
     $log(`[token_from_hson called with depth=${$depth}]`);
     if (tokenFirst) {
@@ -152,7 +164,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
 
         if (trimLine === ">" || trimLine === "/>") {
             if (contextStack.length === 0) {
-                console.error(`[Step E] closer '${trimLine}' found but context stack is empty at L${ix + 1}.`);
+                PARSER_ERR(`[Step E] closer '${trimLine}' found but context stack is empty at L${ix + 1}.`);
                 ix++; continue; /* consume line -- hson string is likely malformed */
             }
 
@@ -252,7 +264,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
             const tag = trimLine.substring(tagNameStart, parsedChars);
 
             if (!tag) {
-                console.error(`[step F depth=${$depth} L=${currentIx + 1}] malformed tag: could not get tag name in "${trimLine}"`);
+                PARSER_ERR(`[step F depth=${$depth} L=${currentIx + 1}] malformed tag: could not get tag name in "${trimLine}"`);
                 finalTokens.push(CREATE_TOKEN({ type: TokenΔ.STR_VAL, content: ['[ERROR IN TAG NAME GETTING (STEP F, tokenize_hson())]'] }));
                 ix++;
                 continue;
@@ -469,7 +481,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
 
             /* step F.3 - determine token type, push */
             if (parseError) {
-                console.error('PARSER ERROR—creating generic fallback text token')
+                PARSER_ERR('PARSER ERROR—creating generic fallback text token')
                 finalTokens.push(CREATE_TOKEN({ type: TokenΔ.STR_VAL, content: ['[ERROR IN PARSING STEP F.3'] }));
             } else {
                 const meta = { attrs, flags };

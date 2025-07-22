@@ -1,7 +1,8 @@
 // parse-json.transform.hson.ts
 
 import { JSONShape, HsonNode, BasicValue, _Meta, JSONObject } from "../../types-consts/base.types.hson.js";
-import { PRIM_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.types.hson.js";
+import { PRIM_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG, _ERROR } from "../../types-consts/constants.types.hson.js";
+import { triage_parse_err } from "../../utils/triage-parser-err.utils.hson.js";
 import { is_not_string, is_Object, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
 
 /* debug log */
@@ -9,6 +10,10 @@ let _VERBOSE = false;
 const $log = _VERBOSE
     ? console.log
     : () => { };
+
+
+let _STRICT = true;
+const PARSER_ERR = (err: string) => triage_parse_err(err, _STRICT);
 
 
 function getTag(value: JSONShape): string {
@@ -41,13 +46,15 @@ function getTag(value: JSONShape): string {
 
 function nodeFromJson(
     $srcJson: JSONShape,
-    $parentTag: string
+    $parentTag: string,
+    { strict }: { strict: boolean } = { strict: true }
 ): { node: HsonNode } {
-
+    if (strict === false) { _STRICT = false; }
+    
     /* catch BasicValue nodes */
     if ($parentTag === STRING_TAG || $parentTag === PRIM_TAG) {
         if (!is_BasicValue($srcJson)) {
-            console.error('value is not primitive')
+            PARSER_ERR('[parse-json]: node value is not primitive')
         }
         if (is_not_string($srcJson)) {
             return {
@@ -65,7 +72,7 @@ function nodeFromJson(
         }
     }
 
-    /*  arrays -> _array VSN */
+    /*  arrays -> _arr VSN */
     if ($parentTag === ARRAY_TAG) {
         const array = $srcJson as JSONShape[];
         const items: HsonNode[] = array.map((val, ix) => {
@@ -105,7 +112,7 @@ function nodeFromJson(
 
         /* case 1: _elem wrapper  */
         if (jsonKeys[0] === ELEM_TAG) {
-            if (jsonKeys.length > 1) console.error('content of parent of _elem tag is too long (_elem has siblings!)')
+            if (jsonKeys.length > 1) PARSER_ERR('content of parent of _elem tag is too long (_elem has siblings!)')
             const listContent = jsonObj[ELEM_TAG];
             if (Array.isArray(listContent)) {
                 const contentNodes: HsonNode[] = listContent.map(item => {
@@ -124,7 +131,7 @@ function nodeFromJson(
                 return {
                     node: NEW_NODE({ tag: ELEM_TAG, content: contentNodes }),
                 };
-            } else { console.error('content should always be array?') }
+            } else { PARSER_ERR('[parser_json]: ontent should always be array?') }
         }
 
         /* _obj case 2 (Default): ALL other JSON objects become an _obj VSN. */
@@ -178,9 +185,9 @@ function nodeFromJson(
     }
 
     /* error fallback */
-    console.error("recurse_json_for_node: unhandled tag:", $parentTag);
+    PARSER_ERR(`recurse_json_for_node: unhandled tag: ${$parentTag}`);
     return {
-        node: NEW_NODE({ tag: "ERROR_UNHANDLED_TYPE", content: [String($srcJson) as BasicValue] }),
+        node: NEW_NODE({ tag: _ERROR, content: [String($srcJson) as BasicValue] }),
     };
 }
 
@@ -193,9 +200,9 @@ export function parse_json($jstring: string): HsonNode {
         console.groupEnd();
     }
     if (typeof $jstring !== 'string') {
-        console.error('JSON input is not a string -- received a ', typeof $jstring);
+        PARSER_ERR(`'JSON input is not a string -- received a ${typeof $jstring}`);
         return NEW_NODE({
-            tag: '[JSON TYPE ERROR]',
+            tag: _ERROR,
             content: [NEW_NODE({ tag: STRING_TAG, content: [`ERROR: INVALID STRING`] })],
         });
     }
@@ -204,11 +211,11 @@ export function parse_json($jstring: string): HsonNode {
     try {
         parsedJson = JSON.parse($jstring);
     } catch (error) {
-        console.error('JSON parse error in json_to_node:', error);
+        PARSER_ERR(`'JSON parse error in json_to_node: ${error}`);
         const errMsg = error instanceof Error ? error.message : "Unknown parsing error";
         return NEW_NODE({
-            tag: "[JSON PARSE ERROR]",
-            content: [NEW_NODE({ tag: STRING_TAG, content: [`Invalid JSON input: ${errMsg}`] })],
+            tag: _ERROR,
+            content:  [`Invalid JSON input: ${errMsg}`],
         });
     }
 
@@ -227,8 +234,6 @@ export function parse_json($jstring: string): HsonNode {
             }
             jsonToProcess = (parsedJson as JSONObject)[ROOT_TAG]; /*  "unwrap" it */
         }
-        // else if ((parsedJson as JSONObject)._meta) {
-        // }
     }
 
     const topTag = getTag(jsonToProcess);

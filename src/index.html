@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- <script type="module" src="tests-main.ts"></script> -->
         <link rel="icon" href="./assets/hson-favicon-light.hson.ico" />
         <title>HSON Live Tree Test</title>
         <style>
@@ -28,7 +29,6 @@
                 border-radius: 8px;
                 display: flex;
                 flex-direction: column;
-                overflow: hidden;
             }
             .pane h2 {
                 margin: 0;
@@ -39,6 +39,9 @@
             }
             .pane textarea,
             .pane pre {
+                overflow-y: scroll;
+                overflow-x: hidden;
+                text-wrap: pretty;
                 flex-grow: 1;
                 padding: 12px;
                 margin: 0;
@@ -66,27 +69,34 @@
     <body>
         <div id="hson-app-container">
             <div class="field">
-                <div class="pane invalid">
+                <div class="pane">
                     <h2>enter valid JSON, HTML, or HSON</h2>
                     <textarea
-                        id="json-input"
+                        id="data-input"
                         class="invalid"
                         spellcheck="false"
                         placeholder='Try: { "user": { "name": "Alex", "active": true } }'
                     ></textarea>
                 </div>
                 <div class="pane">
-                    <h2>2. HSON Output</h2>
+                    <h2># HSON</h2>
                     <pre><code id="hson-output"></code></pre>
                 </div>
                 <div class="pane">
-                    <h2>3. HTML Markup</h2>
+                    <h2># HTML</h2>
                     <pre><code id="html-output"></code></pre>
                 </div>
                 <div class="pane">
-                    <h2>4. Node Structure</h2>
-                    <div id="node-output" class="node-area"></div>
+                    <h2># JSON</h2>
+                    <div id="json-output"></div>
                 </div>
+            </div>
+        </div>
+
+        <div id="test-results-grid">
+            <div class="test-result">
+                <div class="heading"></div>
+                <div class="string content"></div>
             </div>
         </div>
 
@@ -107,11 +117,11 @@
             // graft onto the document body once to create the main interactive tree
             const tree = hson.liveTree.queryDom('#hson-app-container').graft();
             // --- Use the find method with CSS selectors ---
-            const jsonInput = tree.find('textarea#json-input');
+            const dataInput = tree.find('textarea#data-input');
             const hsonOutput = tree.find('#hson-output');
             const htmlOutput = tree.find('#html-output');
-            const nodeOutput = tree.find('#node-output');
-            if (!jsonInput || !hsonOutput || !htmlOutput || !nodeOutput) {
+            const jsonOutput = tree.find('#json-output');
+            if (!dataInput || !hsonOutput || !htmlOutput || !jsonOutput) {
                 console.error('tree error');
             }
 
@@ -120,15 +130,18 @@
 
                 // Strictest format first.
                 if (is_valid_json(trimmedText)) {
+                    console.log('JSON');
                     return 'json';
                 }
 
                 // Then check for HSON.
                 if (is_valid_hson(trimmedText)) {
+                    console.log('HSON');
                     return 'hson';
                 }
 
                 if (is_valid_html(trimmedText)) {
+                    console.log('HTML');
                     return 'html';
                 }
                 // If all else fails, assume it's an HTML fragment.
@@ -136,14 +149,14 @@
             }
 
             function updateMock() {
-                const inputText = jsonInput.getValue();
+                const inputText = dataInput.getValue();
 
                 // 1. Handle empty input
                 if (!inputText.trim()) {
-                    jsonInput.setAttr('class', '');
+                    dataInput.setAttr('class', '');
                     hsonOutput.setContent('');
                     htmlOutput.setContent('');
-                    nodeOutput.setContent('');
+                    jsonOutput.setContent('');
                     return;
                 }
 
@@ -151,12 +164,13 @@
                 const format = detectFormat(inputText); // returns 'json', 'hson', 'html', or 'invalid'
 
                 let isValid = true;
-                let hsonString, htmlString, nodeString;
+                let hsonString, htmlString, jsonString;
 
                 // 3. Attempt the transformation inside a try...catch block
                 try {
                     switch (format) {
                         case 'json':
+                            jsonString = inputText;
                             hsonString = hson.transform
                                 .fromJSON(inputText)
                                 .toHSON()
@@ -165,24 +179,28 @@
                                 .fromJSON(inputText)
                                 .toHTML()
                                 .serialize();
-                            nodeString = hsonString;
                             break;
                         case 'hson':
+                            hsonString = inputText;
                             htmlString = hson.transform
                                 .fromHSON(inputText)
                                 .toHTML()
                                 .serialize();
-                            hsonString = inputText;
-                            nodeString = inputText;
+                            jsonString = hson.transform
+                                .fromHSON(inputText)
+                                .toJSON()
+                                .serialize();
                             break;
                         case 'html':
-                            // This is our last chance. If fromHTML fails, the catch block will handle it.
+                            htmlString = inputText;
+                            jsonString = hson.transform
+                                .fromHTML(inputText)
+                                .toJSON()
+                                .serialize();
                             hsonString = hson.transform
                                 .fromHTML(inputText)
                                 .toHSON()
                                 .serialize();
-                            htmlString = inputText;
-                            nodeString = hsonString;
                             break;
                         default:
                             isValid = false;
@@ -195,29 +213,27 @@
 
                 // 4. Update the UI based on whether the transformation succeeded
                 if (isValid) {
-                    console.log('VALID!');
-                    console.log(format);
-                    jsonInput.setAttr('class', `valid-${format}`);
+                    dataInput.setAttr('class', `valid-${format}`);
                     hsonOutput.setContent(hsonString);
                     htmlOutput.setContent(htmlString);
-                    nodeOutput.setContent(nodeString);
+                    jsonOutput.setContent(jsonString);
 
-                    // Update UI
-                    jsonInput.setAttr('class', `valid-${format}`);
-                    hsonOutput.setContent(hsonString);
-                    htmlOutput.setContent(htmlString);
-                    nodeOutput.setContent(nodeString);
+                    // // Update UI
+                    // dataInput.setAttr('class', `valid-${format}`);
+                    // hsonOutput.setContent(hsonString);
+                    // htmlOutput.setContent(htmlString);
+                    // jsonOutput.setContent(jsonString);
                 } else {
                     // This is the 'invalid' state you wanted.
-                    jsonInput.setAttr('class', 'invalid');
+                    dataInput.setAttr('class', 'invalid');
                     hsonOutput.setContent('');
                     htmlOutput.setContent('');
-                    nodeOutput.setContent('');
+                    jsonOutput.setContent('');
                 }
             }
             // To attach the event listener, we need to get the live element
-            const liveJsonInput = jsonInput.sourceNode()
-                ? NODE_ELEMENT_MAP.get(jsonInput.sourceNode())
+            const liveJsonInput = dataInput.sourceNode()
+                ? NODE_ELEMENT_MAP.get(dataInput.sourceNode())
                 : null;
             if (liveJsonInput) {
                 liveJsonInput.addEventListener('input', updateMock);

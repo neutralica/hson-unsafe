@@ -1,5 +1,7 @@
 // sanitize-html.util.hson.ts
 
+import { _CORE } from "../types-consts/constants.types.hson.js";
+
 /**
  * sanitizes html strings to prevent potential cross-site scripting (XSS) attacks
  *
@@ -11,17 +13,23 @@
 
 export function normalize_html($input: string | Element): string {
    /* 1) wrap in root so unbalanced tags get closed */
-   const wrapped = `<root>${$input}</root>`;
+   const wrapped = `<${_CORE}>${$input}</${_CORE}>`;
 
-   /* 2) parse as HTML (forgiving) */
+   /* 2) parse as HTML */
    const doc = new DOMParser().parseFromString(wrapped, 'text/html');
+   console.log(doc);
+   const dataCore = doc.documentElement.querySelector(_CORE);
+   if (!dataCore) {
+      console.error('no _CORE');
+      return '[ERROR: NO _CORE!!]';
+   }
 
    /* 3) serialize back to XML (self-closing where possible, proper nesting)
       XMLSerializer will auto-close tags and quote attributes */
-   const xml = new XMLSerializer().serializeToString(doc.documentElement);
+   const xml = new XMLSerializer().serializeToString(dataCore);
 
    /* 4) strip off artificial <root> wrapper */
    return xml
-      .replace(/^<root>/, '')
-      .replace(/<\/root>$/, '');
+      .replace(/^<_CORE>/, '')            /* REMEMBER TO CHANGE THESE TOO */
+      .replace(/<\/_CORE>$/, '');         /* WHEN YOU INEVITABLY CHANGE '_CORE' */
 }

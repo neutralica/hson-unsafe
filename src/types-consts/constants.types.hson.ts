@@ -35,13 +35,15 @@ export type FALSE_TYPE = typeof _FALSE;
 
 export const _ERROR = '_error' as const;
 
+export const _CORE = '_core' as const;
+
 /* VSN tags & some common combinations */
 export const STRING_TAG = '_str' as const;
 export const PRIM_TAG = '_prim' as const;
 export const ROOT_TAG = '_root' as const;
 export const INDEX_TAG = '_ii' as const;
 export const OBJECT_TAG = '_obj' as const;
-export const ARRAY_TAG = '_array' as const;
+export const ARRAY_TAG = '_arr' as const;
 export const ELEM_TAG = '_elem' as const;
 
 

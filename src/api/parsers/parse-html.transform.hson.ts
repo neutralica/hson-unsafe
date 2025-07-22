@@ -8,6 +8,7 @@ import { expand_void_tags } from "../../utils/expand-self-closing.utils.hson.js"
 import { is_BasicValue, is_not_string, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parse_css_attrs } from "../../utils/parse-css.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
+import { triage_parse_err } from "../../utils/triage-parser-err.utils.hson.js";
 
 
 
@@ -17,8 +18,15 @@ const $log = _VERBOSE
     ? console.log
     : () => { };
 
+/* parser error handling */
+let _STRICT = true;
+const PARSER_ERR = (err: string) => triage_parse_err(err, _STRICT);
 
-export function parse_html($input: string | Element): HsonNode {
+
+export function parse_html(
+    $input: string | Element,
+    { strict }: { strict: boolean } = { strict: true }
+): HsonNode {
     let inputElement: Element;
     if (_VERBOSE) {
         console.groupCollapsed('--->  parsing html');
@@ -45,12 +53,12 @@ export function parse_html($input: string | Element): HsonNode {
         }
         if (parseError) {
             console.error("XML Parsing Error:", parseError.textContent);
-            throw new Error(`Failed to parse input HTML/XML: ${parseError.textContent}`);
+            triage_parse_err(`Failed to parse input HTML/XML: ${parseError.textContent}`, true);
         }
         if (!parsedXML.documentElement) {
             /* for cases where parsing might result in no documentElement (e.g., empty string after processing) */
-            console.warn("HTML string resulted in no documentElement after parsing; Returning _root");
-            return NEW_NODE({ tag: ROOT_TAG, content: ['[ERROR-no content from xml parse]'] });
+            triage_parse_err("HTML string resulted in no documentElement after parsing; Returning _root", true);
+            
         }
         inputElement = parsedXML.documentElement;
     } else {
@@ -172,7 +180,7 @@ function convert($el: Element): HsonNode {
         return NEW_NODE({ tag: ARRAY_TAG, content: childNodes });
     } else if (tagLower === ELEM_TAG) {
         /* _elem should not be wrapped but should disappear back into the HTML */
-        console.error('_elem tag found in html')
+       PARSER_ERR('_elem tag found in html')
         return NEW_NODE({ tag: ELEM_TAG, content: childNodes });
     }
 

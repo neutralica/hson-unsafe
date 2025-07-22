@@ -50,41 +50,25 @@ export function is_void(content: NodeContent) {
   return (content.length === 0);
 }
 
+
 /**
- * Checks if a string is valid, parsable JSON.
+ * checks if a string is a valid, parsable json object or array
  * @returns {boolean}
  */
 export function is_valid_json(text: string): boolean {
+  const trimmedText = text.trim();
+
+  if (!trimmedText.startsWith('{') && !trimmedText.startsWith('[')) {
+    return false;
+  }
+
   try {
-    JSON.parse(text);
+    JSON.parse(trimmedText);
+    console.log("true!")
     return true;
   } catch (e) {
     return false;
   }
-}
-
-// --- new helper function to check for balanced delimiters ---
-function areDelimitersBalanced(text: string): boolean {
-  const stack: string[] = [];
-  const map: { [key: string]: string } = {
-    '(': ')',
-    '[': ']',
-    '{': '}',
-    '«': '»',
-  };
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    if (map[char]) {
-      stack.push(char);
-    } else if (Object.values(map).includes(char)) {
-      const lastOpen = stack.pop();
-
-      if (!lastOpen || map[lastOpen] !== char) {
-        return false;
-      }
-    }
-  }
-  return stack.length === 0;
 }
 
 /**
@@ -92,39 +76,29 @@ function areDelimitersBalanced(text: string): boolean {
  * @returns {boolean}
  */
 export function is_valid_hson(text: string): boolean {
+  if (!text.includes('<')) { return false; }
+
+  // if (
+  //   !text.includes('<') &&
+  //   isNaN(Number(text)) &&
+  //   !['true', 'false', 'null'].includes(text.trim()) &&
+  //   !text.trim().startsWith('"')
+  // ) {
+  //   return false;
+  // }
+  
   try {
-    // 1. quick sanity check: must contain tag-like structures if not a simple primitive
-    if (!text.includes('<') && isNaN(Number(text)) && !['true', 'false', 'null'].includes(text) && !text.startsWith('"')) {
-        return false;
-    }
     
-    // 2. check for balanced brackets and guillemets
-    if (!areDelimitersBalanced(text)) {
-      return false;
-    }
-
-    // 3. leverage close_tag_lookahead (your idea)
-    // find the first block and ensure it closes properly
-    const lines = text.split('\n');
-    const firstTagIndex = lines.findIndex(line => line.trim().startsWith('<'));
-
-    if (firstTagIndex !== -1) {
-      const line = lines[firstTagIndex].trim();
-      // extract tag name for the lookahead function
-      const tagName = line.substring(1).split(/[\s>]/)[0];
-      close_tag_lookahead(lines, firstTagIndex, tagName);
-    }
-
-    // 4. if all else passes, do a final full parse
-    const tokens = tokenize_hson(text);
+    const tokens = tokenize_hson(text, 0);
     parse_tokens(tokens);
-
-    return true; // if we get here without any errors, it's valid
+    
+    return true;
   } catch (e) {
-    // if any step above throws an error, it's invalid
+    
     return false;
   }
 }
+
 /**
  * checks if a string contains html-like tag structures
  * this is a heuristic, not a full validation
@@ -133,5 +107,10 @@ export function is_valid_hson(text: string): boolean {
 export function is_valid_html(text: string): boolean {
   // a simple regex to check for the presence of <tag> or </tag>
   // this is enough to distinguish it from plain text for our purposes
+  
+  if (!text.includes('<') || !text.includes('>')|| !text.includes('/')) {
+    return false;
+  }
+
   return /<[a-z][\s\S]*>/i.test(text);
 }

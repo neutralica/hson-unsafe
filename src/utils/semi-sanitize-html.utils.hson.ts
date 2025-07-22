@@ -25,6 +25,7 @@ export function sanitize_html($htmlString: string): string {
     /* remove javascript: from href attributes */
     sanitized = sanitized.replace(/href="javascript:/gi, 'href="');
   
+    console.log('[ semi_sanitize_html() ]: returning sanitized html:\n ', sanitized);
     /*  pass to normalizer for structural cleanup */
     return normalize_html(sanitized);
   }

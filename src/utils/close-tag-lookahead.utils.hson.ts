@@ -40,7 +40,7 @@ export function close_tag_lookahead(
 
         /* --- check for structural elements on the current line --- */
 
-        /* 1. check for closures if when depth is 0 */
+        /* 1. check for closures when depth is 0 */
         if (depth === 0) {
             if (trimLine === "/>") {
                 $log(`[closeTagLookahead] <${$openTag}> (L${$openIndex + 1}) closes with '/>' at L${i + 1}; wrapper is _ELEM`);
@@ -114,7 +114,7 @@ export function close_tag_lookahead(
 /**
  * helper to analyze if a tag is a block opener or self-closes on the same line
  *  (this encapsulates parts of step F in parse_token)
- * @returns { opensBLOCK: boolean, new_position: number (position after this tag declaration) }
+ * @returns { opensBlock: boolean, newPos: number (position after this tag declaration) }
  */
 function analyze_open_tag($line: string, $startIndex: number): { opensBlock: boolean, newPos: number } {
     /* still somewhat rough & fragile-seeming */
