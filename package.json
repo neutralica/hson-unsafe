@@ -4,8 +4,8 @@
   "description": "Hypertext Structured Object Notation pre-alpha demo",
   "author": "neutralica @ terminal_gothic",
   "license": "Parity-7.0.0",
-    "main": "dist/api/api.hson.js",
-  "types": "dist/api/api.hson.d.ts",
+    "main": "dist/api/hson.js",
+  "types": "dist/api/hson.d.ts",
   "keywords": [
     "html",
     "json",
