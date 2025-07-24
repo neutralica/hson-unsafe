@@ -1,5 +1,5 @@
-import { construct_tree } from "./constructors/construct-tree.api.hson.js";
-import { construct_source_1 } from "./constructors/constructor-1-source.api.hson.js";
+import { construct_tree } from "./api/constructors/construct-tree.api.hson";
+import { construct_source_1 } from "./api/constructors/constructor-1-source.api.hson.js";
 
 /** import hson 
  * current methods: 
