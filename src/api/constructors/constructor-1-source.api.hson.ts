@@ -1,5 +1,5 @@
 
-import { JSONShape } from "../../types-consts/base.types.hson.js";
+import { JSONShape, HsonNode } from "../../types-consts/base.types.hson.js";
 import { FrameConstructor, OutputConstructor_2, SourceConstructor_1 } from "../../types-consts/constructors.types.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
@@ -88,6 +88,17 @@ export function construct_source_1(
       const frame: FrameConstructor = { input: $input, tokens, node };
       return construct_output_2(frame);
     },
+
+      /**
+     * initializes the pipeline from an existing HsonNode.
+     * @param {HsonNode} $node the hson node structure.
+     * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
+     */
+      fromNode($node: HsonNode): OutputConstructor_2 {
+        const frame: FrameConstructor = { input: JSON.stringify($node), node: $node };
+        return construct_output_2(frame);
+    },
+      
 
     queryDOM(selector: string): OutputConstructor_2 {
       const element = document.querySelector(selector);

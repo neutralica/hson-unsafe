@@ -26,6 +26,7 @@ export interface SourceConstructor_1 {
     fromHSON(input: string): OutputConstructor_2;
     fromJSON(input: string | JSONShape): OutputConstructor_2;
     fromHTML(input: string | HTMLElement): OutputConstructor_2;
+    fromNode(input: HsonNode): OutputConstructor_2;
     queryDOM(selector: string): OutputConstructor_2;
     queryBody(): OutputConstructor_2;
 }
@@ -61,7 +62,7 @@ export interface FrameOptions {
 export interface RenderConstructor_4 {
     serialize(): string;
     parse(): any;
-    asTree(): any;
+    asBranch(): any;
 }
 
 export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];

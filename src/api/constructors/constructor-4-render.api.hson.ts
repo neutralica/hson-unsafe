@@ -72,8 +72,9 @@ export function construct_render_4($context: FrameRender): RenderConstructor_4 {
          * returns the structure as a "liveTree" proxy permitting 
          *  intuitive dot-notation access & hiding VSN clutter
          */
-        asTree(): any {
-            return hson.transform.fromHSON
+        // TODO--this is not correct I don't think; should invoke the newer tree methods
+        asBranch(): any {
+            // return hson.transform.fromHSON
             return create_proxy(frame.node);
         }
     };

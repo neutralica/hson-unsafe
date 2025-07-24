@@ -4,8 +4,6 @@
   "description": "Hypertext Structured Object Notation // pre-alpha demo",
   "author": "neutralica @ terminal_gothic",
   "license": "Parity-7.0.0",
-    "main": "dist/hson.js",
-  "types": "dist/hson.d.ts",
   "keywords": [
     "html",
     "json",
@@ -16,6 +14,12 @@
     "glue format"
   ],
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "clean": "echo 'Cleaning dist…' && rm -rf dist",
     "build:ts": "tsc --project tsconfig.json",
