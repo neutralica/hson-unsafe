@@ -32,7 +32,7 @@ export function parse_html($input: string | Element): HsonNode {
         const self = expand_void_tags(ents);
         const parser = new DOMParser();
 
-        /*  try parsing the string as-is. */
+        /*  try parsing the string as-is */
         let parsedXML = parser.parseFromString(self, 'application/xml');
         let parseError = parsedXML.querySelector('parsererror');
 
