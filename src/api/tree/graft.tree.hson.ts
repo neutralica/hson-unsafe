@@ -12,7 +12,7 @@ import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.
 
 /* debug log */
 let _VERBOSE = true;
-const $log = _VERBOSE
+const _log = _VERBOSE
   ? console.log
   : () => { };
 
@@ -46,28 +46,38 @@ export function graft(
 
   /* check for  */
   const unwrappest = (node: HsonNode) => {
+    let contentNodes: HsonNode[] = [];
+
     if (node.tag === ROOT_TAG) {
-      const childNode = node.content[0];
-      if (
-        !is_Node(childNode) ||
-        (childNode.tag !== ELEM_TAG)) {
-        throw_transform_err('[ERR: graft()] \n -> malformed _root node', 'graft', node);
+      const childNode = node.content?.[0];
+      if (!is_Node(childNode) || childNode.tag !== ELEM_TAG) {
+        throw_transform_err('Malformed _root node', 'graft.unwrap', node);
       }
-      return childNode.content
+      contentNodes = childNode.content?.filter(is_Node) || [];
+    } else {
+      contentNodes = [node];
     }
-    return [node];
+    
+    // Enforce the "single node" rule inside the helper
+    if (contentNodes.length !== 1) {
+      throw_transform_err(
+        `[ERR: graft()]: multiple (${contentNodes.length}) nodes passed to graft(); wrap multiple elements`,
+        'graft',
+        contentNodes
+      );
+    }
+
+    return contentNodes[0];
   }
+
 
   const nodesToRender = unwrappest(rootNode);
 
-  for (const node of nodesToRender) {
-    newDOMFragment.appendChild(create_live_tree(node));
-  }
-
+  newDOMFragment.appendChild(create_live_tree(nodesToRender));
   /* replace the DOM element with the new liveTree-controlled model */
   targetElement.innerHTML = "";
   targetElement.appendChild(newDOMFragment);
-  if (!is_Node(nodesToRender)) throw new Error('[ERR: graft()]: nodesToRender is not a node? somehow?')
+
   /* return queryable liveTree */
   return new LiveTree(nodesToRender);
 }
