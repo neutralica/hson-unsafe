@@ -14,6 +14,7 @@ export function coerce(value: string): BasicValue {
         return '';
     }
 
+    
     /* 1. check for a quoted string literal first */
     if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
         try {
