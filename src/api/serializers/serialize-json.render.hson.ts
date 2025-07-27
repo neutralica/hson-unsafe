@@ -1,32 +1,37 @@
+import { _ } from "ajv";
 import { HsonNode, JSONShape, JSONObject, BasicValue, HsonAttrs, HsonFlags } from "../../types-consts/base.types.hson.js";
 import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, PRIM_TAG, STRING_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/constants.types.hson.js";
 import { is_indexed, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 
+
 /* debug log */
-let VERBOSE = false;
-const $log = VERBOSE
+let _VERBOSE = false;
+const $log = _VERBOSE
     ? console.log
     : () => { };
 
-
 export function serialize_json($node: HsonNode): string {
+    if (_VERBOSE) {
         console.groupCollapsed('---> serializing json');
         console.log('input node:');
         console.log(make_string($node));
         console.groupEnd();
+    }
     const serializedJson = jsonFromNode($node);
 
     try {
         const json = make_string({ [ROOT_TAG]: serializedJson });
-        console.groupCollapsed('returning json:');
-        console.log(json);
-        console.groupEnd();
+        if (_VERBOSE) {
+            console.groupCollapsed('returning json:');
+            console.log(json);
+            console.groupEnd();
+        }
         return json;
     } catch (e: any) {
         console.error("[node_to_json_string] Error during final JSON.stringify:", e.message);
         console.error("[node_to_json_string] Structure that failed to stringify:", serializedJson);
-        return `"[JSON_STRINGIFY_ERROR]"`; 
+        return `"[JSON_STRINGIFY_ERROR]"`;
     }
 }
 
@@ -57,7 +62,7 @@ function jsonFromNode($node: HsonNode): JSONShape {
         case ROOT_TAG: {
             let root: JSONShape | null = null;
             $log(`  <_root>: processing content`);
-            root = jsonFromNode($node.content[0] as HsonNode); 
+            root = jsonFromNode($node.content[0] as HsonNode);
             if (root === null) throw new Error('_root is null')
             return root;
         }
@@ -141,7 +146,7 @@ function jsonFromNode($node: HsonNode): JSONShape {
             for (const itemNode of ($node.content)) {
                 /* recursively convert each item node in the _elem to its JSON equivalent */
                 $log('recursing: ', itemNode)
-                const jsonItem = jsonFromNode(itemNode as HsonNode); 
+                const jsonItem = jsonFromNode(itemNode as HsonNode);
                 elemItems.push(jsonItem);
                 $log('pushing list item to _elem:')
                 $log(jsonItem)
@@ -149,7 +154,7 @@ function jsonFromNode($node: HsonNode): JSONShape {
             $log('returning list items:', elemItems)
             return { [ELEM_TAG]: elemItems };
         }
-            
+
         case INDEX_TAG: /* _ii nodes within an array */
             $log('node.tag is index tag');
             /*  these are _array content wrappers; their JSON form is the JSON form of their single content item */
@@ -170,14 +175,14 @@ function jsonFromNode($node: HsonNode): JSONShape {
                 const recursed = jsonFromNode($node.content[0] as HsonNode);
                 stdJson = { [$node.tag]: recursed };
             } else if ($node.content && $node.content.length > 1) {
-               /*  This implies a cluster of values if a standard tag has multiple content VSNs
-                   (should be rare or never) */
+                /*  This implies a cluster of values if a standard tag has multiple content VSNs
+                    (should be rare or never) */
                 console.error(`    <${$node.tag}> has multiple content items (non-idiomatically)\nmapping to _array.`);
                 stdJson = { [$node.tag]: ($node.content as HsonNode[]).map(item => jsonFromNode(item)) };
             } else { /*  empty content, value remains [] */
                 stdJson = { [$node.tag]: '' };
-            } 
-            
+            }
+
             // (this does nothing??)
             if (Array.isArray(stdJson)) {
                 $log('item is array  for', $node.tag)
@@ -193,7 +198,7 @@ function jsonFromNode($node: HsonNode): JSONShape {
                 if (hasATTRS) metaForJson.attrs = { ...meta!.attrs };
                 if (hasFLAGS) metaForJson.flags = [...meta!.flags];
                 stdJson._meta = { ...metaForJson };
-            } 
+            }
             return stdJson;
         }
     }

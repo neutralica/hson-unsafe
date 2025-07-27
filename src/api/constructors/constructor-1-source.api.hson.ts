@@ -12,8 +12,8 @@ import { construct_output_2 } from "./constructor-2-output.api.hson.js";
 
 
 /* debug log */
-let VERBOSE = false;
-const $log = VERBOSE
+let _VERBOSE = false;
+const $log = _VERBOSE
   ? console.log
   : () => { };
 
@@ -43,19 +43,20 @@ export function construct_source_1(
     ): OutputConstructor_2 {
       let content = typeof $input === 'string' ? $input : $input.outerHTML;
       let meta: Record<string, unknown> = {};
-      if (VERBOSE) {
+      if (_VERBOSE) {
         console.groupCollapsed('html (within constructor 1)')
         console.log($input)
         console.groupEnd();
       }
-      if ($options.sanitize) {
-        content = sanitize_html(content);
-        meta.sanitized = true;
-      }
+      // if ($options.sanitize) {
+      //   content = sanitize_html(content);
+      //   console.log('content from sanitizer: ', content);
+      //   meta.sanitized = true;
+      // }
 
       const node = parse_html(content);
       const frame: FrameConstructor = { input: content, node, meta };
-      if (VERBOSE) {
+      if (_VERBOSE) {
         console.groupCollapsed('frame')
         console.log(make_string(frame))
         console.groupEnd();
