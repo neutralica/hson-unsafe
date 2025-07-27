@@ -32,6 +32,7 @@ export function graft(
   $options: { unsafe: boolean } = { unsafe: false }
 ): LiveTree {
   /* get target element or document.body if no arg */
+  // WARN BUG default alert - do we want to default to document.body? 
   const targetElement = $element || document.body;
   /* copy current HTML content of target */
   const sourceHTML = targetElement.innerHTML;
@@ -40,7 +41,7 @@ export function graft(
   const rootNode = parse_html(cleanHTML);
 
   /* recursively render the HsonNode tree back into live DOM elements,
-  then populate the `nodeElementMap`, linking the two */
+      then populate the `nodeElementMap`, linking the two */
   const newDOMFragment = document.createDocumentFragment();
 
   /* check for  */
@@ -66,7 +67,7 @@ export function graft(
   /* replace the DOM element with the new liveTree-controlled model */
   targetElement.innerHTML = "";
   targetElement.appendChild(newDOMFragment);
-
+  if (!is_Node(nodesToRender)) throw new Error('[ERR: graft()]: nodesToRender is not a node? somehow?')
   /* return queryable liveTree */
-  return new LiveTree(rootNode);
+  return new LiveTree(nodesToRender);
 }
