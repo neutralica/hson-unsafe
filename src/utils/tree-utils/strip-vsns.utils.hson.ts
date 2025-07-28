@@ -1,6 +1,6 @@
 import { HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { STRING_TAG, PRIM_TAG, VSNContainerTags, INDEX_TAG, ROOT_TAG } from "../../types-consts/constants.types.hson.js";
-import { is_BasicValue, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { STRING_TAG, PRIM_TAG, VSNContainerTags, INDEX_TAG, ROOT_TAG } from "../../types-consts/base.const.hson.js";
+import { is_BasicValue, is_Node } from "../is-helpers.utils.hson.js";
 
 /**
  * recursive function that strips off VSN clutter and returns core data in 

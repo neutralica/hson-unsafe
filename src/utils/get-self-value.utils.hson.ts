@@ -1,7 +1,7 @@
 // get-self-value.utils.hson.ts
 
 import { HsonNode, BasicValue } from "../types-consts/base.types.hson.js";
-import { STRING_TAG, PRIM_TAG, _FALSE, FALSE_TYPE, ARRAY_TAG, ELEM_TAG, ELEM_OBJ_ARR } from "../types-consts/constants.types.hson.js";
+import { STRING_TAG, PRIM_TAG, _FALSE, FALSE_TYPE, ARRAY_TAG, ELEM_TAG, ELEM_OBJ_ARR } from "../types-consts/base.const.hson.js";
 import { is_Node } from "./is-helpers.utils.hson.js";
 
 /* debug log */

@@ -1,5 +1,5 @@
 import { BasicValue, HsonNode } from "../../types-consts/base.types.hson.js";
-import { BLANK_META, ELEM_TAG, STRING_TAG } from "../../types-consts/constants.types.hson.js";
+import { BLANK_META, ELEM_TAG, STRING_TAG } from "../../types-consts/base.const.hson.js";
 import { escape_html } from "../../utils/escape-html.utils.hson.js";
 import { is_BasicValue, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";

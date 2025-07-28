@@ -1,6 +1,6 @@
 // close-tag-lookahead.hson.util.ts
 
-import { ELEM_OBJ_ARR, ELEM_TAG, ElemObjType, OBJECT_TAG } from "../types-consts/constants.types.hson.js";
+import { ELEM_OBJ_ARR, ELEM_TAG, ElemObjType, OBJECT_TAG } from "../types-consts/base.const.hson.js";
 
 
 const VERBOSE = false;

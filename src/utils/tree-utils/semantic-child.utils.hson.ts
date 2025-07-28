@@ -1,5 +1,5 @@
 import { HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { ELEM_TAG, OBJECT_TAG } from "../../types-consts/constants.types.hson.js";
+import { ELEM_TAG, OBJECT_TAG } from "../../types-consts/base.const.hson.js";
 import { is_Node } from "../is-helpers.utils.hson.js";
 
 export function getSemanticChildren(node: HsonNode): (HsonNode | BasicValue)[] {

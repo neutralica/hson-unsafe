@@ -1,4 +1,4 @@
-import { TokenΔ } from "./constants.types.hson.js";
+import { TokenΔ } from "./base.const.hson.js";
 import { HsonAttrs as HsonAttrs, HsonFlags, HsonNode, BasicValue } from "./base.types.hson.js";
 
 

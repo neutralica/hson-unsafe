@@ -1,8 +1,12 @@
 import { HsonAttrs, HsonFlags, HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../types-consts/constants.types.hson.js";
+import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../types-consts/base.const.hson.js";
 import { is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parseSelector } from "../../utils/tree-utils/parse-selector.utils.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
+import { DatasetManager } from "./tree-methods/dataset-manager.tree.hson.js";
+import StyleManager from "./tree-methods/style-manager.utils.hson.js";
+import { empty } from "./tree-methods/empty.tree.utils.hson.js";
+import { removeChild } from "./tree-methods/remove-child.tree.utils.hson.js";
 
 /*  defines the shape of the query object for find() and findAll() */
 export interface HsonQuery {
@@ -13,8 +17,14 @@ export interface HsonQuery {
 }
 
 export class LiveTree {
-  /*  holds an array of HsonNodes */
   private selectedNodes: HsonNode[];
+
+  // NEW: Lazily instantiated managers for style and dataset
+  private styleManager: StyleManager | null = null;
+  private datasetManager: DatasetManager | null = null;
+  public empty = empty
+  public removeChild = removeChild;
+
 
   constructor($nodes: HsonNode | HsonNode[] | LiveTree) {
     if ($nodes instanceof LiveTree) {
@@ -24,24 +34,37 @@ export class LiveTree {
     }
   }
 
-  /* --- FINDER METHODS --- */
 
   /**
-   * searches descendants for the first element matching the query
-   * @returns{LiveTree} a new HsonTree instance wrapping the found node OR an empty HsonTree
+   * access the style manager for the current selection
+   * allows for `tree.style.set('color', 'red')` insted of 
+   * passing long strings
    */
+  get style(): StyleManager {
+    if (!this.styleManager) {
+      this.styleManager = new StyleManager(this);
+    }
+    return this.styleManager;
+  }
+
+  /**
+   * accesses the dataset manager for the current selection
+   * allows for `tree.dataset.set('userId', '123')`instead of whole-string
+   */
+  get dataset(): DatasetManager {
+    if (!this.datasetManager) {
+      this.datasetManager = new DatasetManager(this);
+    }
+    return this.datasetManager;
+  }
+
+  /*  -vvv- finder methods -vvv- */
 
   find($query: HsonQuery | string): LiveTree {
     const queryObject = typeof $query === 'string' ? parseSelector($query) : $query;
     const foundNode = this.search(this.selectedNodes, queryObject, { findFirst: true });
-    if (!foundNode) console.warn('no node found; returning empty');
     return new LiveTree(foundNode);
   }
-
-  /**
-   * searches for all descendant elements matching the query
-   * @returns {LiveTree} a new HsonTree instance containing all found nodes
-   */
 
   findAll($query: HsonQuery | string): LiveTree {
     const queryObject = typeof $query === 'string' ? parseSelector($query) : $query;
@@ -49,49 +72,18 @@ export class LiveTree {
     return new LiveTree(foundNodes);
   }
 
-  /**
-   * gets an attribute or flag value from the first node in the selection
-   * reads directly from the HsonNode data model as the source of truth
-   *    (the search priority is: flags > attributes)
-   *
-   * @param $attr the attribute or flag to retrieve
-   * @returns {LiveTree} the attribute's value (`true` if the name exists, `null` if not found)
-   */
-
-
-  getAttr($attr: string): BasicValue | undefined {
-    if (this.selectedNodes.length === 0) {
-      return undefined;
-    }
-
-    const node = this.selectedNodes[0];
-
-    if (!node?._meta) {
-      return undefined;
-    }
-
-    /* ***check flags first*** */
-    if (node._meta.flags && node._meta.flags.includes($attr)) {
-      return true;
-    }
-
-    /* then check attrs */
-    if (node._meta.attrs && $attr in node._meta.attrs) {
-      return node._meta.attrs[$attr];
-    }
-
-    return undefined;
+  at(index: number): LiveTree {
+    const node = this.selectedNodes[index];
+    return new LiveTree(node || []);
   }
 
-  /* --- ACTION METHODS --- */
+  /*  -vvv- action/setter methods -vvv- */
 
   setContent($content: string): this {
     for (const node of this.selectedNodes) {
-      /* create the simplest possible content structure */
       const textNode = NEW_NODE({ tag: STRING_TAG, content: [$content] });
       node.content = [textNode];
 
-      /* sync with DOM */
       const liveElement = NODE_ELEMENT_MAP.get(node);
       if (liveElement) {
         liveElement.textContent = $content;
@@ -100,87 +92,36 @@ export class LiveTree {
     return this;
   }
 
-  /**
-     * sets an attr or a flag on all currently selected nodes. 
-     *   dispatches behavior based on the value provided, ensuring
-     *   that a given name is only a flag or an attr at one time.
-     *
-     * @param $name name of the attr or flag.
-     * @param $value value to set.
-     * - `string`: if `value === name`, it's treated as a flag. Otherwise, it's a standard attribute
-     * - `true`: explicitly sets a flag
-     * - `false` or `undefined`: Removes the name from both attributes and flags.
-     * @returns The current HsonTree instance to allow chaining.
-     */
   setAttr($name: string, $value: string | boolean | null): this {
     for (const node of this.selectedNodes) {
-      /* _meta setup */
       if (!node._meta) node._meta = BLANK_META;
       if (!node._meta.attrs) node._meta.attrs = {};
       if (!node._meta.flags) node._meta.flags = [];
-
       const liveElement = NODE_ELEMENT_MAP.get(node);
 
-      /* 1: removal: if value is false or null, remove the name from both attrs and flags */
       if ($value === false || $value === null) {
         delete node._meta.attrs[$name];
         node._meta.flags = node._meta.flags.filter(f => f !== $name);
-
-        /* sync DOM */
         liveElement?.removeAttribute($name);
-      }
-
-      /* 2: set flag */
-      else if ($value === true || $value === $name) {
-        /* ensure no duplication: remove from attributes if it exists there */
+      } else if ($value === true || $value === $name) {
         delete node._meta.attrs[$name];
-        /* add to flags */
-        if (!node._meta.flags.includes($name)) {
-          node._meta.flags.push($name);
-        }
-
-        /* sync DOM (the HTML convention for a boolean attribute is an empty string) */
+        if (!node._meta.flags.includes($name)) node._meta.flags.push($name);
         liveElement?.setAttribute($name, '');
-      }
-
-      /* 3: set attribute (standard k:v) */
-      else {
-        /* ensure no duplication: remove from flags if it exists there */
+      } else {
         node._meta.flags = node._meta.flags.filter(f => f !== $name);
-
         node._meta.attrs[$name] = $value;
-
-        /* sync DOM */
-        liveElement?.setAttribute($name, $value);
+        liveElement?.setAttribute($name, String($value));
       }
     }
-    return this; /* enable chaining */
+    return this;
   }
 
-  /**
-   * convenience method to remove an attribute or flag
-   * equivalent to `setAttr(name, null)`
-   * @param $name The name of the attribute or flag to remove
-   * @returns {LiveTree} The current HsonTree instance to allow chaining
-   */
   removeAttr($name: string): this {
     return this.setAttr($name, null);
   }
 
-
-  /**
-   * parses the given content, converts it to HsonNodes, and appends it
-   * as a child to each node in the current selection
-   *
-   * @param $content a partial HsonNode object, a raw string, or another HsonTree instance
-   * @returns {LiveTree} the current HsonTree instance to allow for chaining
-   */
-
-  // TODO-- this should maybe be BasicValue as the passed arg
   append($content: Partial<HsonNode> | string | LiveTree): this {
-    /* normalize input */
     let nodesToAppend: HsonNode[];
-
     if (typeof $content === 'string') {
       nodesToAppend = [NEW_NODE({ tag: STRING_TAG, content: [$content] })];
     } else if ($content instanceof LiveTree) {
@@ -188,40 +129,22 @@ export class LiveTree {
     } else if (is_Node($content)) {
       nodesToAppend = [$content];
     } else {
-      /* fallback for other primitives? */
-      // (feels wrong - 12JUL2025)
       return this;
     }
 
-
-
-    /* applies the append operation to every node in the current selection */
     for (const targetNode of this.selectedNodes) {
-      if (!targetNode.content) {
-        targetNode.content = [];
-      }
-
-      /* 3. find or create the `_elem` VSN wrapper for child nodes */
+      if (!targetNode.content) targetNode.content = [];
       let containerNode: HsonNode;
       const firstChild = targetNode.content[0];
-
       if (is_Node(firstChild) && firstChild.tag === ELEM_TAG) {
-        /* `_elem` wrapper already exists. Use it. */
         containerNode = firstChild;
       } else {
-        /* no `_elem` wrapper found; create one and wrap existing content */
         containerNode = NEW_NODE({ tag: ELEM_TAG, content: [...targetNode.content] });
         targetNode.content = [containerNode];
       }
-
-      /* modify the in-memory model by adding the new nodes to the container */
       containerNode.content.push(...nodesToAppend);
-
-      /* sync with the DOM by re-rendering the parent's content */
       const liveElement = NODE_ELEMENT_MAP.get(targetNode);
       if (liveElement) {
-
-        /* clear the existing DOM content & re-render all children from the updated model */
         liveElement.innerHTML = '';
         if (containerNode.content) {
           for (const childToRender of containerNode.content) {
@@ -230,70 +153,68 @@ export class LiveTree {
         }
       }
     }
-    return this; /* enable chaining. */
+    return this;
+  }
+
+  /**
+   * removes all selected nodes from the DOM and the data model.
+   */
+  remove(): this {
+    for (const node of this.selectedNodes) {
+      /* Remove from the DOM */
+      const liveElement = NODE_ELEMENT_MAP.get(node);
+      liveElement?.remove();
+      /* this is fragile */
+      NODE_ELEMENT_MAP.delete(node);
+    }
+    /*  Clear the current selection  */
+    this.selectedNodes = [];
+    return this;
   }
 
 
-  /* --- READER METHODS --- */
+  /*  -vvv- reader methods -vvv- */
 
-  /**
-   * gets the text content of the first node in the current selection.
-   */
+  getAttr($attr: string): BasicValue | undefined {
+    if (this.selectedNodes.length === 0) return undefined;
+    const node = this.selectedNodes[0];
+    if (!node?._meta) return undefined;
+    if (node._meta.flags && node._meta.flags.includes($attr)) return true;
+    if (node._meta.attrs && $attr in node._meta.attrs) return node._meta.attrs[$attr];
+    return undefined;
+  }
 
   getFirstText(): string {
     if (this.selectedNodes.length === 0) return '';
-
     const node = this.selectedNodes[0];
     if (!node) return '';
-
     const liveElement = NODE_ELEMENT_MAP.get(node);
-
-    const text = liveElement?.textContent ?? '';
-
-    return text;
+    return liveElement?.textContent ?? '';
   }
 
-  /**
-   * gets the number of nodes in the current selection.
-   */
   count(): number {
     return this.selectedNodes.length;
   }
 
-
-  /**
-   * gets the `value` property from the first selected form element
-   * (like <input>, <textarea>, <select>).
-   * @returns The value of the form element as a string.
-   */
-
-  // ERR BUG TODO TASK this should return a BasicValue
   getValue(): string {
     if (this.selectedNodes.length === 0) return '';
-    const node = this.selectedNodes[0];
-    if (!node) return '';
-
-    /* live DOM element linked to this HsonNode */
-    const liveElement = NODE_ELEMENT_MAP.get(node);
-
-    /* for form elements, we read the .value property, not textContent.
-        (casting is required to access the .value property) */
+    const liveElement = NODE_ELEMENT_MAP.get(this.selectedNodes[0]);
     return (liveElement as HTMLInputElement | HTMLTextAreaElement)?.value ?? '';
   }
 
-  /**
-   * returns the raw, underlying HsonNode for the first item in the selection
-   * mainly for advanced debugging or testing the state of the data model directly
-   *
-   * @returns the raw HsonNode, or undefined if the selection is empty
-   */
+  asDomElement(): HTMLElement | null {
+    if (this.selectedNodes.length === 0) return null;
+    const element = NODE_ELEMENT_MAP.get(this.selectedNodes[0]);
+    return element || null;
+  }
 
-  // 12JUL2025 changed 'null' return to 'undefined'
-  sourceNode(): HsonNode | undefined {
-    if (this.selectedNodes.length === 0) {
-      return undefined;
-    }
-    return this.selectedNodes[0];
+  /**
+   * Returns the raw HsonNode(s) for debugging.
+   * @param all - If true, returns the entire array of selected nodes. Otherwise, returns the first.
+   */
+  sourceNode(all: boolean = false): HsonNode | HsonNode[] | undefined {
+    if (this.selectedNodes.length === 0) return undefined;
+    return all ? this.selectedNodes : this.selectedNodes[0];
   }
 
   /**
@@ -343,30 +264,5 @@ export class LiveTree {
   }
 
 
-  /**
-   * reduces the set of matched nodes to the one at the specified index
-   * @param index The (zero-based) index of the element to retrieve
-   * @returns {LiveTree} new HsonTree instance containing only the element at the specified index, or 
-   *   an empty HsonTree if the index is out of bounds
-   */
-  at(index: number): LiveTree {
-    const node = this.selectedNodes[index];
-    /* if a node exists at that index, wrap it in an HsonTree
-       otherwise return a new, empty tree. */
-    return new LiveTree(node || []);
-  }
-
-  /**
-     * returns the underlying in-DOM HTMLElement for the first selected node
-     * useful for attaching event listeners or direct dom manipulation
-     */
-  domElement(): HTMLElement | null {
-    if (this.selectedNodes.length === 0) {
-      return null;
-    }
-
-    const element = NODE_ELEMENT_MAP.get(this.selectedNodes[0]);
-    return element || null;
-  }
 
 }

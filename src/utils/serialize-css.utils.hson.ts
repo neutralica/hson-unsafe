@@ -5,7 +5,7 @@
  * @param {string} $str "backgroundColor"
  * @returns {string} "background-color"
  */
-function camelToKebab($str: string): string {
+export function camelToKebab($str: string): string {
     // find all uppercase letters; replace them with a hyphen and their lowercase version
     return $str.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
   }

@@ -1,7 +1,7 @@
 // is-helpers.hson.util.ts
 
 import { HsonNode, JSONShape, NodeContent, BasicValue } from "../types-consts/base.types.hson.js";
-import {INDEX_TAG, PRIM_TAG, STRING_TAG } from "../types-consts/constants.types.hson.js";
+import {INDEX_TAG, PRIM_TAG, STRING_TAG } from "../types-consts/base.const.hson.js";
 
 /* identifies JSON objects */
 export function is_Object(x: any): x is Record<string, any> {

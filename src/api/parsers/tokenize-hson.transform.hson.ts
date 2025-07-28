@@ -1,5 +1,5 @@
 import { HsonAttrs, HsonFlags, BasicValue } from "../../types-consts/base.types.hson.js";
-import { CREATE_TOKEN, TokenΔ, OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.types.hson.js";
+import { CREATE_TOKEN, TokenΔ, OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/base.const.hson.js";
 import { AllTokens, HSON_Token_Type } from "../../types-consts/tokens.types.hson.js";
 import { close_tag_lookahead } from "../../utils/close-tag-lookahead.utils.hson.js";
 import { coerce } from "../../utils/coerce-string.utils.hson.js";

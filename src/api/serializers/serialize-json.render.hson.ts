@@ -1,6 +1,6 @@
 import { _ } from "ajv";
 import { HsonNode, JSONShape, JSONObject, BasicValue, HsonAttrs, HsonFlags } from "../../types-consts/base.types.hson.js";
-import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, PRIM_TAG, STRING_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/constants.types.hson.js";
+import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, PRIM_TAG, STRING_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/base.const.hson.js";
 import { is_indexed, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 
