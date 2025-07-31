@@ -1,6 +1,6 @@
 // parse-json.transform.hson.ts
 
-import { JSONShape, HsonNode, BasicValue, _Meta, JSONObject } from "../../types-consts/types.hson.js";
+import { JSONShape, HsonNode, BasicValue, HsonMeta, JSONObject } from "../../types-consts/types.hson.js";
 import { PRIM_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { is_not_string, is_Object, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
 
@@ -72,7 +72,7 @@ function nodeFromJson(
             const itemStructuralTag = getTag(val);
             const itemConversion = nodeFromJson(val, itemStructuralTag);
 
-            let dataIx: _Meta = { attrs: { "data-index": String(ix) }, flags: [] };
+            let dataIx: HsonMeta = { attrs: { "data-index": String(ix) }, flags: [] };
 
             return NEW_NODE({
                 _tag: INDEX_TAG, /* <_ii> wrapper */
@@ -91,7 +91,7 @@ function nodeFromJson(
     /* catch objects */
     if ($parentTag === OBJECT_TAG) {
         const jsonObj = $srcJson as JSONObject;
-        let objMeta: _Meta | undefined = undefined;
+        let objMeta: HsonMeta | undefined = undefined;
 
         if (jsonObj._meta) {
             const sourceMeta = jsonObj._meta;
@@ -213,7 +213,7 @@ export function parse_json($jstring: string): HsonNode {
     }
 
     let jsonToProcess: JSONShape = parsedJson;
-    let finalMeta: _Meta | undefined = undefined;
+    let finalMeta: HsonMeta | undefined = undefined;
     /* check if the top-level parsed JSON is an object whose actual data content
          is nested under a VSN key (typically "_root"),
          and also check for a sibling _meta at this level */

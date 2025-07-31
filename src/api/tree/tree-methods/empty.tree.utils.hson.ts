@@ -34,14 +34,11 @@ export function empty(this: LiveTree): LiveTree {
         // 2. DOM SYNCHRONIZATION:
         const liveElement = NODE_ELEMENT_MAP.get(node);
         if (liveElement) {
-            // Add a definitive log to see the state before and after.
-            console.log(`%cBefore clearing, DOM element has ${liveElement.childNodes.length} children.`, 'color: yellow');
             
             while (liveElement.firstChild) {
                 liveElement.removeChild(liveElement.firstChild);
             }
 
-            console.log(`%cAfter clearing, DOM element has ${liveElement.childNodes.length} children.`, 'color: lightgreen');
         } else {
             console.error('FAILURE: Could not find node in NODE_ELEMENT_MAP during empty().');
         }

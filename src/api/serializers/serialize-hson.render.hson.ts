@@ -1,6 +1,6 @@
 // --- serialize-hson.hson.render.ts ---
 
-import { _Meta, HsonAttrs, HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { HsonMeta, HsonAttrs, HsonNode, BasicValue } from "../../types-consts/types.hson.js";
 import { STRING_TAG, PRIM_TAG, INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, _FALSE } from "../../types-consts/constants.hson.js";
 import { format_hson_attrs } from "../../utils/format-hson-attrs.utils.hson.js";
 import { get_self_close_value } from "../../utils/get-self-value.utils.hson.js";
@@ -17,7 +17,7 @@ const $log = _VERBOSE
     : () => { };
 
 
-function formatHsonMeta($meta: _Meta | undefined): string {
+function formatHsonMeta($meta: HsonMeta | undefined): string {
     if (!$meta) {
         return "";
     }

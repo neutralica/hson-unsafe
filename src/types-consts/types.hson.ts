@@ -11,7 +11,7 @@ export type JSONShape =
 
 
 /** represents a standard javascript object, extended with an optional _meta property */
-export type JSONObject = { [key: string]: JSONShape } & { _meta?: _Meta };
+export type JSONObject = { [key: string]: JSONShape } & { _meta?: HsonMeta };
 
 
 /**
@@ -19,13 +19,14 @@ export type JSONObject = { [key: string]: JSONShape } & { _meta?: _Meta };
  *      every format (html, json, hson) is parsed into this structure
  * @property {string} tag - the node's name (e.g., 'p', 'div') or its vsn type (e.g., '_obj', '_elem') -- corresponds to key
  * @property {NodeContent} content - array containing the node's children, which can be other hsonnodes or primitives -- corresponds to value
- * @property {_Meta} _meta - a container for attributes and flags (TODO- change to '_attrs')
+ * @property {HsonMeta} _meta - a container for attributes and flags (TODO- change to '_attrs')
  */
 //TODO - change to _tag and _content
 export interface HsonNode {
     _tag: string;
+    _attrs?: HsonAttrs
     _content: NodeContent;
-    _meta: _Meta;
+    _meta: HsonMeta;
 }
 
 /** content of an HsonNode is an array of HsonNodes or a primitive */
@@ -37,9 +38,11 @@ export type NodeContent = (HsonNode | BasicValue)[];
  * @property {HsonAttrs} attrs - an object for html-style key-value attributes
  * @property {HsonFlags} flags - an array for html-boolean flags (flag="flag")
  */
-export interface _Meta {
+export interface HsonMeta {
     flags: HsonFlags;
     attrs: HsonAttrs;
+    'data-index'?: number;
+    'data-quid'?: string;
 }
 
 
@@ -50,8 +53,8 @@ export interface _Meta {
  * @property {string} [data-index] - an optional, explicit index for items within an array.
  */
 export type HsonAttrs = {
-    'data-index'?: string;
-    'style'?: string | Record<string, string> 
+    'data-index'?: string; // deprecate
+    'style'?: string | Record<string, string> // keep
 } & Record<string, BasicValue>;
 
 /* deprecated (see above) TODO */
