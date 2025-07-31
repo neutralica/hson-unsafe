@@ -38,7 +38,7 @@ export function graft(
   const sourceHTML = targetElement.innerHTML;
   /* parse html into nodes */
   const cleanHTML = $options.unsafe ? sourceHTML : sanitize_html(sourceHTML);
-  const rootNode = parse_html(cleanHTML);
+  const rootNode: HsonNode = parse_html(cleanHTML);
 
   /* recursively render the HsonNode tree back into live DOM elements,
       then populate the `nodeElementMap`, linking the two */
@@ -48,16 +48,16 @@ export function graft(
   const unwrappest = (node: HsonNode) => {
     let contentNodes: HsonNode[] = [];
 
-    if (node.tag === ROOT_TAG) {
-      const childNode = node.content?.[0];
-      if (!is_Node(childNode) || childNode.tag !== ELEM_TAG) {
+    if (node._tag === ROOT_TAG) {
+      const childNode = node._content?.[0];
+      if (!is_Node(childNode) || childNode._tag !== ELEM_TAG) {
         throw_transform_err('Malformed _root node', 'graft.unwrap', node);
       }
-      contentNodes = childNode.content?.filter(is_Node) || [];
+      contentNodes = childNode._content?.filter(is_Node) || [];
     } else {
       contentNodes = [node];
     }
-    
+
     // Enforce the "single node" rule inside the helper
     if (contentNodes.length !== 1) {
       throw_transform_err(
@@ -69,7 +69,6 @@ export function graft(
 
     return contentNodes[0];
   }
-
 
   const nodesToRender = unwrappest(rootNode);
 

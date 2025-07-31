@@ -5,8 +5,8 @@ import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "./tokens
 
 /* factory to build a node from incomplete info */
 export const NEW_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
-  tag: partial.tag ?? '', 
-  content: partial.content ?? [],
+  _tag: partial._tag ?? '', 
+  _content: partial._content ?? [],
   _meta: {
     flags: partial._meta?.flags ?? [],
     attrs: partial._meta?.attrs ?? {},

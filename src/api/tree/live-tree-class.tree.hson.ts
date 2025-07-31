@@ -96,8 +96,8 @@ export class LiveTree {
   setValue($value: string): this {
     for (const node of this.selectedNodes) {
       // This method only applies to specific tags.
-      if (node.tag !== 'input' && node.tag !== 'textarea') {
-        console.warn(`setValue() called on a <${node.tag}> element. This method is intended only for <input> and <textarea>.`);
+      if (node._tag !== 'input' && node._tag !== 'textarea') {
+        console.warn(`setValue() called on a <${node._tag}> element. This method is intended only for <input> and <textarea>.`);
         continue; // Skip to the next node
       }
 
@@ -117,8 +117,8 @@ export class LiveTree {
 
   setContent($content: string): this {
     for (const node of this.selectedNodes) {
-      const textNode = NEW_NODE({ tag: STRING_TAG, content: [$content] });
-      node.content = [textNode];
+      const textNode = NEW_NODE({ _tag: STRING_TAG, _content: [$content] });
+      node._content = [textNode];
 
       const liveElement = NODE_ELEMENT_MAP.get(node);
       if (liveElement) {
@@ -225,7 +225,7 @@ export class LiveTree {
 
     const checkNode = (node: HsonNode) => {
       /* check for tag match */
-      const tagMatch = !$query.tag || node.tag.toLowerCase() === $query.tag.toLowerCase();
+      const tagMatch = !$query.tag || node._tag.toLowerCase() === $query.tag.toLowerCase();
       if (!tagMatch) return false;
 
       /* Check for attribute match */
@@ -253,8 +253,8 @@ export class LiveTree {
         }
 
         /* recurse into children */
-        if (node.content && node.content.length > 0) {
-          traverse(node.content.filter(is_Node));
+        if (node._content && node._content.length > 0) {
+          traverse(node._content.filter(is_Node));
         }
       }
     };

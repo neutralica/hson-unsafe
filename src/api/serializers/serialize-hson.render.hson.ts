@@ -71,7 +71,7 @@ function hsonFromNode(
     /* 2. if the helper returned a value, format the one-liner */
     if (oneLinerValue !== _FALSE) { /* sentinel value for generic no-result boolean */
         /* (self nodes may have no attributes) */
-        const tag = ($node as HsonNode).tag;
+        const tag = ($node as HsonNode)._tag;
         const val_string = serialize_primitive(oneLinerValue);
 
         if ($vsn === ELEM_TAG) {
@@ -83,7 +83,7 @@ function hsonFromNode(
 
     const currentNode = $node as HsonNode;
     if (!currentNode._meta.attrs || !currentNode._meta.flags) throw new Error();
-    const { tag, content = [], _meta } = currentNode;
+    const { _tag: tag, _content: content = [], _meta } = currentNode;
 
     const attrs = _meta.attrs ?? {};
     const flags = _meta.flags ?? [];
@@ -135,12 +135,12 @@ function hsonFromNode(
 
     /* 2. check for a VSN to not-include */
     const firstChild = content?.[0] as HsonNode | undefined;
-    const shouldMelt = content.length === 1 && firstChild && (firstChild.tag === ELEM_TAG || firstChild.tag === OBJECT_TAG);
+    const shouldMelt = content.length === 1 && firstChild && (firstChild._tag === ELEM_TAG || firstChild._tag === OBJECT_TAG);
 
     if (shouldMelt) {
         /* if found the content content and context come from that child */
-        actualContent = firstChild.content as HsonNode[];
-        parentTag = firstChild.tag;
+        actualContent = firstChild._content as HsonNode[];
+        parentTag = firstChild._tag;
     }
 
     /* 3. derive the closer and context */

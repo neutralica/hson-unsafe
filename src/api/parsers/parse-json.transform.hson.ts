@@ -52,14 +52,14 @@ function nodeFromJson(
         if (is_not_string($srcJson)) {
             return {
                 node: NEW_NODE({
-                    tag: PRIM_TAG,
-                    content: [$srcJson as BasicValue],
+                    _tag: PRIM_TAG,
+                    _content: [$srcJson as BasicValue],
                 }),
             };
         } else {
             const node = NEW_NODE({
-                tag: STRING_TAG,
-                content: [$srcJson as BasicValue],
+                _tag: STRING_TAG,
+                _content: [$srcJson as BasicValue],
             });
             return { node };
         }
@@ -75,15 +75,15 @@ function nodeFromJson(
             let dataIx: _Meta = { attrs: { "data-index": String(ix) }, flags: [] };
 
             return NEW_NODE({
-                tag: INDEX_TAG, /* <_ii> wrapper */
-                content: [itemConversion.node], /* the item itself */
+                _tag: INDEX_TAG, /* <_ii> wrapper */
+                _content: [itemConversion.node], /* the item itself */
                 _meta: dataIx
             });
         });
         return {
             node: NEW_NODE({
-                tag: ARRAY_TAG,
-                content: items,
+                _tag: ARRAY_TAG,
+                _content: items,
             }),
         };
     }
@@ -110,8 +110,8 @@ function nodeFromJson(
             if (Array.isArray(listContent)) {
                 const contentNodes: HsonNode[] = listContent.map(item => {
                     const recursedItem = nodeFromJson(item as JSONShape, getTag(item as JSONShape));
-                    if (recursedItem.node.tag === OBJECT_TAG && recursedItem.node.content.length === 1) {
-                        const singleProperty = recursedItem.node.content[0] as HsonNode;
+                    if (recursedItem.node._tag === OBJECT_TAG && recursedItem.node._content.length === 1) {
+                        const singleProperty = recursedItem.node._content[0] as HsonNode;
                         singleProperty._meta = {
                             attrs: { ...singleProperty._meta.attrs || {} },
                             flags: [...singleProperty._meta.flags || []],
@@ -122,7 +122,7 @@ function nodeFromJson(
                 });
 
                 return {
-                    node: NEW_NODE({ tag: ELEM_TAG, content: contentNodes }),
+                    node: NEW_NODE({ _tag: ELEM_TAG, _content: contentNodes }),
                 };
             } else { console.error('content should always be array?') }
         }
@@ -134,8 +134,8 @@ function nodeFromJson(
                 const propertyValues = jsonObj[key] as JSONShape;
                 if (propertyValues === "" || propertyValues === '') {
                     return NEW_NODE({
-                        tag: key,
-                        content: [],
+                        _tag: key,
+                        _content: [],
                         _meta: objMeta
                     });
                 }
@@ -146,12 +146,12 @@ function nodeFromJson(
 
                 let finalNode = NEW_NODE();
                 /* check for BasicValue node */
-                if (recursedProps.node.tag === STRING_TAG || recursedProps.node.tag === PRIM_TAG) {
+                if (recursedProps.node._tag === STRING_TAG || recursedProps.node._tag === PRIM_TAG) {
                     /* wrap it in an _obj VSN */
-                    if (recursedProps.node.content)
+                    if (recursedProps.node._content)
                         finalNode = NEW_NODE({
-                            tag: OBJECT_TAG,
-                            content: [recursedProps.node],
+                            _tag: OBJECT_TAG,
+                            _content: [recursedProps.node],
                         });
                 } else {
                     /* if the value was already an object or array, its HsonNode is already a VSN (_obj or _array)
@@ -161,8 +161,8 @@ function nodeFromJson(
 
                 /* create the base node */
                 return NEW_NODE({
-                    tag: key,
-                    content: [finalNode],
+                    _tag: key,
+                    _content: [finalNode],
                     _meta: objMeta
                 });
             });
@@ -170,8 +170,8 @@ function nodeFromJson(
             /* wrap in _obj VSN & return */
             return {
                 node: NEW_NODE({
-                    tag: OBJECT_TAG,
-                    content: propertyNodes,
+                    _tag: OBJECT_TAG,
+                    _content: propertyNodes,
                 })
             };
         }
@@ -180,7 +180,7 @@ function nodeFromJson(
     /* error fallback */
     console.error("recurse_json_for_node: unhandled tag:", $parentTag);
     return {
-        node: NEW_NODE({ tag: "ERROR_UNHANDLED_TYPE", content: [String($srcJson) as BasicValue] }),
+        node: NEW_NODE({ _tag: "ERROR_UNHANDLED_TYPE", _content: [String($srcJson) as BasicValue] }),
     };
 }
 
@@ -195,8 +195,8 @@ export function parse_json($jstring: string): HsonNode {
     if (typeof $jstring !== 'string') {
         console.error('JSON input is not a string -- received a ', typeof $jstring);
         return NEW_NODE({
-            tag: '[JSON TYPE ERROR]',
-            content: [NEW_NODE({ tag: STRING_TAG, content: [`ERROR: INVALID STRING`] })],
+            _tag: '[JSON TYPE ERROR]',
+            _content: [NEW_NODE({ _tag: STRING_TAG, _content: [`ERROR: INVALID STRING`] })],
         });
     }
 
@@ -207,8 +207,8 @@ export function parse_json($jstring: string): HsonNode {
         console.error('JSON parse error in json_to_node:', error);
         const errMsg = error instanceof Error ? error.message : "Unknown parsing error";
         return NEW_NODE({
-            tag: "[JSON PARSE ERROR]",
-            content: [NEW_NODE({ tag: STRING_TAG, content: [`Invalid JSON input: ${errMsg}`] })],
+            _tag: "[JSON PARSE ERROR]",
+            _content: [NEW_NODE({ _tag: STRING_TAG, _content: [`Invalid JSON input: ${errMsg}`] })],
         });
     }
 
@@ -236,8 +236,8 @@ export function parse_json($jstring: string): HsonNode {
 
     /* wrap in _root */
     const finalNode = NEW_NODE({
-        tag: ROOT_TAG,
-        content: [recursedNodes.node],
+        _tag: ROOT_TAG,
+        _content: [recursedNodes.node],
     });
     if (_VERBOSE) {
         console.groupCollapsed(' returning finalNode:');

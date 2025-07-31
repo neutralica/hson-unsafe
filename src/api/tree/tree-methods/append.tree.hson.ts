@@ -19,7 +19,7 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
     
     let nodesToAppend: HsonNode[];
     if (typeof $content === 'string') {
-        nodesToAppend = [NEW_NODE({ tag: STRING_TAG, content: [$content] })];
+        nodesToAppend = [NEW_NODE({ _tag: STRING_TAG, _content: [$content] })];
     } else if ($content instanceof LiveTree) {
         const contentSrc = $content.sourceNode();
         if (!contentSrc) throw new Error('no content provided');
@@ -32,20 +32,20 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
     }
 
     for (const targetNode of selectedNodes) {
-        if (!targetNode.content) targetNode.content = [];
+        if (!targetNode._content) targetNode._content = [];
 
         /* find or create the _elem VSN wrapper for child nodes */
         let containerNode: HsonNode;
-        const firstChild = targetNode.content[0];
-        if (is_Node(firstChild) && firstChild.tag === ELEM_TAG) {
+        const firstChild = targetNode._content[0];
+        if (is_Node(firstChild) && firstChild._tag === ELEM_TAG) {
             containerNode = firstChild;
         } else {
-            containerNode = NEW_NODE({ tag: ELEM_TAG, content: [...targetNode.content] });
-            targetNode.content = [containerNode];
+            containerNode = NEW_NODE({ _tag: ELEM_TAG, _content: [...targetNode._content] });
+            targetNode._content = [containerNode];
         }
 
         /* push the new nodes to the data model */
-        containerNode.content.push(...nodesToAppend);
+        containerNode._content.push(...nodesToAppend);
 
         /* appending only the new elements to the DOM to sync with data */
         const liveElement = NODE_ELEMENT_MAP.get(targetNode);

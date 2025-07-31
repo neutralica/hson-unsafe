@@ -20,8 +20,8 @@ const $log = VERBOSE
  */
 export function get_self_close_value($node: HsonNode): BasicValue | FALSE_TYPE {
     /*  1. self-closing tags cannot have any attrs or flags */
-    $log('  ? checking for Self Value (if applicable) ', $node.tag);
-    if (ELEM_OBJ_ARR.includes($node.tag)) {
+    $log('  ? checking for Self Value (if applicable) ', $node._tag);
+    if (ELEM_OBJ_ARR.includes($node._tag)) {
         return _FALSE; 
     }
     
@@ -34,23 +34,23 @@ export function get_self_close_value($node: HsonNode): BasicValue | FALSE_TYPE {
     }
 
     /* 2. content must be a single node */
-    if (!$node.content || $node.content.length !== 1 || !is_Node($node.content[0])) {
-        $log('  > $FALSE - node.content is undefined or >1 or not a Hson node')
+    if (!$node._content || $node._content.length !== 1 || !is_Node($node._content[0])) {
+        $log('  > $FALSE - node._content is undefined or >1 or not a Hson node')
         return _FALSE;
     }
 
-    const childNode = $node.content[0];
+    const childNode = $node._content[0];
     $log('object is a node; getting content:', childNode)
-    if (!is_Node(childNode.content[0]) || childNode.content.length > 1) {
+    if (!is_Node(childNode._content[0]) || childNode._content.length > 1) {
         $log('  > $FALSE - not self closing: too many child nodes')
         return _FALSE;
     }
-    const grandChildNode = childNode.content[0];
+    const grandChildNode = childNode._content[0];
     /* 3. that single child node must be a primitive wrapper (_str or _prim) */
-    if (grandChildNode.tag === STRING_TAG || grandChildNode.tag === PRIM_TAG) {
+    if (grandChildNode._tag === STRING_TAG || grandChildNode._tag === PRIM_TAG) {
        /* success: return the primitive value directly from inside the wrapper */
         $log(' --> IS self-closing')
-        return grandChildNode.content[0] as BasicValue;
+        return grandChildNode._content[0] as BasicValue;
     }
 
     /* if the structure does not match this exact pattern, it's not a self-closing tag*/

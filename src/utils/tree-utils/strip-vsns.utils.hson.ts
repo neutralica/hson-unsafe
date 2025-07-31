@@ -14,10 +14,10 @@ export function strip_VSNs(node: HsonNode | BasicValue | undefined): any {
     if (!is_Node(node)) {
         return undefined;
     }
-    switch (node.tag) {
+    switch (node._tag) {
         case STRING_TAG:
         case PRIM_TAG:
-            return node.content[0];
+            return node._content[0];
     }
 
     /* this is the representation for an element like <html>, <p>, <span>, etc */
@@ -37,10 +37,10 @@ export function strip_VSNs(node: HsonNode | BasicValue | undefined): any {
     }
 
     /* 3. process and add children */
-    const container = node.content.find(c => is_Node(c) && VSNContainerTags.includes(c.tag)) as HsonNode | undefined;
+    const container = node._content.find(c => is_Node(c) && VSNContainerTags.includes(c._tag)) as HsonNode | undefined;
 
-    if (container && container.content.length > 0) {
-        for (const child of container.content) {
+    if (container && container._content.length > 0) {
+        for (const child of container._content) {
            /*  unwrapping the _ii for array items is handled by the recursive call */
             const processedChild = strip_VSNs(child);
             if (processedChild !== undefined) {
@@ -50,16 +50,16 @@ export function strip_VSNs(node: HsonNode | BasicValue | undefined): any {
     }
 
     /* return only the content of index or root */
-    if (node.tag === INDEX_TAG || node.tag === ROOT_TAG) {
+    if (node._tag === INDEX_TAG || node._tag === ROOT_TAG) {
         return contentArray;
     }
 
     // 4. final assembly: return the single-key object representation for this node
     if (contentArray.length === 1 && is_BasicValue(contentArray[0])) {
         /* if just a single primitive, unwrap it */
-        return { [node.tag]: contentArray[0] };
+        return { [node._tag]: contentArray[0] };
     } else {
         /* otherwise keep the array to preserve structure */
-        return { [node.tag]: contentArray };
+        return { [node._tag]: contentArray };
     }
 }

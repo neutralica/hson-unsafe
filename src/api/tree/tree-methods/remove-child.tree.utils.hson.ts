@@ -19,12 +19,12 @@ export function removeChild(this: LiveTree, $query: HsonQuery): LiveTree {
 
 
     for (const parentNode of selectedNodes) {
-        if (!parentNode.content) {
+        if (!parentNode._content) {
             continue; 
         }
 
         /*  1. find the direct children to remove from the data model */
-        const childrenToRemove = search(parentNode.content.filter(is_Node), $query, { findFirst: false });
+        const childrenToRemove = search(parentNode._content.filter(is_Node), $query, { findFirst: false });
 
         if (childrenToRemove.length === 0) {
             continue; 
@@ -38,7 +38,7 @@ export function removeChild(this: LiveTree, $query: HsonQuery): LiveTree {
         }
 
         /*  3. update the parent's data model */
-        parentNode.content = parentNode.content.filter(child => !childrenToRemove.includes(child as HsonNode));
+        parentNode._content = parentNode._content.filter(child => !childrenToRemove.includes(child as HsonNode));
     }
 
     return this;

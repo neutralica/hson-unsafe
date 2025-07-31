@@ -6,27 +6,27 @@ import { is_Node } from "../is-helpers.utils.hson.js";
 
 /*  find the first direct child node with a given tag */
 export function find_child_by_tag(parentNode: HsonNode, tag: string): HsonNode | undefined {
-    const container = parentNode.content.find(
-        (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c.tag)
+    const container = parentNode._content.find(
+        (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag)
     );
 
     if (!container) {
         return undefined;
     }
 
-    return container.content.find(
-        (child): child is HsonNode => is_Node(child) && child.tag === tag
+    return container._content.find(
+        (child): child is HsonNode => is_Node(child) && child._tag === tag
     );
 }
 
 export function find_index_of_tag(parentNode: HsonNode, tag: string): number {
-    const container = parentNode.content.find(
-        (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c.tag)
+    const container = parentNode._content.find(
+        (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag)
     );
     if (!container) return -1;
 
-    return container.content.findIndex(
-        (child) => is_Node(child) && child.tag === tag
+    return container._content.findIndex(
+        (child) => is_Node(child) && child._tag === tag
     );
 }
 
@@ -34,23 +34,23 @@ export function find_index_of_tag(parentNode: HsonNode, tag: string): number {
  * update primitive content in both the node and DOM (if live)
  */
 export function update_content(nodeToUpdate: HsonNode, value: BasicValue): void {
-    const hsonContainer = nodeToUpdate.content.find(
-        (c): c is HsonNode => is_Node(c) && c.tag === ELEM_TAG
+    const hsonContainer = nodeToUpdate._content.find(
+        (c): c is HsonNode => is_Node(c) && c._tag === ELEM_TAG
     );
     if (!hsonContainer) return; 
 
-    let hsonTextNode = hsonContainer.content.find(
-        (c): c is HsonNode => is_Node(c) && c.tag === STRING_TAG
+    let hsonTextNode = hsonContainer._content.find(
+        (c): c is HsonNode => is_Node(c) && c._tag === STRING_TAG
     );
 
     /* step 1: update hson model (always) */
     if (hsonTextNode) {
         /*  text node exists; update its value */
-        hsonTextNode.content[0] = value;
+        hsonTextNode._content[0] = value;
     } else {
         /* no text node exists; create one and prepend it */
-        hsonTextNode = NEW_NODE({tag: STRING_TAG, content: [value]});
-        hsonContainer.content.unshift(hsonTextNode);
+        hsonTextNode = NEW_NODE({_tag: STRING_TAG, _content: [value]});
+        hsonContainer._content.unshift(hsonTextNode);
     }
 
     /* step 2: update DOM (if linked) */
@@ -85,18 +85,18 @@ export function is_selfClosing($node: HsonNode): boolean {
     }
 
     /* find the _elem container for its children. */
-    const container = $node.content.find(
-        (c): c is HsonNode => is_Node(c) && c.tag === ELEM_TAG
+    const container = $node._content.find(
+        (c): c is HsonNode => is_Node(c) && c._tag === ELEM_TAG
     );
     
     /* the container must exist and have exactly one child */
-    if (!container || container.content.length !== 1) {
+    if (!container || container._content.length !== 1) {
         return false;
     }
 
     /* the single child must be a STRING_TAG or PRIM_TAG */
-    const singleChild = container.content[0];
-    return is_Node(singleChild) && (singleChild.tag === STRING_TAG || singleChild.tag === PRIM_TAG)
+    const singleChild = container._content[0];
+    return is_Node(singleChild) && (singleChild._tag === STRING_TAG || singleChild._tag === PRIM_TAG)
 }
 
 /**
@@ -110,16 +110,16 @@ export function get_contentValue($node: HsonNode): BasicValue | undefined {
         return undefined;
     }
     
-    const container = $node.content.find((c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c.tag));
+    const container = $node._content.find((c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag));
     
-    /* the content is either in container.content or is in the direct child.content*/
-    const contentSource = container ? container.content : $node.content;
+    /* the content is either in container._content or is in the direct child._content*/
+    const contentSource = container ? container._content : $node._content;
 
     /* if there is exactly one child, and it's a BasicValue-carrying node, return its value */
     if (contentSource.length === 1) {
         const singleChild = contentSource[0];
-        if (is_Node(singleChild) && (singleChild.tag === STRING_TAG || singleChild.tag === PRIM_TAG)) {
-            return singleChild.content[0] as BasicValue;
+        if (is_Node(singleChild) && (singleChild._tag === STRING_TAG || singleChild._tag === PRIM_TAG)) {
+            return singleChild._content[0] as BasicValue;
         }
     }
 

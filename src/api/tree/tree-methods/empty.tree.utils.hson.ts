@@ -13,22 +13,22 @@ export function empty(this: LiveTree): LiveTree {
     for (const node of selectedNodes) {
         // 1. DATA MODEL UPDATE:
         // This is simpler and correctly removes the _elem container.
-        if (node.content && node.content.length > 0) {
+        if (node._content && node._content.length > 0) {
             // Recursively clean up the map for all descendants before clearing.
             const cleanupDescendants = (nodes: (HsonNode | any)[]) => {
                 for (const child of nodes) {
                     if (is_Node(child)) {
                         NODE_ELEMENT_MAP.delete(child);
-                        if (child.content) {
-                            cleanupDescendants(child.content);
+                        if (child._content) {
+                            cleanupDescendants(child._content);
                         }
                     }
                 }
             };
-            cleanupDescendants(node.content);
+            cleanupDescendants(node._content);
             
             // Set the content to an empty array. This is the correct state.
-            node.content = [];
+            node._content = [];
         }
 
         // 2. DOM SYNCHRONIZATION:

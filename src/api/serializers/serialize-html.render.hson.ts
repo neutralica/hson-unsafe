@@ -58,7 +58,7 @@ export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
   }
 
   /* handle the various VSNs */
-  const { tag, content = [], _meta = BLANK_META } = node;
+  const { _tag: tag, _content: content = [], _meta = BLANK_META } = node;
 
   switch (tag) {
     case ELEM_TAG: { /* flatten _elem; process children directly */

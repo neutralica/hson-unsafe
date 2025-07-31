@@ -48,8 +48,8 @@ export function create_proxy(targetNode: HsonNode): any {
             if (typeof propertyKey !== 'string') {
                 return Reflect.get(targetNode, propertyKey, receiver);
             }
-            if (targetNode.tag === STRING_TAG || targetNode.tag === PRIM_TAG) {
-                return targetNode.content[0];
+            if (targetNode._tag === STRING_TAG || targetNode._tag === PRIM_TAG) {
+                return targetNode._content[0];
             }
 
             /*  try to access as an attribute */
@@ -64,7 +64,7 @@ export function create_proxy(targetNode: HsonNode): any {
 
             /* find direct child with a matching tag */
             const childNode = children.find(
-                (c): c is HsonNode => is_Node(c) && c.tag === propertyKey
+                (c): c is HsonNode => is_Node(c) && c._tag === propertyKey
             );
 
             if (childNode) {
@@ -93,25 +93,25 @@ export function create_proxy(targetNode: HsonNode): any {
                     return false;
                 }
 
-                const hsonContainer = targetNode.content.find((c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c.tag));
+                const hsonContainer = targetNode._content.find((c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag));
                 if (!hsonContainer) return false;
 
                 const priorIndex = find_index_of_tag(targetNode, propertyKey);
-                const priorNode = priorIndex > -1 ? hsonContainer.content[priorIndex] : undefined;
+                const priorNode = priorIndex > -1 ? hsonContainer._content[priorIndex] : undefined;
 
                 if (priorIndex > -1) {
-                    hsonContainer.content.splice(priorIndex, 1, newNode);
+                    hsonContainer._content.splice(priorIndex, 1, newNode);
                 } else {
-                    hsonContainer.content.push(newNode);
+                    hsonContainer._content.push(newNode);
                 }
-                if (targetNode.tag === 'body') {
+                if (targetNode._tag === 'body') {
                     const timestamp = Date.now();
                     $log(`(SET tagged <body> with timestamp: ${timestamp})`);
                     DEBUG_UPDATE_MAP.set(targetNode, timestamp);
                 }
 
                 $log('hson after SET:');
-                if (VERBOSE) console.dir(hsonContainer.content, { depth: 5 }); 
+                if (VERBOSE) console.dir(hsonContainer._content, { depth: 5 }); 
                 const parentLiveElement = NODE_ELEMENT_MAP.get(targetNode);
                 if (parentLiveElement) {
                     const newLiveElement = create_live_tree(newNode);
@@ -125,7 +125,7 @@ export function create_proxy(targetNode: HsonNode): any {
                     }
                 }
 
-                $log(`[OK] replaced/created child <${propertyKey}> in <${targetNode.tag}>`);
+                $log(`[OK] replaced/created child <${propertyKey}> in <${targetNode._tag}>`);
                 return true;
             }
 
@@ -134,7 +134,7 @@ export function create_proxy(targetNode: HsonNode): any {
                 const childNodeToUpdate = find_child_by_tag(targetNode, propertyKey);
                 if (childNodeToUpdate) {
                     update_content(childNodeToUpdate, value);
-                    $log(`[OK] successfully updated content of child <${propertyKey}> in <${targetNode.tag}>`);
+                    $log(`[OK] successfully updated content of child <${propertyKey}> in <${targetNode._tag}>`);
                     return true;
                 } else {
                     if (!targetNode._meta) targetNode._meta = BLANK_META;
@@ -147,7 +147,7 @@ export function create_proxy(targetNode: HsonNode): any {
                         liveElement.setAttribute(propertyKey, String(value));
                     }
 
-                    $log(`[OK] successfully set attribute '${propertyKey}' on <${targetNode.tag}>`);
+                    $log(`[OK] successfully set attribute '${propertyKey}' on <${targetNode._tag}>`);
                     return true;
                 }
             }

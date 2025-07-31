@@ -41,22 +41,22 @@ export function linter(
     const attrs = Object.entries(node._meta.attrs)
         .map(([k, v]) => `${k}="${v}"`);
     const flags = node._meta.flags.map(f => f.toString());
-    const oneLine = `<${node.tag}` +
+    const oneLine = `<${node._tag}` +
         (attrs.length ? " " + attrs.join(" ") : "") +
         (flags.length ? " " + flags.join(" ") : "") +
         // this was > or /> but I think that's a holdover. 
-        `${node.content.length ? ">" : " >"}`;
+        `${node._content.length ? ">" : " >"}`;
 
     /* top-level rule */
-    if (oneLine.length < maxNodeLen && !node.content.length) {
+    if (oneLine.length < maxNodeLen && !node._content.length) {
         return oneLine; /* self-closing or empty */
     }
-    if (!node.content.length && oneLine.length < maxNodeLen) {
+    if (!node._content.length && oneLine.length < maxNodeLen) {
         return oneLine;
     }
 
-    if (!node.content.length) {
-        const parts = [`<${node.tag}`];
+    if (!node._content.length) {
+        const parts = [`<${node._tag}`];
         if (attrs.length || flags.length) {
             parts.push(attrs.concat(flags).join(" "));
         }
@@ -64,16 +64,16 @@ export function linter(
         return parts.join(" ");
     }
 
-    if (oneLine.length < maxNodeLen && node.content.every(c => typeof c === "string")) {
+    if (oneLine.length < maxNodeLen && node._content.every(c => typeof c === "string")) {
         /* small text node */
-        return oneLine + node.content.join("") + `</${node.tag}>`;
+        return oneLine + node._content.join("") + `</${node._tag}>`;
     }
     const isSingleTextChild =
-        node.content.length === 1 &&
-        typeof node.content[0] === "string";
+        node._content.length === 1 &&
+        typeof node._content[0] === "string";
 
-    const text = isSingleTextChild ? node.content[0] : null;
-    const inlineCandidate = `<${node.tag}${attrs.length ? " " + attrs.join(" ") : ""}${flags.length ? " " + flags.join(" ") : ""}>${text}</${node.tag}>`;
+    const text = isSingleTextChild ? node._content[0] : null;
+    const inlineCandidate = `<${node._tag}${attrs.length ? " " + attrs.join(" ") : ""}${flags.length ? " " + flags.join(" ") : ""}>${text}</${node._tag}>`;
 
     if (isSingleTextChild && inlineCandidate.length <= maxNodeLen) {
         return inlineCandidate;
@@ -89,7 +89,7 @@ export function linter(
     // }
 
     let lines = [];
-    lines.push(`<${node.tag}>`);
+    lines.push(`<${node._tag}>`);
 
     /* attrs & flags rule */
     if ((attrs.join(" ") + flags.join(" ")).length > maxAttrsFlagsLen) {
@@ -110,10 +110,10 @@ export function linter(
     }
 
     /* children rule */
-    node.content.forEach(child => {
+    node._content.forEach(child => {
         if (typeof child === "string") {
             wrap(child, indent).forEach(l => lines.push(l));
-        } else if (typeof child === "object" && child !== null && "tag" in child && Array.isArray(child.content)) {
+        } else if (typeof child === "object" && child !== null && "_tag" in child && Array.isArray(child._content)) {
             /* likely an HSON_Node (?) */
             const childLines = linter(child, opts).split("\n");
             childLines.forEach(line => lines.push(indent + line));
@@ -125,6 +125,6 @@ export function linter(
         }
     });
 
-    lines.push(`</${node.tag}>`);
+    lines.push(`</${node._tag}>`);
     return lines.join("\n");
 }

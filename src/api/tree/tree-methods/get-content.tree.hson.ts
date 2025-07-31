@@ -18,16 +18,16 @@ export function getContent(this: LiveTree): HsonNode[] {
     }
 
     const node = selectedNodes[0];
-    if (!node.content) {
+    if (!node._content) {
         return [];
     }
     /* check if the content is wrapped in an `_elem` VSNi
         if so, return the contents of the wrapper else return the content directly */
-    const firstChild = node.content[0];
-    if (is_Node(firstChild) && firstChild.tag === ELEM_TAG && firstChild.content) {
-        return firstChild.content.filter(is_Node);
+    const firstChild = node._content[0];
+    if (is_Node(firstChild) && firstChild._tag === ELEM_TAG && firstChild._content) {
+        return firstChild._content.filter(is_Node);
     }
 
-    return node.content.filter(is_Node);
+    return node._content.filter(is_Node);
 }
 

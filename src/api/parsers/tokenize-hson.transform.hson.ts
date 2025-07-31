@@ -556,7 +556,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                     } else {
                         /* Case B: `can_selfClose` is TRUE (one BasicValue inlineContentItems, or it's empty)
                             AND the tag closes on the same line.
-                            Output: SELF("tag", content: [primitives]) */
+                            Output: SELF("_tag", _content: [primitives]) */
                         $log(`[step F phase 3] <${tag} is SELF\n  content: ${make_string(selfContent)})`);
                         finalTokens.push(CREATE_TOKEN({
                             type: TokenΔ.SELF,

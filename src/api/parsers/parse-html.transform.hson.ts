@@ -50,7 +50,7 @@ export function parse_html($input: string | Element): HsonNode {
         if (!parsedXML.documentElement) {
             /* for cases where parsing might result in no documentElement (e.g., empty string after processing) */
             console.warn("HTML string resulted in no documentElement after parsing; Returning _root");
-            return NEW_NODE({ tag: ROOT_TAG, content: ['[ERROR-no content from xml parse]'] });
+            return NEW_NODE({ _tag: ROOT_TAG, _content: ['[ERROR-no content from xml parse]'] });
         }
         inputElement = parsedXML.documentElement;
     } else {
@@ -62,13 +62,13 @@ export function parse_html($input: string | Element): HsonNode {
     const actualContentRootNode = convert(inputElement);
 
     /* create the _root VSN wrapper */
-    const final = actualContentRootNode.tag === ROOT_TAG
+    const final = actualContentRootNode._tag === ROOT_TAG
         ? actualContentRootNode
         : NEW_NODE({
-            tag: ROOT_TAG,
-            content: [NEW_NODE({
-                tag: ELEM_TAG,
-                content: [actualContentRootNode]
+            _tag: ROOT_TAG,
+            _content: [NEW_NODE({
+                _tag: ELEM_TAG,
+                _content: [actualContentRootNode]
             }) as HsonNode], /* parsed document/element becomes the first child of _root */
         });
     if (_VERBOSE) {
@@ -89,7 +89,7 @@ function convert($el: Element): HsonNode {
     if (tagLower === PRIM_TAG.toLowerCase()) {
         const text = $el.textContent?.trim() || '';
         const primitive_content = coerce(text); /* rurns "1" into number 1 */
-        return NEW_NODE({ tag: PRIM_TAG, content: [primitive_content] });
+        return NEW_NODE({ _tag: PRIM_TAG, _content: [primitive_content] });
     }
     const attrs: HsonAttrs = {};
     const flags: string[] = [];
@@ -126,15 +126,15 @@ function convert($el: Element): HsonNode {
         const text_content = $el.textContent?.trim();
         if (text_content) {
             const special_content = [NEW_NODE({
-                tag: STRING_TAG,
-                content: [text_content],
+                _tag: STRING_TAG,
+                _content: [text_content],
             })]
             const list_node = NEW_NODE({
-                tag: ELEM_TAG,
-                content: special_content,
+                _tag: ELEM_TAG,
+                _content: special_content,
             });
 
-            return NEW_NODE({ tag: baseTag, content: [list_node], _meta: currentMeta });
+            return NEW_NODE({ _tag: baseTag, _content: [list_node], _meta: currentMeta });
         }
 
     }
@@ -148,13 +148,13 @@ function convert($el: Element): HsonNode {
             if (is_not_string(child)) console.warn('number detected', child)
             /* raw primitive--wrap it in the appropriate VSN */
             if (is_not_string(child) && $el.tagName.toLowerCase() !== PRIM_TAG.toLowerCase()) {
-                childNodes.push(NEW_NODE({ tag: STRING_TAG, content: [child] }));
+                childNodes.push(NEW_NODE({ _tag: STRING_TAG, _content: [child] }));
             } else if (is_not_string(child) && $el.tagName.toLowerCase() === PRIM_TAG.toLowerCase()) {
-                childNodes.push(NEW_NODE({ tag: PRIM_TAG, content: [child] }));
+                childNodes.push(NEW_NODE({ _tag: PRIM_TAG, _content: [child] }));
             } else if (typeof child === 'string') {
-                childNodes.push(NEW_NODE({ tag: STRING_TAG, content: [child] }));
+                childNodes.push(NEW_NODE({ _tag: STRING_TAG, _content: [child] }));
             } else { /* boolean or null */
-                childNodes.push(NEW_NODE({ tag: PRIM_TAG, content: [child] }));
+                childNodes.push(NEW_NODE({ _tag: PRIM_TAG, _content: [child] }));
             }
         } else {
             /* it's already a valid Node: push it directly. */
@@ -166,44 +166,44 @@ function convert($el: Element): HsonNode {
           then its child nodes are its direct content */
     if (tagLower === OBJECT_TAG) {
         /*  "children" of <_obj> are the object's properties (as nodes) */
-        return NEW_NODE({ tag: OBJECT_TAG, content: childNodes });
+        return NEW_NODE({ _tag: OBJECT_TAG, _content: childNodes });
     } else if (tagLower === ARRAY_TAG) {
         /* children of an <_array> should be <_ii> nodes. */
-        return NEW_NODE({ tag: ARRAY_TAG, content: childNodes });
+        return NEW_NODE({ _tag: ARRAY_TAG, _content: childNodes });
     } else if (tagLower === ELEM_TAG) {
         /* _elem should not be wrapped but should disappear back into the HTML */
         console.error('_elem tag found in html')
-        return NEW_NODE({ tag: ELEM_TAG, content: childNodes });
+        return NEW_NODE({ _tag: ELEM_TAG, _content: childNodes });
     }
 
     /*  ---> default: "standard tag" (e.g., "div", "p", "kingdom", "_root") <--- */
 
-    /* its HsonNode.content must be an array containing a single VSN
+    /* its HsonNode._content must be an array containing a single VSN
          or an empty array if it had no content */
 
     if (childNodes.length === 0) {
         /* tag is empty/void (e.g., <p></p> or <extinctGroups></extinctGroups>)
              its HsonNode's content should be [] so simply return `content:[]` */
-        return NEW_NODE({ tag: baseTag, content: [], _meta: currentMeta });
+        return NEW_NODE({ _tag: baseTag, _content: [], _meta: currentMeta });
     } else if (
         (childNodes.length === 1 && is_Node(childNodes[0])
-            && (childNodes[0].tag === OBJECT_TAG || childNodes[0].tag === ARRAY_TAG))) {
+            && (childNodes[0]._tag === OBJECT_TAG || childNodes[0]._tag === ARRAY_TAG))) {
         return NEW_NODE({
-            tag: baseTag,
-            content: [childNodes[0]], /* return the VSN wrapping the base tag's content */
+            _tag: baseTag,
+            _content: [childNodes[0]], /* return the VSN wrapping the base tag's content */
             _meta: currentMeta
         });
     } else if ((baseTag === INDEX_TAG || baseTag === PRIM_TAG)) {
         return NEW_NODE({
-            tag: baseTag,
-            content: [childNodes[0]], /* return the VSN wrapping the base tag's content */
+            _tag: baseTag,
+            _content: [childNodes[0]], /* return the VSN wrapping the base tag's content */
             _meta: currentMeta
         });
     } else {
         /* default to native _elem wrapper (though ofc defaults are problematic) */
         return NEW_NODE({
-            tag: baseTag,
-            content: [NEW_NODE({ tag: ELEM_TAG, content: childNodes, _meta: BLANK_META })], // Standard tag's HsonNode.content is an array with one VSN
+            _tag: baseTag,
+            _content: [NEW_NODE({ _tag: ELEM_TAG, _content: childNodes, _meta: BLANK_META })], // Standard tag's HsonNode._content is an array with one VSN
             _meta: currentMeta
         });
     }

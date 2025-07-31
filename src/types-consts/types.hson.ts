@@ -23,8 +23,8 @@ export type JSONObject = { [key: string]: JSONShape } & { _meta?: _Meta };
  */
 //TODO - change to _tag and _content
 export interface HsonNode {
-    tag: string;
-    content: NodeContent;
+    _tag: string;
+    _content: NodeContent;
     _meta: _Meta;
 }
 

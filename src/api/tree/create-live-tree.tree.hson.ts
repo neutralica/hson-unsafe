@@ -20,13 +20,13 @@ export function create_live_tree($node: HsonNode | BasicValue): Node {
     const graft = $node as HsonNode;
 
     /*  if the node is a primitive wrapper VSN, treat it like an unwrapped primitive */
-    if (graft.tag === STRING_TAG || graft.tag === PRIM_TAG) {
-        const textNode = document.createTextNode(String(graft.content?.[0] ?? ''));
+    if (graft._tag === STRING_TAG || graft._tag === PRIM_TAG) {
+        const textNode = document.createTextNode(String(graft._content?.[0] ?? ''));
         return textNode;
     }
 
     /* or: it's an element node */
-    const el = document.createElement(graft.tag);
+    const el = document.createElement(graft._tag);
 
 
     if (!graft._meta) graft._meta = BLANK_META;
@@ -56,18 +56,18 @@ export function create_live_tree($node: HsonNode | BasicValue): Node {
     }
 
     /* 4. if container, add to its content; if not, render the content directly */
-    if (graft.content) {
+    if (graft._content) {
 
-        const container = graft.content.find(
-            (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c.tag)
+        const container = graft._content.find(
+            (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag)
         );
 
         if (container) {
 
             /* case A: VSN container found; render its children
                 this handles nodes coming from the HTML parser */
-            if (container.content) {
-                for (const childNode of container.content) {
+            if (container._content) {
+                for (const childNode of container._content) {
                     el.appendChild(create_live_tree(childNode));
                 }
             }
@@ -76,7 +76,7 @@ export function create_live_tree($node: HsonNode | BasicValue): Node {
                 the content is a direct list of nodes/primitives
                 (handles nodes created by `.append()`) */
 
-            for (const childNode of graft.content) {
+            for (const childNode of graft._content) {
                 el.appendChild(create_live_tree(childNode));
             }
         }

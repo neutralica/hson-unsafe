@@ -15,7 +15,7 @@ export function is_BasicValue(x: any): x is BasicValue {
 
 /* identifies HsonNode */
 export function is_Node(bit: unknown): bit is HsonNode {
-  return typeof bit === 'object' && bit !== null && 'tag' in bit;
+  return typeof bit === 'object' && bit !== null && '_tag' in bit;
 }
 
 /* for filtering out strings */
@@ -28,17 +28,17 @@ export function is_not_string(txt: JSONShape) {
 /* identifies HsonNodes that contain a BasicValue as content */
 export function is_PRIM_or_STR_Node(node: HsonNode): boolean {
   return (
-    node.content.length === 1 &&
-    is_BasicValue(node.content[0]) &&
-    (node.tag === STRING_TAG ||
-      node.tag === PRIM_TAG)
+    node._content.length === 1 &&
+    is_BasicValue(node._content[0]) &&
+    (node._tag === STRING_TAG ||
+      node._tag === PRIM_TAG)
   )
 }
 
 /* identifies _ii index tags in an _array */
 export function is_indexed(node: HsonNode): boolean {
   return (
-    node.tag === INDEX_TAG && node.content && node.content.length === 1
+    node._tag === INDEX_TAG && node._content && node._content.length === 1
   )
 }
 
