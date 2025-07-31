@@ -1,5 +1,5 @@
-import { HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { STRING_TAG, BLANK_META, VSNContainerTags, NODE_ELEMENT_MAP, PRIM_TAG } from "../../types-consts/base.const.hson.js";
+import { HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { STRING_TAG, BLANK_META, VSNContainerTags, NODE_ELEMENT_MAP, PRIM_TAG } from "../../types-consts/constants.hson.js";
 import { is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
 

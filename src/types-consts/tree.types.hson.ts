@@ -1,5 +1,5 @@
 import { LiveTree } from "../api/tree/live-tree-class.tree.hson.js";
-import { JSONShape } from "./base.types.hson.js";
+import { JSONShape } from "./types.hson.js";
 
 /* branch - unattached LiveTree created from passed data (HTML/JSON) 
     use a tree nodes's append() method to attach these */

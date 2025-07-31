@@ -1,7 +1,7 @@
 // proxy-helpers.tree.hson.ts
 
-import { HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, PRIM_TAG, STRING_TAG, VSNContainerTags } from "../../types-consts/base.const.hson.js";
+import { HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, PRIM_TAG, STRING_TAG, VSNContainerTags } from "../../types-consts/constants.hson.js";
 import { is_Node } from "../is-helpers.utils.hson.js";
 
 /*  find the first direct child node with a given tag */

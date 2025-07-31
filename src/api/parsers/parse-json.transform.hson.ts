@@ -1,7 +1,7 @@
 // parse-json.transform.hson.ts
 
-import { JSONShape, HsonNode, BasicValue, _Meta, JSONObject } from "../../types-consts/base.types.hson.js";
-import { PRIM_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/base.const.hson.js";
+import { JSONShape, HsonNode, BasicValue, _Meta, JSONObject } from "../../types-consts/types.hson.js";
+import { PRIM_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { is_not_string, is_Object, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
 
 /* debug log */

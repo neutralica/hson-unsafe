@@ -1,5 +1,5 @@
 
-import { JSONShape, HsonNode } from "../../types-consts/base.types.hson.js";
+import { JSONShape, HsonNode } from "../../types-consts/types.hson.js";
 import { FrameConstructor, OutputConstructor_2, SourceConstructor_1 } from "../../types-consts/constructors.types.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";

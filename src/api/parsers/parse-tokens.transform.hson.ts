@@ -1,7 +1,7 @@
 // parse-tokens.transform.hson.ts
 
-import { HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { NEW_NODE, ROOT_TAG, OBJECT_TAG, BLANK_META, TokenΔ, ARRAY_TAG, ELEM_TAG, INDEX_TAG, VSN_TAGS, PRIM_TAG, STRING_TAG } from "../../types-consts/base.const.hson.js";
+import { HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { NEW_NODE, ROOT_TAG, OBJECT_TAG, BLANK_META, TokenΔ, ARRAY_TAG, ELEM_TAG, INDEX_TAG, VSN_TAGS, PRIM_TAG, STRING_TAG } from "../../types-consts/constants.hson.js";
 import { AllTokens } from "../../types-consts/tokens.types.hson.js";
 import { is_not_string, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";

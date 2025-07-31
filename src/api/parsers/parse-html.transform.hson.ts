@@ -1,6 +1,6 @@
 
-import { HsonAttrs, HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { NEW_NODE, PRIM_TAG, STRING_TAG, ROOT_TAG, BLANK_META, ELEM_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG } from "../../types-consts/base.const.hson.js";
+import { HsonAttrs, HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { NEW_NODE, PRIM_TAG, STRING_TAG, ROOT_TAG, BLANK_META, ELEM_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
 import { coerce } from "../../utils/coerce-string.utils.hson.js";
 import { expand_bools } from "../../utils/expand-booleans.utils.hson.js";
 import { expand_entities } from "../../utils/expand-entities.utils.hson.js";

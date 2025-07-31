@@ -1,6 +1,6 @@
 // consts.types.ts
 
-import { HsonNode, BasicValue } from "./base.types.hson.js";
+import { HsonNode, BasicValue } from "./types.hson.js";
 import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "./tokens.types.hson.js";
 
 /* factory to build a node from incomplete info */

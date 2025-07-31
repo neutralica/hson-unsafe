@@ -1,6 +1,6 @@
 // src/utils/style-manager.utils.hson.ts
 
-import { BasicValue } from "../../../types-consts/base.types.hson.js";
+import { BasicValue } from "../../../types-consts/types.hson.js";
 import { LiveTree } from "../live-tree-class.tree.hson.js";
 
 

@@ -1,7 +1,7 @@
 // --- serialize-hson.hson.render.ts ---
 
-import { _Meta, HsonAttrs, HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { STRING_TAG, PRIM_TAG, INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, _FALSE } from "../../types-consts/base.const.hson.js";
+import { _Meta, HsonAttrs, HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { STRING_TAG, PRIM_TAG, INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, _FALSE } from "../../types-consts/constants.hson.js";
 import { format_hson_attrs } from "../../utils/format-hson-attrs.utils.hson.js";
 import { get_self_close_value } from "../../utils/get-self-value.utils.hson.js";
 import { is_BasicValue as is_BasicValue, is_void, is_PRIM_or_STR_Node as is_ValueVsn, is_Node } from "../../utils/is-helpers.utils.hson.js";

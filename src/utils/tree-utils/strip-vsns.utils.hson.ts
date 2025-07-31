@@ -1,5 +1,5 @@
-import { HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { STRING_TAG, PRIM_TAG, VSNContainerTags, INDEX_TAG, ROOT_TAG } from "../../types-consts/base.const.hson.js";
+import { HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { STRING_TAG, PRIM_TAG, VSNContainerTags, INDEX_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { is_BasicValue, is_Node } from "../is-helpers.utils.hson.js";
 
 /**

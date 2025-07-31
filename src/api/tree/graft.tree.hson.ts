@@ -1,13 +1,13 @@
 // graft.tree.hson.ts
 
-import { ELEM_TAG, NODE_ELEMENT_MAP, OBJECT_TAG, ROOT_TAG } from "../../types-consts/base.const.hson.js";
+import { ELEM_TAG, NODE_ELEMENT_MAP, OBJECT_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { is_Node, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
 import { LiveTree } from "./live-tree-class.tree.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
-import { HsonNode } from "../../types-consts/base.types.hson.js";
+import { HsonNode } from "../../types-consts/types.hson.js";
 import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 /* debug log */

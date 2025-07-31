@@ -1,7 +1,7 @@
 // sanitize-html.util.hson.ts
 
-import DOMPurify from "dompurify"
-import { _ERROR, _FALSE, ARRAY_TAG, ELEM_OBJ, ELEM_TAG, INDEX_TAG, OBJECT_TAG, PRIM_TAG, ROOT_TAG, STRING_TAG } from "../types-consts/base.const.hson";
+import  DOMPurify from "dompurify";
+import { _ERROR, _FALSE, ARRAY_TAG, ELEM_OBJ, ELEM_TAG, INDEX_TAG, OBJECT_TAG, PRIM_TAG, ROOT_TAG, STRING_TAG } from "../types-consts/constants.hson";
 
 /**
  * sanitizes html strings to prevent potential cross-site scripting (XSS) attacks

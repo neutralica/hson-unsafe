@@ -1,5 +1,5 @@
-import { HsonAttrs, HsonFlags, HsonNode, BasicValue } from "../../types-consts/base.types.hson.js";
-import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../types-consts/base.const.hson.js";
+import { HsonAttrs, HsonFlags, HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../types-consts/constants.hson.js";
 import { is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parseSelector } from "../../utils/tree-utils/parse-selector.utils.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
@@ -7,6 +7,8 @@ import { DatasetManager } from "./tree-methods/dataset-manager.tree.hson.js";
 import StyleManager from "./tree-methods/style-manager.utils.hson.js";
 import { empty } from "./tree-methods/empty.tree.utils.hson.js";
 import { removeChild } from "./tree-methods/remove-child.tree.utils.hson.js";
+import { append } from "./tree-methods/append.tree.hson.js";
+import { getContent } from "./tree-methods/get-content.tree.hson.js";
 
 /*  defines the shape of the query object for find() and findAll() */
 export interface HsonQuery {
@@ -22,8 +24,11 @@ export class LiveTree {
   // NEW: Lazily instantiated managers for style and dataset
   private styleManager: StyleManager | null = null;
   private datasetManager: DatasetManager | null = null;
-  public empty = empty
+  public append = append
+  public empty = empty;
   public removeChild = removeChild;
+  public getContent = getContent
+
 
 
   constructor($nodes: HsonNode | HsonNode[] | LiveTree) {
@@ -79,6 +84,37 @@ export class LiveTree {
 
   /*  -vvv- action/setter methods -vvv- */
 
+  /**
+   * sets the 'value' property for form elements like <input> and <textarea>
+   *   directly manipulates the .value property of the live DOM element and the 
+   *   'value' attribute in the HSON data model.
+   *   it does NOT modify the node's content/child nodes
+   *
+   * @param $value new value
+   * @returns current tree instance (for chaining)
+   */
+  setValue($value: string): this {
+    for (const node of this.selectedNodes) {
+      // This method only applies to specific tags.
+      if (node.tag !== 'input' && node.tag !== 'textarea') {
+        console.warn(`setValue() called on a <${node.tag}> element. This method is intended only for <input> and <textarea>.`);
+        continue; // Skip to the next node
+      }
+
+      /*  Sync the live DOM element's .value **property**. */
+      const liveElement = NODE_ELEMENT_MAP.get(node);
+      if (liveElement && 'value' in liveElement) {
+        (liveElement as HTMLInputElement | HTMLTextAreaElement).value = $value;
+      }
+      /* sync 'value' **attribute**
+             (ensures data model consistency for both inputs and textareas) */
+      if (!node._meta) node._meta = BLANK_META;
+      if (!node._meta.attrs) node._meta.attrs = {};
+      node._meta.attrs.value = $value;
+    }
+    return this;
+  }
+
   setContent($content: string): this {
     for (const node of this.selectedNodes) {
       const textNode = NEW_NODE({ tag: STRING_TAG, content: [$content] });
@@ -119,52 +155,16 @@ export class LiveTree {
   removeAttr($name: string): this {
     return this.setAttr($name, null);
   }
-
-  append($content: Partial<HsonNode> | string | LiveTree): this {
-    let nodesToAppend: HsonNode[];
-    if (typeof $content === 'string') {
-      nodesToAppend = [NEW_NODE({ tag: STRING_TAG, content: [$content] })];
-    } else if ($content instanceof LiveTree) {
-      nodesToAppend = $content.selectedNodes;
-    } else if (is_Node($content)) {
-      nodesToAppend = [$content];
-    } else {
-      return this;
-    }
-
-    for (const targetNode of this.selectedNodes) {
-      if (!targetNode.content) targetNode.content = [];
-      let containerNode: HsonNode;
-      const firstChild = targetNode.content[0];
-      if (is_Node(firstChild) && firstChild.tag === ELEM_TAG) {
-        containerNode = firstChild;
-      } else {
-        containerNode = NEW_NODE({ tag: ELEM_TAG, content: [...targetNode.content] });
-        targetNode.content = [containerNode];
-      }
-      containerNode.content.push(...nodesToAppend);
-      const liveElement = NODE_ELEMENT_MAP.get(targetNode);
-      if (liveElement) {
-        liveElement.innerHTML = '';
-        if (containerNode.content) {
-          for (const childToRender of containerNode.content) {
-            liveElement.appendChild(create_live_tree(childToRender));
-          }
-        }
-      }
-    }
-    return this;
-  }
-
+  
   /**
-   * removes all selected nodes from the DOM and the data model.
+   * removes the calling nodes from its place in the DOM and data model
    */
   remove(): this {
     for (const node of this.selectedNodes) {
       /* Remove from the DOM */
       const liveElement = NODE_ELEMENT_MAP.get(node);
       liveElement?.remove();
-      /* this is fragile */
+      /* this feels fragile */
       NODE_ELEMENT_MAP.delete(node);
     }
     /*  Clear the current selection  */
@@ -212,9 +212,9 @@ export class LiveTree {
    * Returns the raw HsonNode(s) for debugging.
    * @param all - If true, returns the entire array of selected nodes. Otherwise, returns the first.
    */
-  sourceNode(all: boolean = false): HsonNode | HsonNode[] | undefined {
+  sourceNode(all: boolean = true, index?: number): HsonNode | HsonNode[] | undefined {
     if (this.selectedNodes.length === 0) return undefined;
-    return all ? this.selectedNodes : this.selectedNodes[0];
+    return all ? this.selectedNodes : this.selectedNodes[index || 0];
   }
 
   /**

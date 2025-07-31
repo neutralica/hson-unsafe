@@ -1,6 +1,6 @@
 // coerce-string.hson.util.ts
 
-import { BasicValue } from "../types-consts/base.types.hson.js";
+import { BasicValue } from "../types-consts/types.hson.js";
 /**
  * parses a string value into its valueful primitive type and reports
  *   if the original string was quoted

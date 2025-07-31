@@ -1,5 +1,5 @@
-import { HsonNode } from "../../types-consts/base.types.hson.js";
-import { STRING_TAG, PRIM_TAG, VSNContainerTags, OBJECT_TAG, ARRAY_TAG, INDEX_TAG, BLANK_META, NODE_ELEMENT_MAP } from "../../types-consts/base.const.hson.js";
+import { HsonNode } from "../../types-consts/types.hson.js";
+import { STRING_TAG, PRIM_TAG, VSNContainerTags, OBJECT_TAG, ARRAY_TAG, INDEX_TAG, BLANK_META, NODE_ELEMENT_MAP } from "../../types-consts/constants.hson.js";
 import { is_Node, is_BasicValue, is_Object } from "../../utils/is-helpers.utils.hson.js";
 import { parse_json } from "../parsers/parse-json.transform.hson.js";
 import { find_child_by_tag, find_index_of_tag, get_contentValue, update_content } from "../../utils/tree-utils/proxy-helpers.utils.hson.js";

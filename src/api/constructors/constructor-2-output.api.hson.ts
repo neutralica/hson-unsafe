@@ -1,6 +1,6 @@
 // to-output.hson.infra.ts
 
-import { RenderΔ } from "../../types-consts/base.const.hson.js";
+import { RenderΔ } from "../../types-consts/constants.hson.js";
 import { FrameConstructor, OutputConstructor_2, FrameRender } from "../../types-consts/constructors.types.hson.js";
 import { serialize_hson } from "../serializers/serialize-hson.render.hson.js";
 import { serialize_html } from "../serializers/serialize-html.render.hson.js";

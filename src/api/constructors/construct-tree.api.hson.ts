@@ -1,5 +1,5 @@
-import { HsonNode, JSONShape } from "../../types-consts/base.types.hson.js";
-import { _ERROR, _FALSE, BLANK_META } from "../../types-consts/base.const.hson.js";
+import { HsonNode, JSONShape } from "../../types-consts/types.hson.js";
+import { _ERROR, _FALSE, BLANK_META } from "../../types-consts/constants.hson.js";
 import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../../types-consts/tree.types.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
