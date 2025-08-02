@@ -4,10 +4,11 @@ import { escape_html } from "../../utils/escape-html.utils.hson.js";
 import { is_BasicValue, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
+import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 
 const _VERBOSE = false;
-const $log = _VERBOSE
+const _log = _VERBOSE
   ? console.log
   : () => { };
 
@@ -20,7 +21,7 @@ const $log = _VERBOSE
  * @returns String representation for XML, or empty string for null/undefined.
  */
 function primitive_to_string(p: BasicValue): string {
-  $log(`primitive to XML string: received:  ${p}`)
+  _log(`primitive to XML string: received:  ${p}`)
   /* catch strings */
   if (typeof p === 'string') {
     /* must be escape before rendering HTML string:
@@ -47,14 +48,13 @@ function primitive_to_string(p: BasicValue): string {
  */
 export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
   /* catch BasicValues */
-  $log(`node to XML: processing ${make_string(node)}`)
+  _log(`node to XML: processing ${make_string(node)}`)
 
   if (is_BasicValue(node)) {
     return primitive_to_string(node);
   }
   if (node === undefined) {
-    console.error('undefined caught');
-    return "[ERROR UNDEFINED in node to xml]"
+    throw_transform_err('undefined node received', 'serialize_html', node);
   }
 
   /* handle the various VSNs */
@@ -62,7 +62,7 @@ export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
 
   switch (tag) {
     case ELEM_TAG: { /* flatten _elem; process children directly */
-      $log('list tag found; flattening')
+      _log('list tag found; flattening')
       return content.map(child => serialize_xml(child)).join('\n');
     }
     /* the other special case is strings, which is our default assumption for html 
@@ -73,9 +73,9 @@ export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
           will be visible in the html, unlike _str
         */
     case STRING_TAG: {
-      $log('string tag found; flattening')
+      _log('string tag found; flattening')
       if (typeof content[0] !== 'string') {
-        console.error('need a primitive in a txt node!')
+        throw_transform_err('need a primitive in a txt node!', 'serialize_html', content);
       }
       return primitive_to_string(content[0] as BasicValue)
 
@@ -87,7 +87,7 @@ export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
       gets is its contents are not  wrapped in _elem if an _obj is found*/
 
   let openLine = `<${tag}`;
-  $log(`open TAG: ${tag}`);
+  _log(`open TAG: ${tag}`);
   /* get attributes from _meta.attrs */
   for (const [key, value] of Object.entries(_meta.attrs ?? {})) {
 
@@ -167,7 +167,7 @@ export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
 
 export function serialize_html($node: HsonNode | BasicValue): string {
   if ($node === undefined) {
-    throw new Error('input node cannot be undefined for node_to_html');
+    throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', $node);
   }
   if (_VERBOSE) {
     console.groupCollapsed('---> serializing to html')
