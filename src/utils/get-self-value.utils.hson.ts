@@ -1,7 +1,7 @@
 // get-self-value.utils.hson.ts
 
-import { HsonNode, BasicValue } from "../types-consts/types.hson.js";
-import { STRING_TAG, PRIM_TAG, _FALSE, FALSE_TYPE, ARRAY_TAG, ELEM_TAG, ELEM_OBJ_ARR } from "../types-consts/constants.hson.js";
+import { HsonNode, Primitive } from "../types-consts/types.hson.js";
+import { STRING_TAG, VAL_TAG, _FALSE, FALSE_TYPE, ARRAY_TAG, ELEM_TAG, ELEM_OBJ_ARR } from "../types-consts/constants.hson.js";
 import { is_Node } from "./is-helpers.utils.hson.js";
 
 /* debug log */
@@ -18,7 +18,7 @@ const $log = VERBOSE
  * @param $node The HsonNode to inspect
  * @returns The primitive value if the pattern is matched, otherwise _FALSE
  */
-export function get_self_close_value($node: HsonNode): BasicValue | FALSE_TYPE {
+export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
     /*  1. self-closing tags cannot have any attrs or flags */
     $log('  ? checking for Self Value (if applicable) ', $node._tag);
     if (ELEM_OBJ_ARR.includes($node._tag)) {
@@ -47,10 +47,10 @@ export function get_self_close_value($node: HsonNode): BasicValue | FALSE_TYPE {
     }
     const grandChildNode = childNode._content[0];
     /* 3. that single child node must be a primitive wrapper (_str or _prim) */
-    if (grandChildNode._tag === STRING_TAG || grandChildNode._tag === PRIM_TAG) {
+    if (grandChildNode._tag === STRING_TAG || grandChildNode._tag === VAL_TAG) {
        /* success: return the primitive value directly from inside the wrapper */
         $log(' --> IS self-closing')
-        return grandChildNode._content[0] as BasicValue;
+        return grandChildNode._content[0] as Primitive;
     }
 
     /* if the structure does not match this exact pattern, it's not a self-closing tag*/

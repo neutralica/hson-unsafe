@@ -1,14 +1,14 @@
-import { HsonNode, BasicValue } from "../../types-consts/types.hson.js";
-import { STRING_TAG, PRIM_TAG, VSNContainerTags, INDEX_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
-import { is_BasicValue, is_Node } from "../is-helpers.utils.hson.js";
+import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { STRING_TAG, VAL_TAG, VSNContainerTags, INDEX_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
+import { is_Primitive, is_Node } from "../is-helpers.utils.hson.js";
 
 /**
  * recursive function that strips off VSN clutter and returns core data in 
  * its native structure for intuitive traversal and manipulation
  */
-export function strip_VSNs(node: HsonNode | BasicValue | undefined): any {
+export function strip_VSNs(node: HsonNode | Primitive | undefined): any {
     /*  1. base case: BasicValues and their VSN wrappers resolve to the raw value */
-    if (is_BasicValue(node)) {
+    if (is_Primitive(node)) {
         return node;
     }
     if (!is_Node(node)) {
@@ -16,7 +16,7 @@ export function strip_VSNs(node: HsonNode | BasicValue | undefined): any {
     }
     switch (node._tag) {
         case STRING_TAG:
-        case PRIM_TAG:
+        case VAL_TAG:
             return node._content[0];
     }
 
@@ -55,7 +55,7 @@ export function strip_VSNs(node: HsonNode | BasicValue | undefined): any {
     }
 
     // 4. final assembly: return the single-key object representation for this node
-    if (contentArray.length === 1 && is_BasicValue(contentArray[0])) {
+    if (contentArray.length === 1 && is_Primitive(contentArray[0])) {
         /* if just a single primitive, unwrap it */
         return { [node._tag]: contentArray[0] };
     } else {

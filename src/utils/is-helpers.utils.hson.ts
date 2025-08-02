@@ -1,7 +1,7 @@
 // is-helpers.hson.util.ts
 
-import { HsonNode, JsonType, NodeContent, BasicValue } from "../types-consts/types.hson.js";
-import {INDEX_TAG, PRIM_TAG, STRING_TAG } from "../types-consts/constants.hson.js";
+import { HsonNode, JsonType, NodeContent, Primitive } from "../types-consts/types.hson.js";
+import {INDEX_TAG, VAL_TAG, STRING_TAG } from "../types-consts/constants.hson.js";
 
 /* identifies JSON objects */
 export function is_Object(x: any): x is Record<string, any> {
@@ -9,7 +9,7 @@ export function is_Object(x: any): x is Record<string, any> {
 }
 
 /* identifies HSON BasicValue primitives */
-export function is_BasicValue(x: any): x is BasicValue {
+export function is_Primitive(x: any): x is Primitive {
   return x === null || ["string", "number", "boolean"].includes(typeof x);
 }
 
@@ -29,9 +29,9 @@ export function is_not_string(txt: JsonType) {
 export function is_PRIM_or_STR_Node(node: HsonNode): boolean {
   return (
     node._content.length === 1 &&
-    is_BasicValue(node._content[0]) &&
+    is_Primitive(node._content[0]) &&
     (node._tag === STRING_TAG ||
-      node._tag === PRIM_TAG)
+      node._tag === VAL_TAG)
   )
 }
 

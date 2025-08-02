@@ -1,6 +1,6 @@
 import { _ } from "ajv";
-import { HsonNode, JsonType, JSONObject, BasicValue, HsonAttrs, HsonFlags } from "../../types-consts/types.hson.js";
-import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, PRIM_TAG, STRING_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
+import { HsonNode, JsonType, JsonObj, Primitive, HsonAttrs, HsonFlags } from "../../types-consts/types.hson.js";
+import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, VAL_TAG, STRING_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
 import { is_indexed, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
@@ -88,7 +88,7 @@ function jsonFromNode($node: HsonNode): JsonType {
                 const childNode = $node._content[0] as HsonNode;
                 /* If the single child is a _prim or _str, this _obj is just a wrapper.
                      unwrap the value directly and return the primitive, ignoring the VSN tags */
-                if (childNode._tag === PRIM_TAG || childNode._tag === STRING_TAG) {
+                if (childNode._tag === VAL_TAG || childNode._tag === STRING_TAG) {
                     _log(`  <_obj>: unwrapping simple ${typeof childNode._content[0]} value: `, make_string(childNode._content[0]));
                     return jsonFromNode(childNode);
                 }
@@ -97,7 +97,7 @@ function jsonFromNode($node: HsonNode): JsonType {
 
             /* if not, it's an object builder */
             _log(`  <_obj>: constructing JSON object from properties`);
-            const properties: JSONObject = {};
+            const properties: JsonObj = {};
 
             /* get the object's properties--the nodes in its .content */
             for (const prop of ($node._content as HsonNode[])) {
@@ -119,17 +119,17 @@ function jsonFromNode($node: HsonNode): JsonType {
         }
 
 
-        case PRIM_TAG: {
+        case VAL_TAG: {
             /* return Primitive content directly */
             _log(`  <_prim>: returning number value: ${$node._content[0]}`);
-            return $node._content[0] as BasicValue;
+            return $node._content[0] as Primitive;
         }
 
         case STRING_TAG: {
             /* need to make sure that string_tag content is stringified; a number will be stored un-stringified
                 in a string node's content; it is still supposed to be stringified before serializing */
             _log(`  <_str>: returning string value: "${String($node._content[0])}"`);
-            const str = (typeof $node._content[0] === 'number') ? String($node._content[0]) : $node._content[0] as BasicValue;
+            const str = (typeof $node._content[0] === 'number') ? String($node._content[0]) : $node._content[0] as Primitive;
             return str;
         }
 

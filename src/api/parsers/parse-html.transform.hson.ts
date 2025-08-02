@@ -1,11 +1,11 @@
 
-import { HsonAttrs, HsonNode, BasicValue } from "../../types-consts/types.hson.js";
-import { NEW_NODE, PRIM_TAG, STRING_TAG, ROOT_TAG, BLANK_META, ELEM_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
+import { HsonAttrs, HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { NEW_NODE, VAL_TAG, STRING_TAG, ROOT_TAG, BLANK_META, ELEM_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
 import { coerce } from "../../utils/coerce-string.utils.hson.js";
 import { expand_bools } from "../../utils/expand-booleans.utils.hson.js";
 import { expand_entities } from "../../utils/expand-entities.utils.hson.js";
 import { expand_void_tags } from "../../utils/expand-self-closing.utils.hson.js";
-import { is_BasicValue, is_not_string, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { is_Primitive, is_not_string, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parse_css_attrs } from "../../utils/parse-css.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
@@ -87,10 +87,10 @@ function convert($el: Element): HsonNode {
     const tagLower = baseTag.toLowerCase();
 
 
-    if (tagLower === PRIM_TAG.toLowerCase()) {
+    if (tagLower === VAL_TAG.toLowerCase()) {
         const text = $el.textContent?.trim() || '';
         const primitive_content = coerce(text); /* turns "1" into number 1 */
-        return NEW_NODE({ _tag: PRIM_TAG, _content: [primitive_content] });
+        return NEW_NODE({ _tag: VAL_TAG, _content: [primitive_content] });
     }
     const attrs: HsonAttrs = {};
     const flags: string[] = [];
@@ -145,17 +145,17 @@ function convert($el: Element): HsonNode {
     const childNodes: HsonNode[] = [];
     const children = elementToNode($el.childNodes);
     for (const child of children) {
-        if (is_BasicValue(child)) {
+        if (is_Primitive(child)) {
             if (is_not_string(child)) console.warn('number detected', child)
             /* raw primitive--wrap it in the appropriate VSN */
-            if (is_not_string(child) && $el.tagName.toLowerCase() !== PRIM_TAG.toLowerCase()) {
+            if (is_not_string(child) && $el.tagName.toLowerCase() !== VAL_TAG.toLowerCase()) {
                 childNodes.push(NEW_NODE({ _tag: STRING_TAG, _content: [child] }));
-            } else if (is_not_string(child) && $el.tagName.toLowerCase() === PRIM_TAG.toLowerCase()) {
-                childNodes.push(NEW_NODE({ _tag: PRIM_TAG, _content: [child] }));
+            } else if (is_not_string(child) && $el.tagName.toLowerCase() === VAL_TAG.toLowerCase()) {
+                childNodes.push(NEW_NODE({ _tag: VAL_TAG, _content: [child] }));
             } else if (typeof child === 'string') {
                 childNodes.push(NEW_NODE({ _tag: STRING_TAG, _content: [child] }));
             } else { /* boolean or null */
-                childNodes.push(NEW_NODE({ _tag: PRIM_TAG, _content: [child] }));
+                childNodes.push(NEW_NODE({ _tag: VAL_TAG, _content: [child] }));
             }
         } else {
             /* it's already a valid Node: push it directly. */
@@ -193,7 +193,7 @@ function convert($el: Element): HsonNode {
             _content: [childNodes[0]], /* return the VSN wrapping the base tag's content */
             _meta: currentMeta
         });
-    } else if ((baseTag === INDEX_TAG || baseTag === PRIM_TAG)) {
+    } else if ((baseTag === INDEX_TAG || baseTag === VAL_TAG)) {
         return NEW_NODE({
             _tag: baseTag,
             _content: [childNodes[0]], /* return the VSN wrapping the base tag's content */
@@ -213,11 +213,11 @@ function convert($el: Element): HsonNode {
  * parses child DOM nodes and returns an array of HsonNodes.
  *  - recursively calls `convert` for element children and creates VSNs for BasicValue children. 
  * @param {NodeListOf<ChildNode>} $els - the nodes in question
- * @returns {(HsonNode | BasicValue)[]} - either a finished Node or a primitive value
+ * @returns {(HsonNode | Primitive)[]} - either a finished Node or a primitive value
  */
 
-function elementToNode($els: NodeListOf<ChildNode>): (HsonNode | BasicValue)[] {
-    const children: (HsonNode | BasicValue)[] = [];
+function elementToNode($els: NodeListOf<ChildNode>): (HsonNode | Primitive)[] {
+    const children: (HsonNode | Primitive)[] = [];
     for (const kid of Array.from($els)) {
         if (kid.nodeType === Node.ELEMENT_NODE) {
             /* recurse elements */

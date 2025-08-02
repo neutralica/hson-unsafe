@@ -1,6 +1,6 @@
 // format-hson.attrs.utils.hson.ts
 
-import { HsonAttrs, BasicValue } from "../types-consts/types.hson.js";
+import { HsonAttrs, Primitive } from "../types-consts/types.hson.js";
 import { serialize_css } from "./serialize-css.utils.hson.js";
 
 /**
@@ -32,7 +32,7 @@ export function format_hson_attrs(attrs: HsonAttrs): string {
       }
 
       /* for all other primitive attributes */
-      const primitiveValue = value as BasicValue;
+      const primitiveValue = value as Primitive;
 
       /* handle flags (disabled="disabled") */
       if (key === String(primitiveValue)) {

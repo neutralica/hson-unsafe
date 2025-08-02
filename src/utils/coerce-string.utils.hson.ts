@@ -1,13 +1,13 @@
 // coerce-string.hson.util.ts
 
-import { BasicValue } from "../types-consts/types.hson.js";
+import { Primitive } from "../types-consts/types.hson.js";
 /**
  * parses a string value into its valueful primitive type and reports
  *   if the original string was quoted
  * @param value - Tte input string to coerce
  * @returns - an valueful value
  */
-export function coerce(value: string): BasicValue {
+export function coerce(value: string): Primitive {
     const trimmed = value.trim();
 
     if (trimmed === '') {

@@ -1,5 +1,5 @@
 import { TokenΔ } from "./constants.hson.js";
-import { HsonAttrs as HsonAttrs, HsonFlags, HsonNode, BasicValue } from "./types.hson.js";
+import { HsonAttrs as HsonAttrs, HsonFlags, HsonNode, Primitive } from "./types.hson.js";
 
 
 export interface BaseToken {
@@ -8,7 +8,7 @@ export interface BaseToken {
     /** Tag name or JSON key */
     tag?: string;
     /** Quoted‐string content (for text nodes), otherwise an empty array */
-    content?: BasicValue[];
+    content?: Primitive[];
     /** Inline flags or text values */
     flags?: HsonFlags;
     /** Parsed key→value attributes */

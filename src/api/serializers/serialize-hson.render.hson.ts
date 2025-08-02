@@ -1,12 +1,13 @@
 // --- serialize-hson.hson.render.ts ---
 
-import { HsonMeta, HsonAttrs, HsonNode, BasicValue } from "../../types-consts/types.hson.js";
-import { STRING_TAG, PRIM_TAG, INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, _FALSE } from "../../types-consts/constants.hson.js";
+import { HsonMeta, HsonAttrs, HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { STRING_TAG, VAL_TAG, INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, _FALSE } from "../../types-consts/constants.hson.js";
 import { format_hson_attrs } from "../../utils/format-hson-attrs.utils.hson.js";
 import { get_self_close_value } from "../../utils/get-self-value.utils.hson.js";
-import { is_BasicValue as is_BasicValue, is_void, is_PRIM_or_STR_Node as is_ValueVsn, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { is_Primitive as is_Primitive, is_void, is_PRIM_or_STR_Node as is_ValueVsn, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { serialize_primitive } from "../../utils/serialize-primitive.utils.hson.js";
+import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 
 
@@ -45,45 +46,40 @@ function getIndent($level: number): string {
  * closers ('>' for object properties vs. '/>' for list items) based
  * on the parent's vsn.
  *
- * @param {HsonNode | BasicValue} $node - the node or primitive value to serialize.
+ * @param {HsonNode} $input - the node or primitive value to serialize.
  * @param {number} $indent_level - the current indentation level for pretty-printing.
  * @param {typeof ELEM_TAG | typeof OBJECT_TAG} [$vsn] - the vsn context provided by the parent node, used to determine the correct closer for one-liners.
  * @returns {string} the formatted hson string representation of the node.
  */
 
 function hsonFromNode(
-    $node: HsonNode | BasicValue,
+    $input: HsonNode | Primitive,
     $indent_level: number,
     $vsn?: typeof ELEM_TAG | typeof OBJECT_TAG,
 ): string {
     const currentIndent = getIndent($indent_level);
 
-    /* raw primitives (BasicValues) */
-    /* I don't think this is ever reached and it is probably obsolete */
-    if (is_BasicValue($node)) {
-        console.warn('should we ever reach this?? feels like not');
-        console.warn($node);
-        const value = serialize_primitive($node)
+    /* Primitives */
+    if (is_Primitive($input)) {
+        const value = serialize_primitive($input)
         return currentIndent + value;
     }
-
-    const oneLinerValue = get_self_close_value($node);
+    const node: HsonNode = { ...($input || {}) };
+    const oneLinerValue = get_self_close_value(node);
     /* 2. if the helper returned a value, format the one-liner */
     if (oneLinerValue !== _FALSE) { /* sentinel value for generic no-result boolean */
         /* (self nodes may have no attributes) */
-        const tag = ($node as HsonNode)._tag;
-        const val_string = serialize_primitive(oneLinerValue);
+        const tag = node._tag;
+        const valString = serialize_primitive(oneLinerValue);
 
         if ($vsn === ELEM_TAG) {
-            return `${currentIndent}<${tag} ${val_string} />`;
+            return `${currentIndent}<${tag} ${valString} />`;
         } else {
-            return `${currentIndent}<${tag} ${val_string}>`;
+            return `${currentIndent}<${tag} ${valString}>`;
         }
     }
 
-    const currentNode = $node as HsonNode;
-    if (!currentNode._meta.attrs || !currentNode._meta.flags) throw new Error();
-    const { _tag: tag, _content: content = [], _meta } = currentNode;
+    const {  _tag: tag, _attrs,  _content: content = [], _meta } = node || {};
 
     const attrs = _meta.attrs ?? {};
     const flags = _meta.flags ?? [];
@@ -92,17 +88,19 @@ function hsonFromNode(
     const meta_string = formatHsonMeta({ attrs, flags }); // Your helper
 
     /*  2. disappear VSNs */
-    if (tag === STRING_TAG || tag === PRIM_TAG) {
-        if (content.length !== 1 || !is_BasicValue(content[0])) {
-            console.error('BasicValue nodes must have 1 primitive.');
-            return '[ERROR-PROBLEM WITH BasicValue NODE (NODE-HTML)]';
+    if (tag === STRING_TAG || tag === VAL_TAG) {
+        if (content.length !== 1 || !is_Primitive(content[0])) {
+            throw_transform_err('_str or _prim nodes must have 1 and only 1 hson  in content', 'serialize-hson', node);
         }
 
         const value = currentIndent + make_string(content[0])
         return value;
     }
     if (tag === INDEX_TAG) {
-        if (content.length !== 1) throw new Error('_ii nodes must have 1 child.');
+        if (content.length !== 1) { throw_transform_err('_ii nodes must have 1 & only 1 child', 'serialize-hson', node); }
+        if (!is_Node(content[0])) {
+            throw_transform_err('index tag contents are not nodes', 'serialize-hson', content)
+        }
         /* recurse the child with the SAME indent level. */
         return hsonFromNode(content[0], $indent_level + 1, $vsn);
     }
@@ -170,14 +168,14 @@ function hsonFromNode(
  */
 
 export function serialize_hson($root: HsonNode): string {
-    if (_VERBOSE){
+    if (_VERBOSE) {
         console.groupCollapsed('---> serializing hson')
         console.log('beginning node:')
         console.log(make_string($root));
         console.groupEnd()
     }
 
-    if (!$root || !is_Node($root)) return "[ERROR - INVALID NODE RECEIVED]";
+    if (!$root || !is_Node($root)) throw_transform_err('no _root node found in data', 'serialize-hson', $root);
     const hson = hsonFromNode($root, 0).trim();
 
     if (_VERBOSE) {

@@ -1,7 +1,7 @@
 // proxy-helpers.tree.hson.ts
 
-import { HsonNode, BasicValue } from "../../types-consts/types.hson.js";
-import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, PRIM_TAG, STRING_TAG, VSNContainerTags } from "../../types-consts/constants.hson.js";
+import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, VAL_TAG, STRING_TAG, VSNContainerTags } from "../../types-consts/constants.hson.js";
 import { is_Node } from "../is-helpers.utils.hson.js";
 
 /*  find the first direct child node with a given tag */
@@ -33,7 +33,7 @@ export function find_index_of_tag(parentNode: HsonNode, tag: string): number {
 /**
  * update primitive content in both the node and DOM (if live)
  */
-export function update_content(nodeToUpdate: HsonNode, value: BasicValue): void {
+export function update_content(nodeToUpdate: HsonNode, value: Primitive): void {
     const hsonContainer = nodeToUpdate._content.find(
         (c): c is HsonNode => is_Node(c) && c._tag === ELEM_TAG
     );
@@ -96,15 +96,15 @@ export function is_selfClosing($node: HsonNode): boolean {
 
     /* the single child must be a STRING_TAG or PRIM_TAG */
     const singleChild = container._content[0];
-    return is_Node(singleChild) && (singleChild._tag === STRING_TAG || singleChild._tag === PRIM_TAG)
+    return is_Node(singleChild) && (singleChild._tag === STRING_TAG || singleChild._tag === VAL_TAG)
 }
 
 /**
  * get the primitive value from a self-closing node
  * @param {HsonNode} $node - the node suspected of being a BasicValue-carrier
- * @returns {BasicValue | undefined} - undefined if the content does not match BasicValue carrying structure
+ * @returns {Primitive | undefined} - undefined if the content does not match BasicValue carrying structure
  */
-export function get_contentValue($node: HsonNode): BasicValue | undefined {
+export function get_contentValue($node: HsonNode): Primitive | undefined {
     /* _prim or _str nodes can't have attrs or flags */
     if ($node._meta?.attrs && Object.keys($node._meta.attrs).length > 0) {
         return undefined;
@@ -118,8 +118,8 @@ export function get_contentValue($node: HsonNode): BasicValue | undefined {
     /* if there is exactly one child, and it's a BasicValue-carrying node, return its value */
     if (contentSource.length === 1) {
         const singleChild = contentSource[0];
-        if (is_Node(singleChild) && (singleChild._tag === STRING_TAG || singleChild._tag === PRIM_TAG)) {
-            return singleChild._content[0] as BasicValue;
+        if (is_Node(singleChild) && (singleChild._tag === STRING_TAG || singleChild._tag === VAL_TAG)) {
+            return singleChild._content[0] as Primitive;
         }
     }
 

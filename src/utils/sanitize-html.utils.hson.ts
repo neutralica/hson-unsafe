@@ -1,7 +1,7 @@
 // sanitize-html.util.hson.ts
 
 import  DOMPurify from "dompurify";
-import { _ERROR, _FALSE, ARRAY_TAG, ELEM_OBJ, ELEM_TAG, INDEX_TAG, OBJECT_TAG, PRIM_TAG, ROOT_TAG, STRING_TAG } from "../types-consts/constants.hson";
+import { _ERROR, _FALSE, ARRAY_TAG, ELEM_OBJ, ELEM_TAG, INDEX_TAG, OBJECT_TAG, VAL_TAG, ROOT_TAG, STRING_TAG } from "../types-consts/constants.hson";
 
 /**
  * sanitizes html strings to prevent potential cross-site scripting (XSS) attacks
@@ -23,6 +23,6 @@ export function sanitize_html($input: string | Element): string {
       ADD_TAGS: [ROOT_TAG, ELEM_TAG,
          OBJECT_TAG, ARRAY_TAG,
          INDEX_TAG, _FALSE, _ERROR,
-         PRIM_TAG, STRING_TAG, ROOT_TAG]
+         VAL_TAG, STRING_TAG, ROOT_TAG]
    });
 }

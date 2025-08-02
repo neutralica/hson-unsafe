@@ -1,17 +1,19 @@
 // base.hson.types.ts
 
 /** union of primitive data types valid in both JSON and HSON */
-export type BasicValue = string | boolean | number | null;
+export type Primitive = string | boolean | number | null;
+
+export type BasicValue = boolean | number | null;
 
 /** recursive type representing any valid json structur. */
 export type JsonType =
-    | BasicValue
+    | Primitive
     | { [key: string]: JsonType }
     | JsonType[];
 
 
 /** represents a standard javascript object, extended with an optional _meta property */
-export type JSONObject = { [key: string]: JsonType } & { _meta?: HsonMeta };
+export type JsonObj = { [key: string]: JsonType } & { _meta?: HsonMeta };
 
 
 /**
@@ -30,7 +32,7 @@ export interface HsonNode {
 }
 
 /** content of an HsonNode is an array of HsonNodes or a primitive */
-export type NodeContent = (HsonNode | BasicValue)[];
+export type NodeContent = (HsonNode | Primitive)[];
 
 /**
  * @typedef {object} _Meta a container for HTML data that JSON cannot natively represent
@@ -55,7 +57,7 @@ export interface HsonMeta {
 export type HsonAttrs = {
     'data-index'?: string; // deprecate
     'style'?: string | Record<string, string> // keep
-} & Record<string, BasicValue>;
+} & Record<string, Primitive>;
 
 /* deprecated (see above) TODO */
-export type HsonFlags = Array<string | Record<string, BasicValue>>;
+export type HsonFlags = Array<string | Record<string, Primitive>>;

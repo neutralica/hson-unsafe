@@ -1,6 +1,6 @@
 // consts.types.ts
 
-import { HsonNode, BasicValue } from "./types.hson.js";
+import { HsonNode, Primitive } from "./types.hson.js";
 import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "./tokens.types.hson.js";
 
 /* factory to build a node from incomplete info */
@@ -25,7 +25,7 @@ export const CREATE_TOKEN = (partial: BaseToken): AllTokens => ({
 
 /* starting empty _meta value */
 export const BLANK_META = {
-  attrs: {} as Record<string, BasicValue>,
+  attrs: {} as Record<string, Primitive>,
   flags: [] as string[],
 };
 
@@ -37,7 +37,7 @@ export const _ERROR = '_error' as const;
 
 /* VSN tags & some common combinations */
 export const STRING_TAG = '_str' as const;
-export const PRIM_TAG = '_prim' as const;
+export const VAL_TAG = '__val' as const;
 export const ROOT_TAG = '_root' as const;
 export const INDEX_TAG = '_ii' as const;
 export const OBJECT_TAG = '_obj' as const;
@@ -52,7 +52,7 @@ export const VSN_TAGS = [
   ELEM_TAG,
   OBJECT_TAG,
   STRING_TAG,
-  PRIM_TAG,
+  VAL_TAG,
 ] as string[];
 export const VSNContainerTags = VSN_TAGS;
 

@@ -1,16 +1,16 @@
-import { HsonNode, BasicValue } from "../../types-consts/types.hson.js";
-import { STRING_TAG, BLANK_META, VSNContainerTags, NODE_ELEMENT_MAP, PRIM_TAG } from "../../types-consts/constants.hson.js";
+import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { STRING_TAG, BLANK_META, VSNContainerTags, NODE_ELEMENT_MAP, VAL_TAG } from "../../types-consts/constants.hson.js";
 import { is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
 
 /**
  * Recursively renders an HsonNode into a DOM 'liveTree', establishing
  * an entangled link between the HsonNode and its corresponding HTMLElement.
- * @param {HsonNode | BasicValue} $node The HsonNode to render.
+ * @param {HsonNode | Primitive} $node The HsonNode to render.
  * @returns  {Node}An HTMLElement or Text node.
  */
 
-export function create_live_tree($node: HsonNode | BasicValue): Node {
+export function create_live_tree($node: HsonNode | Primitive): Node {
     /* create a text node to display malformed content */
     if (!is_Node($node)) {
 
@@ -20,7 +20,7 @@ export function create_live_tree($node: HsonNode | BasicValue): Node {
     const graft = $node as HsonNode;
 
     /*  if the node is a primitive wrapper VSN, treat it like an unwrapped primitive */
-    if (graft._tag === STRING_TAG || graft._tag === PRIM_TAG) {
+    if (graft._tag === STRING_TAG || graft._tag === VAL_TAG) {
         const textNode = document.createTextNode(String(graft._content?.[0] ?? ''));
         return textNode;
     }

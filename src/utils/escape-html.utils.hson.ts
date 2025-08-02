@@ -1,10 +1,10 @@
 // escape-html.hson.util.ts
 
-import { is_BasicValue } from "./is-helpers.utils.hson.js";
+import { is_Primitive } from "./is-helpers.utils.hson.js";
 
 /* basic escape helper to be used pre-serialization of HTML */
 export function escape_html(str: any): string {
-  if (!is_BasicValue(str)) {
+  if (!is_Primitive(str)) {
     throw new Error('need a string in escape_html')
   }
   if (typeof str !== 'string') {

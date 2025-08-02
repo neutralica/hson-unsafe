@@ -1,4 +1,4 @@
-import { HsonAttrs, HsonFlags, HsonNode, BasicValue } from "../../types-consts/types.hson.js";
+import { HsonAttrs, HsonFlags, HsonNode, Primitive } from "../../types-consts/types.hson.js";
 import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../types-consts/constants.hson.js";
 import { is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parseSelector } from "../../utils/tree-utils/parse-selector.utils.hson.js";
@@ -175,7 +175,7 @@ export class LiveTree {
 
   /*  -vvv- reader methods -vvv- */
 
-  getAttr($attr: string): BasicValue | undefined {
+  getAttr($attr: string): Primitive | undefined {
     if (this.selectedNodes.length === 0) return undefined;
     const node = this.selectedNodes[0];
     if (!node?._meta) return undefined;

@@ -1,9 +1,9 @@
-import { HsonAttrs, HsonFlags, BasicValue } from "../../types-consts/types.hson.js";
+import { HsonAttrs, HsonFlags, Primitive } from "../../types-consts/types.hson.js";
 import { CREATE_TOKEN, TokenΔ, OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { AllTokens, HSON_Token_Type } from "../../types-consts/tokens.types.hson.js";
 import { close_tag_lookahead } from "../../utils/close-tag-lookahead.utils.hson.js";
 import { coerce } from "../../utils/coerce-string.utils.hson.js";
-import { is_not_string, is_BasicValue, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { is_not_string, is_Primitive, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parse_css_attrs } from "../../utils/parse-css.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { splitTopLevel } from "../../utils/split-top-level.utils.hson.js";
@@ -261,12 +261,12 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
 
             const attrs: HsonAttrs = {};
             const flags: HsonFlags = [];
-            let nodeContent: BasicValue | undefined = undefined;
+            let nodeContent: Primitive | undefined = undefined;
             let arrayContent: string | undefined = undefined;
             let selfCloses = false;
             let parseError = false;
 
-            const inlineContent: (BasicValue | AllTokens | { type: 'HSON_ARRAY_SHORTHAND', hsonString: string })[] = [];
+            const inlineContent: (Primitive | AllTokens | { type: 'HSON_ARRAY_SHORTHAND', hsonString: string })[] = [];
 
 
             /* parse attrs and flags */
@@ -438,7 +438,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                             const unquotedMatch = remainder.match(unquotedRegex);
                             if (unquotedMatch) {
                                 const matchedStr = unquotedMatch[0];
-                                let primitiveValue: BasicValue;
+                                let primitiveValue: Primitive;
                                 if (matchedStr === "true") primitiveValue = true;
                                 else if (matchedStr === "false") primitiveValue = false;
                                 else if (matchedStr === "null") primitiveValue = null;
@@ -474,11 +474,11 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
             } else {
                 const meta = { attrs, flags };
                 let can_selfClose = true;
-                const selfContent: BasicValue[] = [];
+                const selfContent: Primitive[] = [];
 
                 /* helper function to process inline content items into tokens */
                 function emitInlineTokens(
-                    $elements: (BasicValue | AllTokens | { type: 'HSON_ARRAY_SHORTHAND', hsonString: string } | { type: 'TOKEN_SEQUENCE', tokens: AllTokens[] })[],
+                    $elements: (Primitive | AllTokens | { type: 'HSON_ARRAY_SHORTHAND', hsonString: string } | { type: 'TOKEN_SEQUENCE', tokens: AllTokens[] })[],
                     $outputTokens: AllTokens[],
                     $currentTagName: string, /*  (for logging context) */
                     $currentRecursionDepth: number /* or recursive token_from_hson calls */
@@ -519,9 +519,9 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                             $outputTokens.push(...(element as any).tokens);
                         } else if (element !== null && typeof element === 'object' && (element as AllTokens).tag !== undefined && typeof (element as AllTokens).type === 'string') {
                             $outputTokens.push(element as AllTokens);
-                        } else if (is_BasicValue(element)) {
+                        } else if (is_Primitive(element)) {
                             const type = (is_not_string(element)) ? TokenΔ.PRIM_VAL : TokenΔ.STR_VAL;
-                            $outputTokens.push(CREATE_TOKEN({ type, content: [element as BasicValue] }));
+                            $outputTokens.push(CREATE_TOKEN({ type, content: [element as Primitive] }));
                         }
                     }
                 }
@@ -534,7 +534,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                         can_selfClose = false;
                         break;
                     }
-                    selfContent.push(item as BasicValue);
+                    selfContent.push(item as Primitive);
                 }
 
 
@@ -672,7 +672,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
 
         /* process content, if any */
         if (nextLine) {
-            if (is_BasicValue(nextLine)) {
+            if (is_Primitive(nextLine)) {
                 const primitive = coerce(nextLine);
                 const type = (is_not_string(primitive)) ? TokenΔ.PRIM_VAL : TokenΔ.STR_VAL;
                 finalTokens.push(CREATE_TOKEN({ type, content: [primitive] }));

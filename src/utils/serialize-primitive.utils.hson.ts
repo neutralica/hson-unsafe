@@ -1,6 +1,6 @@
 // serialize-primitive.utils.hson.ts
 
-import { BasicValue } from "../types-consts/types.hson";
+import { Primitive } from "../types-consts/types.hson";
 /**
  * serializes a BasicValue type into its string representation
  *
@@ -9,11 +9,11 @@ import { BasicValue } from "../types-consts/types.hson";
  * wrapped in quotes and that any internal special characters are escaped.
  * - for numbers, booleans, and null, it returns their direct literal string value.
  *
- * @param {BasicValue} $prim - the primitive value to serialize.
+ * @param {Primitive} $prim - the primitive value to serialize.
  * @returns {string} the serialized string representation of the primitive.
  */
 
-export function serialize_primitive($prim: BasicValue): string {
+export function serialize_primitive($prim: Primitive): string {
 
   /* if the primitive is a string, just serialize it as a string. */
     if (typeof $prim === 'string') {

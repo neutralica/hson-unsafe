@@ -1,9 +1,9 @@
 // parse-tokens.transform.hson.ts
 
-import { HsonNode, BasicValue } from "../../types-consts/types.hson.js";
-import { NEW_NODE, ROOT_TAG, OBJECT_TAG, BLANK_META, TokenΔ, ARRAY_TAG, ELEM_TAG, INDEX_TAG, VSN_TAGS, PRIM_TAG, STRING_TAG } from "../../types-consts/constants.hson.js";
+import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { NEW_NODE, ROOT_TAG, OBJECT_TAG, BLANK_META, TokenΔ, ARRAY_TAG, ELEM_TAG, INDEX_TAG, VSN_TAGS, VAL_TAG, STRING_TAG } from "../../types-consts/constants.hson.js";
 import { AllTokens } from "../../types-consts/tokens.types.hson.js";
-import { is_not_string, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
+import { is_not_string, is_Primitive } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 
 /* debug log */
@@ -287,7 +287,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
 
                 /*  determine the content VSN based on token.content */
                 let selfVSN: HsonNode[] | undefined = undefined;
-                let primValue: BasicValue | undefined = undefined;
+                let primValue: Primitive | undefined = undefined;
                 let has_content = false;
                 if (parent?._tag !== ELEM_TAG && parent?._tag !== OBJECT_TAG) {
                     console.error(' [error in parse-tokens!!] parent.tag is not _elem or _obj: should be VSN', parent?._tag)
@@ -297,7 +297,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 if (token.content !== undefined) {
                     if (Array.isArray(token.content)) {
                         /* exactly one primitive element for SELF tag content */
-                        if (token.content.length === 1 && is_BasicValue(token.content[0])) {
+                        if (token.content.length === 1 && is_Primitive(token.content[0])) {
                             primValue = token.content[0];
                             has_content = true;
                         } else if (token.content.length === 0) {
@@ -325,7 +325,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 /* create VSN */
                 if (has_content && primValue !== undefined) {
                     /* if valid primitive content -> create #text VSN */
-                    const tag = (is_not_string(primValue)) ? PRIM_TAG : STRING_TAG;
+                    const tag = (is_not_string(primValue)) ? VAL_TAG : STRING_TAG;
                     selfVSN = [NEW_NODE({
                         _tag: tag,
                         _content: [primValue], /* (all content is always in an array) */
@@ -380,10 +380,10 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 if (token.content != undefined && token.content.length > 1) {
                     console.error('hashtag content length longer than 1')
                 }
-                let primitiveValue: BasicValue | undefined = undefined;
+                let primitiveValue: Primitive | undefined = undefined;
 
                 if (Array.isArray(token.content)) {
-                    if (token.content.length === 1 && is_BasicValue(token.content[0])) {
+                    if (token.content.length === 1 && is_Primitive(token.content[0])) {
                         /* it's an array with content length 1 */
                         $log(token + '.content.length === 1');
 
@@ -397,7 +397,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                         $log(token + '.content.length === 2+');
                         console.error(`[token_to_node HASHTAG_TEXT] content is an array but not a single primitive: ${JSON.stringify(token.content)}. Skipping.`);
                     }
-                } else if (is_BasicValue(token.content)) {
+                } else if (is_Primitive(token.content)) {
                     /* should not get here but what if */
                     console.error(' token.content is primitive (WARNING! should not be here);')
                     primitiveValue = token.content;
@@ -408,7 +408,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
 
                 if (primitiveValue !== undefined) {
                     /* create value node (_text or _prim VSN) */
-                    const tag = (is_not_string(primitiveValue)) ? PRIM_TAG : STRING_TAG
+                    const tag = (is_not_string(primitiveValue)) ? VAL_TAG : STRING_TAG
                     const content_node = NEW_NODE({ _tag: tag, _content: [primitiveValue] }); /* node._content is array! */
                     const currentParent = nodeStack[nodeStack.length - 1];
                     let finalNode = content_node;

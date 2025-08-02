@@ -1,6 +1,6 @@
 // src/utils/style-manager.utils.hson.ts
 
-import { BasicValue } from "../../../types-consts/types.hson.js";
+import { Primitive } from "../../../types-consts/types.hson.js";
 import { LiveTree } from "../live-tree-class.tree.hson.js";
 
 
@@ -30,7 +30,7 @@ export class DatasetManager {
      * get a `data-*` attribute from the first selected node
      * @param key the data attribute's key
      */
-    get(key: string): BasicValue | undefined {
+    get(key: string): Primitive | undefined {
         const dataAttrName = `data-${key}`;
         return this.liveTree.getAttr(dataAttrName);
     }

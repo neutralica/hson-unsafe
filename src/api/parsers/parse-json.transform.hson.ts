@@ -1,8 +1,8 @@
 // parse-json.transform.hson.ts
 
-import { JsonType, HsonNode, BasicValue, HsonMeta, JSONObject } from "../../types-consts/types.hson.js";
-import { PRIM_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
-import { is_not_string, is_Object, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
+import { JsonType, HsonNode, Primitive, HsonMeta, JsonObj } from "../../types-consts/types.hson.js";
+import { VAL_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
+import { is_not_string, is_Object, is_Primitive } from "../../utils/is-helpers.utils.hson.js";
 import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 /* debug log */
@@ -13,8 +13,8 @@ const _log = _VERBOSE
 
 
 function getTag($value: JsonType): string {
-    if (is_not_string($value)) return PRIM_TAG;
-    if (is_BasicValue($value)) {
+    if (is_not_string($value)) return VAL_TAG;
+    if (is_Primitive($value)) {
         return STRING_TAG;
     }
     if (Array.isArray($value)) {
@@ -49,21 +49,21 @@ function nodeFromJson(
 ): { node: HsonNode } {
 
     /* catch BasicValue nodes */
-    if ($parentTag === STRING_TAG || $parentTag === PRIM_TAG) {
-        if (!is_BasicValue($srcJson)) {
+    if ($parentTag === STRING_TAG || $parentTag === VAL_TAG) {
+        if (!is_Primitive($srcJson)) {
             throw_transform_err('values must be string, bool, number, or null', 'parse_json', $srcJson);
         }
         if (is_not_string($srcJson)) {
             return {
                 node: NEW_NODE({
-                    _tag: PRIM_TAG,
-                    _content: [$srcJson as BasicValue],
+                    _tag: VAL_TAG,
+                    _content: [$srcJson as Primitive],
                 }),
             };
         } else {
             const node = NEW_NODE({
                 _tag: STRING_TAG,
-                _content: [$srcJson as BasicValue],
+                _content: [$srcJson as Primitive],
             });
             return { node };
         }
@@ -94,7 +94,7 @@ function nodeFromJson(
 
     /* catch objects */
     if ($parentTag === OBJECT_TAG) {
-        const jsonObj = $srcJson as JSONObject;
+        const jsonObj = $srcJson as JsonObj;
         let objMeta: HsonMeta | undefined = undefined;
 
         if (jsonObj._meta) {
@@ -152,7 +152,7 @@ function nodeFromJson(
 
                 let finalNode = NEW_NODE();
                 /* check for BasicValue node */
-                if (recursedProps.node._tag === STRING_TAG || recursedProps.node._tag === PRIM_TAG) {
+                if (recursedProps.node._tag === STRING_TAG || recursedProps.node._tag === VAL_TAG) {
                     /* wrap it in an _obj VSN */
                     if (recursedProps.node._content)
                         finalNode = NEW_NODE({
@@ -222,10 +222,10 @@ export function parse_json($input: string): HsonNode {
         const jsonProperties = jsonKeys.filter(k => k !== '_meta');
 
         if (jsonProperties.length === 1 && jsonProperties[0] === ROOT_TAG) {
-            if ((parsedJson as JSONObject)._meta) {
-                finalMeta = (parsedJson as JSONObject)._meta;
+            if ((parsedJson as JsonObj)._meta) {
+                finalMeta = (parsedJson as JsonObj)._meta;
             }
-            jsonToProcess = (parsedJson as JSONObject)[ROOT_TAG]; /*  "unwrap" it */
+            jsonToProcess = (parsedJson as JsonObj)[ROOT_TAG]; /*  "unwrap" it */
         }
         // else if ((parsedJson as JSONObject)._meta) {
         // }

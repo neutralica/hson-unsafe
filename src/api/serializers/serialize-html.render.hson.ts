@@ -1,7 +1,7 @@
-import { BasicValue, HsonNode } from "../../types-consts/types.hson.js";
+import { Primitive, HsonNode } from "../../types-consts/types.hson.js";
 import { BLANK_META, ELEM_TAG, STRING_TAG } from "../../types-consts/constants.hson.js";
 import { escape_html } from "../../utils/escape-html.utils.hson.js";
-import { is_BasicValue, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { is_Primitive, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
 import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
@@ -20,7 +20,7 @@ const _log = _VERBOSE
  * @param value The primitive value, or null, or undefined. // <-- Updated comment
  * @returns String representation for XML, or empty string for null/undefined.
  */
-function primitive_to_string(p: BasicValue): string {
+function primitive_to_string(p: Primitive): string {
   _log(`primitive to XML string: received:  ${p}`)
   /* catch strings */
   if (typeof p === 'string') {
@@ -46,11 +46,11 @@ function primitive_to_string(p: BasicValue): string {
  * @param node The Node or Primitive to serialize.
  * @returns An XML string fragment representing the node, or an empty string for null/undefined input.
  */
-export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
+export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   /* catch BasicValues */
   _log(`node to XML: processing ${make_string(node)}`)
 
-  if (is_BasicValue(node)) {
+  if (is_Primitive(node)) {
     return primitive_to_string(node);
   }
   if (node === undefined) {
@@ -77,7 +77,7 @@ export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
       if (typeof content[0] !== 'string') {
         throw_transform_err('need a primitive in a txt node!', 'serialize_html', content);
       }
-      return primitive_to_string(content[0] as BasicValue)
+      return primitive_to_string(content[0] as Primitive)
 
     }
   }
@@ -165,7 +165,7 @@ export function serialize_xml(node: HsonNode | BasicValue | undefined): string {
  */
 
 
-export function serialize_html($node: HsonNode | BasicValue): string {
+export function serialize_html($node: HsonNode | Primitive): string {
   if ($node === undefined) {
     throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', $node);
   }
