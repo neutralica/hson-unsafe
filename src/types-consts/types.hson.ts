@@ -4,14 +4,14 @@
 export type BasicValue = string | boolean | number | null;
 
 /** recursive type representing any valid json structur. */
-export type JSONShape =
+export type JsonType =
     | BasicValue
-    | { [key: string]: JSONShape }
-    | JSONShape[];
+    | { [key: string]: JsonType }
+    | JsonType[];
 
 
 /** represents a standard javascript object, extended with an optional _meta property */
-export type JSONObject = { [key: string]: JSONShape } & { _meta?: HsonMeta };
+export type JSONObject = { [key: string]: JsonType } & { _meta?: HsonMeta };
 
 
 /**

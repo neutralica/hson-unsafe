@@ -1,5 +1,5 @@
 import { LiveTree } from "../api/tree/live-tree-class.tree.hson.js";
-import { JSONShape } from "./types.hson.js";
+import { JsonType } from "./types.hson.js";
 
 /* branch - unattached LiveTree created from passed data (HTML/JSON) 
     use a tree nodes's append() method to attach these */
@@ -23,7 +23,7 @@ export interface GraftConstructor {
 export interface TreeConstructor_Source {
   /* for creating new tree content from data */
   fromHTML(htmlString: string): BranchConstructor;
-  fromJSON(json: string | JSONShape): BranchConstructor;
+  fromJSON(json: string | JsonType): BranchConstructor;
   fromHSON(hsonString: string): BranchConstructor; 
 
 /* for targeting the existing DOM (not a LiveTree) and replcaing with graft() */

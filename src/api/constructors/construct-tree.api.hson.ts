@@ -1,4 +1,4 @@
-import { HsonNode, JSONShape } from "../../types-consts/types.hson.js";
+import { HsonNode, JsonType } from "../../types-consts/types.hson.js";
 import { _ERROR, _FALSE, BLANK_META } from "../../types-consts/constants.hson.js";
 import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../../types-consts/tree.types.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
@@ -40,7 +40,7 @@ export function construct_tree(
       };
     },
 
-    fromJSON($json: string | JSONShape): BranchConstructor {
+    fromJSON($json: string | JsonType): BranchConstructor {
       const rootNode = parse_json($json as string);
       const branch = createBranch(rootNode);
       return {

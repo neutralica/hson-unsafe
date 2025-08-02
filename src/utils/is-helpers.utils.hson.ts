@@ -1,6 +1,6 @@
 // is-helpers.hson.util.ts
 
-import { HsonNode, JSONShape, NodeContent, BasicValue } from "../types-consts/types.hson.js";
+import { HsonNode, JsonType, NodeContent, BasicValue } from "../types-consts/types.hson.js";
 import {INDEX_TAG, PRIM_TAG, STRING_TAG } from "../types-consts/constants.hson.js";
 
 /* identifies JSON objects */
@@ -19,7 +19,7 @@ export function is_Node(bit: unknown): bit is HsonNode {
 }
 
 /* for filtering out strings */
-export function is_not_string(txt: JSONShape) {
+export function is_not_string(txt: JsonType) {
   return (typeof txt === 'number' ||
     txt === null ||
     typeof txt === 'boolean')

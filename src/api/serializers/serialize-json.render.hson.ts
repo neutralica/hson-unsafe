@@ -1,5 +1,5 @@
 import { _ } from "ajv";
-import { HsonNode, JSONShape, JSONObject, BasicValue, HsonAttrs, HsonFlags } from "../../types-consts/types.hson.js";
+import { HsonNode, JsonType, JSONObject, BasicValue, HsonAttrs, HsonFlags } from "../../types-consts/types.hson.js";
 import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, PRIM_TAG, STRING_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
 import { is_indexed, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
@@ -44,10 +44,10 @@ export function serialize_json($node: HsonNode): string {
  * back into its equivalent javascript representation.
  *
  * @param {HsonNode} $node - the hsonnode to convert
- * @returns {JSONShape} the resulting javascript object, array, or primitive value
+ * @returns {JsonType} the resulting javascript object, array, or primitive value
  */
 
-function jsonFromNode($node: HsonNode): JSONShape {
+function jsonFromNode($node: HsonNode): JsonType {
 
     if (!$node || typeof $node._tag !== 'string') {
         console.warn(`error in node or node tag: ${$node}`)
@@ -60,7 +60,7 @@ function jsonFromNode($node: HsonNode): JSONShape {
 
     switch ($node._tag) {
         case ROOT_TAG: {
-            let root: JSONShape | null = null;
+            let root: JsonType | null = null;
             $log(`  <_root>: processing content`);
             root = jsonFromNode($node._content[0] as HsonNode);
             if (root === null) throw new Error('_root is null')
@@ -142,7 +142,7 @@ function jsonFromNode($node: HsonNode): JSONShape {
             /* _elem tags are native to HTML and will be carried through the JSON as-is; the only 
                 exceptional handling is the contents of _elem tags are not rewrapped in an _obj */
             $log('[recurseJSON] processing _elem VSN');
-            const elemItems: JSONShape = [];
+            const elemItems: JsonType = [];
             for (const itemNode of ($node._content)) {
                 /* recursively convert each item node in the _elem to its JSON equivalent */
                 $log('recursing: ', itemNode)
@@ -158,7 +158,7 @@ function jsonFromNode($node: HsonNode): JSONShape {
         case INDEX_TAG: /* _ii nodes within an array */
             $log('node.tag is index tag');
             /*  these are _array content wrappers; their JSON form is the JSON form of their single content item */
-            let iiContent: JSONShape = {}
+            let iiContent: JsonType = {}
             if ($node._content && $node._content.length === 1) {
                 iiContent = jsonFromNode($node._content[0] as HsonNode);
             } else {
@@ -170,7 +170,7 @@ function jsonFromNode($node: HsonNode): JSONShape {
         default: { /* "standard" tag (e.g. "foo", "kingdom", "html", "p", "span") */
             $log(`  standardTag <${$node._tag}> processing its value/content.`);
             $log(make_string($node._content));
-            let stdJson: JSONShape = {};
+            let stdJson: JsonType = {};
             if ($node._content && $node._content.length === 1) {
                 const recursed = jsonFromNode($node._content[0] as HsonNode);
                 stdJson = { [$node._tag]: recursed };

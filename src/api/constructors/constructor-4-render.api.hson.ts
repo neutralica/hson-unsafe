@@ -1,5 +1,5 @@
 import { hson } from "../../hson.js";
-import { HsonNode, JSONShape, BasicValue } from "../../types-consts/types.hson.js";
+import { HsonNode, JsonType, BasicValue } from "../../types-consts/types.hson.js";
 import { RenderΔ } from "../../types-consts/constants.hson.js";
 import { FrameRender, RenderConstructor_4 } from "../../types-consts/constructors.types.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
@@ -44,9 +44,9 @@ export function construct_render_4($context: FrameRender): RenderConstructor_4 {
         /**
          * returns the "valueful" json data or hson node data (mainly for inspection.debugging) 
          * useful for direct data manipulation in js without the need for an extra parsing step.
-         * @returns {JSONShape | HsonNode | BasicValue} a js object, array, or primitive, or the hson node tree.
+         * @returns {JsonType | HsonNode | BasicValue} a js object, array, or primitive, or the hson node tree.
         */
-        parse(): JSONShape | HsonNode | BasicValue {
+        parse(): JsonType | HsonNode | BasicValue {
             switch (output) {
                 case RenderΔ.JSON:
                     if (frame.json)

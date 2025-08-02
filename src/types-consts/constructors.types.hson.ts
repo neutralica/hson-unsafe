@@ -1,6 +1,6 @@
 // constructors.types.hson.ts
 
-import { HsonNode, JSONShape } from "./types.hson.js";
+import { HsonNode, JsonType } from "./types.hson.js";
 import { RenderΔ, HSON_FrameΔ} from "./constants.hson.js";
 import { AllTokens } from "./tokens.types.hson.js";
 
@@ -12,7 +12,7 @@ export interface FrameConstructor {
     tokens?: AllTokens[];
     hson?: string;
     html?: string;
-    json?: JSONShape | string;
+    json?: JsonType | string;
     mode?: FrameMode;
     meta?: Record<string, unknown>;
     options?: FrameOptions;
@@ -24,7 +24,7 @@ export type FrameRender = { frame: FrameConstructor, output: RenderFormats };
 /* step 1: the initial input source */
 export interface SourceConstructor_1 {
     fromHSON(input: string): OutputConstructor_2;
-    fromJSON(input: string | JSONShape): OutputConstructor_2;
+    fromJSON(input: string | JsonType): OutputConstructor_2;
     fromHTML(input: string | HTMLElement): OutputConstructor_2;
     fromNode(input: HsonNode): OutputConstructor_2;
     queryDOM(selector: string): OutputConstructor_2;

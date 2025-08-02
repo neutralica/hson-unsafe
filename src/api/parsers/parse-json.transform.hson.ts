@@ -1,25 +1,29 @@
 // parse-json.transform.hson.ts
 
-import { JSONShape, HsonNode, BasicValue, HsonMeta, JSONObject } from "../../types-consts/types.hson.js";
+import { JsonType, HsonNode, BasicValue, HsonMeta, JSONObject } from "../../types-consts/types.hson.js";
 import { PRIM_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { is_not_string, is_Object, is_BasicValue } from "../../utils/is-helpers.utils.hson.js";
+import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 /* debug log */
 let _VERBOSE = false;
-const $log = _VERBOSE
+const _log = _VERBOSE
     ? console.log
     : () => { };
 
 
-function getTag(value: JSONShape): string {
-    if (is_not_string(value)) return PRIM_TAG;
-    if (is_BasicValue(value)) {
+function getTag($value: JsonType): string {
+    if (is_not_string($value)) return PRIM_TAG;
+    if (is_BasicValue($value)) {
         return STRING_TAG;
     }
-    if (Array.isArray(value)) {
+    if (Array.isArray($value)) {
         return ARRAY_TAG;
     }
-    return OBJECT_TAG; /* default (but feels like a big waiting to happen) */
+    if ((typeof $value === 'object') && $value !== null){
+        return OBJECT_TAG;
+    }
+    throw_transform_err('invalid value provided', 'getTag', $value);
 }
 
 
@@ -34,20 +38,20 @@ function getTag(value: JSONShape): string {
  * 
  * (the items of a json array will be contained within an '_array' vsn, which behaves differently)
  *
- * @param {string | JSONShape} $srcJson - the json data to parse, either as a raw string or a pre-parsed javascript object/array.
- * @param {string | JSONShape} $parentTag - the parent tag, usually necessary for determining which VSN to create 
+ * @param {string | JsonType} $srcJson - the json data to parse, either as a raw string or a pre-parsed javascript object/array.
+ * @param {string | JsonType} $parentTag - the parent tag, usually necessary for determining which VSN to create 
  * @returns {HsonNode} the root hsonnode of the resulting data structure.
  */
 
 function nodeFromJson(
-    $srcJson: JSONShape,
+    $srcJson: JsonType,
     $parentTag: string
 ): { node: HsonNode } {
 
     /* catch BasicValue nodes */
     if ($parentTag === STRING_TAG || $parentTag === PRIM_TAG) {
         if (!is_BasicValue($srcJson)) {
-            console.error('value is not primitive')
+            throw_transform_err('values must be string, bool, number, or null', 'parse_json', $srcJson);
         }
         if (is_not_string($srcJson)) {
             return {
@@ -67,7 +71,7 @@ function nodeFromJson(
 
     /*  arrays -> _array VSN */
     if ($parentTag === ARRAY_TAG) {
-        const array = $srcJson as JSONShape[];
+        const array = $srcJson as JsonType[];
         const items: HsonNode[] = array.map((val, ix) => {
             const itemStructuralTag = getTag(val);
             const itemConversion = nodeFromJson(val, itemStructuralTag);
@@ -109,7 +113,7 @@ function nodeFromJson(
             const listContent = jsonObj[ELEM_TAG];
             if (Array.isArray(listContent)) {
                 const contentNodes: HsonNode[] = listContent.map(item => {
-                    const recursedItem = nodeFromJson(item as JSONShape, getTag(item as JSONShape));
+                    const recursedItem = nodeFromJson(item as JsonType, getTag(item as JsonType));
                     if (recursedItem.node._tag === OBJECT_TAG && recursedItem.node._content.length === 1) {
                         const singleProperty = recursedItem.node._content[0] as HsonNode;
                         singleProperty._meta = {
@@ -124,14 +128,16 @@ function nodeFromJson(
                 return {
                     node: NEW_NODE({ _tag: ELEM_TAG, _content: contentNodes }),
                 };
-            } else { console.error('content should always be array?') }
+            } else { 
+                throw_transform_err('content must always be in an array', 'parse_json', $srcJson)
+             }
         }
 
         /* _obj case 2 (Default): ALL other JSON objects become an _obj VSN. */
         else {
             /* handle void nodes/nodes with no content */
             const propertyNodes: HsonNode[] = jsonKeys.map(key => {
-                const propertyValues = jsonObj[key] as JSONShape;
+                const propertyValues = jsonObj[key] as JsonType;
                 if (propertyValues === "" || propertyValues === '') {
                     return NEW_NODE({
                         _tag: key,
@@ -179,40 +185,34 @@ function nodeFromJson(
 
     /* error fallback */
     console.error("recurse_json_for_node: unhandled tag:", $parentTag);
-    return {
-        node: NEW_NODE({ _tag: "ERROR_UNHANDLED_TYPE", _content: [String($srcJson) as BasicValue] }),
-    };
+    throw_transform_err("recurse_json_for_node: unhandled tag:", "parse_json", $parentTag);
 }
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
-export function parse_json($jstring: string): HsonNode {
+export function parse_json($input: string): HsonNode {
     if (_VERBOSE) {
         console.groupCollapsed('---> parsing json:');
-        console.log(' input json:');
-        console.log($jstring);
+        console.log($input);
         console.groupEnd();
     }
-    if (typeof $jstring !== 'string') {
-        console.error('JSON input is not a string -- received a ', typeof $jstring);
-        return NEW_NODE({
-            _tag: '[JSON TYPE ERROR]',
-            _content: [NEW_NODE({ _tag: STRING_TAG, _content: [`ERROR: INVALID STRING`] })],
-        });
+    let parsedJson: JsonType;
+    /* accept either string or JSON */
+    if (typeof $input === 'string') {
+        try {
+            parsedJson = JSON.parse($input);
+        } catch (error) {
+            console.error('JSON parse error in json_to_node:', error);
+            const errMsg = error instanceof Error ? error.message : "unknown parsing error";
+            throw_transform_err(`invalid JSON input: ${errMsg}`, 'parse_json', $input);
+        }
+    } else if (typeof $input === 'object' && $input !== null) {
+        parsedJson = $input as JsonType;
+    } else {
+        console.error('JSON input is not a string or object --\n received: ', typeof $input);
+        throw_transform_err('Iinput must be a valid JSON string or a JavaScript object', 'parse_json', $input);
     }
 
-    let parsedJson: JSONShape;
-    try {
-        parsedJson = JSON.parse($jstring);
-    } catch (error) {
-        console.error('JSON parse error in json_to_node:', error);
-        const errMsg = error instanceof Error ? error.message : "Unknown parsing error";
-        return NEW_NODE({
-            _tag: "[JSON PARSE ERROR]",
-            _content: [NEW_NODE({ _tag: STRING_TAG, _content: [`Invalid JSON input: ${errMsg}`] })],
-        });
-    }
-
-    let jsonToProcess: JSONShape = parsedJson;
+    let jsonToProcess: JsonType = parsedJson;
     let finalMeta: HsonMeta | undefined = undefined;
     /* check if the top-level parsed JSON is an object whose actual data content
          is nested under a VSN key (typically "_root"),

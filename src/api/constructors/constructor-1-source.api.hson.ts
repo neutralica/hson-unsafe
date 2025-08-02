@@ -1,5 +1,5 @@
 
-import { JSONShape, HsonNode } from "../../types-consts/types.hson.js";
+import { JsonType, HsonNode } from "../../types-consts/types.hson.js";
 import { FrameConstructor, OutputConstructor_2, SourceConstructor_1 } from "../../types-consts/constructors.types.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
@@ -66,10 +66,10 @@ export function construct_source_1(
 
     /**
      * parses a json string or object to hson nodes.
-     * @param {string | JSONShape} $input the json source data.
+     * @param {string | JsonType} $input the json source data.
      * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
      */
-    fromJSON($input: string | JSONShape): OutputConstructor_2 {
+    fromJSON($input: string | JsonType): OutputConstructor_2 {
       const node = parse_json($input as string);
       const frame: FrameConstructor = {
         input: typeof $input === "string" ? $input : JSON.stringify($input),
