@@ -4,7 +4,7 @@ import { escape_html } from "../../utils/escape-html.utils.hson.js";
 import { is_Primitive, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
-import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 
 const _VERBOSE = false;
@@ -54,7 +54,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
     return primitive_to_string(node);
   }
   if (node === undefined) {
-    throw_transform_err('undefined node received', 'serialize_html', node);
+    _throw_transform_err('undefined node received', 'serialize_html', node);
   }
 
   /* handle the various VSNs */
@@ -75,7 +75,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
     case STRING_TAG: {
       _log('string tag found; flattening')
       if (typeof content[0] !== 'string') {
-        throw_transform_err('need a primitive in a txt node!', 'serialize_html', content);
+        _throw_transform_err('need a primitive in a txt node!', 'serialize_html', content);
       }
       return primitive_to_string(content[0] as Primitive)
 
@@ -165,7 +165,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
  */
 export function serialize_html($node: HsonNode | Primitive): string {
   if ($node === undefined) {
-    throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', $node);
+    _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', $node);
   }
   if (_VERBOSE) {
     console.groupCollapsed('---> serializing to html')

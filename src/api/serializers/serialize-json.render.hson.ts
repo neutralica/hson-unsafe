@@ -3,7 +3,7 @@ import { HsonNode, JsonType, JsonObj, Primitive, HsonAttrs, HsonFlags } from "..
 import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, VAL_TAG, STRING_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
 import { is_indexed, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
-import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 
 /* debug log */
@@ -31,7 +31,7 @@ export function serialize_json($node: HsonNode): string {
         return json;
     } catch (e: any) {
 
-        throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json', serialize_json);
+        _throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json', serialize_json);
     }
 }
 
@@ -50,7 +50,7 @@ export function serialize_json($node: HsonNode): string {
 function jsonFromNode($node: HsonNode): JsonType {
 
     if (!$node || typeof $node._tag !== 'string') {
-        throw_transform_err(`error in node or node tag: ${$node}`, 'serialize_json', $node);
+        _throw_transform_err(`error in node or node tag: ${$node}`, 'serialize_json', $node);
     }
 
 
@@ -62,7 +62,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             let root: JsonType | null = null;
             _log(`  <_root>: processing content`);
             root = jsonFromNode($node._content[0] as HsonNode);
-            if (root === null) throw_transform_err('_root is null', 'serialize_json', $node);
+            if (root === null) _throw_transform_err('_root is null', 'serialize_json', $node);
             return root;
         }
 
@@ -75,7 +75,7 @@ function jsonFromNode($node: HsonNode): JsonType {
                     if (is_indexed(iiNode)) {
                         array.push(jsonFromNode(iiNode._content[0] as HsonNode));
                     } else {
-                        throw_transform_err(`malformed _ii node in _array`, 'serialize-json', $node);
+                        _throw_transform_err(`malformed _ii node in _array`, 'serialize-json', $node);
                     }
                 }
             }
@@ -102,7 +102,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             /* get the object's properties--the nodes in its .content */
             for (const prop of ($node._content as HsonNode[])) {
                 if (!is_Node(prop) || !prop._tag) {
-                    throw_transform_err(`invalid child inside _obj:${ prop}`, 'serialize_json', $node._content);
+                    _throw_transform_err(`invalid child inside _obj:${ prop}`, 'serialize_json', $node._content);
                 }
 
                 const key = prop._tag;
@@ -157,7 +157,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             if ($node._content && $node._content.length === 1) {
                 iiContent = jsonFromNode($node._content[0] as HsonNode);
             } else {
-                throw_transform_err(`misconfigured index tag:  make_string($node)`, 'serialize_json', $node._content);
+                _throw_transform_err(`misconfigured index tag:  make_string($node)`, 'serialize_json', $node._content);
             }
             return iiContent;
 
@@ -171,7 +171,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             } else if ($node._content && $node._content.length > 1) {
                 /*  This implies a cluster of values if a standard tag has multiple content VSNs
                     (should be rare or never) */
-                throw_transform_err(`<${$node._tag}> has multiple content VSN children`, 'serialize_json', $node);
+                _throw_transform_err(`<${$node._tag}> has multiple content VSN children`, 'serialize_json', $node);
             } else { /*  empty content, value remains [] */
                 stdJson = { [$node._tag]: '' };
             }

@@ -3,7 +3,7 @@
 import { JsonType, HsonNode, Primitive, HsonMeta, JsonObj } from "../../types-consts/types.hson.js";
 import { VAL_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, BLANK_META, INDEX_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { is_not_string, is_Object, is_Primitive } from "../../utils/is-helpers.utils.hson.js";
-import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 /* debug log */
 let _VERBOSE = false;
@@ -23,7 +23,7 @@ function getTag($value: JsonType): string {
     if ((typeof $value === 'object') && $value !== null){
         return OBJECT_TAG;
     }
-    throw_transform_err('invalid value provided', 'getTag', $value);
+    _throw_transform_err('invalid value provided', 'getTag', $value);
 }
 
 
@@ -51,7 +51,7 @@ function nodeFromJson(
     /* catch BasicValue nodes */
     if ($parentTag === STRING_TAG || $parentTag === VAL_TAG) {
         if (!is_Primitive($srcJson)) {
-            throw_transform_err('values must be string, bool, number, or null', 'parse_json', $srcJson);
+            _throw_transform_err('values must be string, bool, number, or null', 'parse_json', $srcJson);
         }
         if (is_not_string($srcJson)) {
             return {
@@ -129,7 +129,7 @@ function nodeFromJson(
                     node: NEW_NODE({ _tag: ELEM_TAG, _content: contentNodes }),
                 };
             } else { 
-                throw_transform_err('content must always be in an array', 'parse_json', $srcJson)
+                _throw_transform_err('content must always be in an array', 'parse_json', $srcJson)
              }
         }
 
@@ -184,8 +184,7 @@ function nodeFromJson(
     }
 
     /* error fallback */
-    console.error("recurse_json_for_node: unhandled tag:", $parentTag);
-    throw_transform_err("recurse_json_for_node: unhandled tag:", "parse_json", $parentTag);
+    _throw_transform_err("recurse_json_for_node: unhandled tag:", "parse_json", $parentTag);
 }
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
@@ -203,13 +202,13 @@ export function parse_json($input: string): HsonNode {
         } catch (error) {
             console.error('JSON parse error in json_to_node:', error);
             const errMsg = error instanceof Error ? error.message : "unknown parsing error";
-            throw_transform_err(`invalid JSON input: ${errMsg}`, 'parse_json', $input);
+            _throw_transform_err(`invalid JSON input: ${errMsg}`, 'parse_json', $input);
         }
     } else if (typeof $input === 'object' && $input !== null) {
         parsedJson = $input as JsonType;
     } else {
         console.error('JSON input is not a string or object --\n received: ', typeof $input);
-        throw_transform_err('Iinput must be a valid JSON string or a JavaScript object', 'parse_json', $input);
+        _throw_transform_err('Iinput must be a valid JSON string or a JavaScript object', 'parse_json', $input);
     }
 
     let jsonToProcess: JsonType = parsedJson;

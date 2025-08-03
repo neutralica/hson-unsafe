@@ -8,7 +8,7 @@ import { expand_void_tags } from "../../utils/expand-self-closing.utils.hson.js"
 import { is_Primitive, is_not_string, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parse_css_attrs } from "../../utils/parse-css.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
-import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 
 
@@ -46,12 +46,12 @@ export function parse_html($input: string | Element): HsonNode {
         }
         if (parseError) {
             console.error("XML Parsing Error:", parseError.textContent);
-           throw_transform_err(`Failed to parse input HTML/XML`, 'parse_html', parseError.textContent);
+           _throw_transform_err(`Failed to parse input HTML/XML`, 'parse_html', parseError.textContent);
         }
         if (!parsedXML.documentElement) {
             /* for cases where parsing might result in no documentElement (e.g., empty string after processing) */
             console.warn("HTML string resulted in no documentElement after parsing; Returning _root");
-            throw_transform_err('[ERROR-no content from xml parse]', 'parse-html', parsedXML);
+            _throw_transform_err('[ERROR-no content from xml parse]', 'parse-html', parsedXML);
         }
         inputElement = parsedXML.documentElement;
     } else {
@@ -173,7 +173,7 @@ function convert($el: Element): HsonNode {
         return NEW_NODE({ _tag: ARRAY_TAG, _content: childNodes });
     } else if (tagLower === ELEM_TAG) {
         /* _elem should not be wrapped but should disappear back into the HTML */
-        throw_transform_err('_elem tag found in html', 'parse-html', $el);;
+        _throw_transform_err('_elem tag found in html', 'parse-html', $el);;
     }
 
     /*  ---> default: "standard tag" (e.g., "div", "p", "kingdom", "_root") <--- */

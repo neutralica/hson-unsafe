@@ -1,6 +1,6 @@
 // throw-transform-err.utils.hson.ts
 
-export function throw_transform_err(
+export function _throw_transform_err(
     message: string,
     functionName: string,
     input: any

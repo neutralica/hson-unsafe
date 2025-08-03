@@ -7,7 +7,7 @@ import { is_not_string, is_Primitive, is_Node } from "../../utils/is-helpers.uti
 import { parse_css_attrs } from "../../utils/parse-css.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { splitTopLevel } from "../../utils/split-top-level.utils.hson.js";
-import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 
 
@@ -39,7 +39,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
         }
     }
     if ($depth >= maxDepth) {
-        throw_transform_err(`stopping potentially infinite loop (depth >= ${maxDepth})`, 'tokenize_hson', $hson);
+        _throw_transform_err(`stopping potentially infinite loop (depth >= ${maxDepth})`, 'tokenize_hson', $hson);
     }
 
     const finalTokens: AllTokens[] = [];
@@ -126,7 +126,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
             }
 
             if (nestedDepth !== 0) {
-                throw_transform_err(`unmatched ${opener}${closer} starting near line ${currentIx + 1}`, 'tokenize_hson', $hson);
+                _throw_transform_err(`unmatched ${opener}${closer} starting near line ${currentIx + 1}`, 'tokenize_hson', $hson);
             }
 
             /* process the extracted content string */
@@ -155,7 +155,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
 
         if (trimLine === ">" || trimLine === "/>") {
             if (contextStack.length === 0) {
-                throw_transform_err(`[Step E] closer '${trimLine}' found but context stack is empty at L${ix + 1}`, 'tokenize-hson', currentLine);
+                _throw_transform_err(`[Step E] closer '${trimLine}' found but context stack is empty at L${ix + 1}`, 'tokenize-hson', currentLine);
             }
 
             const topStack: ContextStackItem = contextStack[contextStack.length - 1]; // Peek
@@ -254,7 +254,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
             const tag = trimLine.substring(tagNameStart, parsedChars);
 
             if (!tag) {
-                throw_transform_err(`[step F depth=${$depth} L=${currentIx + 1}] malformed tag: could not get tag name in "${trimLine}"`, 'tokenize-hson', currentLine);
+                _throw_transform_err(`[step F depth=${$depth} L=${currentIx + 1}] malformed tag: could not get tag name in "${trimLine}"`, 'tokenize-hson', currentLine);
             }
 
 
@@ -306,7 +306,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                             /* try to parse style attributes for direct manipulation in JSON */
                             attrs.style = parse_css_attrs(valueString);
                         } catch (e) {
-                            throw_transform_err(`parse error in tokenize_hson(): failed to JSON.parse style attribute: ${valueString}: ${e}`, 'tokenize-hson', remainder);
+                            _throw_transform_err(`parse error in tokenize_hson(): failed to JSON.parse style attribute: ${valueString}: ${e}`, 'tokenize-hson', remainder);
                             parseError = true;
                         }
                     } else {
@@ -338,7 +338,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                 }
 
                 if (parsedChars === loopPos) {
-                    throw_transform_err(`[step F phase 1] unparseable segment OR stuck in attr/flag parsing for <${tag}>\nremaining: "${remainder.substring(0, 100)}"`, 'tokenize-hson', remainder);
+                    _throw_transform_err(`[step F phase 1] unparseable segment OR stuck in attr/flag parsing for <${tag}>\nremaining: "${remainder.substring(0, 100)}"`, 'tokenize-hson', remainder);
                 }
             } // ---- end phase 1: attr/flag parsing ---=|
 
@@ -394,7 +394,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                             parsedChars += nested_tag_string.length;
                             contentMatch = true;
                         } else {
-                            throw_transform_err(`[step F phase 2] <${tag}\n malformed nested tag: no closer ('>' or '/>')`, 'tokenize-hson', remainder);
+                            _throw_transform_err(`[step F phase 2] <${tag}\n malformed nested tag: no closer ('>' or '/>')`, 'tokenize-hson', remainder);
                             parseError = true;
                         }
                     }
@@ -451,19 +451,19 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                     if (parseError) break PHASE_2_CONTENT_ITEMS;
 
                     if (!contentMatch) {
-                        throw_transform_err(`[step F phase 2] <${tag} unparseable content\n remaining: "${remainder.substring(0, 20)}"`, 'tokenize-hson', remainder);
+                        _throw_transform_err(`[step F phase 2] <${tag} unparseable content\n remaining: "${remainder.substring(0, 20)}"`, 'tokenize-hson', remainder);
 
                     }
                     /* infinite loop check */
                     if (parsedChars === loopPos) {
-                        throw_transform_err(`[step F phase 2] <${tag} parser stuck in loop: aborting parse`, 'tokenize-hson', remainder);
+                        _throw_transform_err(`[step F phase 2] <${tag} parser stuck in loop: aborting parse`, 'tokenize-hson', remainder);
                     }
                 } // ---- end PHASE_2_CONTENT_ITEMS ---=|
             }
 
             /* step F.3 - determine token type, push */
             if (parseError) {
-                throw_transform_err('PARSER ERROR—creating generic fallback text token', 'tokenize_hson', currentLine)
+                _throw_transform_err('PARSER ERROR—creating generic fallback text token', 'tokenize_hson', currentLine)
                 finalTokens.push(CREATE_TOKEN({ type: TokenΔ.STR_VAL, content: ['[ERROR IN PARSING STEP F.3'] }));
             } else {
                 const meta = { attrs, flags };
@@ -693,7 +693,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
         /* if closer was found, process it */
         if (nextCloser) {
             if (contextStack.length === 0) {
-                throw_transform_err(`[token_from_hson] found closer '${nextCloser}' on line but context stack is empty`, 'tokenize-hson', currentLine);
+                _throw_transform_err(`[token_from_hson] found closer '${nextCloser}' on line but context stack is empty`, 'tokenize-hson', currentLine);
 
             } else {
                 const topStack = contextStack.pop() as Extract<ContextStackItem, { type: 'TAG' }>;
@@ -709,7 +709,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                     if (parentContext) {
                         finalTokens.push(CREATE_TOKEN({ type: TokenΔ.CLOSE, tag: parentContext.tag }));
                     } else {
-                        throw_transform_err(`[token_from_hson] found closer but no parent on stack`, 'tokenize_hson', currentLine);;
+                        _throw_transform_err(`[token_from_hson] found closer but no parent on stack`, 'tokenize_hson', currentLine);;
                     }
                 } else {
                     /* normal tag closing. */
@@ -725,7 +725,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
     $log(`[end of token from hson depth=${$depth}]\n    ---> processed all lines\n  final contextStack size (should be 0): ${contextStack.length}\n  total tokens generated: ${finalTokens.length}`);
     if (contextStack.length > 0 && $depth === 0) {
         const open_tags = contextStack.map(c => c.type === 'TAG' ? `<${c.tag}>` : '< < (implicit object)').join(', ');
-        throw_transform_err(`FINAL CHECK FAILED: tokenizer finished with ${contextStack.length} unclosed elements: ${open_tags}`, 'tokenize_hson', splitLines);
+        _throw_transform_err(`FINAL CHECK FAILED: tokenizer finished with ${contextStack.length} unclosed elements: ${open_tags}`, 'tokenize_hson', splitLines);
     }
 
     $log(`[token_from_hson END depth=${$depth}] returning tokens: ${make_string(finalTokens)})`);

@@ -7,7 +7,7 @@ import { get_self_close_value } from "../../utils/get-self-value.utils.hson.js";
 import { is_Primitive as is_Primitive, is_void, is_PRIM_or_STR_Node as is_ValueVsn, is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { serialize_primitive } from "../../utils/serialize-primitive.utils.hson.js";
-import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 
 
@@ -90,16 +90,16 @@ function hsonFromNode(
     /*  2. disappear VSNs */
     if (tag === STRING_TAG || tag === VAL_TAG) {
         if (content.length !== 1 || !is_Primitive(content[0])) {
-            throw_transform_err('_str or _prim nodes must have 1 and only 1 hson  in content', 'serialize-hson', node);
+            _throw_transform_err('_str or _prim nodes must have 1 and only 1 hson  in content', 'serialize-hson', node);
         }
 
         const value = currentIndent + make_string(content[0])
         return value;
     }
     if (tag === INDEX_TAG) {
-        if (content.length !== 1) { throw_transform_err('_ii nodes must have 1 & only 1 child', 'serialize-hson', node); }
+        if (content.length !== 1) { _throw_transform_err('_ii nodes must have 1 & only 1 child', 'serialize-hson', node); }
         if (!is_Node(content[0])) {
-            throw_transform_err('index tag contents are not nodes', 'serialize-hson', content)
+            _throw_transform_err('index tag contents are not nodes', 'serialize-hson', content)
         }
         /* recurse the child with the SAME indent level. */
         return hsonFromNode(content[0], $indent_level + 1, $vsn);
@@ -175,7 +175,7 @@ export function serialize_hson($root: HsonNode): string {
         console.groupEnd()
     }
 
-    if (!$root || !is_Node($root)) throw_transform_err('no _root node found in data', 'serialize-hson', $root);
+    if (!$root || !is_Node($root)) _throw_transform_err('no _root node found in data', 'serialize-hson', $root);
     const hson = hsonFromNode($root, 0).trim();
 
     if (_VERBOSE) {

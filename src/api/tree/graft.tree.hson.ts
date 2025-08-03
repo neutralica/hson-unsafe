@@ -8,7 +8,7 @@ import { create_live_tree } from "./create-live-tree.tree.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { HsonNode } from "../../types-consts/types.hson.js";
-import { throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 
 /* debug log */
 let _VERBOSE = true;
@@ -51,7 +51,7 @@ export function graft(
     if (node._tag === ROOT_TAG) {
       const childNode = node._content?.[0];
       if (!is_Node(childNode) || childNode._tag !== ELEM_TAG) {
-        throw_transform_err('Malformed _root node', 'graft.unwrap', node);
+        _throw_transform_err('Malformed _root node', 'graft.unwrap', node);
       }
       contentNodes = childNode._content?.filter(is_Node) || [];
     } else {
@@ -60,7 +60,7 @@ export function graft(
 
     // Enforce the "single node" rule inside the helper
     if (contentNodes.length !== 1) {
-      throw_transform_err(
+      _throw_transform_err(
         `[ERR: graft()]: multiple (${contentNodes.length}) nodes passed to graft(); wrap multiple elements`,
         'graft',
         contentNodes
