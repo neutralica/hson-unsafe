@@ -1,5 +1,7 @@
 // parse-css.utils.hson.ts
 
+import { _throw_transform_err } from "./throw-transform-err.utils.hson";
+
 /**
  * Parses a CSS style string into a camelCased JavaScript object.
  * @param {string} $text - e.g., "color: blue; font-weight: bold;"
@@ -46,7 +48,6 @@ export function parse_css_attrs($text: string): string | Record<string, string> 
 
     return sortStyleObj;
   } catch (e) {
-    console.warn('[HSON WARN parse-css.util.hson.ts -- error parsing CSS style string] ');
-    return $text;
+    _throw_transform_err('[HSON WARN parse-css.util.hson.ts -- error parsing CSS style string] ', 'parse_css_attrs', $text);
   }
 }

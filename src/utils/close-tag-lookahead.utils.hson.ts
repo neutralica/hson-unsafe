@@ -1,6 +1,7 @@
 // close-tag-lookahead.hson.util.ts
 
 import { ELEM_OBJ_ARR, ELEM_TAG, ElemObjType, OBJECT_TAG } from "../types-consts/constants.hson.js";
+import { _throw_transform_err } from "./throw-transform-err.utils.hson.js";
 
 
 const VERBOSE = false;
@@ -108,7 +109,7 @@ export function close_tag_lookahead(
     }
 
     console.error(`[closeTagLookahead] Reached EOF while scanning for closer of <${$openTag}> (opened L${$openIndex + 1}).`);
-    throw new Error(`could not find closing tag for HSON string!`); /* default if no explicit closer found  */
+    _throw_transform_err(`could not find closing tag for HSON string!`, 'close_tag_lookahead', $blockLines); /* default if no explicit closer found  */
 }
 
 /**
@@ -140,7 +141,7 @@ function analyze_open_tag($line: string, $startIndex: number): { opensBlock: boo
             return { opensBlock: false, newPos: end_tag_header + 1 };
         }
 
-      /* otherwise, it's just <tag>, so it is a block opener */
+        /* otherwise, it's just <tag>, so it is a block opener */
         return { opensBlock: true, newPos: end_tag_header + 1 };
 
     }

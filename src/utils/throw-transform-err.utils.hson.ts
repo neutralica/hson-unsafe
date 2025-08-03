@@ -3,10 +3,10 @@
 export function _throw_transform_err(
     message: string,
     functionName: string,
-    input: any
+    $input: any
   ): never {
     const errorMessage = `[ERR: transform = ${functionName}()]:\n  -> ${message}`;
     
-    console.error(errorMessage, '\n  -> input:', input);
+    _throw_transform_err(errorMessage,'_throw_transform_err', $input);
     throw new Error(errorMessage);  
 }
