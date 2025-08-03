@@ -35,16 +35,16 @@ function primitive_to_string(p: Primitive): string {
 }
 
 /**
- * Serializes a Node structure into an XML-safe string fragment.
- * - Flattens ROOT_TAG and ELEM_TAG nodes.
- * - Unwraps NON_INDEX_TAG nodes.
- * - Renders TEXT_NODE_TAG content directly (escaped).
- * - Renders other tags (including _array, _ii, _obj) literally as XML elements.
- * - Handles attributes and flags.
- * - Correctly formats void elements.
+ * serializes a Node structure into an XML-safe string fragment
+ * - flattens ROOT_TAG and ELEM_TAG nodes
+ * - unwraps NON_INDEX_TAG nodes
+ * - renders TEXT_NODE_TAG content directly (escaped)
+ * - renders other tags (including _array, _ii, _obj) literally as XML elements
+ * - handles attributes and flags
+ * - correctly formats void elements
  *
- * @param node The Node or Primitive to serialize.
- * @returns An XML string fragment representing the node, or an empty string for null/undefined input.
+ * @param node the node or primitive to serialize
+ * @returns an XML string fragment representing the node, or an empty string for null/undefined input
  */
 export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   /* catch BasicValues */
@@ -65,7 +65,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
       _log('list tag found; flattening')
       return content.map(child => serialize_xml(child)).join('\n');
     }
-    /* the other special case is strings, which is our default assumption for html 
+    /* the other special case is strings, which is our default assumption for html.
           strings don't need to be tagged because their type is automatically 
           assigned if no wrapper VSN (_prim, e.g.) is found 
 
@@ -161,10 +161,8 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
  *
  * @param $node The Node or Primitive to serialize.
  * @returns An HTML string fragment representing the node.
- * @throws Error if input node is null or undefined, or if intermediate XML is empty/invalid.
+ * @throws Error if input node is null or undefined, or if intermediate XML is empty/invalid (throw_transform_err)
  */
-
-
 export function serialize_html($node: HsonNode | Primitive): string {
   if ($node === undefined) {
     throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', $node);
@@ -177,8 +175,7 @@ export function serialize_html($node: HsonNode | Primitive): string {
   }
   const xmlString = serialize_xml($node);
 
-  /*  KEY OPERATION: flag trimmer
-          transform `key="key"` -> `key` for html boolean attributes
+  /*  flag trimmer transforms `key="key"` -> `key` for html boolean attributes
           this regex finds attributes name="value" where value is the same as the name
          (uses word boundary \b) */
   const htmlString = xmlString.replace(/\b([^\s=]+)="\1"/g, '$1');
