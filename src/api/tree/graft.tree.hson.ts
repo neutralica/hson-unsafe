@@ -9,6 +9,7 @@ import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { HsonNode } from "../../types-consts/types.hson.js";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { unwrap_root } from "../../utils/unwrap-root.utils.hson.js";
 
 /* debug log */
 let _VERBOSE = true;
@@ -44,33 +45,8 @@ export function graft(
       then populate the `nodeElementMap`, linking the two */
   const newDOMFragment = document.createDocumentFragment();
 
-  /* check for  */
-  const unwrappest = (node: HsonNode) => {
-    let contentNodes: HsonNode[] = [];
-
-    if (node._tag === ROOT_TAG) {
-      const childNode = node._content?.[0];
-      if (!is_Node(childNode) || childNode._tag !== ELEM_TAG) {
-        _throw_transform_err('Malformed _root node', 'graft.unwrap', node);
-      }
-      contentNodes = childNode._content?.filter(is_Node) || [];
-    } else {
-      contentNodes = [node];
-    }
-
-    // Enforce the "single node" rule inside the helper
-    if (contentNodes.length !== 1) {
-      _throw_transform_err(
-        `[ERR: graft()]: multiple (${contentNodes.length}) nodes passed to graft(); wrap multiple elements`,
-        'graft',
-        contentNodes
-      );
-    }
-
-    return contentNodes[0];
-  }
-
-  const nodesToRender = unwrappest(rootNode);
+  /* check for  _root/_elem*/
+  const nodesToRender = unwrap_root(rootNode);
 
   newDOMFragment.appendChild(create_live_tree(nodesToRender));
   /* replace the DOM element with the new liveTree-controlled model */
