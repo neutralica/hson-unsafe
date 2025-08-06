@@ -10,23 +10,19 @@ import { _throw_transform_err } from "./throw-transform-err.utils.hson";
  * @param $content the HsonNode or array of HsonNodes to unwrap
  * @returns a clean array of the actual content nodes sans _root or _elem
  */
-export function unwrap_root($content: HsonNode): HsonNode {
-    if ($content._tag === ROOT_TAG) {
-        const childNode = $content._content?.[0];
-        if (!is_Node(childNode) || childNode._tag !== ELEM_TAG) {
-            _throw_transform_err('Malformed _root node', 'unwrap', $content);
+export function unwrap_root($content: HsonNode | HsonNode[]): HsonNode[] {
+    const nodes = Array.isArray($content) ? $content : [$content];
+    
+    // Use flatMap to handle nodes that might expand into multiple children
+    return nodes.flatMap(node => {
+        if (node._tag === ROOT_TAG) {
+            const childNode = node._content?.[0];
+            // If it's a valid container, return its children
+            if (is_Node(childNode) && childNode._tag === ELEM_TAG) {
+                return childNode._content?.filter(is_Node) || [];
+            } 
         }
-
-        const contentNodes = childNode._content?.filter(is_Node) || [];
-        if (contentNodes.length !== 1) {
-            _throw_transform_err(
-                `Expected 1 content node, but found ${contentNodes.length}.`,
-                'unwrap',
-                $content
-            );
-        }
-        return contentNodes[0];
-    }
-    // If it's not a _root, it's already the single node we want.
-    return $content;
+        // If it's not a container, just return the node itself
+        return [node];
+    });
 }

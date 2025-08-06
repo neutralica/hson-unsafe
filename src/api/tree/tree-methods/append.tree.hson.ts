@@ -18,41 +18,19 @@ import { LiveTree } from "../live-tree-class.tree.hson.js";
  */
 export function append(this: LiveTree, $content: Partial<HsonNode> | string | LiveTree): LiveTree {
     const selectedNodes = (this as any).selectedNodes as HsonNode[];
-
-    // /* check for  _root*/
-    // const unwrappest = (node: HsonNode) => {
-    //    const nodes = Array.isArray($content) ? $content : [$content];
-    //     let finalNodes: HsonNode[] = [];
-
-    //     for (const node of nodes) {
-    //         if (node._tag === ROOT_TAG) {
-    //             const childNode = node._content?.[0];
-    //             if (is_Node(childNode) && childNode._tag === ELEM_TAG) {
-    //                 // It's a valid container, so add its children to our list.
-    //                 finalNodes.push(...(childNode._content?.filter(is_Node) || []));
-    //             } else {
-    //                 // It's a malformed _root, so just append the _root itself.
-    //                 finalNodes.push(node);
-    //             }
-    //         } else {
-    //             // It's not a _root, so just add the node directly.
-    //             finalNodes.push(node);
-    //         }
-    //     }
-    //     return finalNodes;
-    // };
-
+    
     let nodesToAppend: HsonNode[];
     if (typeof $content === 'string') {
         nodesToAppend = [NEW_NODE({ _tag: STRING_TAG, _content: [$content] })];
     } else if ($content instanceof LiveTree) {
         const sourceNodes = $content.sourceNode(true) as HsonNode[];
-         nodesToAppend = sourceNodes.flatMap(unwrap_root);
+        // Use the new utility. It correctly handles the array and returns a flat array.
+        nodesToAppend = unwrap_root(sourceNodes);
     } else if (is_Node($content)) {
-        nodesToAppend = [unwrap_root($content)];
+        // Use the same utility for a single node. It will return a clean array.
+        nodesToAppend = unwrap_root($content);
     } else {
         _throw_transform_err('[ERR] invalid content provided', 'append', $content);
-        return this; // Unreachable, but satisfies TypeScript
     }
 
     for (const targetNode of selectedNodes) {

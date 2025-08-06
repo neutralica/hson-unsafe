@@ -33,8 +33,11 @@ export function graft(
   $options: { unsafe: boolean } = { unsafe: false }
 ): LiveTree {
   /* get target element or document.body if no arg */
-  // WARN BUG default alert - do we want to default to document.body? 
-  const targetElement = $element || document.body;
+  // WARN BUG default alert - do we want to default to document.body here? 
+  const targetElement = $element;
+  if (!targetElement) {
+    _throw_transform_err('error getting target element', 'graft', $element);
+  }
   /* copy current HTML content of target */
   const sourceHTML = targetElement.innerHTML;
   /* parse html into nodes */
@@ -46,13 +49,23 @@ export function graft(
   const newDOMFragment = document.createDocumentFragment();
 
   /* check for  _root/_elem*/
-  const nodesToRender = unwrap_root(rootNode);
+   const contentNodes = unwrap_root(rootNode);
 
-  newDOMFragment.appendChild(create_live_tree(nodesToRender));
+    // Enforce graft's specific "single node" rule
+    if (contentNodes.length !== 1) {
+      _throw_transform_err(
+        `[ERR: graft()]: expected 1 node, but received ${contentNodes.length}. Wrap multiple elements in a single container.`,
+        'graft',
+        contentNodes
+      );
+    }
+    const nodeToRender = contentNodes[0];
+
+  newDOMFragment.appendChild(create_live_tree(nodeToRender));
   /* replace the DOM element with the new liveTree-controlled model */
   targetElement.innerHTML = "";
   targetElement.appendChild(newDOMFragment);
 
   /* return queryable liveTree */
-  return new LiveTree(nodesToRender);
+  return new LiveTree(nodeToRender);
 }
