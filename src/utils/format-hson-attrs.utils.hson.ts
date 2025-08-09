@@ -1,6 +1,6 @@
 // format-hson.attrs.utils.hson.ts
 
-import { HsonAttrs, Primitive } from "../types-consts/types.hson.js";
+import { HsonMeta_NEW, Primitive } from "../types-consts/types.hson.js";
 import { serialize_css } from "./serialize-css.utils.hson.js";
 
 /**
@@ -11,11 +11,11 @@ import { serialize_css } from "./serialize-css.utils.hson.js";
  * - string values, which are quoted and have internal quotes escaped
  * - other primitive values, which are rendered as key=value
  *
- * @param {HsonAttrs} attrs the attribute object to format
+ * @param {HsonMeta_NEW} attrs the attribute object to format
  * @returns {string} a single string of all formatted hson attributes, ready for injection into a tag
  */
 
-export function format_hson_attrs(attrs: HsonAttrs): string {
+export function format_hson_attrs(attrs: HsonMeta_NEW): string {
   const attrsFormatted = Object.entries(attrs)
     .map(([key, value]) => {
 

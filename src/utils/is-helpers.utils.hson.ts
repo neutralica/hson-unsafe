@@ -1,6 +1,6 @@
 // is-helpers.hson.util.ts
 
-import { HsonNode, JsonType, NodeContent, Primitive } from "../types-consts/types.hson.js";
+import { BasicValue, HsonNode, HsonNode_NEW, JsonType, JsonType_NEW, NodeContent, Primitive } from "../types-consts/types.hson.js";
 import {INDEX_TAG, VAL_TAG, STRING_TAG } from "../types-consts/constants.hson.js";
 
 /* identifies JSON objects */
@@ -18,11 +18,29 @@ export function is_Node(bit: unknown): bit is HsonNode {
   return typeof bit === 'object' && bit !== null && '_tag' in bit;
 }
 
+/* identifies HsonNode */
+export function is_new_Node(bit: unknown): bit is HsonNode_NEW {
+  return typeof bit === 'object' && bit !== null && '_tag' in bit;
+}
+
 /* for filtering out strings */
-export function is_not_string(txt: JsonType) {
+export function is_not_string(txt: JsonType): txt is BasicValue {
   return (typeof txt === 'number' ||
     txt === null ||
     typeof txt === 'boolean')
+}
+export function is_not_string_NEW(txt: JsonType_NEW): txt is BasicValue {
+  return (typeof txt === 'number' ||
+    txt === null ||
+    typeof txt === 'boolean')
+}
+
+export function is_string(txt: JsonType): txt is string {
+  return (typeof txt === 'string')
+}
+
+export function is_string_NEW(txt: JsonType_NEW): txt is string {
+  return (typeof txt === 'string')
 }
 
 /* identifies HsonNodes that contain a BasicValue as content */
@@ -36,7 +54,7 @@ export function is_PRIM_or_STR_Node(node: HsonNode): boolean {
 }
 
 /* identifies _ii index tags in an _array */
-export function is_indexed(node: HsonNode): boolean {
+export function is_indexed(node: HsonNode | HsonNode_NEW): boolean {
   return (
     node._tag === INDEX_TAG && node._content && node._content.length === 1
   )

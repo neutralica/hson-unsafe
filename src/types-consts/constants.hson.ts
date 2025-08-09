@@ -1,6 +1,6 @@
 // consts.types.ts
 
-import { HsonNode, Primitive } from "./types.hson.js";
+import { HsonNode, HsonNode_NEW, Primitive } from "./types.hson.js";
 import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "./tokens.types.hson.js";
 
 /* factory to build a node from incomplete info */
@@ -11,6 +11,13 @@ export const NEW_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
     flags: partial._meta?.flags ?? [],
     attrs: partial._meta?.attrs ?? {},
   }
+});
+
+export const NEW_NEW_NODE = (partial: Partial<HsonNode_NEW> = {}): HsonNode_NEW => ({
+  _tag: partial._tag ?? '', 
+  _content: partial._content ?? [],
+  _attrs: partial._attrs ?? {},
+  _meta:  partial._meta ?? {},
 });
 
 /* factory to build a token from incomplete info */

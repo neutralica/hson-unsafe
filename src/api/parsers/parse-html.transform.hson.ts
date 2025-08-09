@@ -1,5 +1,5 @@
 
-import { HsonAttrs, HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { HsonMeta_NEW, HsonNode, Primitive } from "../../types-consts/types.hson.js";
 import { NEW_NODE, VAL_TAG, STRING_TAG, ROOT_TAG, BLANK_META, ELEM_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
 import { coerce } from "../../utils/coerce-string.utils.hson.js";
 import { expand_bools } from "../../utils/expand-booleans.utils.hson.js";
@@ -92,7 +92,7 @@ function convert($el: Element): HsonNode {
         const primitive_content = coerce(text); /* turns "1" into number 1 */
         return NEW_NODE({ _tag: VAL_TAG, _content: [primitive_content] });
     }
-    const attrs: HsonAttrs = {};
+    const attrs: HsonMeta_NEW = {};
     const flags: string[] = [];
 
 
@@ -111,7 +111,7 @@ function convert($el: Element): HsonNode {
         }
     }
 
-    const sortedAttrs: HsonAttrs = {};
+    const sortedAttrs: HsonMeta_NEW = {};
     Object.keys(attrs)
         .sort()
         .forEach(key => {

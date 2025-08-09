@@ -1,4 +1,4 @@
-import { HsonAttrs, HsonFlags, Primitive } from "../../types-consts/types.hson.js";
+import { HsonMeta_NEW, HsonFlags, Primitive } from "../../types-consts/types.hson.js";
 import { CREATE_TOKEN, TokenΔ, OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { AllTokens, HSON_Token_Type } from "../../types-consts/tokens.types.hson.js";
 import { close_tag_lookahead } from "../../utils/close-tag-lookahead.utils.hson.js";
@@ -258,7 +258,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
             }
 
 
-            const attrs: HsonAttrs = {};
+            const attrs: HsonMeta_NEW = {};
             const flags: HsonFlags = [];
             let nodeContent: Primitive | undefined = undefined;
             let arrayContent: string | undefined = undefined;

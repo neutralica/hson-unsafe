@@ -1,4 +1,4 @@
-import { HsonAttrs, HsonFlags, HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { HsonMeta_NEW, HsonFlags, HsonNode, Primitive } from "../../types-consts/types.hson.js";
 import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../types-consts/constants.hson.js";
 import { is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parseSelector } from "../../utils/tree-utils/parse-selector.utils.hson.js";
@@ -13,7 +13,7 @@ import { getContent } from "./tree-methods/get-content.tree.hson.js";
 /*  defines the shape of the query object for find() and findAll() */
 export interface HsonQuery {
   tag?: string;
-  attrs?: Partial<HsonAttrs>;
+  attrs?: Partial<HsonMeta_NEW>;
   flags?: Partial<HsonFlags>
   text?: string | RegExp;
 }
