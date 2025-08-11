@@ -4,10 +4,10 @@ import { FrameConstructor, OutputConstructor_2, SourceConstructor_1 } from "../.
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
-import { parse_json } from "../parsers/parse-json.transform.hson.js";
 import { parse_tokens } from "../parsers/parse-tokens.transform.hson.js";
 import { tokenize_hson } from "../parsers/tokenize-hson.transform.hson.js";
 import { construct_output_2 } from "./constructor-2-output.api.hson.js";
+import { parse_json } from "../../old/api/parsers/parse-json.old.transform.hson.js";
 
 
 

@@ -1,7 +1,7 @@
 // consts.types.ts
 
 import { HsonNode, HsonNode_NEW, Primitive } from "./types.hson.js";
-import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "./tokens.types.hson.js";
+import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "../../types-consts/tokens.types.hson.js";
 
 /* factory to build a node from incomplete info */
 export const NEW_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({

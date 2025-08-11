@@ -1,5 +1,11 @@
 // serialize-json.render.hson.ts
 
+import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/constants.hson";
+import { HsonNode_NEW, JsonType_NEW, JsonObj_NEW, Primitive } from "../../types-consts/types.hson";
+import { is_indexed } from "../../utils/is-helpers.utils.hson";
+import { make_string } from "../../../utils/make-string.utils.hson"
+import {_throw_transform_err} from "../../../utils/throw-transform-err.utils.hson"
+
 
 
 
