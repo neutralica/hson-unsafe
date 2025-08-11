@@ -6,7 +6,6 @@ export function _throw_transform_err(
     $input: any
   ): never {
     const errorMessage = `[ERR: transform = ${functionName}()]:\n  -> ${message}`;
-    // why tf was this here
-    // _throw_transform_err(errorMessage,'_throw_transform_err', $input);
+  
     throw new Error(errorMessage);  
 }
