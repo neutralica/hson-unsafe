@@ -1,4 +1,4 @@
-import { HsonNode, JsonType } from "../../types-consts/types.hson.js";
+import { JsonType } from "../../core/types-consts/core.types.hson.js";
 import { _ERROR, _FALSE, BLANK_META } from "../../types-consts/constants.hson.js";
 import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../../types-consts/tree.types.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
@@ -9,6 +9,7 @@ import { create_live_tree } from "../tree/create-live-tree.tree.hson.js";
 import { graft } from "../tree/graft.tree.hson.js";
 import { LiveTree } from "../tree/live-tree-class.tree.hson.js";
 import { parse_json } from "../../old/api/parsers/parse-json.old.transform.hson.js";
+import { HsonNode } from "../../types-consts/node.types.hson.js";
 
 /**
  * factory function that builds the entry-point for the liveTree pipeline

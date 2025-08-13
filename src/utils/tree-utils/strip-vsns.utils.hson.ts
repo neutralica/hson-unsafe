@@ -1,6 +1,11 @@
-import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
-import { STRING_TAG, VAL_TAG, VSNContainerTags, INDEX_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
-import { is_Primitive, is_Node } from "../is-helpers.utils.hson.js";
+// strip-vsns.utils.hson.ts
+
+import { Primitive } from "../../core/types-consts/core.types.hson";
+import { is_Primitive } from "../../core/utils/guards.core.utils.hson";
+import { STRING_TAG, VAL_TAG, INDEX_TAG, ROOT_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
+import { HsonNode } from "../../types-consts/node.types.hson";
+import { is_Node } from "../node-guards.utils.hson";
+
 
 /**
  * recursive function that strips off VSN clutter and returns core data in 
@@ -37,7 +42,7 @@ export function strip_VSNs(node: HsonNode | Primitive | undefined): any {
     }
 
     /* 3. process and add children */
-    const container = node._content.find(c => is_Node(c) && VSNContainerTags.includes(c._tag)) as HsonNode | undefined;
+    const container = node._content.find(c => is_Node(c) && VSN_TAGS.includes(c._tag)) as HsonNode | undefined;
 
     if (container && container._content.length > 0) {
         for (const child of container._content) {

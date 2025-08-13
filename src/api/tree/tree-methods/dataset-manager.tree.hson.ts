@@ -1,6 +1,6 @@
 // src/utils/style-manager.utils.hson.ts
 
-import { Primitive } from "../../../types-consts/types.hson.js";
+import { Primitive } from "../../../core/types-consts/core.types.hson.js";
 import { LiveTree } from "../live-tree-class.tree.hson.js";
 
 

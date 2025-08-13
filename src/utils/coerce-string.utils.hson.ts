@@ -1,6 +1,6 @@
 // coerce-string.hson.util.ts
 
-import { Primitive } from "../types-consts/types.hson.js";
+import { Primitive } from "../core/types-consts/core.types.hson.js";
 import { _throw_transform_err } from "./throw-transform-err.utils.hson.js";
 /**
  * parses a string value into its valueful primitive type and reports

@@ -1,9 +1,9 @@
 // unwrap-root.utils.hson.ts
 
-import { ELEM_TAG, ROOT_TAG } from "../types-consts/constants.hson";
-import { HsonNode } from "../types-consts/types.hson";
-import { is_Node } from "./is-helpers.utils.hson";
-import { _throw_transform_err } from "./throw-transform-err.utils.hson";
+import { ROOT_TAG, ELEM_TAG } from "../types-consts/constants.hson";
+import { HsonNode } from "../types-consts/node.types.hson";
+import { is_Node } from "./node-guards.utils.hson";
+
 
 /**
  * takes one or more HsonNodes and pops them out of <_root<_elem< structure

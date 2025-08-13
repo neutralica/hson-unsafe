@@ -1,5 +1,7 @@
+import { Primitive } from "../core/types-consts/core.types.hson.js";
+import { HsonMeta_NEW } from "../new/types-consts/new.types.hson.js";
 import { TokenΔ } from "./constants.hson.js";
-import { HsonMeta_NEW as HsonMeta_NEW, HsonFlags, HsonNode, Primitive } from "./types.hson.js";
+import { HsonFlags } from "./node.types.hson.js";
 
 
 export interface BaseToken {

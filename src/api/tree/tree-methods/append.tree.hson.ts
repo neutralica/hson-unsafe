@@ -1,8 +1,8 @@
 // append.tree.hson.ts
 
-import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, ROOT_TAG, STRING_TAG } from "../../../types-consts/constants.hson.js";
-import { HsonNode } from "../../../types-consts/types.hson.js";
-import { is_Node } from "../../../utils/is-helpers.utils.hson.js";
+import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../../types-consts/constants.hson.js";
+import { HsonNode } from "../../../types-consts/node.types.hson.js";
+import { is_Node } from "../../../utils/node-guards.utils.hson.js";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson.js";
 import { unwrap_root } from "../../../utils/unwrap-root.utils.hson.js";
 import { create_live_tree } from "../create-live-tree.tree.hson.js";

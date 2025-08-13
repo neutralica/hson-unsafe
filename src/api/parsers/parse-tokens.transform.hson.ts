@@ -1,11 +1,12 @@
 // parse-tokens.transform.hson.ts
 
-import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
-import { NEW_NODE, ROOT_TAG, OBJECT_TAG, BLANK_META, TokenΔ, ARRAY_TAG, ELEM_TAG, INDEX_TAG, VSN_TAGS, VAL_TAG, STRING_TAG } from "../../types-consts/constants.hson.js";
+import {  Primitive } from "../../core/types-consts/core.types.hson.js";
+import { NEW_NODE, ROOT_TAG, OBJECT_TAG, BLANK_META, TokenΔ, ARRAY_TAG, ELEM_TAG, INDEX_TAG, VSN_TAGS, VAL_TAG, STRING_TAG, VSNTag } from "../../types-consts/constants.hson.js";
 import { AllTokens } from "../../types-consts/tokens.types.hson.js";
-import { is_not_string, is_Primitive } from "../../utils/is-helpers.utils.hson.js";
+import { is_not_string, is_Primitive } from "../../core/utils/guards.core.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { HsonNode } from "../../types-consts/node.types.hson.js";
 
 /* debug log */
 const _VERBOSE = false;
@@ -256,13 +257,13 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
 
 
                 /* branch based on the type of tag being closed */
-                if (!VSN_TAGS.includes(closingNode._tag.toLowerCase())) {
+                if (!VSN_TAGS.includes(closingNode._tag.toLowerCase() as VSNTag)) {
                     if (children.length === 0) {
                         /* case 1 -- tag was empty */
                         closingNode._content = [];
                         $log(`[token_to_node CLOSE] standard tag <${closingNode._tag}> is empty`);
                     } else if ( /* tag contains a VSN */
-                        children.length === 1 && VSN_TAGS.includes(children[0]._tag
+                        children.length === 1 && VSN_TAGS.includes(children[0]._tag as VSNTag
                         )) {
                         $log(`[token_to_node CLOSE] standard tag <${closingNode._tag}> content is single VSN <${children[0]._tag}> `);
                         closingNode._content = [children[0]];

@@ -1,8 +1,12 @@
 // refactor-converters.utils.hson.ts
 
-import { BLANK_META } from "../../types-consts/constants.hson";
-import { HsonMeta_NEW, HsonNode, HsonNode_NEW, Primitive } from "../../types-consts/types.hson";
-import { is_new_Node, is_Node } from "../is-helpers.utils.hson";
+import {  Primitive } from "../../../core/types-consts/core.types.hson";
+import { BLANK_META } from "../../../types-consts/constants.hson";
+import { HsonNode } from "../../../types-consts/node.types.hson";
+import { is_Node } from "../../../utils/node-guards.utils.hson";
+import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
+import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/new.types.hson";
+import { is_Node_NEW } from "../node-guards.new.utils.hson";
 
 
 /**
@@ -10,7 +14,7 @@ import { is_new_Node, is_Node } from "../is-helpers.utils.hson";
  * to the new format (top-level _attrs).
  */
 export function toNewFormat(node: HsonNode): HsonNode_NEW {
-    if (!node) return node;
+    if (!node) _throw_transform_err('no node provided', 'toNewFormat', node);
 
     // 1. Initialize the new node structure.
     const newNode: HsonNode_NEW = {
@@ -60,7 +64,7 @@ export function toNewFormat(node: HsonNode): HsonNode_NEW {
  * Converts a node from the new format (_attrs) back to the old format (_meta.attrs, _meta.flags).
  */
 export function toOldFormat(node: HsonNode_NEW): HsonNode {
-    if (!node) return node;
+    if (!node) _throw_transform_err('no new node provided', 'toOldFormat', node);
     
     const oldNode: HsonNode = {
         _tag: node._tag,
@@ -86,7 +90,7 @@ export function toOldFormat(node: HsonNode_NEW): HsonNode {
     if (node._content) {
         // We cast the result because the map correctly produces an array of the old type.
         oldNode._content = node._content.map(child => 
-            is_new_Node(child) ? toOldFormat(child as HsonNode_NEW) : child
+            is_Node_NEW(child) ? toOldFormat(child as HsonNode_NEW) : child
         ) as (HsonNode | Primitive)[];
     }
     

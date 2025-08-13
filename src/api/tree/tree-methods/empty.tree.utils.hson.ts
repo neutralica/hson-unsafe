@@ -1,10 +1,9 @@
 // empty.tree.utils.hson.ts
 
-import { HsonNode } from "../../../types-consts/types.hson.js";
-import { ELEM_TAG, NODE_ELEMENT_MAP } from "../../../types-consts/constants.hson.js";
-import { is_Node } from "../../../utils/is-helpers.utils.hson.js";
+import {  NODE_ELEMENT_MAP } from "../../../types-consts/constants.hson.js";
+import { HsonNode } from "../../../types-consts/node.types.hson.js";
+import { is_Node } from "../../../utils/node-guards.utils.hson.js";
 import { LiveTree } from "../live-tree-class.tree.hson.js";
-import { make_string } from "../../../utils/make-string.utils.hson.js";
 
 
 export function empty(this: LiveTree): LiveTree {

@@ -1,6 +1,9 @@
-import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
-import { ELEM_TAG, OBJECT_TAG } from "../../types-consts/constants.hson.js";
-import { is_Node } from "../is-helpers.utils.hson.js";
+// semantic-child.utils.hson.ts
+
+import { Primitive } from "../../core/types-consts/core.types.hson";
+import { ELEM_TAG, OBJECT_TAG } from "../../types-consts/constants.hson";
+import { HsonNode } from "../../types-consts/node.types.hson";
+import { is_Node } from "../node-guards.utils.hson";
 
 export function getSemanticChildren(node: HsonNode): (HsonNode | Primitive)[] {
     if (!node._content) return [];

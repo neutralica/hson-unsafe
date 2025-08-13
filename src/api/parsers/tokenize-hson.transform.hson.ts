@@ -1,13 +1,15 @@
-import { HsonMeta_NEW, HsonFlags, Primitive } from "../../types-consts/types.hson.js";
+import {  Primitive } from "../../core/types-consts/core.types.hson.js";
 import { CREATE_TOKEN, TokenΔ, OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants.hson.js";
 import { AllTokens, HSON_Token_Type } from "../../types-consts/tokens.types.hson.js";
 import { close_tag_lookahead } from "../../utils/close-tag-lookahead.utils.hson.js";
 import { coerce } from "../../utils/coerce-string.utils.hson.js";
-import { is_not_string, is_Primitive, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { is_not_string, is_Primitive } from "../../core/utils/guards.core.utils.hson.js";
 import { parse_css_attrs } from "../../utils/parse-css.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { splitTopLevel } from "../../utils/split-top-level.utils.hson.js";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { HsonAttrs, HsonFlags } from "../../types-consts/node.types.hson.js";
+import { is_Node } from "../../utils/node-guards.utils.hson.js";
 
 
 
@@ -258,7 +260,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
             }
 
 
-            const attrs: HsonMeta_NEW = {};
+            const attrs: HsonAttrs = {};
             const flags: HsonFlags = [];
             let nodeContent: Primitive | undefined = undefined;
             let arrayContent: string | undefined = undefined;

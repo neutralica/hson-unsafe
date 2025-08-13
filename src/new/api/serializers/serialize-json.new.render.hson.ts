@@ -1,10 +1,12 @@
 // serialize-json.render.hson.ts
 
-import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG, ELEM_TAG, INDEX_TAG } from "../../types-consts/constants.hson";
-import { HsonNode_NEW, JsonType_NEW, JsonObj_NEW, Primitive } from "../../types-consts/types.hson";
-import { is_indexed } from "../../utils/is-helpers.utils.hson";
+import { is_indexed } from "../../../utils/node-guards.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson"
 import {_throw_transform_err} from "../../../utils/throw-transform-err.utils.hson"
+import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG, ELEM_TAG, INDEX_TAG } from "../../../types-consts/constants.hson";
+import { Primitive } from "../../../core/types-consts/core.types.hson";
+import { HsonNode_NEW, JsonType_NEW, JsonObj_NEW } from "../../types-consts/new.types.hson";
+import { is_indexed_NEW } from "../../utils/node-guards.new.utils.hson";
 
 
 
@@ -76,7 +78,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             if ($node._content) {
                 /*  content of _array node must be _ii nodes */
                 for (const iiNode of $node._content as HsonNode_NEW[]) {
-                    if (is_indexed(iiNode)) {
+                    if (is_indexed_NEW(iiNode)) {
                         array.push(jsonFromNode(iiNode._content[0] as HsonNode_NEW));
                     } else {
                         _throw_transform_err(`malformed _ii node in _array`, 'serialize-json', $node);

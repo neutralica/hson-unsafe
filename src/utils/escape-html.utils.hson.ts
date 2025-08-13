@@ -1,6 +1,6 @@
 // escape-html.hson.util.ts
 
-import { is_Primitive } from "./is-helpers.utils.hson.js";
+import { is_Primitive } from "../core/utils/guards.core.utils.hson.js";
 import { _throw_transform_err } from "./throw-transform-err.utils.hson.js";
 
 /* basic escape helper to be used pre-serialization of HTML */

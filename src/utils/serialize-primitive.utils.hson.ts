@@ -1,6 +1,6 @@
 // serialize-primitive.utils.hson.ts
 
-import { Primitive } from "../types-consts/types.hson";
+import { Primitive } from "../core/types-consts/core.types.hson";
 /**
  * serializes a BasicValue type into its string representation
  *

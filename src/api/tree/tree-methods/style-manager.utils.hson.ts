@@ -1,8 +1,8 @@
 // style-manager.utils.hson.ts
 
 import { LiveTree } from "../live-tree-class.tree.hson.js";
-import { HsonNode } from "../../../types-consts/types.hson.js";
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants.hson.js";
+import { HsonNode } from "../../../types-consts/node.types.hson.js";
 
 /**
  * expedites & eases the frequent interactions with the style property

@@ -1,16 +1,17 @@
 
-import { HsonMeta_NEW, HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import {  Primitive } from "../../core/types-consts/core.types.hson.js";
 import { NEW_NODE, VAL_TAG, STRING_TAG, ROOT_TAG, BLANK_META, ELEM_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG } from "../../types-consts/constants.hson.js";
 import { coerce } from "../../utils/coerce-string.utils.hson.js";
 import { expand_bools } from "../../utils/expand-booleans.utils.hson.js";
 import { expand_entities } from "../../utils/expand-entities.utils.hson.js";
 import { expand_void_tags } from "../../utils/expand-self-closing.utils.hson.js";
-import { is_Primitive, is_not_string, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { is_Primitive, is_not_string } from "../../core/utils/guards.core.utils.hson.js";
 import { parse_css_attrs } from "../../utils/parse-css.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { HsonNode, HsonAttrs } from "../../types-consts/node.types.hson.js";
 
-
+import { is_Node } from "../../utils/node-guards.utils.hson.js";
 
 /* debug log */
 let _VERBOSE = false;
@@ -92,7 +93,7 @@ function convert($el: Element): HsonNode {
         const primitive_content = coerce(text); /* turns "1" into number 1 */
         return NEW_NODE({ _tag: VAL_TAG, _content: [primitive_content] });
     }
-    const attrs: HsonMeta_NEW = {};
+    const attrs: HsonAttrs = {};
     const flags: string[] = [];
 
 
@@ -111,7 +112,7 @@ function convert($el: Element): HsonNode {
         }
     }
 
-    const sortedAttrs: HsonMeta_NEW = {};
+    const sortedAttrs: HsonAttrs = {};
     Object.keys(attrs)
         .sort()
         .forEach(key => {

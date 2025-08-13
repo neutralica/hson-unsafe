@@ -1,13 +1,15 @@
 // --- serialize-hson.hson.render.ts ---
 
-import { HsonMeta, HsonMeta_NEW, HsonNode, Primitive } from "../../types-consts/types.hson.js";
+import { Primitive } from "../../core/types-consts/core.types.hson.js";
 import { STRING_TAG, VAL_TAG, INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, _FALSE } from "../../types-consts/constants.hson.js";
 import { format_hson_attrs } from "../../utils/format-hson-attrs.utils.hson.js";
 import { get_self_close_value } from "../../utils/get-self-value.utils.hson.js";
-import { is_Primitive as is_Primitive, is_void, is_PRIM_or_STR_Node as is_ValueVsn, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { is_Primitive, is_void  } from "../../core/utils/guards.core.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { serialize_primitive } from "../../utils/serialize-primitive.utils.hson.js";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { HsonMeta, HsonNode } from "../../types-consts/node.types.hson.js";
+import { is_Node } from "../../utils/node-guards.utils.hson.js";
 
 
 

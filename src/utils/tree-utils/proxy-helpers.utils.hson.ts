@@ -1,13 +1,15 @@
 // proxy-helpers.tree.hson.ts
 
-import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
-import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, VAL_TAG, STRING_TAG, VSNContainerTags } from "../../types-consts/constants.hson.js";
-import { is_Node } from "../is-helpers.utils.hson.js";
+import { Primitive } from "../../core/types-consts/core.types.hson";
+import { ELEM_TAG, STRING_TAG, NEW_NODE, NODE_ELEMENT_MAP, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
+import { HsonNode } from "../../types-consts/node.types.hson";
+import { is_Node } from "../node-guards.utils.hson";
+
 
 /*  find the first direct child node with a given tag */
 export function find_child_by_tag(parentNode: HsonNode, tag: string): HsonNode | undefined {
     const container = parentNode._content.find(
-        (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag)
+        (c): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag)
     );
 
     if (!container) {
@@ -21,7 +23,7 @@ export function find_child_by_tag(parentNode: HsonNode, tag: string): HsonNode |
 
 export function find_index_of_tag(parentNode: HsonNode, tag: string): number {
     const container = parentNode._content.find(
-        (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag)
+        (c): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag)
     );
     if (!container) return -1;
 
@@ -110,7 +112,7 @@ export function get_contentValue($node: HsonNode): Primitive | undefined {
         return undefined;
     }
     
-    const container = $node._content.find((c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag));
+    const container = $node._content.find((c): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag));
     
     /* the content is either in container._content or is in the direct child._content*/
     const contentSource = container ? container._content : $node._content;

@@ -1,9 +1,10 @@
 // serialize-json.render.hson.ts
 
+import { JsonType, JsonObj, Primitive } from "../../../core/types-consts/core.types.hson";
 import { ARRAY_TAG, ELEM_TAG, INDEX_TAG, OBJECT_TAG, ROOT_TAG, STRING_TAG, VAL_TAG } from "../../../types-consts/constants.hson";
-import { HsonAttrs, HsonFlags, HsonNode, JsonObj, JsonType, Primitive } from "../../../types-consts/types.hson";
-import { is_indexed, is_Node } from "../../../utils/is-helpers.utils.hson";
+import { HsonNode } from "../../../types-consts/node.types.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
+import { is_indexed, is_Node } from "../../../utils/node-guards.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
 
@@ -103,7 +104,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             /* get the object's properties--the nodes in its .content */
             for (const prop of ($node._content as HsonNode[])) {
                 if (!is_Node(prop) || !prop._tag) {
-                    _throw_transform_err(`invalid child inside _obj:${ prop}`, 'serialize_json', $node._content);
+                    _throw_transform_err(`invalid child inside _obj:${prop}`, 'serialize_json', $node._content);
                 }
 
                 const key = prop._tag;
@@ -187,11 +188,13 @@ function jsonFromNode($node: HsonNode): JsonType {
             const meta = $node._meta;
             const hasATTRS = meta.attrs && Object.keys(meta.attrs).length > 0;
             const hasFLAGS = meta.flags && meta.flags.length > 0;
+
             if (hasATTRS || hasFLAGS) {
-                const metaForJson: { attrs?: HsonAttrs, flags?: HsonFlags } = {};
-                if (hasATTRS) metaForJson.attrs = { ...meta!.attrs };
-                if (hasFLAGS) metaForJson.flags = [...meta!.flags];
-                stdJson._meta = { ...metaForJson };
+
+                stdJson._meta = {
+                    attrs: hasATTRS ? { ...meta!.attrs } : {},
+                    flags: hasFLAGS ? [...meta!.flags] : [],  
+                };
             }
             return stdJson;
         }

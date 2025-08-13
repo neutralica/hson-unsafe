@@ -1,10 +1,11 @@
-import { Primitive, HsonNode } from "../../types-consts/types.hson.js";
+import { Primitive } from "../../core/types-consts/core.types.hson.js";
 import { BLANK_META, ELEM_TAG, STRING_TAG } from "../../types-consts/constants.hson.js";
 import { escape_html } from "../../utils/escape-html.utils.hson.js";
-import { is_Primitive, is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { is_Primitive} from "../../core/utils/guards.core.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
+import { HsonNode } from "../../types-consts/node.types.hson.js";
 
 
 const _VERBOSE = false;

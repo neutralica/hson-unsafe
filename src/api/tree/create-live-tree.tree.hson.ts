@@ -1,6 +1,7 @@
-import { HsonNode, Primitive } from "../../types-consts/types.hson.js";
-import { STRING_TAG, BLANK_META, VSNContainerTags, NODE_ELEMENT_MAP, VAL_TAG } from "../../types-consts/constants.hson.js";
-import { is_Node } from "../../utils/is-helpers.utils.hson.js";
+import { Primitive } from "../../core/types-consts/core.types.hson.js";
+import { STRING_TAG, BLANK_META, VSNTag, NODE_ELEMENT_MAP, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson.js";
+import { HsonNode } from "../../types-consts/node.types.hson.js";
+import { is_Node } from "../../utils/node-guards.utils.hson.js";
 import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
 
 /**
@@ -59,7 +60,12 @@ export function create_live_tree($node: HsonNode | Primitive): Node {
     if (graft._content) {
 
         const container = graft._content.find(
-            (c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag)
+            (c): c is HsonNode =>
+                is_Node(c) &&
+                VSN_TAGS.includes(c._tag as VSNTag)
+
+
+
         );
 
         if (container) {

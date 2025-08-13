@@ -1,8 +1,9 @@
 // constructors.types.hson.ts
 
-import { HsonNode, JsonType } from "./types.hson.js";
+import {  JsonType } from "../core/types-consts/core.types.hson.js";
 import { RenderΔ, HSON_FrameΔ} from "./constants.hson.js";
 import { AllTokens } from "./tokens.types.hson.js";
+import { HsonNode } from "./node.types.hson.js";
 
 export type ProxyBackdoor = { _withNodes: HsonNode; [key: string]: any; };
 

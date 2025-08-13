@@ -1,14 +1,15 @@
 // get-self-value.utils.hson.ts
 
-import { HsonNode, Primitive } from "../types-consts/types.hson.js";
-import { STRING_TAG, VAL_TAG, _FALSE, FALSE_TYPE, ARRAY_TAG, ELEM_TAG, ELEM_OBJ_ARR } from "../types-consts/constants.hson.js";
-import { is_Node } from "./is-helpers.utils.hson.js";
+import { Primitive } from "../core/types-consts/core.types.hson";
+import { FALSE_TYPE, ELEM_OBJ_ARR, _FALSE, STRING_TAG, VAL_TAG } from "../types-consts/constants.hson";
+import { HsonNode } from "../types-consts/node.types.hson";
+import { is_Node } from "./node-guards.utils.hson";
 
 /* debug log */
 const VERBOSE = false;
 const $log = VERBOSE
     ? console.log
-    : ()=>{}
+    : () => { }
 
 /**
  * checks if a node is a candidate for single-line formatting and returns
@@ -22,9 +23,9 @@ export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
     /*  1. self-closing tags cannot have any attrs or flags */
     $log('  ? checking for Self Value (if applicable) ', $node._tag);
     if (ELEM_OBJ_ARR.includes($node._tag)) {
-        return _FALSE; 
+        return _FALSE;
     }
-    
+
     const hasNoMeta = (!$node._meta) ||
         ((!$node._meta.attrs || Object.keys($node._meta.attrs).length === 0) &&
             (!$node._meta.flags || $node._meta.flags.length === 0));
@@ -41,14 +42,14 @@ export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
 
     const childNode = $node._content[0];
     $log('object is a node; getting content:', childNode)
-    if (!is_Node(childNode._content[0]) || childNode._content.length > 1) {
+    if (!is_Node(childNode) || !is_Node(childNode._content[0]) || childNode._content.length > 1) {
         $log('  > $FALSE - not self closing: too many child nodes')
         return _FALSE;
     }
     const grandChildNode = childNode._content[0];
     /* 3. that single child node must be a primitive wrapper (_str or _prim) */
     if (grandChildNode._tag === STRING_TAG || grandChildNode._tag === VAL_TAG) {
-       /* success: return the primitive value directly from inside the wrapper */
+        /* success: return the primitive value directly from inside the wrapper */
         $log(' --> IS self-closing')
         return grandChildNode._content[0] as Primitive;
     }

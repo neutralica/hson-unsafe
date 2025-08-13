@@ -1,5 +1,6 @@
 // linter.options.hson.api.ts
-import { HsonNode } from "../../types-consts/types.hson.js";
+
+import { HsonNode } from "../../types-consts/node.types.hson";
 
 
 

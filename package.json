@@ -22,7 +22,8 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "npm run clean && tsc"
+    "build": "npm run clean && tsc",
+    "check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/dompurify": "^3.2.0",

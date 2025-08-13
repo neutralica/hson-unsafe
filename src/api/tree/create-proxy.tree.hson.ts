@@ -1,11 +1,13 @@
-import { HsonNode } from "../../types-consts/types.hson.js";
-import { STRING_TAG, VAL_TAG, VSNContainerTags, OBJECT_TAG, ARRAY_TAG, INDEX_TAG, BLANK_META, NODE_ELEMENT_MAP } from "../../types-consts/constants.hson.js";
-import { is_Node, is_Primitive, is_Object } from "../../utils/is-helpers.utils.hson.js";
+
+import { STRING_TAG, VAL_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG, BLANK_META, NODE_ELEMENT_MAP, VSN_TAGS } from "../../types-consts/constants.hson.js";
+import {  is_Primitive, is_Object } from "../../core/utils/guards.core.utils.hson.js";
 import { find_child_by_tag, find_index_of_tag, get_contentValue, update_content } from "../../utils/tree-utils/proxy-helpers.utils.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
 import { getSemanticChildren } from "../../utils/tree-utils/semantic-child.utils.hson.js";
 import { strip_VSNs } from "../../utils/tree-utils/strip-vsns.utils.hson.js";
 import { parse_json } from "../../old/api/parsers/parse-json.old.transform.hson.js";
+import { HsonNode } from "../../types-consts/node.types.hson.js";
+import { is_Node } from "../../utils/node-guards.utils.hson.js";
 
 
 /* debug log */
@@ -93,7 +95,7 @@ export function create_proxy(targetNode: HsonNode): any {
                     return false;
                 }
 
-                const hsonContainer = targetNode._content.find((c): c is HsonNode => is_Node(c) && VSNContainerTags.includes(c._tag));
+                const hsonContainer = targetNode._content.find((c): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag));
                 if (!hsonContainer) return false;
 
                 const priorIndex = find_index_of_tag(targetNode, propertyKey);

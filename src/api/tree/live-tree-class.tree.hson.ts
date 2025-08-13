@@ -1,6 +1,7 @@
-import { HsonMeta_NEW, HsonFlags, HsonNode, Primitive } from "../../types-consts/types.hson.js";
+// live-tree-class.tree.hson.ts
+
+
 import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../types-consts/constants.hson.js";
-import { is_Node } from "../../utils/is-helpers.utils.hson.js";
 import { parseSelector } from "../../utils/tree-utils/parse-selector.utils.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
 import { DatasetManager } from "./tree-methods/dataset-manager.tree.hson.js";
@@ -9,11 +10,14 @@ import { empty } from "./tree-methods/empty.tree.utils.hson.js";
 import { removeChild } from "./tree-methods/remove-child.tree.utils.hson.js";
 import { append } from "./tree-methods/append.tree.hson.js";
 import { getContent } from "./tree-methods/get-content.tree.hson.js";
+import { HsonAttrs, HsonFlags, HsonNode } from "../../types-consts/node.types.hson.js";
+import { is_Node } from "../../utils/node-guards.utils.hson.js";
+import { Primitive } from "../../core/types-consts/core.types.hson.js";
 
 /*  defines the shape of the query object for find() and findAll() */
 export interface HsonQuery {
   tag?: string;
-  attrs?: Partial<HsonMeta_NEW>;
+  attrs?: Partial<HsonAttrs>;
   flags?: Partial<HsonFlags>
   text?: string | RegExp;
 }

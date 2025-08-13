@@ -1,9 +1,10 @@
 import { hson } from "../../hson.js";
-import { HsonNode, JsonType, Primitive } from "../../types-consts/types.hson.js";
+import {  JsonType, Primitive } from "../../core/types-consts/core.types.hson.js";
 import { RenderΔ } from "../../types-consts/constants.hson.js";
 import { FrameRender, RenderConstructor_4 } from "../../types-consts/constructors.types.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { create_proxy } from "../tree/create-proxy.tree.hson.js";
+import { HsonNode } from "../../types-consts/node.types.hson.js";
 
 
 
