@@ -193,7 +193,7 @@ function nodeFromJson(
 }
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
-export function parse_json($input: string): HsonNode {
+export function parse_json_OLD($input: string): HsonNode {
     if (_VERBOSE) {
         console.groupCollapsed('---> parsing json:');
         console.log($input);

@@ -1,6 +1,9 @@
 import { construct_tree } from "./api/constructors/construct-tree.api.hson.js";
 import { construct_source_1 } from "./api/constructors/constructor-1-source.api.hson.js";
 
+(globalThis as any)._test_ON  = () => { (globalThis as any).test_new = true;  location.reload(); };
+(globalThis as any)._test_OFF = () => { (globalThis as any).test_new = false; location.reload(); };
+
 /** import hson 
  * current methods: 
  * - transform() (for simple conversions from format to format)

@@ -7,7 +7,7 @@ import { parse_html } from "../parsers/parse-html.transform.hson.js";
 import { parse_tokens } from "../parsers/parse-tokens.transform.hson.js";
 import { tokenize_hson } from "../parsers/tokenize-hson.transform.hson.js";
 import { construct_output_2 } from "./constructor-2-output.api.hson.js";
-import { parse_json } from "../../old/api/parsers/parse-json.old.transform.hson.js";
+import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 
 
@@ -70,7 +70,7 @@ export function construct_source_1(
      * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
      */
     fromJSON($input: string | JsonType): OutputConstructor_2 {
-      const node = parse_json($input as string);
+      const node = parse_json_OLD($input as string);
       const frame: FrameConstructor = {
         input: typeof $input === "string" ? $input : JSON.stringify($input),
         node

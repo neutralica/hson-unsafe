@@ -1,6 +1,6 @@
 // to-output.hson.infra.ts
 
-import { serialize_json } from "../../old/api/serializers/serialize-json.old.render.hson.js";
+import { serialize_json_OLD } from "../../old/api/serializers/serialize-json.old.render.hson.js";
 import { RenderΔ } from "../../types-consts/constants.hson.js";
 import { FrameConstructor, OutputConstructor_2, FrameRender } from "../../types-consts/constructors.types.hson.js";
 import { serialize_hson } from "../serializers/serialize-hson.render.hson.js";
@@ -38,7 +38,7 @@ export function construct_output_2($frame: FrameConstructor): OutputConstructor_
             return createFinalizer(context);
         },
         toJSON() {
-            const json = serialize_json($frame.node);
+            const json = serialize_json_OLD($frame.node);
             const context: FrameRender = { frame: { ...$frame, json }, output: RenderΔ.JSON };
             return createFinalizer(context);
         },

@@ -14,7 +14,7 @@ const _log = _VERBOSE
     ? console.log
     : () => { };
 
-export function serialize_json($node: HsonNode): string {
+export function serialize_json_OLD($node: HsonNode): string {
     if (_VERBOSE) {
         console.groupCollapsed('---> serializing json');
         console.log('input node:');
@@ -33,7 +33,7 @@ export function serialize_json($node: HsonNode): string {
         return json;
     } catch (e: any) {
 
-        _throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json', serialize_json);
+        _throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json', $node);
     }
 }
 

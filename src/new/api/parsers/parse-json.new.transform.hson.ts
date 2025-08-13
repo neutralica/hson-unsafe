@@ -185,7 +185,7 @@ function nodeFromJson(
 }
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
-export function parse_json($input: string): HsonNode_NEW {
+export function parse_json_NEW($input: string): HsonNode_NEW {
     if (_VERBOSE) {
         console.groupCollapsed('---> parsing json:');
         console.log($input);

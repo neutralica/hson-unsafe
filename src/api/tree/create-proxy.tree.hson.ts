@@ -5,7 +5,7 @@ import { find_child_by_tag, find_index_of_tag, get_contentValue, update_content 
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
 import { getSemanticChildren } from "../../utils/tree-utils/semantic-child.utils.hson.js";
 import { strip_VSNs } from "../../utils/tree-utils/strip-vsns.utils.hson.js";
-import { parse_json } from "../../old/api/parsers/parse-json.old.transform.hson.js";
+import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 import { is_Node } from "../../utils/node-guards.utils.hson.js";
 
@@ -87,7 +87,7 @@ export function create_proxy(targetNode: HsonNode): any {
             /*  HsonNode creation/replacement logic */
             if (is_Object(value)) {
                 const jsonToParse = JSON.stringify({ [propertyKey]: value });
-                const newTree = parse_json(jsonToParse);
+                const newTree = parse_json_OLD(jsonToParse);
                 const newNode = find_child_by_tag(newTree, propertyKey);
 
                 if (!newNode) {

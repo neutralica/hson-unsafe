@@ -73,7 +73,7 @@ export function equalNEW(a: HsonNode_NEW, b: HsonNode_NEW): boolean {
   return JSON.stringify(normalizeNEW(a)) === JSON.stringify(normalizeNEW(b));
 }
 
-/* permanent: canonicalize a NEW node for stable stringify */
+/*  canonicalize a NEW node for stable stringify */
 function normalizeNEW(v: any): any {
   if (Array.isArray(v)) return v.map(normalizeNEW);
 

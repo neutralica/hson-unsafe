@@ -13,16 +13,16 @@ import { is_Node } from "./node-guards.utils.hson";
 export function unwrap_root($content: HsonNode | HsonNode[]): HsonNode[] {
     const nodes = Array.isArray($content) ? $content : [$content];
     
-    // Use flatMap to handle nodes that might expand into multiple children
+    /* use flatMap to handle nodes that might expand into multiple children */
     return nodes.flatMap(node => {
         if (node._tag === ROOT_TAG) {
             const childNode = node._content?.[0];
-            // If it's a valid container, return its children
+            /* if it's a valid container, return its children */
             if (is_Node(childNode) && childNode._tag === ELEM_TAG) {
                 return childNode._content?.filter(is_Node) || [];
             } 
         }
-        // If it's not a container, just return the node itself
+        /* if it's not a container, just return the node itself */
         return [node];
     });
 }

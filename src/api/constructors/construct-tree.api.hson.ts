@@ -8,7 +8,7 @@ import { tokenize_hson } from "../parsers/tokenize-hson.transform.hson.js";
 import { create_live_tree } from "../tree/create-live-tree.tree.hson.js";
 import { graft } from "../tree/graft.tree.hson.js";
 import { LiveTree } from "../tree/live-tree-class.tree.hson.js";
-import { parse_json } from "../../old/api/parsers/parse-json.old.transform.hson.js";
+import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 
 /**
@@ -42,7 +42,7 @@ export function construct_tree(
     },
 
     fromJSON($json: string | JsonType): BranchConstructor {
-      const rootNode = parse_json($json as string);
+      const rootNode = parse_json_OLD($json as string);
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,
