@@ -17,8 +17,8 @@
         "rootDir": "src" /* Specify the root folder within your source files. */,
         "outDir": "dist" /* Specify an output folder for all emitted files. */
     },
-    "include": ["src"],
-    "exclude": ["src/new/**"]
+    "include": ["src/**/*.ts"],
+    "exclude": ["dist", "node_modules"]
 }
 
 /* move to compilerOptions if implementing::: */

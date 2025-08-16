@@ -24,6 +24,7 @@ function sortKeys(v: unknown): unknown {
 
 /* exported wrapper */
 export function serialize_json($node: HsonNode): string {
+    console.log('serializing json - beginning')
     const oldStr = serialize_json_OLD($node);
 
     if (SHADOW_JSON) {
@@ -34,7 +35,7 @@ export function serialize_json($node: HsonNode): string {
             if (canonicalize(a) !== canonicalize(b)) {
                 /* non-fatal: log and keep returning OLD */
                 console.warn("[shadow-json][serialize] parity mismatch");
-            }
+            } else console.log('SUCCESS! both new and old node paths match')
         } catch (e: any) {
             console.error("[shadow-json][serialize] NEW crashed:", e.message);
         }

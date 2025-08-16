@@ -5,8 +5,10 @@ import {parse_json_NEW} from "../../new/api/parsers/parse-json.new.transform.hso
 import { HsonNode } from "../../types-consts/node.types.hson";
 import { SHADOW_JSON } from "../../_refactor/flags/flags.refactor.hson";
 import { diff_old_nodes, equal_old_nodes } from "../../_refactor/_refactor-utils/compare-nodes.utils.hson";
+import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson";
+
 export function parse_json($json: string): HsonNode {
-    const oldNode = parse_json($json);
+    const oldNode = parse_json_OLD($json);
 
   if (SHADOW_JSON) {
     try {
