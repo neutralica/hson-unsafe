@@ -1,12 +1,12 @@
 // consts.types.ts
 
-import {  Primitive } from "../core/types-consts/core.types.hson.js";
+import { Primitive } from "../core/types-consts/core.types.hson.js";
 import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "./tokens.types.hson.js";
 import { HsonNode } from "./node.types.hson.js";
 
 /* factory to build a node from incomplete info */
 export const NEW_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
-  _tag: partial._tag ?? '', 
+  _tag: partial._tag ?? '',
   _content: partial._content ?? [],
   _meta: {
     flags: partial._meta?.flags ?? [],
@@ -51,6 +51,10 @@ export const VSN_TAGS: string[] = [
   INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG,
 ] as const;
 
+export const EVERY_VSN: string[] = [
+  INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG, ROOT_TAG,
+] as const;
+
 export type VSNTag = typeof VSN_TAGS[number];
 
 
@@ -88,7 +92,7 @@ export const $HSON = 'hson' as const;
 export const $JSON = 'json' as const;
 export const $HTML = 'html' as const;
 export const $NODES = 'nodes' as const;
-export const RenderΔ = {HSON: $HSON, HTML: $HTML, JSON: $JSON, NODES: $NODES} as const;
+export const RenderΔ = { HSON: $HSON, HTML: $HTML, JSON: $JSON, NODES: $NODES } as const;
 
 export const HSON_FrameΔ = {
   GEN: 'generate',

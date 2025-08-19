@@ -28,6 +28,7 @@ const $log = _VERBOSE
     ? console.log
     : () => { };
 let tokenFirst: boolean = true;
+
 export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
     const maxDepth = 50;
     $log(`[token_from_hson called with depth=${$depth}]`);
