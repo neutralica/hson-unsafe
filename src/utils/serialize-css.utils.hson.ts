@@ -7,8 +7,11 @@
  */
 export function camel_to_kebab($str: string): string {
   // find all uppercase letters; replace them with a hyphen and their lowercase version
-  return $str.replace(/[A-Z]/g, m => '-' + m.toLowerCase()).replace(/^-/, '').toLowerCase();
-
+  return $str.replace(/[_\s]+/g, "-")               // underscores/spaces → hyphen
+    .replace(/[_\s]+/g, "-")
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/-+/g, "-")
+    .toLowerCase();
 }
 
 
