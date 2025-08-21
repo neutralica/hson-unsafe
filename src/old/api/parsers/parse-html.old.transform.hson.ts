@@ -9,14 +9,17 @@ import { expand_void_tags } from "../../../utils/expand-self-closing.utils.hson"
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
 import { parse_css_attrs } from "../../../utils/parse-css.utils.hson";
+import { snip_long_string } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
 /* debug log */
 let _VERBOSE = false;
-const $log = _VERBOSE
-    ? console.log
-    : () => { };
-
+const _log: (...args: Parameters<typeof console.log>) => void =
+    _VERBOSE
+        ? (...args) => console.log(
+            '[parse_html_OLD]: ',
+            ...args.map(a => (typeof a === "string" ? snip_long_string(a, 500) : a)))   // ← prefix + passthrough
+        : () => { };
 
 export function parse_html_OLD($input: string | Element): HsonNode {
     let inputElement: Element;
@@ -45,7 +48,7 @@ export function parse_html_OLD($input: string | Element): HsonNode {
         }
         if (parseError) {
             console.error("XML Parsing Error:", parseError.textContent);
-           _throw_transform_err(`Failed to parse input HTML/XML`, 'parse_html', parseError.textContent);
+            _throw_transform_err(`Failed to parse input HTML/XML`, 'parse_html', parseError.textContent);
         }
         if (!parsedXML.documentElement) {
             /* for cases where parsing might result in no documentElement (e.g., empty string after processing) */
@@ -84,7 +87,9 @@ export function parse_html_OLD($input: string | Element): HsonNode {
 function convert($el: Element): HsonNode {
     const baseTag = $el.tagName;
     const tagLower = baseTag.toLowerCase();
-
+    if (tagLower === '__val' || tagLower === '_prim') {
+        console.error('invalid tag found', tagLower);
+    }
 
     if (tagLower === VAL_TAG.toLowerCase()) {
         const text = $el.textContent?.trim() || '';
@@ -145,17 +150,13 @@ function convert($el: Element): HsonNode {
     const children = elementToNode($el.childNodes);
     for (const child of children) {
         if (is_Primitive(child)) {
-            if (is_not_string(child)) console.warn('number detected', child)
-            /* raw primitive--wrap it in the appropriate VSN */
-            if (is_not_string(child) && $el.tagName.toLowerCase() !== VAL_TAG.toLowerCase()) {
-                childNodes.push(NEW_NODE({ _tag: STRING_TAG, _content: [child] }));
-            } else if (is_not_string(child) && $el.tagName.toLowerCase() === VAL_TAG.toLowerCase()) {
+            const inVal = $el.tagName.toLowerCase() === VAL_TAG.toLowerCase();
+            if (inVal) {
                 childNodes.push(NEW_NODE({ _tag: VAL_TAG, _content: [child] }));
-            } else if (typeof child === 'string') {
-                childNodes.push(NEW_NODE({ _tag: STRING_TAG, _content: [child] }));
-            } else { /* boolean or null */
-                childNodes.push(NEW_NODE({ _tag: VAL_TAG, _content: [child] }));
+            } else {
+                childNodes.push(NEW_NODE({ _tag: STRING_TAG, _content: [String(child)] }));
             }
+
         } else {
             /* it's already a valid Node: push it directly. */
             childNodes.push(child as HsonNode);

@@ -9,22 +9,24 @@ import { expand_bools } from "../../../utils/expand-booleans.utils.hson";
 import { expand_entities } from "../../../utils/expand-entities.utils.hson";
 import { expand_void_tags } from "../../../utils/expand-self-closing.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
-import { is_indexed, is_Node } from "../../../utils/node-guards.utils.hson";
-import { parse_css_attrs } from "../../../utils/parse-css.utils.hson";
-import { preview } from "../../../utils/preview-long.utils.hson";
+import { is_Node } from "../../../utils/node-guards.utils.hson";
+import { parse_html_attrs } from "../../../utils/parse_html_attrs.utils.hson";
+import { snip_long_string } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
-import { HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/new.types.hson";
+import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/new.types.hson";
 import { is_indexed_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
 
 /* debug log */
-let _VERBOSE = true;
+let _VERBOSE = false;
 const _log: (...args: Parameters<typeof console.log>) => void =
     _VERBOSE
         ? (...args) => console.log(
             '[parse_html_NEW]: ',
-            ...args.map(a => (typeof a === "string" ? preview(a, 500) : a)))   // ← prefix + passthrough
-        : () => { /* noop when not verbose */ };
+            ...args.map(a => (typeof a === "string" ? snip_long_string(a, 500) : a)))   // ← prefix + passthrough
+        : () => { };
+
+
 
 export function parse_html_NEW($input: string | Element): HsonNode_NEW {
     let inputElement: Element;
@@ -102,67 +104,10 @@ function convert($el: Element): HsonNode_NEW {
     }
     const baseTag = $el.tagName;
     const tagLower = baseTag.toLowerCase();
-
-    _log('processing tag: <', baseTag, '>');
-    if (tagLower === VAL_TAG.toLowerCase()) {
-        _log('base tag is a BasicValue');
-        const text = $el.textContent?.trim() || '';
-        const primitive_content = coerce(text); /* turns "1" into number 1 */
-        return NEW_NEW_NODE({ _tag: VAL_TAG, _content: [primitive_content] });
+    const { attrs: sortedAcc, meta: metaAcc } = parse_html_attrs($el);
+    if (tagLower === STRING_TAG) {
+        _throw_transform_err("literal <_str> is not allowed in input HTML", "parse-html", $el);
     }
-
-    const rawAttrs: Record<string, string> = {};
-    let metaAcc: HsonMeta_NEW | undefined;
-
-    for (const a of Array.from($el.attributes)) {
-        const name = a.name;
-        const value = a.value;
-
-        if (name.startsWith("data-_")) {
-            // Map: data-_index  -> _meta['data-index']
-            //      data-_quid   -> _meta['data-quid']
-            const metaKey = "data-" + name.slice("data-_".length);
-            (metaAcc ??= {})[metaKey] = value;
-        } else {
-            // Flags canonicalization: key or key="" -> "key"; otherwise keep literal
-            rawAttrs[name] = (value === "" || value === name) ? name : value;
-        }
-    }
-
-    // Sorted user attrs (stable order)
-    const sortedAcc: Record<string, string> =
-        Object.fromEntries(Object.keys(rawAttrs).sort().map(k => [k, rawAttrs[k]]));
-
-    /* 
-        const attrsAcc: HsonAttrs_NEW = {};
-        for (const { name, value } of Array.from($el.attributes)) {
-            _log('processing attribute: ', name, value);
-    
-            // boolean flags like 'defer'
-            if (value === "" || value === name) {
-                // if (name)        // I think unnecessary    
-                attrsAcc[name] = name;
-    
-            }
-            // 'style' attribute only treated as an object
-            else if (name === 'style') {
-                attrsAcc.style = parse_css_attrs(value);
-                _log('(style attribute - parsed OK)');
-            }
-            // all other attributes should be forced to be strings.
-            else {
-                attrsAcc[name] = value;
-            }
-        }
-    
-        _log('sorting attrs');
-        const sortedAcc: HsonAttrs_NEW = {};
-        Object.keys(attrsAcc).sort().forEach(k => {
-            sortedAcc[k] = attrsAcc[k];
-        });
-    
-        _log('processing _meta, if any');
-        const currentMeta: HsonMeta_NEW = {}; */
 
     /* tags that the HTML spec defines as "raw text elements": */
     const specialExceptions = ['style', 'script'];
@@ -183,6 +128,8 @@ function convert($el: Element): HsonNode_NEW {
                 _tag: baseTag,
                 _content: [wrapper],
                 _attrs: sortedAcc,
+                _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined
+
             });
         }
 
@@ -218,7 +165,15 @@ function convert($el: Element): HsonNode_NEW {
      **/
 
     _log(`determining final node structure per tag ${tagLower}`);
-    if (tagLower === OBJECT_TAG) {
+
+
+    if (tagLower === VAL_TAG) {
+        if (childNodes.length > 1) _throw_transform_err('too many contents in child node', '[parse-html]', $el)
+        if (is_Node(childNodes[0])) _throw_transform_err('children of VAL_TAG must be BasicValue primitives', '[parse-html]', $el);
+        _log('BasicValue detected; wrapping content in VAL_TAG');
+        return NEW_NEW_NODE({ _tag: VAL_TAG, _content: [childNodes[0]] });
+
+    } else if (tagLower === OBJECT_TAG) {
         /*  "children" of <_obj> are the object's properties (as nodes) */
         return NEW_NEW_NODE({ _tag: OBJECT_TAG, _content: childNodes });
     } else if (tagLower === ARRAY_TAG) {
@@ -248,23 +203,15 @@ function convert($el: Element): HsonNode_NEW {
         return NEW_NEW_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });
 
     } else if (tagLower === INDEX_TAG) {
-        if (childNodes.length !== 1) {
-            _throw_transform_err('<_ii> must have exactly one child', 'parse-html', $el);
-        }
-        // Pull index from META, not attrs
-        const di = metaAcc?.['data-index'];
-        const iiMeta: HsonMeta_NEW | undefined =
-            typeof di !== 'undefined' ? { 'data-index': String(di) } : undefined;
-
-        // _ii MUST NOT carry _attrs
-        return NEW_NEW_NODE({ _tag: INDEX_TAG, _content: [childNodes[0]], _meta: iiMeta });
-    } else if (tagLower === VAL_TAG) {
-        _log('BasicValue detected; wrapping content in VAL_TAG');
-        return NEW_NEW_NODE({ _tag: VAL_TAG, _content: [childNodes[0]] });
-
+        if (childNodes.length !== 1) _throw_transform_err('<_ii> must have exactly one child', 'parse-html', $el);
+        return NEW_NEW_NODE({
+            _tag: INDEX_TAG,
+            _content: [childNodes[0]],
+            _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined
+        });
     }
     if (childNodes.length === 0) {
-        // empty element: no _elem wrapper
+        // empty element: no _elem wrapper within
         return NEW_NEW_NODE({
             _tag: baseTag,
             _attrs: sortedAcc,
@@ -293,19 +240,18 @@ function convert($el: Element): HsonNode_NEW {
  */
 
 function elementToNode($els: NodeListOf<ChildNode>): (HsonNode_NEW | Primitive)[] {
-    _log('element to node called: ', $els);
     const children: (HsonNode_NEW | Primitive)[] = [];
     for (const kid of Array.from($els)) {
         if (kid.nodeType === Node.ELEMENT_NODE) {
-            /* recurse elements */
+            // keep ELEMENTs as nodes; <_val> will be handled inside convert(...)
             children.push(convert(kid as Element));
         } else if (kid.nodeType === Node.TEXT_NODE) {
             const text = kid.textContent;
-            /* v important - push the raw, coerced primitive string or number
-                do not wrap it in VSN here. */
-            if (text && text.trim()) {
-                children.push(text.trim());
-            }
+            // NOTE: this path intentionally returns *strings only* (no coerce here)
+            if (text && text.trim()) children.push(text.trim());
+        } else if (kid.nodeType === Node.COMMENT_NODE) {
+            // ignore comments in model parity
+            continue; // ← optional but helpful
         }
     }
     return children;

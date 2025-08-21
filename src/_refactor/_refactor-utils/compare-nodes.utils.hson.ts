@@ -16,6 +16,17 @@ function stable_stringify(x: unknown): string {
     .join("\n");
 }
 
+function _peek(x: any, y: any, path: string) {
+  try {
+    // log a compact view of the first mismatch
+    console.warn('[shadow-peek]', path, {
+      A: typeof x, Ax: JSON.stringify(x),
+      B: typeof y, By: JSON.stringify(y),
+    });
+  } catch {}
+}
+
+
 /* normalize style to a stable object */
 function normalize_style(
   s: string | Record<string, string> | undefined
@@ -208,7 +219,11 @@ export function diff_old_nodes(a: HsonNode, b: HsonNode, limit = 10): string[] {
   function walk(x: any, y: any, path: string) {
     if (diffs.length >= limit) return;
     const tx = typeof x, ty = typeof y;
-    if (tx !== ty) { diffs.push(`${path}: type ${tx} != ${ty}`); return; }
+    if (tx !== ty) {
+       _peek(x, y, path);
+      diffs.push(`${path}: type ${tx} != ${ty}`);
+      return;
+    }
     if (x === null || y === null) { if (x !== y) diffs.push(`${path}: ${x} != ${y}`); return; }
     if (tx !== "object") { if (x !== y) diffs.push(`${path}: ${x} != ${y}`); return; }
 

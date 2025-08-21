@@ -12,7 +12,7 @@ import { Primitive } from "../core/types-consts/core.types.hson";
 
 export interface HsonNode {
     _tag: string;
-    _attrs?: HsonAttrs
+    // _attrs?: HsonAttrs
     _content: NodeContent;
     _meta: HsonMeta;
 }

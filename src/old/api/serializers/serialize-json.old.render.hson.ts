@@ -88,7 +88,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             /* check if _obj is just a wrapper around a primitive VSN */
             if ($node._content.length === 1) {
                 const childNode = $node._content[0] as HsonNode;
-                /* If the single child is a _prim or _str, this _obj is just a wrapper.
+                /* If the single child is a _val or _str, this _obj is just a wrapper.
                      unwrap the value directly and return the primitive, ignoring the VSN tags */
                 if (childNode._tag === VAL_TAG || childNode._tag === STRING_TAG) {
                     _log(`  <_obj>: unwrapping simple ${typeof childNode._content[0]} value: `, make_string(childNode._content[0]));

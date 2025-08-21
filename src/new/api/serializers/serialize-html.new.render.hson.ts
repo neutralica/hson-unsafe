@@ -1,17 +1,40 @@
 import { Primitive } from '../../../core/types-consts/core.types.hson'
 import { is_Primitive } from '../../../core/utils/guards.core.utils.hson';
 import { BLANK_META, ELEM_TAG, STRING_TAG } from '../../../types-consts/constants.hson';
-import { HsonNode } from '../../../types-consts/node.types.hson';
+import { build_wire_attrs } from '../../../utils/build-wire-path.utils.hson';
 import { escape_html } from '../../../utils/escape-html.utils.hson';
 import { make_string } from '../../../utils/make-string.utils.hson';
-import { serialize_css } from '../../../utils/serialize-css.utils.hson';
+import { snip_long_string } from '../../../utils/preview-long.utils.hson';
 import { _throw_transform_err } from '../../../utils/throw-transform-err.utils.hson';
 import { HsonNode_NEW } from '../../types-consts/new.types.hson';
 
 const _VERBOSE = false;
-const _log = _VERBOSE
-  ? console.log
-  : () => { };
+const _log: (...args: Parameters<typeof console.log>) => void =
+  _VERBOSE
+    ? (...args) => console.log(
+      '[serialize_html_NEW]: ',
+      ...args.map(a => (typeof a === "string" ? snip_long_string(a, 500) : a)))   // ← prefix + passthrough
+    : () => { };
+
+
+
+function escape_attr(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
+function stringify_style(obj: Record<string, string>): string {
+  const toKebab = (k: string) =>
+    k.replace(/[_\s]+/g, "-")
+      .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+      .replace(/-+/g, "-")
+      .toLowerCase();
+
+  return Object.keys(obj)
+    .map(k => [toKebab(k), obj[k]] as const)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([k, v]) => `${k}:${v}`)
+    .join("; ");
+}
 
 
 /**
@@ -70,7 +93,7 @@ export function serialize_xml(node: HsonNode_NEW | Primitive | undefined): strin
           strings don't need to be tagged because their type is automatically 
           assigned if no wrapper VSN (_prim, e.g.) is found 
 
-          Primitives need to retain their types; wrap in _prim as a flag. this _prim VSN
+          Primitives need to retain their types; wrap in _val as a flag. this _val VSN
           will be visible in the html, unlike _str
         */
     case STRING_TAG: {
@@ -90,28 +113,13 @@ export function serialize_xml(node: HsonNode_NEW | Primitive | undefined): strin
   let openLine = `<${tag}`;
   _log(`open TAG: ${tag}`);
   /* get attributes from _meta.attrs */
-  for (const [key, value] of Object.entries(_meta.attrs ?? {})) {
 
-    /*  --- 'if' block type guard --- */
-    if (key === 'style' && typeof value === 'object' && value !== null) {
-      /* special attrs handling for <style> - use parse_css_string()
-          for now, style is the only attribute that is parsed; if we want to extend that 
-          perhaps we could create a _parse="" attr that forces parsing of its attribute content 
-                        (no that wouldn't do what I want) */
-      /* serialize the style object back into a CSS string */
-      const styleString = serialize_css(value as Record<string, string>);
-
-      /* append completed style attribute to the WIP tag string */
-      openLine += ` style="${escape_html(styleString)}"`;
-
-    } else {
-
-      if (value !== undefined) {
-        /* ensure value is stringified *before* escaping */
-        const trimmedStr: string = (typeof value === 'string') ? value : String(value);
-        openLine += ` ${key}="${escape_html(trimmedStr)}"`;
-      }
-    }
+  /* build attributes from _NEW model (_attrs) + meta mapping */
+  /* NOTE: XML stage prints key="value" even for flags; HTML stage trims later */
+  const attrs = build_wire_attrs(node as HsonNode_NEW);
+  for (const key of Object.keys(attrs).sort()) {
+    const v = attrs[key];
+    openLine += ` ${key}="${escape_attr(v)}"`;
   }
 
   /* check for void elements after adding attributes/flags */

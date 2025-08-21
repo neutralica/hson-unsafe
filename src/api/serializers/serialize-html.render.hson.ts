@@ -1,7 +1,7 @@
 // src/api/serializers/serialize-html.render.hson.ts 
 
 import { equal_old_nodes, diff_old_nodes } from "../../_refactor/_refactor-utils/compare-nodes.utils.hson";
-import { SHADOW_TEST } from "../../_refactor/flags/flags.refactor.hson";
+import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
 import { toNEW } from "../../_refactor/kompat/kompat-layer.refactor.hson";
 import { serialize_html_NEW } from "../../new/api/serializers/serialize-html.new.render.hson";
 import { parse_html_OLD } from "../../old/api/parsers/parse-html.old.transform.hson";
@@ -13,7 +13,7 @@ export function serialize_html($node: HsonNode): string {
 console.log('serializing html - beginning')
   const oldStr = serialize_html_OLD($node);
 
-  if (SHADOW_TEST) {
+  if (SHADOW_ENABLED()) {
     try {
       const newStr = serialize_html_NEW(toNEW($node));
       /* normalize whitespace/attribute order by reparsing both with the same parser */

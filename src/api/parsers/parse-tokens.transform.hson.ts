@@ -373,8 +373,8 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 break;  /* do not push onto nodeStack */
             }
 
-            case TokenΔ.PRIM_VAL:
-            case TokenΔ.STR_VAL: {
+            case TokenΔ.VAL_CONTENTS:
+            case TokenΔ.STR_CONTENTS: {
                 /* handle nodes containing BasicValues (primitives) */
                 $log('[token_to_node #TEXT] processing token:', JSON.stringify(token));
                 if (!parent) {
@@ -409,7 +409,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 }
 
                 if (primitiveValue !== undefined) {
-                    /* create value node (_text or _prim VSN) */
+                    /* create value node (_text or _val VSN) */
                     const tag = (is_not_string(primitiveValue)) ? VAL_TAG : STRING_TAG
                     const content_node = NEW_NODE({ _tag: tag, _content: [primitiveValue] }); /* node._content is array! */
                     const currentParent = nodeStack[nodeStack.length - 1];

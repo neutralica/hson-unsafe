@@ -142,7 +142,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                             finalTokens.push(...tokenize_hson(trimmed, $depth + 1));
                         } else {
                             const coerced = coerce(trimmed);
-                            const type = is_not_string(coerced) ? TokenΔ.PRIM_VAL : TokenΔ.STR_VAL
+                            const type = is_not_string(coerced) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS
                             finalTokens.push(CREATE_TOKEN({ type, content: [coerced] }));
                         }
                     }
@@ -467,7 +467,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
             /* step F.3 - determine token type, push */
             if (parseError) {
                 _throw_transform_err('PARSER ERROR—creating generic fallback text token', 'tokenize_hson', currentLine)
-                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.STR_VAL, content: ['[ERROR IN PARSING STEP F.3'] }));
+                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.STR_CONTENTS, content: ['[ERROR IN PARSING STEP F.3'] }));
             } else {
                 const meta = { attrs, flags };
                 let can_selfClose = true;
@@ -502,7 +502,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                                         const trimmed = itemStr.trim();
                                         if (trimmed) {
                                             const coercedItem = coerce(trimmed);
-                                            const type = (is_not_string(coercedItem)) ? TokenΔ.PRIM_VAL : TokenΔ.STR_VAL;
+                                            const type = (is_not_string(coercedItem)) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS;
                                             tempTokens.push(CREATE_TOKEN({ type, content: [coercedItem] }));
                                         }
                                     });
@@ -517,7 +517,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                         } else if (element !== null && typeof element === 'object' && (element as AllTokens).tag !== undefined && typeof (element as AllTokens).type === 'string') {
                             $outputTokens.push(element as AllTokens);
                         } else if (is_Primitive(element)) {
-                            const type = (is_not_string(element)) ? TokenΔ.PRIM_VAL : TokenΔ.STR_VAL;
+                            const type = (is_not_string(element)) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS;
                             $outputTokens.push(CREATE_TOKEN({ type, content: [element as Primitive] }));
                         }
                     }
@@ -671,7 +671,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
         if (nextLine) {
             if (is_Primitive(nextLine)) {
                 const primitive = coerce(nextLine);
-                const type = (is_not_string(primitive)) ? TokenΔ.PRIM_VAL : TokenΔ.STR_VAL;
+                const type = (is_not_string(primitive)) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS;
                 finalTokens.push(CREATE_TOKEN({ type, content: [primitive] }));
             } else {
                 /* use splitTopLevel to correctly handle items separated by commas, respecting quotes */
@@ -685,7 +685,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                         } else {
                             /* item is a primitive--use coerce() to get its actual value */
                             const prim = coerce(trimmedStr);
-                            const type = (is_not_string(prim)) ? TokenΔ.PRIM_VAL : TokenΔ.STR_VAL;
+                            const type = (is_not_string(prim)) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS;
                             finalTokens.push(CREATE_TOKEN({ type, content: [prim] }));
                         }
                     }

@@ -3,7 +3,7 @@
 import { toOLD } from "../../_refactor/kompat/kompat-layer.refactor.hson";
 import {parse_json_NEW} from "../../new/api/parsers/parse-json.new.transform.hson"
 import { HsonNode } from "../../types-consts/node.types.hson";
-import { SHADOW_ENABLED, SHADOW_TEST } from "../../_refactor/flags/flags.refactor.hson";
+import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
 import { diff_old_nodes, equal_old_nodes } from "../../_refactor/_refactor-utils/compare-nodes.utils.hson";
 import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson";
 import { clone_node } from "../../utils/clone-node.utils.hson";

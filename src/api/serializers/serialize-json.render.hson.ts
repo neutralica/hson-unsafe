@@ -6,7 +6,7 @@ import { serialize_json_OLD } from "../../old/api/serializers/serialize-json.old
 /* shadow inputs */
 import { serialize_json_NEW } from "../../new/api/serializers/serialize-json.new.render.hson";
 import { toNEW } from "../../_refactor/kompat/kompat-layer.refactor.hson";
-import { SHADOW_TEST } from "../../_refactor/flags/flags.refactor.hson";
+import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
 import type { HsonNode } from "../../types-consts/node.types.hson";
 import { canonicalize } from "../../utils/canonicalize.utils.hson";
 
@@ -15,7 +15,7 @@ export function serialize_json($node: HsonNode): string {
     console.log('serializing json - beginning')
     const oldStr = serialize_json_OLD($node);
 
-    if (SHADOW_TEST) {
+    if (SHADOW_ENABLED()) {
         try {
             const newStr = serialize_json_NEW(toNEW($node));
             const a = JSON.parse(oldStr);

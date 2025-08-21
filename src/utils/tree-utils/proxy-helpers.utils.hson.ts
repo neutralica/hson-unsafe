@@ -107,7 +107,7 @@ export function is_selfClosing($node: HsonNode): boolean {
  * @returns {Primitive | undefined} - undefined if the content does not match BasicValue carrying structure
  */
 export function get_contentValue($node: HsonNode): Primitive | undefined {
-    /* _prim or _str nodes can't have attrs or flags */
+    /* _val or _str nodes can't have attrs or flags */
     if ($node._meta?.attrs && Object.keys($node._meta.attrs).length > 0) {
         return undefined;
     }

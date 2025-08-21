@@ -70,7 +70,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
           strings don't need to be tagged because their type is automatically 
           assigned if no wrapper VSN (_prim, e.g.) is found 
 
-          Primitives need to retain their types; wrap in _prim as a flag. this _prim VSN
+          Primitives need to retain their types; wrap in _val as a flag. this _val VSN
           will be visible in the html, unlike _str
         */
     case STRING_TAG: {

@@ -14,7 +14,7 @@ const $log = VERBOSE
 /**
  * checks if a node is a candidate for single-line formatting and returns
  * its primitive value if it is. A node qualifies if it has NO metadata and
- * its ONLY content is a single _str or _prim VSN wrapper
+ * its ONLY content is a single _str or _val VSN wrapper
  *
  * @param $node The HsonNode to inspect
  * @returns The primitive value if the pattern is matched, otherwise _FALSE
@@ -47,7 +47,7 @@ export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
         return _FALSE;
     }
     const grandChildNode = childNode._content[0];
-    /* 3. that single child node must be a primitive wrapper (_str or _prim) */
+    /* 3. that single child node must be a primitive wrapper (_str or _val) */
     if (grandChildNode._tag === STRING_TAG || grandChildNode._tag === VAL_TAG) {
         /* success: return the primitive value directly from inside the wrapper */
         $log(' --> IS self-closing')

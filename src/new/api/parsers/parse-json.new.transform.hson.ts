@@ -3,6 +3,7 @@
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Object, is_Primitive } from "../../../core/utils/guards.core.utils.hson";
 import {ARRAY_TAG, ELEM_TAG, INDEX_TAG, OBJECT_TAG, ROOT_TAG, STRING_TAG, VAL_TAG}from "../../../types-consts/constants.hson"
+import { snip_long_string } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
 import { JsonType_NEW, HsonNode_NEW, HsonMeta_NEW, JsonObj_NEW, HsonAttrs_NEW } from "../../types-consts/new.types.hson";
@@ -12,9 +13,12 @@ import { is_not_string_NEW } from "../../utils/node-guards.new.utils.hson";
 
 /* debug log */
 let _VERBOSE = false;
-const _log = _VERBOSE
-    ? console.log
-    : () => { };
+const _log: (...args: Parameters<typeof console.log>) => void =
+    _VERBOSE
+        ? (...args) => console.log(
+            '[parse_json_NEW]: ',
+            ...args.map(a => (typeof a === "string" ? snip_long_string(a, 500) : a)))   // ← prefix + passthrough
+        : () => { };
 
 
 function getTag($value: JsonType_NEW): string {

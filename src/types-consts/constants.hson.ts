@@ -38,7 +38,7 @@ export const _ERROR = '_error' as const;
 
 /* VSN tags & some common combinations */
 export const STRING_TAG = '_str' as const;
-export const VAL_TAG = '__val' as const;
+export const VAL_TAG = '_val' as const;
 export const ROOT_TAG = '_root' as const;
 export const INDEX_TAG = '_ii' as const;
 export const OBJECT_TAG = '_obj' as const;
@@ -78,8 +78,8 @@ export const TokenΔ = {
   OBJ_OPEN: 'object-open',
   OBJ_CONTENTS: 'object-contents',
   OBJ_CLOSE: 'object-close',
-  STR_VAL: '_str',
-  PRIM_VAL: '_prim',
+  STR_CONTENTS: '_str',
+  VAL_CONTENTS: '_val',
 } as const;
 
 export const OBJ_OPEN = { type: TokenΔ.OBJ_OPEN } as BaseToken;

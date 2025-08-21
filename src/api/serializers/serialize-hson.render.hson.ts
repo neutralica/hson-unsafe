@@ -81,7 +81,7 @@ function hsonFromNode(
         }
     }
 
-    const {  _tag: tag, _attrs,  _content: content = [], _meta } = node || {};
+    const {  _tag: tag,  _content: content = [], _meta } = node || {};
 
     const attrs = _meta.attrs ?? {};
     const flags = _meta.flags ?? [];
@@ -92,7 +92,7 @@ function hsonFromNode(
     /*  2. disappear VSNs */
     if (tag === STRING_TAG || tag === VAL_TAG) {
         if (content.length !== 1 || !is_Primitive(content[0])) {
-            _throw_transform_err('_str or _prim nodes must have 1 and only 1 hson  in content', 'serialize-hson', node);
+            _throw_transform_err('_str or _val nodes must have 1 and only 1 hson  in content', 'serialize-hson', node);
         }
 
         const value = currentIndent + make_string(content[0])
