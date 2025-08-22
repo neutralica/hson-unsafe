@@ -8,12 +8,13 @@ import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson.js";
 import { toOLD } from "../../_refactor/kompat/kompat-layer.refactor.hson.js";
 import { clone_node } from "../../utils/clone-node.utils.hson.js";
 import { sanitize_for_xml } from "../../utils/html-filtration.utils.hson.js";
+import { bucket_diffs } from "../../_refactor/_refactor-utils/bucket-diffs.utils.hson.js";
 
 /* stable entry: returns OLD; NEW is only used for parity checks */
 export function parse_html($src: string): HsonNode {
-   const sanitized = sanitize_for_xml($src); // ← added
-  
-    const oldNode = parse_html_OLD(sanitized); // unchanged
+  const sanitized = sanitize_for_xml($src); // ← added
+
+  const oldNode = parse_html_OLD(sanitized); // unchanged
 
   if (SHADOW_ENABLED()) {
     console.log('shadow tests running - html')
@@ -22,15 +23,17 @@ export function parse_html($src: string): HsonNode {
 
       const a = clone_node(oldNode);
       const b = clone_node(newNodeOld);
-      
+
       console.groupCollapsed('SHADOW_ENABLED - test results:');
-      console.log(a);      
+      console.log(a);
       console.log(b);
       console.groupEnd();
       if (!equal_old_nodes(a, b)) {
         const diffs = diff_old_nodes(a, b, 10);
-        console.warn("[shadow-html][parse] mismatch(len=%d):", $src.length, diffs);
-      } else console.log('OK OK OK nodes are equal!')
+        const buckets = bucket_diffs(diffs);
+        console.warn("[shadow-html][parse] mismatch(len=%d): %o | top=%o",
+          diffs.length, diffs.slice(0, 10), buckets);
+      } else console.log('OK - nodes are equal!')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn("[shadow-html][parse] NEW crashed:", msg);

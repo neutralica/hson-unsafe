@@ -166,13 +166,50 @@ function convert($el: Element): HsonNode_NEW {
 
     _log(`determining final node structure per tag ${tagLower}`);
 
+    if (tagLower === VAL_TAG.toLowerCase()) {
+        // guard: exactly one child
+        if (childNodes.length !== 1) {
+            _throw_transform_err("<_val> must contain exactly one value", "parse-html", $el);
+        }
 
-    if (tagLower === VAL_TAG) {
-        if (childNodes.length > 1) _throw_transform_err('too many contents in child node', '[parse-html]', $el)
-        if (is_Node(childNodes[0])) _throw_transform_err('children of VAL_TAG must be BasicValue primitives', '[parse-html]', $el);
-        _log('BasicValue detected; wrapping content in VAL_TAG');
-        return NEW_NEW_NODE({ _tag: VAL_TAG, _content: [childNodes[0]] });
+        const only = children[0]; // note: use *children* (pre-wrapped) not childNodes
 
+        let prim: Primitive;
+
+        if (is_Primitive(only)) {
+            // strings inside <_val> are coerced; non-strings pass through
+            prim = typeof only === "string" ? coerce(only) : (only as Primitive);
+
+            // if coercion stayed string, that's invalid for _val
+            if (typeof prim === "string") {
+                _throw_transform_err("<_val> cannot contain a plain string", "parse-html", $el);
+            }
+        } else {
+            // child is a node; allow _val or _str produced earlier, else error
+            const n = only as HsonNode_NEW;
+
+            if (n._tag === VAL_TAG) {
+                // unwrap one level: must be exactly one primitive child
+                const c = n._content?.[0];
+                if (!is_Primitive(c)) {
+                    _throw_transform_err("<_val> payload is not primitive", "parse-html", $el);
+                }
+                prim = c as Primitive;
+            } else if (n._tag === STRING_TAG) {
+                // came in as _str "1" → coerce to number/bool/null
+                const s = n._content?.[0];
+                const v = coerce(typeof s === "string" ? s : String(s));
+                if (typeof v === "string") {
+                    _throw_transform_err("<_val> cannot contain a plain string", "parse-html", $el);
+                }
+                prim = v as Primitive;
+            } else {
+                _throw_transform_err("<_val> must contain a primitive (_val/_str/primitive)", "parse-html", $el);
+            }
+        }
+
+        // return canonical _val node
+        return NEW_NEW_NODE({ _tag: VAL_TAG, _content: [prim] });
     } else if (tagLower === OBJECT_TAG) {
         /*  "children" of <_obj> are the object's properties (as nodes) */
         return NEW_NEW_NODE({ _tag: OBJECT_TAG, _content: childNodes });
