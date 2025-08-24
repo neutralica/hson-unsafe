@@ -2,7 +2,7 @@
 
 import { INDEX_TAG, STRING_TAG, VAL_TAG } from "../../types-consts/constants.hson";
 import { BasicValue } from "../../core/types-consts/core.types.hson";
-import { HsonNode_NEW, JsonType_NEW, NodeContent_NEW } from "../types-consts/new.types.hson";
+import { HsonNode_NEW, JsonType_NEW, NodeContent_NEW } from "../types-consts/node.new.types.hson";
 import { is_Primitive } from "../../core/utils/guards.core.utils.hson"
 
 /* identifies HsonNode (new structure) */

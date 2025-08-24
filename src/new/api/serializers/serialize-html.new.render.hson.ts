@@ -6,7 +6,7 @@ import { escape_html } from '../../../utils/escape-html.utils.hson';
 import { make_string } from '../../../utils/make-string.utils.hson';
 import { snip_long_string } from '../../../utils/preview-long.utils.hson';
 import { _throw_transform_err } from '../../../utils/throw-transform-err.utils.hson';
-import { HsonNode_NEW } from '../../types-consts/new.types.hson';
+import { HsonNode_NEW } from '../../types-consts/node.new.types.hson';
 
 const _VERBOSE = false;
 const _log: (...args: Parameters<typeof console.log>) => void =

@@ -10,7 +10,7 @@ import { coerce } from "../../../utils/coerce-string.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
 import { parse_css_attrs } from "../../../utils/parse-css.utils.hson";
-import { splitTopLevel } from "../../../utils/split-top-level.utils.hson";
+import { split_top_OLD } from "../../../utils/split-top-level.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
 /* structure for items stored on the context stack */
@@ -29,7 +29,7 @@ const $log = _VERBOSE
     : () => { };
 let tokenFirst: boolean = true;
 
-export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
+export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
     const maxDepth = 50;
     $log(`[token_from_hson called with depth=${$depth}]`);
     if (tokenFirst) {
@@ -134,12 +134,12 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
 
             /* process the extracted content string */
             if (array_content.trim()) {
-                const strings = splitTopLevel(array_content, ','); /* split by top-level commas */
+                const strings = split_top_OLD(array_content, ','); /* split by top-level commas */
                 for (const str of strings) {
                     const trimmed = str.trim();
                     if (trimmed) {
                         if (trimmed.startsWith('<') || trimmed.startsWith('«')) {
-                            finalTokens.push(...tokenize_hson(trimmed, $depth + 1));
+                            finalTokens.push(...tokenize_hson_OLD(trimmed, $depth + 1));
                         } else {
                             const coerced = coerce(trimmed);
                             const type = is_not_string(coerced) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS
@@ -236,7 +236,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                 const innerContent = startIx !== -1 ? trimLine.substring(startIx).trim() : "";
                 if (innerContent) {
                     $log(`[step F - depth=${$depth} L=${currentIx + 1}] ---> recursing implicit object content: "${innerContent}"`);
-                    const inner_tokens = tokenize_hson(innerContent, $depth + 1);
+                    const inner_tokens = tokenize_hson_OLD(innerContent, $depth + 1);
                     finalTokens.push(...inner_tokens);
                     $log(`[Step F - depth=${$depth} L=${currentIx + 1}] <--- exited recursion for implicit object.`);
                 }
@@ -391,7 +391,7 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                         if (nestedIx !== -1) {
                             const nested_tag_string = remainder.substring(0, nestedIx + 1);
                             $log(`[step F phase 2] <${tag}\n found nested HSON: "${nested_tag_string}" -- recursing`);
-                            const nested_tokens = tokenize_hson(nested_tag_string, $depth + 1);
+                            const nested_tokens = tokenize_hson_OLD(nested_tag_string, $depth + 1);
                             /* wrap the sequence of tokens to distinguish it from other item types */
                             inlineContent.push({ type: 'TOKEN_SEQUENCE', tokens: nested_tokens } as any);
                             parsedChars += nested_tag_string.length;
@@ -490,15 +490,15 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                             if (innerContent) {
                                 const is_complex = innerContent.includes('<') || innerContent.includes('«');
                                 if (is_complex) {
-                                    const complexItems = splitTopLevel(innerContent, ',');
+                                    const complexItems = split_top_OLD(innerContent, ',');
                                     for (const item of complexItems) {
                                         const trimmed = item.trim();
                                         if (trimmed) {
-                                            tempTokens.push(...tokenize_hson(trimmed, $currentRecursionDepth + 1));
+                                            tempTokens.push(...tokenize_hson_OLD(trimmed, $currentRecursionDepth + 1));
                                         }
                                     }
                                 } else {
-                                    splitTopLevel(innerContent, ',').forEach(itemStr => {
+                                    split_top_OLD(innerContent, ',').forEach(itemStr => {
                                         const trimmed = itemStr.trim();
                                         if (trimmed) {
                                             const coercedItem = coerce(trimmed);
@@ -675,13 +675,13 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
                 finalTokens.push(CREATE_TOKEN({ type, content: [primitive] }));
             } else {
                 /* use splitTopLevel to correctly handle items separated by commas, respecting quotes */
-                const itemStrings = splitTopLevel(nextLine, ',');
+                const itemStrings = split_top_OLD(nextLine, ',');
                 for (const str of itemStrings) {
                     const trimmedStr = str.trim();
                     if (trimmedStr) {
                         if (trimmedStr.startsWith('<')) {
                             /*  this item is a nested tag structure: recurse */
-                            finalTokens.push(...tokenize_hson(trimmedStr, $depth + 1));
+                            finalTokens.push(...tokenize_hson_OLD(trimmedStr, $depth + 1));
                         } else {
                             /* item is a primitive--use coerce() to get its actual value */
                             const prim = coerce(trimmedStr);

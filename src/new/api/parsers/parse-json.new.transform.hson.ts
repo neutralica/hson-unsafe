@@ -6,7 +6,7 @@ import {ARRAY_TAG, ELEM_TAG, INDEX_TAG, OBJECT_TAG, ROOT_TAG, STRING_TAG, VAL_TA
 import { snip_long_string } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
-import { JsonType_NEW, HsonNode_NEW, HsonMeta_NEW, JsonObj_NEW, HsonAttrs_NEW } from "../../types-consts/new.types.hson";
+import { JsonType_NEW, HsonNode_NEW, HsonMeta_NEW, JsonObj_NEW, HsonAttrs_NEW } from "../../types-consts/node.new.types.hson";
 import { is_not_string_NEW } from "../../utils/node-guards.new.utils.hson";
 
 

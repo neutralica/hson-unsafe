@@ -2,21 +2,26 @@
 
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_not_string, is_Primitive } from "../../../core/utils/guards.core.utils.hson";
-import { CREATE_TOKEN, TokenΔ, OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
-import { HsonAttrs, HsonFlags } from "../../../types-consts/node.types.hson";
-import { AllTokens, HSON_Token_Type } from "../../../types-consts/tokens.types.hson";
+import { OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
 import { close_tag_lookahead } from "../../../utils/close-tag-lookahead.utils.hson";
-import { coerce } from "../../../utils/coerce-string.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
 import { parse_css_attrs } from "../../../utils/parse-css.utils.hson";
-import { splitTopLevel } from "../../../utils/split-top-level.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
+import { ARR_SYMBOL, CLOSE_KIND, NEW_ARR_CLOSE_TOKEN, NEW_ARR_OPEN_TOKEN, NEW_END_TOKEN, NEW_OPEN_TOKEN, NEW_TEXT_TOKEN, TOKEN_KIND } from "../../types-consts/constants.new.hson";
+import { Position, RawAttr, Tokens_NEW } from "../../types-consts/tokens.new.types.hson";
+import { split_top_level_NEW } from "./tokenizer-helpers/split-top-2.utils.hson";
+import { slice_balanced_arr } from "./tokenizer-helpers/balancers.new.utils.hson";
+
+
+/* position tracker */
+const _pos = (lineno: number, colno: number, posix: number): Position => ({ line: lineno, col: colno, index: posix });
 
 /* structure for items stored on the context stack */
 type ContextStackItem =
-    | { type: 'TAG'; tag: string; isImplicitContent?: boolean }
-    | { type: 'IMPLICIT_OBJECT'; tag?: '_imp'; isImplicitContent?: never };
+    | { type: 'TAG'; tag: string }
+    | { type: 'CLUSTER'; close?: 'obj' | 'elem' }   /* replaces the old _obj/_elem sentinels */
+    | { type: 'IMPLICIT_OBJECT' };
 
 const LONE_OPEN_ANGLE_REGEX = /^\s*<(\s*(\/\/.*)?)?$/;
 /* Regex for an implicit object starting on a line, e.g., "< <prop val>>" or "< <" */
@@ -24,14 +29,15 @@ const IMPLICIT_OBJECT_START_REGEX = /^\s*<\s*<(\s|$)/; /* ensures second '<' is 
 
 
 const _VERBOSE = false;
-const $log = _VERBOSE
+const _log = _VERBOSE
     ? console.log
     : () => { };
 let tokenFirst: boolean = true;
 
-export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
+export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
+
     const maxDepth = 50;
-    $log(`[token_from_hson called with depth=${$depth}]`);
+    _log(`[token_from_hson called with depth=${$depth}]`);
     if (tokenFirst) {
         if (_VERBOSE) {
             console.groupCollapsed('---> tokenizing hson')
@@ -45,719 +51,372 @@ export function tokenize_hson($hson: string, $depth = 0): AllTokens[] {
         _throw_transform_err(`stopping potentially infinite loop (depth >= ${maxDepth})`, 'tokenize_hson', $hson);
     }
 
-    const finalTokens: AllTokens[] = [];
+    const finalTokens: Tokens_NEW[] = [];
     const contextStack: ContextStackItem[] = [];
     const splitLines = $hson.split(/\r\n|\r|\n/);
     let ix = 0;
 
-    $log(`[token_from_hson depth=${$depth}]; total lines: ${splitLines.length}`);
+    _log(`[token_from_hson depth=${$depth}]; total lines: ${splitLines.length}`);
 
+    function _bump_line($line: string) { _offset += $line.length + 1; ix++; }
+
+    /* advance by N following lines starting at current ix */
+    function _bump_array($count: number) {
+        for (let n = 0; n < $count; n++) {
+            const L = splitLines[ix + n] ?? '';
+            _offset += L.length + 1;
+        }
+        ix += $count;
+    }
+
+    /* read attrs in a tag header slice (within trimLine) into RawAttr[] */
+    function _read_tag_attrs(
+        $trimLine: string,
+        $startIx: number,                /* first char after tag name */
+        $endIx: number,                  /* index of '>' or '/' that starts '/>' */
+        $lineNo: number,
+        $leadCol: number                 /* first non-space col in currentLine (1-based) */
+    ): RawAttr[] {
+        const out: RawAttr[] = [];
+        let ix = $startIx;
+        const end = $endIx;
+
+        let inQuote: '"' | "'" | null = null;
+        let escaped = false;
+
+        /* helper for positions within trimLine → absolute */
+        const _col = (relIx: number) => $leadCol + relIx;                 /* 1-based col */
+        const _pos = (relIx: number): Position => {
+            const col = _col(relIx);
+            return { line: $lineNo, col, index: _offset + col - 1 };
+        };
+
+        /* skip spaces */
+        const _skip_ws = () => { while (ix < end && /\s/.test($trimLine[ix])) ix++; };
+
+        while (ix < end) {
+            _skip_ws();
+            if (ix >= end) break;
+
+            /* name */
+            const nameStartIx = ix;
+            if (!/[A-Za-z_:]/.test($trimLine[ix])) {
+                /* not starting an attr name → bail */
+                break;
+            }
+            ix++;
+            while (ix < end && /[\w:.\-]/.test($trimLine[ix])) ix++;
+            const name = $trimLine.slice(nameStartIx, ix);
+            const startPos = _pos(nameStartIx);
+
+            _skip_ws();
+
+            /* value? '=' then quoted or bare token, else it's a flag */
+            if (ix < end && $trimLine[ix] === '=') {
+                ix++; _skip_ws();
+                let valStart = ix;
+
+                /* quoted */
+                if (ix < end && ($trimLine[ix] === '"' || $trimLine[ix] === "'")) {
+                    inQuote = $trimLine[ix] as '"' | "'";
+                    ix++; valStart = ix;
+                    while (ix < end) {
+                        const ch = $trimLine[ix];
+                        if (escaped) { escaped = false; ix++; continue; }
+                        if (ch === '\\') { escaped = true; ix++; continue; }
+                        if (ch === inQuote) { break; }
+                        ix++;
+                    }
+                    const text = $trimLine.slice(valStart, ix);
+                    if (ix < end && $trimLine[ix] === inQuote) ix++; /* consume quote */
+                    const endPos = _pos(ix);
+                    out.push({ name, value: { text, quoted: true }, start: startPos, end: endPos });
+                }
+                /* unquoted token (stops at ws or end) */
+                else {
+                    while (ix < end && !/\s/.test($trimLine[ix])) ix++;
+                    const text = $trimLine.slice(valStart, ix);
+                    const endPos = _pos(ix);
+                    out.push({ name, value: { text, quoted: false }, start: startPos, end: endPos });
+                }
+            } else {
+                /* flag */
+                const endPos = _pos(ix);
+                out.push({ name, start: startPos, end: endPos });
+            }
+        }
+
+        return out;
+    }
+
+    let _offset = 0;
     while (ix < splitLines.length) {
         const currentIx = ix;
         const currentLine = splitLines[ix];
         const trimLine = currentLine.trim();
 
-        $log(`[token_from_hson depth=${$depth} L=${currentIx + 1}/${splitLines.length}]: processing: "${trimLine}" (Original: "${currentLine}")`);
+        _log(`[token_from_hson depth=${$depth} L=${currentIx + 1}/${splitLines.length}]: processing: "${trimLine}" (Original: "${currentLine}")`);
+
+        /* Step A */
         /* skip empty/comment lines */
         if (!trimLine || trimLine.startsWith('//')) {
-            $log(`[token_from_hson depth=${$depth} L=${currentIx + 1}] skipping comment/empty`);
-            ix++;
+            _log(`[token_from_hson depth=${$depth} L=${currentIx + 1}] skipping comment/empty`);
+            _bump_line(currentLine);
             continue;
         }
 
+        /* Step B */
         /* check for '<' implicit object trigger */
         if (LONE_OPEN_ANGLE_REGEX.test(currentLine)) {
-            $log(`[token_from_hson depth=${$depth} L=${currentIx + 1}] lone '<' detected`);
-            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OPEN, tag: OBJECT_TAG }));
-            contextStack.push({ type: 'IMPLICIT_OBJECT' });
-            ix++;
+            _log(`[tokenize_hson depth=${$depth} L=${currentIx + 1}] lone '<' detected`);
+            contextStack.push({ type: 'IMPLICIT_OBJECT' });      /* keep marker if you need it */
+            contextStack.push({ type: 'CLUSTER', close: 'obj' });/* structural intent */
+            _bump_line(currentLine);
             continue;
         }
 
+        /* Step C */
         /* handle empty arrays «» */
-        if (trimLine.match(/^«\s*»/)) {
-            $log(`[quick check]: found and processed an empty inline array («»)`);
-            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_OPEN, tag: ARRAY_TAG }));
-            /* no content tokens needed */
-            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_CLOSE, tag: ARRAY_TAG }));
+        if (/^«\s*»\s*$/.test(trimLine) || /^\[\s*\]\s*$/.test(trimLine)) {
+            const variant = trimLine.startsWith('«') ? ARR_SYMBOL.guillemet : ARR_SYMBOL.bracket;
+            const col = currentLine.search(/\S|$/) + 1; /* first non-space, 1-based */
+            const p = _pos(currentIx + 1, col, _offset + col - 1);
 
-            ix++; /* consume line */
-            continue; /* move on to the next line, skipping logic below */
-        }
+            _log(`[quick]: empty array detected (${variant})`);
+            finalTokens.push(NEW_ARR_OPEN_TOKEN(variant, p));
+            finalTokens.push(NEW_ARR_CLOSE_TOKEN(variant, p));
 
-        /* handle _array delimiters */
-        if (trimLine.startsWith('«')) {
-            const opener = '«';
-            const closer = '»';
-            const tag = ARRAY_TAG;
-            const type = TokenΔ.ARRAY_OPEN;
-            const closeToken = TokenΔ.ARRAY_CLOSE;
-
-            $log(`[tokenize_hson]: processing array tags`);
-            finalTokens.push(CREATE_TOKEN({ type, tag }));
-
-            /* find the full content of the block first, respecting nesting. */
-            let array_content = '';
-            let startIx = currentLine.indexOf(opener) + 1;
-            let nestedDepth = 1;
-            let currentIx = ix;
-            let lineXPos = startIx;
-
-            while (nestedDepth > 0 && currentIx < splitLines.length) {
-                const currentLine = splitLines[currentIx];
-                for (let j = lineXPos; j < currentLine.length; j++) {
-                    if (currentLine.startsWith(opener, j)) {
-                        nestedDepth++;
-                    } else if (currentLine.startsWith(closer, j)) {
-                        nestedDepth--;
-                        if (nestedDepth === 0) {
-                            /* should have found the final closer; extract content */
-                            const allLines = splitLines.slice(ix, currentIx + 1);
-                            let joinedLines = allLines.join('\n');
-                            let startPos = joinedLines.indexOf(opener) + 1;
-                            let endPos = joinedLines.lastIndexOf(closer);
-                            array_content = joinedLines.substring(startPos, endPos);
-
-                            ix = currentIx; /* move main loop index forward */
-                            break;
-                        }
-                    }
-                }
-                if (nestedDepth === 0) break; /* exit outer loop */
-                currentIx++;
-                lineXPos = 0; /* reset for next line */
-            }
-
-            if (nestedDepth !== 0) {
-                _throw_transform_err(`unmatched ${opener}${closer} starting near line ${currentIx + 1}`, 'tokenize_hson', $hson);
-            }
-
-            /* process the extracted content string */
-            if (array_content.trim()) {
-                const strings = splitTopLevel(array_content, ','); /* split by top-level commas */
-                for (const str of strings) {
-                    const trimmed = str.trim();
-                    if (trimmed) {
-                        if (trimmed.startsWith('<') || trimmed.startsWith('«')) {
-                            finalTokens.push(...tokenize_hson(trimmed, $depth + 1));
-                        } else {
-                            const coerced = coerce(trimmed);
-                            const type = is_not_string(coerced) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS
-                            finalTokens.push(CREATE_TOKEN({ type, content: [coerced] }));
-                        }
-                    }
-                }
-            }
-
-            finalTokens.push(CREATE_TOKEN({ type: closeToken, tag }));
-            ix++; /* consume the closer line */
+            _bump_line(currentLine);
             continue;
         }
 
-        /* step E: handle closers (>, />) */
+        /* Step D */
+        /* handle _array delimiters */
+        if (trimLine.startsWith('«') || trimLine.startsWith('[')) {
+            const opener = trimLine.startsWith('«') ? '«' : '[';
+            const closer = opener === '«' ? '»' : ']';
+            const variant = opener === '«' ? ARR_SYMBOL.guillemet : ARR_SYMBOL.bracket;
 
-        if (trimLine === ">" || trimLine === "/>") {
-            if (contextStack.length === 0) {
-                _throw_transform_err(`[Step E] closer '${trimLine}' found but context stack is empty at L${ix + 1}`, 'tokenize-hson', currentLine);
-            }
+            _log(`[tokenize_hson]: processing array (${variant})`);
 
-            const topStack: ContextStackItem = contextStack[contextStack.length - 1]; // Peek
+            /* build a joined view from the current line onward */
+            const joinedFromHere = splitLines.slice(ix).join('\n');
+            const colInLine = currentLine.indexOf(opener) + 1;     /* 1-based col */
+            const startInJoined = currentLine.indexOf(opener) + 1; /* index after opener */
 
-            let is_lineConsumed = false;
+            /* slice the balanced body (quote-aware, nested-pair aware) */
+            const { body, endIndex } = slice_balanced_arr(joinedFromHere, startInJoined, opener, closer);
 
-            /* check if topStack is an implicit content VSN  */
-            if (topStack.type === 'TAG' && topStack.isImplicitContent === true) {
-                /* (topContext.tag will be OBJECT_TAG or ELEM_TAG) */
+            /* compute how many lines were consumed up to the closer */
+            const consumedText = joinedFromHere.slice(0, endIndex + 1); /* includes closer */
+            const linesConsumed = consumedText.split('\n').length - 1;
 
-                const VsnContentTag = contextStack.pop() as Extract<ContextStackItem, { type: 'TAG'; isImplicitContentForParent?: true }>;
-                const StdParentTag = contextStack.pop() as Extract<ContextStackItem, { type: 'TAG' }>; /* assumes it's always there and is TAG */
+            const pOpen = _pos(currentIx + 1, colInLine, _offset + colInLine - 1);
+            const pClose = _pos(currentIx + 1 + linesConsumed, 1, _offset + consumedText.length);
 
-                /* close the VSN */
-                finalTokens.push(CREATE_TOKEN({
-                    type: (VsnContentTag.tag === ELEM_TAG) ? TokenΔ.ELEM_CLOSE : TokenΔ.OBJ_CLOSE,
-                    tag: VsnContentTag.tag
-                }));
-                $log(`step E: closed implicit object <${VsnContentTag.tag}> for parent <${StdParentTag.tag}>`);
+            finalTokens.push(NEW_ARR_OPEN_TOKEN(variant, pOpen));
 
-                /* close/consume the line */
-                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.CLOSE, tag: StdParentTag.tag }));
-                $log(`[Step E] standard parent tag <${StdParentTag.tag} closed by line '${trimLine}'`);
+            /* split the array body by top-level commas (quote/array/header aware) */
+            const items = split_top_level_NEW(body, ',');
 
-                is_lineConsumed = true;
-            }
-            /* check 2: explicit tags get single .pop() */
-            else if (topStack.type === 'TAG') {
-                const stackCloser = contextStack.pop() as Extract<ContextStackItem, { type: 'TAG' }>;
+            for (const itemRaw of items) {
+                const item = itemRaw.trim();
+                if (!item) continue;
 
-                /*  validate closer if needed */
-                if (stackCloser.tag === ELEM_TAG && trimLine !== "/>") {
-                    console.warn(`step E: [WARN]:\n  <_elem tag <${stackCloser.tag} closes with '${trimLine}' instead of '/>'`);
-                } else if (stackCloser.tag === OBJECT_TAG && trimLine !== ">") {
-                    console.warn(`step E: [WARN]:\n <_obj tag <${stackCloser.tag} closes with '${trimLine}' instead of '>'`);
+                if (item.startsWith('<') || item.startsWith('«') || item.startsWith('[')) {
+                    finalTokens.push(...tokenize_hson_NEW(item, $depth + 1));
+                } else {
+                    /* CHANGED: no coerce here; parser will decide _str vs _val */
+                    finalTokens.push(NEW_TEXT_TOKEN(item, /* quoted */ undefined, pOpen));
                 }
-
-                $log(`[Step E] closing tag <${stackCloser.tag}> with line '${trimLine}'.`);
-                let finalTokenType: HSON_Token_Type;
-                switch (stackCloser.tag) {
-                    case ELEM_TAG: finalTokenType = TokenΔ.ELEM_CLOSE; break;
-                    case ARRAY_TAG: finalTokenType = TokenΔ.ARRAY_CLOSE; break;
-                    case OBJECT_TAG: finalTokenType = TokenΔ.OBJ_CLOSE; break;
-                    default: finalTokenType = TokenΔ.CLOSE; break; /* for standard tags */
-                }
-                finalTokens.push(CREATE_TOKEN({ type: finalTokenType, tag: stackCloser.tag }));
-                is_lineConsumed = true;
             }
 
-            else if (topStack.type === 'IMPLICIT_OBJECT' && trimLine === ">") {
-                contextStack.pop();
-                $log(`[Step E] closing 'IMPLICIT_OBJECT' context with '>'`);
-                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OBJ_CLOSE, tag: OBJECT_TAG }));
-                is_lineConsumed = true;
-            }
+            finalTokens.push(NEW_ARR_CLOSE_TOKEN(variant, pClose));
 
-            if (is_lineConsumed) {
-                ix++;
-                continue;
-            } else {
-                console.warn(`[Step E] [FALLBACK]: line '${trimLine}' is a closer, but stack top ${JSON.stringify(topStack)} didn't match an expected closing pattern`);
-            }
+            /* advance main loop to the line containing the closer */
+            _bump_array(linesConsumed + 1);
+            continue;
         }
 
-        /* step F */
+        /* step E */
+        const closerMatch = currentLine.match(/^\s*(\/?>)\s*(?:\/\/.*)?$/);
+        if (closerMatch) {
+            const closerLex = closerMatch[1];
+            const close = closerLex === '/>' ? CLOSE_KIND.elem : CLOSE_KIND.obj;
+            const col = currentLine.indexOf(closerLex) + 1;
+            const pos = _pos(currentIx + 1, col, _offset + col - 1);
+
+            const top = contextStack[contextStack.length - 1];
+            if (!top || top.type !== 'CLUSTER') {
+                _throw_transform_err(`[step e] closer '${closerLex}' but stack top is ${JSON.stringify(top)}`, 'tokenize-hson', currentLine);
+            }
+            if (top.close && top.close !== close) {
+                _throw_transform_err(`[step e] mismatched closer '${closerLex}' for cluster '${top.close}'`, 'tokenize-hson', currentLine);
+            }
+            /* set if pending */
+            top.close = close;
+
+            /* pop + emit */
+            contextStack.pop();
+            finalTokens.push(NEW_END_TOKEN(close, pos));
+
+            /* clean up implicit marker if present */
+            const maybeImplicit = contextStack[contextStack.length - 1];
+            if (maybeImplicit && maybeImplicit.type === 'IMPLICIT_OBJECT' && close === CLOSE_KIND.obj) {
+                contextStack.pop();
+            }
+
+            _bump_line(currentLine);
+            continue;
+        }
+
+        /* step F: open tags */
         if (trimLine.startsWith('<')) {
 
-            /*  F.1: Implicit object start < <...> 
-                (currently not valid HSON but should be accepted some day) */
+            /* f.1 implicit object opener "< <...": accept preamble, no tokens, structure only */
             if (IMPLICIT_OBJECT_START_REGEX.test(trimLine)) {
-                $log(`[Step F depth=${$depth} L=${currentIx + 1}] implicit object opener detected`);
-                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OPEN, tag: OBJECT_TAG }));
+                _log(`[step f depth=${$depth} L=${currentIx + 1}] implicit object opener`);
                 contextStack.push({ type: 'IMPLICIT_OBJECT' });
-                const startIx = trimLine.indexOf('<', trimLine.indexOf('<') + 1);
-                const innerContent = startIx !== -1 ? trimLine.substring(startIx).trim() : "";
-                if (innerContent) {
-                    $log(`[step F - depth=${$depth} L=${currentIx + 1}] ---> recursing implicit object content: "${innerContent}"`);
-                    const inner_tokens = tokenize_hson(innerContent, $depth + 1);
-                    finalTokens.push(...inner_tokens);
-                    $log(`[Step F - depth=${$depth} L=${currentIx + 1}] <--- exited recursion for implicit object.`);
+                contextStack.push({ type: 'CLUSTER' }); /* pending close kind */
+
+                const secondIx = trimLine.indexOf('<', trimLine.indexOf('<') + 1);
+                const inner = secondIx >= 0 ? trimLine.substring(secondIx).trim() : '';
+                if (inner) {
+                    const innerTokens = tokenize_hson_NEW(inner, $depth + 1);
+                    finalTokens.push(...innerTokens);
                 }
-                ix++;
+                _bump_line(currentLine);
                 continue;
             }
 
-            /* F.2: parse named tags, flags, attributes */
-            let parsedChars = 1; /* start after opener */
+            /* f.2 read tag header minimally: name + find header end (no attrs yet) */
+            let ixHeader = 1;                               /* skip initial '<' */
             const lineLength = trimLine.length;
+            while (ixHeader < lineLength && /\s/.test(trimLine[ixHeader])) ixHeader++;
 
-            /* skip initial whitespace */
-            while (parsedChars < lineLength && /\s/.test(trimLine[parsedChars])) parsedChars++;
-
-            /* get tag name */
-            const tagNameStart = parsedChars;
-            while (parsedChars < lineLength && /[a-zA-Z0-9:._-]/.test(trimLine[parsedChars])) parsedChars++;
-            const tag = trimLine.substring(tagNameStart, parsedChars);
+            const nameStart = ixHeader;
+            while (ixHeader < lineLength && /[A-Za-z0-9:._-]/.test(trimLine[ixHeader])) ixHeader++;
+            const tag = trimLine.slice(nameStart, ixHeader);
 
             if (!tag) {
-                _throw_transform_err(`[step F depth=${$depth} L=${currentIx + 1}] malformed tag: could not get tag name in "${trimLine}"`, 'tokenize-hson', currentLine);
+                _throw_transform_err(`[step f depth=${$depth} L=${currentIx + 1}] malformed tag in "${trimLine}"`, 'tokenize-hson', currentLine);
             }
 
+            /* f.2.1 scan to header end outside quotes, capturing inline tail */
+            let inQ: '"' | "'" | null = null;
+            let esc = false;
+            let closerLex: '>' | '/>' | null = null;
+            let headerEndCol = ixHeader + 1;         /* 1-based col guess; refine when we hit closer */
+            let scanIx = ixHeader;
 
-            const attrs: HsonAttrs = {};
-            const flags: HsonFlags = [];
-            let nodeContent: Primitive | undefined = undefined;
-            let arrayContent: string | undefined = undefined;
-            let selfCloses = false;
-            let parseError = false;
+            while (scanIx < lineLength) {
+                const char = trimLine[scanIx];
+                if (esc) { esc = false; scanIx++; continue; }
+                if (char === '\\') { esc = true; scanIx++; continue; }
+                if (inQ) { if (char === inQ) inQ = null; scanIx++; continue; }
+                if (char === '"' || char === "'") { inQ = char; scanIx++; continue; }
 
-            const inlineContent: (Primitive | AllTokens | { type: 'HSON_ARRAY_SHORTHAND', hsonString: string })[] = [];
-
-
-            /* parse attrs and flags */
-
-            PHASE_1_ATTR_FLAGS: while (parsedChars < lineLength) {
-                const loopPos = parsedChars;
-                while (parsedChars < lineLength && /\s/.test(trimLine[parsedChars])) parsedChars++; /* skip whitespace */
-
-                const remainder = trimLine.substring(parsedChars);
-
-
-                if (parsedChars === lineLength || remainder.startsWith('>') || remainder.startsWith('/>')) {
-                    break PHASE_1_ATTR_FLAGS;
+                if (char === '>' || (char === '/' && scanIx + 1 < lineLength && trimLine[scanIx + 1] === '>')) {
+                    if (char === '>') { closerLex = '>'; headerEndCol = scanIx + 1; }
+                    else { closerLex = '/>'; headerEndCol = scanIx + 2; }
+                    break;
                 }
+                scanIx++;
+            }
 
-                /* check for content */
-                const is_Start =
-                    remainder.startsWith('<') || /* nested tag */
-                    remainder.startsWith('«') || /* array shorthand */
-                    remainder.match(/^("((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/) || /* quoted string */
-                    remainder.match(/^(true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?=\s|$|>|<|«)/); /* unquoted primitive */
+            const lineNo = currentIx + 1;
+            const openCol = currentLine.indexOf('<') + 1;
+            const posOpen = _pos(lineNo, openCol, _offset + openCol - 1);
 
-                if (is_Start) {
-                    $log(`[step F phase 1] Detected start of content. Moving to Phase 2. Remaining: "${remainder.substring(0, 10)}"`);
-                    break PHASE_1_ATTR_FLAGS;
-                }
+            const leadCol = currentLine.search(/\S|$/) + 1;       /* first non-space col */
+            const attrsEndIx = closerLex === '/>' ? scanIx /* '/' */ : scanIx /* '>' */; /* scanIx points at '/' or '>' */
+            const rawAttrs = _read_tag_attrs(trimLine, ixHeader /* after name */, attrsEndIx, lineNo, leadCol);
 
-                /* parse attribute */
-                const attrsMatch = remainder.match(/^([a-zA-Z0-9:._-]+)\s*=\s*("((?:[^"\\]|\\.)*)")/);
+            /* emit open with empty rawAttrs for now; attrs come next pass */
+            finalTokens.push(NEW_OPEN_TOKEN(tag, rawAttrs, posOpen));
 
-                if (attrsMatch) {
-                    const key = attrsMatch[1];
-                    const valueString = attrsMatch[3];
+            /* f.2.2 inline content between header end and closer, if any */
+            if (closerLex) {
+                const tailStart = headerEndCol;                      /* first char after header */
+                const tail = trimLine.slice(tailStart, trimLine.length - (closerLex === '/>' ? 2 : 1)).trim();
 
-                    /* handle the 'style' attribute differently */
-                    if (key === 'style') {
-                        try {
-                            /* try to parse style attributes for direct manipulation in JSON */
-                            attrs.style = parse_css_attrs(valueString);
-                        } catch (e) {
-                            _throw_transform_err(`parse error in tokenize_hson(): failed to JSON.parse style attribute: ${valueString}: ${e}`, 'tokenize-hson', remainder);
-                            parseError = true;
-                        }
+                if (tail) {
+                    if (tail.startsWith('<') || tail.startsWith('«') || tail.startsWith('[')) {
+                        finalTokens.push(...tokenize_hson_NEW(tail, $depth + 1));
                     } else {
-                        attrs[key] = coerce(attrsMatch[2]);
+                        finalTokens.push(NEW_TEXT_TOKEN(tail, /* quoted */ undefined, posOpen));
                     }
-
-                    parsedChars += attrsMatch[0].length;
-                    $log(`[step F phase 1] ATTR: ${key}=${JSON.stringify(attrs[key])}. parsePos=${parsedChars}`);
-                    continue PHASE_1_ATTR_FLAGS;
-                }
-                /*  parse flags */
-                const flagMatch = remainder.match(/^([^'"\s/>«<=\]]+)/); /* look for unquoted token */
-                if (flagMatch) {
-                    const token_string = flagMatch[0];
-                    /* ensure it's not followed by '=' */
-                    let lookaheadDistance = parsedChars + token_string.length;
-                    while (lookaheadDistance < trimLine.length && /\s/.test(trimLine[lookaheadDistance])) lookaheadDistance++;
-
-                    if (trimLine[lookaheadDistance] === '=') {
-                        console.warn(`[step F phase 1] flag "${token_string}" is followed by "=": likely malformed attr/flag`);
-                        parseError = true;
-                        break PHASE_1_ATTR_FLAGS;
-                    }
-
-                    flags.push(token_string);
-                    parsedChars += token_string.length;
-                    $log(`[step F phase 1] FLAG: ${token_string}. parsePos=${parsedChars}`);
-                    continue PHASE_1_ATTR_FLAGS;
                 }
 
-                if (parsedChars === loopPos) {
-                    _throw_transform_err(`[step F phase 1] unparseable segment OR stuck in attr/flag parsing for <${tag}>\nremaining: "${remainder.substring(0, 100)}"`, 'tokenize-hson', remainder);
-                }
-            } // ---- end phase 1: attr/flag parsing ---=|
-
-            /*  phase 2: parse content  */
-            if (!parseError) {
-                PHASE_2_CONTENT_ITEMS: while (parsedChars < lineLength) {
-                    const loopPos = parsedChars;
-                    /* skip whitespace before next token */
-                    while (parsedChars < lineLength && /\s/.test(trimLine[parsedChars])) parsedChars++;
-
-                    const remainder = trimLine.substring(parsedChars);
-
-                    /* check for end of tag on this line */
-                    if (remainder.startsWith("/>")) {
-                        selfCloses = true;
-                        parsedChars += 2; /* consume '/>' */
-                        $log(`[step F phase 2] <${tag}  consumed self-closing '/>'\n Ending content parse`);
-                        break PHASE_2_CONTENT_ITEMS;
-                    }
-                    if (remainder.startsWith('>')) {
-                        selfCloses = true;
-                        parsedChars += 1;
-                        $log(`[step F phase 2] <${tag} consumed closing '>'\n  ending content parse`);
-                        break PHASE_2_CONTENT_ITEMS;
-                    }
-                    if (parsedChars === lineLength) {
-                        break PHASE_2_CONTENT_ITEMS;
-                    }
-
-                    /* try to parse different types of content items */
-                    let contentMatch = false;
-
-                    /* check for nested HSON tag: <...> (currently not valid) */
-                    if (remainder.startsWith('<')) {
-                        let balance = 0;
-                        let nestedIx = -1;
-                        for (let k = 0; k < remainder.length; k++) {
-                            if (remainder[k] === '<') balance++;
-                            else if (remainder[k] === '>') {
-                                balance--;
-                                if (balance === 0) {
-                                    nestedIx = k;
-                                    break;
-                                }
-                            }
-                        }
-                        if (nestedIx !== -1) {
-                            const nested_tag_string = remainder.substring(0, nestedIx + 1);
-                            $log(`[step F phase 2] <${tag}\n found nested HSON: "${nested_tag_string}" -- recursing`);
-                            const nested_tokens = tokenize_hson(nested_tag_string, $depth + 1);
-                            /* wrap the sequence of tokens to distinguish it from other item types */
-                            inlineContent.push({ type: 'TOKEN_SEQUENCE', tokens: nested_tokens } as any);
-                            parsedChars += nested_tag_string.length;
-                            contentMatch = true;
-                        } else {
-                            _throw_transform_err(`[step F phase 2] <${tag}\n malformed nested tag: no closer ('>' or '/>')`, 'tokenize-hson', remainder);
-                            parseError = true;
-                        }
-                    }
-                    /* array shorthand: «...» */
-                    else if (remainder.startsWith('«') || remainder.startsWith('[')) {
-                        const is_emptyArray = remainder.startsWith('«»');
-                        const is_emptyBrackets = remainder.startsWith('[]');
-
-                        if (is_emptyArray || is_emptyBrackets) {
-                            $log(`[step F phase 2] <${tag}> found empty array shorthand.`);
-                            inlineContent.push('«»');
-                            parsedChars += 2;
-                            contentMatch = true;
-                        }
-                        // delete???:
-                        // else {
-                        //     // TODO: Handle non-empty arrays here
-                        //     console.error(`[step F phase 2] <${tag}> Non-empty arrays are not yet supported.`);
-                        //     parseError = true;
-                        // }
-                    }
-                    /* try quoted string primitive */
-                    else {
-                        const quotedRegex = remainder.match(/^("((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/);
-                        if (quotedRegex) {
-                            try {
-                                inlineContent.push(JSON.parse(quotedRegex[0]));
-                            } catch (e) {
-                                parseError = true;
-                                inlineContent.push(quotedRegex[2] ?? quotedRegex[3]); /* (fallback) */
-                            }
-                            parsedChars += quotedRegex[0].length;
-                            contentMatch = true;
-                        }
-                        /* try unquoted primitive */
-                        else {
-                            const unquotedRegex = /^(true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?=\s|$|>|<|«)/;
-                            const unquotedMatch = remainder.match(unquotedRegex);
-                            if (unquotedMatch) {
-                                const matchedStr = unquotedMatch[0];
-                                let primitiveValue: Primitive;
-                                if (matchedStr === "true") primitiveValue = true;
-                                else if (matchedStr === "false") primitiveValue = false;
-                                else if (matchedStr === "null") primitiveValue = null;
-                                else primitiveValue = parseFloat(matchedStr);
-
-                                inlineContent.push(primitiveValue);
-                                parsedChars += matchedStr.length;
-                                contentMatch = true;
-                            }
-                        }
-                    }
-
-                    if (parseError) break PHASE_2_CONTENT_ITEMS;
-
-                    if (!contentMatch) {
-                        _throw_transform_err(`[step F phase 2] <${tag} unparseable content\n remaining: "${remainder.substring(0, 20)}"`, 'tokenize-hson', remainder);
-
-                    }
-                    /* infinite loop check */
-                    if (parsedChars === loopPos) {
-                        _throw_transform_err(`[step F phase 2] <${tag} parser stuck in loop: aborting parse`, 'tokenize-hson', remainder);
-                    }
-                } // ---- end PHASE_2_CONTENT_ITEMS ---=|
-            }
-
-            /* step F.3 - determine token type, push */
-            if (parseError) {
-                _throw_transform_err('PARSER ERROR—creating generic fallback text token', 'tokenize_hson', currentLine)
-                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.STR_CONTENTS, content: ['[ERROR IN PARSING STEP F.3'] }));
+                /* emit the end immediately for same-line closer */
+                const posClose = _pos(lineNo, headerEndCol, _offset + headerEndCol - 1);
+                const kind = closerLex === '/>' ? CLOSE_KIND.elem : CLOSE_KIND.obj;
+                finalTokens.push(NEW_END_TOKEN(kind, posClose));
+                _bump_line(currentLine);
+                continue;
             } else {
-                const meta = { attrs, flags };
-                let can_selfClose = true;
-                const selfContent: Primitive[] = [];
-
-                /* helper function to process inline content items into tokens */
-                function emitInlineTokens(
-                    $elements: (Primitive | AllTokens | { type: 'HSON_ARRAY_SHORTHAND', hsonString: string } | { type: 'TOKEN_SEQUENCE', tokens: AllTokens[] })[],
-                    $outputTokens: AllTokens[],
-                    $currentTagName: string, /*  (for logging context) */
-                    $currentRecursionDepth: number /* or recursive token_from_hson calls */
-                ) {
-                    for (const element of $elements) {
-                        if (element !== null && typeof element === 'object' && (element as any).type === 'HSON_ARRAY_SHORTHAND') {
-                            const arrayString = (element as any).hsonString;
-                            $outputTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_OPEN, tag: ARRAY_TAG }));
-                            const innerContent = arrayString.slice(1, -1).trim();
-
-                            const tempTokens: AllTokens[] = [];
-                            if (innerContent) {
-                                const is_complex = innerContent.includes('<') || innerContent.includes('«');
-                                if (is_complex) {
-                                    const complexItems = splitTopLevel(innerContent, ',');
-                                    for (const item of complexItems) {
-                                        const trimmed = item.trim();
-                                        if (trimmed) {
-                                            tempTokens.push(...tokenize_hson(trimmed, $currentRecursionDepth + 1));
-                                        }
-                                    }
-                                } else {
-                                    splitTopLevel(innerContent, ',').forEach(itemStr => {
-                                        const trimmed = itemStr.trim();
-                                        if (trimmed) {
-                                            const coercedItem = coerce(trimmed);
-                                            const type = (is_not_string(coercedItem)) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS;
-                                            tempTokens.push(CREATE_TOKEN({ type, content: [coercedItem] }));
-                                        }
-                                    });
-                                }
-                            }
-                            $log(`[emitInlineContentTokens ArrayDebug] <${$currentTagName}> Generated item tokens for array: JSON.stringify(tempItemTokens))`);
-                            $outputTokens.push(...tempTokens);
-                            $outputTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_CLOSE, tag: ARRAY_TAG }));
-
-                        } else if (element !== null && typeof element === 'object' && (element as any).type === 'TOKEN_SEQUENCE') {
-                            $outputTokens.push(...(element as any).tokens);
-                        } else if (element !== null && typeof element === 'object' && (element as AllTokens).tag !== undefined && typeof (element as AllTokens).type === 'string') {
-                            $outputTokens.push(element as AllTokens);
-                        } else if (is_Primitive(element)) {
-                            const type = (is_not_string(element)) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS;
-                            $outputTokens.push(CREATE_TOKEN({ type, content: [element as Primitive] }));
-                        }
-                    }
-                }
-
-                if (inlineContent.length === 0) {
-
-                } else for (const item of inlineContent) {
-                    /* determine if the tag's content can be represented by a SELF token (i.e., only primitives or empty) */
-                    if (is_Node(item)) {
-                        can_selfClose = false;
-                        break;
-                    }
-                    selfContent.push(item as Primitive);
-                }
-
-
-                if (selfCloses) {
-                    /* tag closes on same line it opens;
-                        check if there's an array or complex content */
-                    const has_array = inlineContent.some(el => is_Node(el) && (el as any).type === 'HSON_ARRAY_SHORTHAND');
-
-                    if (!can_selfClose || has_array) {
-                        /* case A: content is nested HsonNodes or an array shorthand was found */
-                        // this should never be reached?
-                        console.warn('should this ever be reached??? methinks not?')
-                        $log(`[step F phase 3] <${tag} closes on same line >, not complex content or array\nemitting OPEN/items/CLOSE`);
-                        finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OPEN, tag: tag, attrs: meta.attrs, flags: meta.flags }));
-
-                        emitInlineTokens(inlineContent, finalTokens, tag, $depth);
-
-                        finalTokens.push(CREATE_TOKEN({ type: TokenΔ.CLOSE, tag: tag, attrs: {}, flags: [] }));
-                    } else {
-                        /* Case B: `can_selfClose` is TRUE (one BasicValue inlineContentItems, or it's empty)
-                            AND the tag closes on the same line.
-                            Output: SELF("_tag", _content: [primitives]) */
-                        $log(`[step F phase 3] <${tag} is SELF\n  content: ${make_string(selfContent)})`);
-                        finalTokens.push(CREATE_TOKEN({
-                            type: TokenΔ.SELF,
-                            tag: tag,
-                            attrs: meta.attrs,
-                            flags: meta.flags,
-                            content: selfContent
-                        }));
-                    }
-
-                } else {
-                    /* Case C: Does NOT close on this line (hasExplicitClosingAngleOnLine is false) */
-                    const currentIndent = (splitLines[ix].match(/^(\s*)/)?.[0]?.length || 0) / 2;
-                    let is_array = false;
-
-                    const remainingContent = trimLine.substring(parsedChars); /* content is on current line after <tagName attrs> */
-                    if (remainingContent.trim().startsWith('«')) {
-                        /* for when e.g., <tagName ... « (optional further inline items for array)
-                            OR <tagName ... «» (if phase 2 didn't make it a SELF tag)
-                            if this '«' is the start of the primary value for tagName */
-                        is_array = true;
-                        $log(`[step F phase 3] <${tag}> has '«' on its opening line\n  assuming direct array content`);
-                    } else if (inlineContent.length === 0 && (ix + 1 < splitLines.length)) {
-                        /*  No significant inline content on current line. Check next non-empty/comment line */
-                        let nextLineIx = ix + 1;
-                        while (nextLineIx < splitLines.length &&
-                            (splitLines[nextLineIx].trim() === "" || splitLines[nextLineIx].trim().startsWith("//"))) {
-                            nextLineIx++;
-                        }
-                        if (nextLineIx < splitLines.length && splitLines[nextLineIx].trim().startsWith('«')) {
-                            is_array = true;
-                            $log(`[step F phase 3] <${tag} content on next line (L${nextLineIx + 1}) starts with '«' -- assuming direct array content`);
-                        }
-                    }
-
-                    /* emit tokens based on whether it's a direct array or a general block */
-                    finalTokens.push(CREATE_TOKEN({
-                        type: TokenΔ.OPEN,
-                        tag,
-                        attrs: meta.attrs,
-                        flags: meta.flags
-                    }));
-                    contextStack.push({
-                        type: 'TAG',
-                        tag,
-                    } as ContextStackItem);
-
-                    if (is_array) {
-                        /* content is an array; step C handles '«...»'
-                         and emit ARRAY_OPEN(_array) which becomes a child of 'tagName'
-                         NO implicit _obj or _elem wrapper here (_array wrapper handles the cluster) */
-                        $log(`[step F phase 3] <${tag} is OPEN, expecting direct array content (from «).`);
-
-                        /* if 'inlineContentItems' were collected by phase 2 *from this line*,
-                            AND 'opensDirectArrayShorthand' is true because '«' was found: */
-                        if (inlineContent && inlineContent.length > 0) {
-                            $log(`[step F phase 3] Emitting ${inlineContent.length} inline content items for <${tag}> (which is opening for an array)`);
-                            /* emitInlineContentTokens processes HSON_ARRAY_SHORTHAND and emits ARRAY_OPEN etc. */
-                            emitInlineTokens(inlineContent, finalTokens, tag /* parent is tagName */, $depth);
-                        }
-                        /* If the '«' is at the very end of the current line,
-                            inlineContentItems might be empty here for items *after* '«'.
-                            The next line will be handled by Step C. */
-
-                    } else {
-                        /* Content is a general block not an immediate array--usse closeTagLookahead. */
-                        $log(`[step F phase 3] <${tag}> at L${ix + 1} is OPEN (standard block)\n  determining content type via closeTagLookahead()`);
-                        const closing_tag = close_tag_lookahead(splitLines, ix, tag);
-                        $log(`[step F phase 3] <${tag}> determined HSON content type: ${closing_tag}`);
-
-                        let contentVSNTag: string;
-                        let contentVSNType: HSON_Token_Type;
-                        if (closing_tag === ELEM_TAG) {
-                            contentVSNTag = ELEM_TAG; contentVSNType = TokenΔ.ELEM_OPEN;
-                        } else if (closing_tag === OBJECT_TAG) {
-                            contentVSNTag = OBJECT_TAG; contentVSNType = TokenΔ.OBJ_OPEN;
-                        } else {  /*  default is smell? */
-                            contentVSNTag = tag;
-                            contentVSNType = TokenΔ.OBJ_OPEN;
-                        }
-
-                        finalTokens.push(CREATE_TOKEN({ type: contentVSNType, tag: contentVSNTag, attrs: {}, flags: [] }));
-                        contextStack.push({
-                            type: 'TAG',
-                            tag: contentVSNTag,
-                            indent: currentIndent + 1,
-                            isImplicitContent: true /* flag for step E */
-                        } as ContextStackItem);
-                        $log(`[step F phase 3] emitted ${[contentVSNType]} (${contentVSNTag}) for content of <${tag}>\n stack top: ${contentVSNTag}`);
-
-                        /* any inlineContentItems found on the opening line become children */
-                        if (inlineContent && inlineContent.length > 0) {
-                            emitInlineTokens(inlineContent, finalTokens, contentVSNTag, $depth);
-                        }
-                    }
-                } // ---- end case C (block opener) ---=|
+                /* no closer on this line: push a pending cluster; Step E will close it */
+                contextStack.push({ type: 'CLUSTER' });  /* close kind decided at Step E */
+                _bump_line(currentLine);
+                continue;
             }
-            ix++;
-            continue;
         } // ---- end of step F ---=|
 
-        let nextLine = trimLine;
-        let nextCloser: ">" | "/>" | null = null;
-
-        /* check for closer at the end of the line; trim() */
-        if (nextLine.endsWith("/>")) {
-            nextCloser = "/>";
-            nextLine = nextLine.slice(0, -2).trim();
-        } else if (nextLine.endsWith(">")) {
-            nextCloser = ">";
-            nextLine = nextLine.slice(0, -1).trim();
-        }
-
-        /* process content, if any */
-        if (nextLine) {
-            if (is_Primitive(nextLine)) {
-                const primitive = coerce(nextLine);
-                const type = (is_not_string(primitive)) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS;
-                finalTokens.push(CREATE_TOKEN({ type, content: [primitive] }));
-            } else {
-                /* use splitTopLevel to correctly handle items separated by commas, respecting quotes */
-                const itemStrings = splitTopLevel(nextLine, ',');
-                for (const str of itemStrings) {
-                    const trimmedStr = str.trim();
-                    if (trimmedStr) {
-                        if (trimmedStr.startsWith('<')) {
-                            /*  this item is a nested tag structure: recurse */
-                            finalTokens.push(...tokenize_hson(trimmedStr, $depth + 1));
-                        } else {
-                            /* item is a primitive--use coerce() to get its actual value */
-                            const prim = coerce(trimmedStr);
-                            const type = (is_not_string(prim)) ? TokenΔ.VAL_CONTENTS : TokenΔ.STR_CONTENTS;
-                            finalTokens.push(CREATE_TOKEN({ type, content: [prim] }));
-                        }
-                    }
-                }
-            }
-        }
-
-        /* if closer was found, process it */
-        if (nextCloser) {
-            if (contextStack.length === 0) {
-                _throw_transform_err(`[token_from_hson] found closer '${nextCloser}' on line but context stack is empty`, 'tokenize-hson', currentLine);
-
-            } else {
-                const topStack = contextStack.pop() as Extract<ContextStackItem, { type: 'TAG' }>;
-
-                /* two-stage pop for an implicit content VSN */
-                if (topStack.isImplicitContent) {
-                    /* close cluster */
-                    const VSNToken = topStack.tag === ELEM_TAG ? TokenΔ.ELEM_CLOSE : TokenΔ.OBJ_CLOSE;
-                    finalTokens.push(CREATE_TOKEN({ type: VSNToken, tag: topStack.tag }));
-
-                    /*  parent tag is ALSO closed by this same character */
-                    const parentContext = contextStack.pop() as Extract<ContextStackItem, { type: 'TAG' }>;
-                    if (parentContext) {
-                        finalTokens.push(CREATE_TOKEN({ type: TokenΔ.CLOSE, tag: parentContext.tag }));
-                    } else {
-                        _throw_transform_err(`[token_from_hson] found closer but no parent on stack`, 'tokenize_hson', currentLine);;
-                    }
-                } else {
-                    /* normal tag closing. */
-                    finalTokens.push(CREATE_TOKEN({ type: TokenΔ.CLOSE, tag: topStack.tag }));
-                }
-            }
-        }
-
-        ix++;
+        _bump_line(currentLine);
         continue;
+
     } // ---- end while loop ---=|
 
-    $log(`[end of token from hson depth=${$depth}]\n    ---> processed all lines\n  final contextStack size (should be 0): ${contextStack.length}\n  total tokens generated: ${finalTokens.length}`);
-    if (contextStack.length > 0 && $depth === 0) {
-        const open_tags = contextStack.map(c => c.type === 'TAG' ? `<${c.tag}>` : '< < (implicit object)').join(', ');
-        _throw_transform_err(`FINAL CHECK FAILED: tokenizer finished with ${contextStack.length} unclosed elements: ${open_tags}`, 'tokenize_hson', splitLines);
+
+    /* end-of-file stats */
+    _log(
+        `[tokenize_hson depth=${$depth}] processed all lines\n` +
+        `  contextStack size: ${contextStack.length}\n` +
+        `  total tokens: ${finalTokens.length}`
+    );
+
+    /* final check — only at top level */
+    if ($depth === 0 && contextStack.length > 0) {
+        const residual = contextStack.map((c) => {
+            if (c.type === 'CLUSTER') return `<cluster ${c.close ?? 'pending'}>`;
+            if (c.type === 'IMPLICIT_OBJECT') return '< < (implicit object)';
+            /* c.type === 'TAG' if you still use it elsewhere */
+            return '<tag?>';
+        }).join(', ');
+        _throw_transform_err(
+            `final check failed: tokenizer finished with ${contextStack.length} unclosed items: ${residual}`,
+            'tokenize-hson',
+            splitLines
+        );
     }
 
-    $log(`[token_from_hson END depth=${$depth}] returning tokens: ${make_string(finalTokens)})`);
-
-    /*  this logic should only apply to the top-level call, not recursive calls. */
-    if ($depth === 0) {
-        const is_empty = finalTokens.length === 0;
-        const opens_root = !is_empty && finalTokens[0].type === TokenΔ.OPEN && finalTokens[0].tag === ROOT_TAG;
-        const closes_root = !is_empty && finalTokens[finalTokens.length - 1].type === TokenΔ.CLOSE && finalTokens[finalTokens.length - 1].tag === ROOT_TAG;
-
-        /*  the stack must be balanced for the content *within* any existing _root. */
-
-        if (!(opens_root && closes_root) && contextStack.length === 0) {
-            /* if not already appended to _root document (or it's empty): wrap */
-            $log(`[token_from_hson END depth=0] Input was a fragment or not rooted with ROOT_TAG`);
-
-            const root_open_token = CREATE_TOKEN({ type: TokenΔ.OPEN, tag: ROOT_TAG /* your ROOT_TAG */, attrs: {}, flags: [] });
-            const root_close_token = CREATE_TOKEN({ type: TokenΔ.CLOSE, tag: ROOT_TAG /* your ROOT_TAG */, attrs: {}, flags: [] });
-
-            finalTokens.unshift(root_open_token); /* add OPEN(_root) to the front */
-            finalTokens.push(root_close_token);   /* add CLOSE(_root) to the end */
-        }
-    }
-
+    /* debug print — neutral summary, not the old make_string */
     if (_VERBOSE) {
-        console.groupCollapsed('returning tokens:')
-        console.log(finalTokens);
+        console.groupCollapsed('returning tokens (summary)');
+        for (const t of finalTokens) {
+            switch (t.kind) {
+                case TOKEN_KIND.OPEN:
+                    console.log(`OPEN <${t.tag}> @ L${t.pos.line}:C${t.pos.col}`);
+                    break;
+                case TOKEN_KIND.CLOSE:
+                    console.log(`END ${t.close} @ L${t.pos.line}:C${t.pos.col}`);
+                    break;
+                case TOKEN_KIND.ARR_OPEN:
+                    console.log(`ARR_OPEN ${t.variant} @ L${t.pos.line}:C${t.pos.col}`);
+                    break;
+                case TOKEN_KIND.ARR_CLOSE:
+                    console.log(`ARR_CLOSE ${t.symbol} @ L${t.pos.line}:C${t.pos.col}`);
+                    break;
+                case TOKEN_KIND.TEXT:
+                    console.log(`TEXT "${t.raw}" @ L${t.pos.line}:C${t.pos.col}`);
+                    break;
+            }
+        }
         console.groupEnd();
     }
-    return finalTokens;
 
+    /* return new tokens; no _root wrapping here — parser will handle it */
+    return finalTokens as Tokens_NEW[];
 }
+
+

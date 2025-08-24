@@ -4,21 +4,21 @@
  * splits a string by a separator, respecting nested delimiters '[]' and '«»'
  * ignores separators found within these nested structures
  *
- * @param {string} str - the string to split
- * @param {string} separator - the separator character (e.g., ',')
+ * @param {string} $str - the string to split
+ * @param {string} $separator - the separator character (e.g., ',')
  * @returns {string} - an array of strings, trimmed, representing the top-level segments
 */
 
-export function splitTopLevel(str: string, separator: string): string[] {
-    if (!str) return [];
+export function split_top_OLD($str: string, $separator: string): string[] {
+    if (!$str) return [];
     const results: string[] = [];
     let buffer = '';
     let D = { square: 0, angle: 0, hsonTag: 0, hsonList: 0 }; // Depths
     let inString: '"' | "'" | null = null;
     let escapeNextChar = false;
 
-    for (let i = 0; i < str.length; i++) {
-        const char = str[i];
+    for (let i = 0; i < $str.length; i++) {
+        const char = $str[i];
         buffer += char;
 
         if (escapeNextChar) { escapeNextChar = false; continue; }
@@ -38,16 +38,16 @@ export function splitTopLevel(str: string, separator: string): string[] {
         else if (char === '>') D.hsonTag = Math.max(0, D.hsonTag - 1);
         else if (char === '#') {
             /* obsolete; remove when you feel like it */
-            if (!(i > 0 && str[i - 1] === '/')) { 
+            if (!(i > 0 && $str[i - 1] === '/')) { 
                 D.hsonList++;
             }
         } else if (char === '/') {
-            if (i + 1 < str.length && str[i + 1] === '#') { 
+            if (i + 1 < $str.length && $str[i + 1] === '#') { 
                 D.hsonList = Math.max(0, D.hsonList - 1);
             }
         }
 
-        if (char === separator &&
+        if (char === $separator &&
             D.square === 0 && D.angle === 0 &&
             D.hsonTag === 0 && D.hsonList === 0 &&
             !inString) {
@@ -55,9 +55,9 @@ export function splitTopLevel(str: string, separator: string): string[] {
             buffer = '';
         }
     }
-    if (buffer || (results.length === 0 && str.length > 0)) results.push(buffer.trim());
+    if (buffer || (results.length === 0 && $str.length > 0)) results.push(buffer.trim());
 
     /* filter to keep intentional empty strings if needed, otherwise should filter all */
-    if (str === "") return [];
+    if ($str === "") return [];
     return results.filter(item => item !== "");
 }

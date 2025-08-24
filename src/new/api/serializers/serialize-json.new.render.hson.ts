@@ -5,7 +5,7 @@ import { make_string } from "../../../utils/make-string.utils.hson"
 import {_throw_transform_err} from "../../../utils/throw-transform-err.utils.hson"
 import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG, ELEM_TAG, INDEX_TAG } from "../../../types-consts/constants.hson";
 import { Primitive } from "../../../core/types-consts/core.types.hson";
-import { HsonNode_NEW, JsonType_NEW, JsonObj_NEW } from "../../types-consts/new.types.hson";
+import { HsonNode_NEW, JsonType_NEW, JsonObj_NEW } from "../../types-consts/node.new.types.hson";
 import { is_indexed_NEW } from "../../utils/node-guards.new.utils.hson";
 
 

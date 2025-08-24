@@ -1,6 +1,6 @@
 // emit-tag-open.hson.utils.ts
 
-import { HsonNode_NEW } from "../new/types-consts/new.types.hson";
+import { HsonNode_NEW } from "../new/types-consts/node.new.types.hson";
 import { build_wire_attrs } from "./build-wire-path.utils.hson";
 import { escape_attrs } from "./escape_attrs.utils.hson";
 

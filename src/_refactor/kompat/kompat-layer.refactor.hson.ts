@@ -1,7 +1,7 @@
 // kompat-layer.refactor.hson.ts
 
 import { Primitive } from '../../core/types-consts/core.types.hson';
-import {HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW, NodeContent_NEW} from '../../new/types-consts/new.types.hson'
+import {HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW, NodeContent_NEW} from '../../new/types-consts/node.new.types.hson'
 import { HsonFlags, HsonNode, HsonMeta, NodeContent } from '../../types-consts/node.types.hson';
 import { serialize_css } from '../../utils/serialize-css.utils.hson';
 

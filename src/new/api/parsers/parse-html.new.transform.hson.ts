@@ -14,7 +14,7 @@ import { parse_html_attrs } from "../../../utils/parse_html_attrs.utils.hson";
 import { snip_long_string } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
-import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/new.types.hson";
+import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types.hson";
 import { is_indexed_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
 
 /* debug log */

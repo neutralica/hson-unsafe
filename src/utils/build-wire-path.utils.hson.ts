@@ -1,4 +1,4 @@
-import { HsonNode_NEW } from "../new/types-consts/new.types.hson";
+import { HsonNode_NEW } from "../new/types-consts/node.new.types.hson";
 import { INDEX_TAG } from "../types-consts/constants.hson";
 import { stringify_style } from "./stringify-style";
 

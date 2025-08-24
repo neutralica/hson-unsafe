@@ -10,6 +10,7 @@ import { graft } from "../tree/graft.tree.hson.js";
 import { LiveTree } from "../tree/live-tree-class.tree.hson.js";
 import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
+import { parse_hson } from "../parsers/parse-hson.transform.hson.js";
 
 /**
  * factory function that builds the entry-point for the liveTree pipeline
@@ -32,8 +33,8 @@ export function construct_tree(
   return {
     /* methods for creating detached branches from data */
 
-    fromHTML($htmlString: string): BranchConstructor {
-      const cleanHtml = $options.unsafe ? $htmlString : sanitize_html($htmlString);
+    fromHTML($html: string): BranchConstructor {
+      const cleanHtml = $options.unsafe ? $html : sanitize_html($html);
       const rootNode = parse_html(cleanHtml);
       const branch = createBranch(rootNode);
       return {
@@ -50,10 +51,10 @@ export function construct_tree(
     },
 
 
-    fromHSON(hsonString: string): BranchConstructor {
+    fromHSON($hson: string): BranchConstructor {
       // assumes you have tokenize_hson and parse_tokens available
-      const tokens = tokenize_hson(hsonString);
-      const rootNode = parse_tokens(tokens);
+      const tokens = tokenize_hson($hson);
+      const rootNode = parse_hson($hson);
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,

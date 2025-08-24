@@ -2,11 +2,12 @@
 
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Primitive, is_not_string } from "../../../core/utils/guards.core.utils.hson";
-import { NEW_NODE, ROOT_TAG, OBJECT_TAG, BLANK_META, TokenΔ, ARRAY_TAG, ELEM_TAG, VSN_TAGS, INDEX_TAG, VSNTag, VAL_TAG, STRING_TAG } from "../../../types-consts/constants.hson";
-import { HsonNode } from "../../../types-consts/node.types.hson";
-import { AllTokens } from "../../../types-consts/tokens.types.hson";
+import { OBJECT_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
+import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { Tokens_NEW } from "../../types-consts/tokens.new.types.hson";
 
 /* debug log */
 const _VERBOSE = false;
@@ -22,16 +23,16 @@ const $log = _VERBOSE
  * the final data tree, correctly handling open, close, and self-closing tokens.
  *
  * @param {AllTokens[]} $tokens - an array of token objects produced by the `tokenize_hson` function.
- * @returns {HsonNode} the fully constructed, hierarchical root hsonnode.
+ * @returns {HsonNode_NEW} the fully constructed, hierarchical root hsonnode.
  */
 
-export function parse_tokens($tokens: AllTokens[]): HsonNode {
-    const nodeStack: HsonNode[] = [];
-    let finalNode: HsonNode | null = null;
+export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
+    const nodeStack: HsonNode_NEW[] = [];
+    let finalNode: HsonNode_NEW | null = null;
 
     if (!$tokens || $tokens.length === 0) {
         _throw_transform_err("token_to_node received no tokens", 'parse_tokens', $tokens);
-        return NEW_NODE({ _tag: ROOT_TAG, _content: [NEW_NODE({ _tag: OBJECT_TAG, _content: [], _meta: BLANK_META })], _meta: BLANK_META });
+        return NEW_NEW_NODE({ _tag: ROOT_TAG, _content: [NEW_NEW_NODE({ _tag: OBJECT_TAG, _content: [] })] });
     }
     if (_VERBOSE) {
         console.log('---> parsing tokens');
@@ -64,7 +65,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 */
 
 
-                const newNode = NEW_NODE({
+                const newNode = NEW_NEW_NODE({
                     _tag: currentToken.tag!,
                     _content: [],
                     _meta: { attrs: currentToken.attrs ?? {}, flags: currentToken.flags ?? [] }
@@ -82,14 +83,14 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                         ) {
                             /* standard tag (e.g. `<key` ) containing an item in an array */
                             $log(`[token_to_node OPEN for ARRAY item] <${newNode._tag}> is prop of new _obj`);
-                            iiContent = NEW_NODE({
+                            iiContent = NEW_NEW_NODE({
                                 _tag: OBJECT_TAG,
                                 _content: [newNode],
                             });
                             nodeStack.push(iiContent); /* push _obj, parent tag will be pushed after */
                         }
 
-                        const index_node = NEW_NODE({
+                        const index_node = NEW_NEW_NODE({
                             _tag: INDEX_TAG, /* (_ii node) */
                             _content: [iiContent],
                             _meta: { attrs: { "data-index": currentParent._content!.length.toString() }, flags: [] }
@@ -122,7 +123,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                     _throw_transform_err(`[token_to_node] OBJ_OPEN token with unexpected tag: ${currentToken.tag}`, 'parse_tokens', $tokens);
                 }
 
-                const newObj = NEW_NODE({
+                const newObj = NEW_NEW_NODE({
                     _tag: OBJECT_TAG, /* (_obj node) */
                     _content: [],
                 });
@@ -140,7 +141,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                             flags: []
                         };
 
-                        const newIi = NEW_NODE({
+                        const newIi = NEW_NEW_NODE({
                             _tag: INDEX_TAG,
                             _content: [newObj],
                             _meta: dataIx
@@ -167,7 +168,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
 
                 }
 
-                const elemNode = NEW_NODE({
+                const elemNode = NEW_NEW_NODE({
                     _tag: ELEM_TAG,
                     _content: [],
                 });
@@ -185,14 +186,14 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                     _throw_transform_err(`[token_to_node] ARRAY_OPEN token with unexpected tag: ${currentToken.tag}`, 'parse_tokens', $tokens);
                 }
 
-                const arrayNode = NEW_NODE({
+                const arrayNode = NEW_NEW_NODE({
                     _tag: ARRAY_TAG,
                     _content: [],
                 });
 
                 if (currentParent) {
                     if (currentParent._tag === ARRAY_TAG) { /* nested _array as an _array item */
-                        const newIi = NEW_NODE({ _tag: INDEX_TAG, _content: [arrayNode], _meta: { attrs: { "data-index": currentParent._content!.length.toString() }, flags: [] } });
+                        const newIi = NEW_NEW_NODE({ _tag: INDEX_TAG, _content: [arrayNode], _meta: { attrs: { "data-index": currentParent._content!.length.toString() }, flags: [] } });
                         currentParent._content!.push(newIi);
                     } else if (currentParent._tag === ELEM_TAG) { /* v unlikely to occur */
                         console.warn('curious--I don`t think we should be reaching this?');
@@ -251,8 +252,8 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 }
 
                 /* pop stack, get collect children directly into content */
-                const children: HsonNode[] = Array.isArray(closingNode._content)
-                    ? closingNode._content as HsonNode[]
+                const children: HsonNode_NEW[] = Array.isArray(closingNode._content)
+                    ? closingNode._content as HsonNode_NEW[]
                     : [];
 
 
@@ -269,7 +270,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                         closingNode._content = [children[0]];
                     } else {
                         $log(`[token_to_node CLOSE] standard tag ${closingNode._tag}> content was not a recognized VSN; defaulting to _obj.`);
-                        const objVSN = NEW_NODE({
+                        const objVSN = NEW_NEW_NODE({
                             _tag: OBJECT_TAG,
                             _content: children,
                         });
@@ -289,7 +290,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 $log(`[token_to_node SELF] processing SELF token: <${token.tag}>`);
 
                 /*  determine the content VSN based on token.content */
-                let selfVSN: HsonNode[] | undefined = undefined;
+                let selfVSN: HsonNode_NEW[] | undefined = undefined;
                 let primValue: Primitive | undefined = undefined;
                 let has_content = false;
                 if (parent?._tag !== ELEM_TAG && parent?._tag !== OBJECT_TAG) {
@@ -329,18 +330,18 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 if (has_content && primValue !== undefined) {
                     /* if valid primitive content -> create #text VSN */
                     const tag = (is_not_string(primValue)) ? VAL_TAG : STRING_TAG;
-                    selfVSN = [NEW_NODE({
+                    selfVSN = [NEW_NEW_NODE({
                         _tag: tag,
                         _content: [primValue], /* (all content is always in an array) */
                     })];
                 }
-                const VsnWrapper = selfVSN ? [NEW_NODE({
+                const VsnWrapper = selfVSN ? [NEW_NEW_NODE({
                     _tag: parent?._tag,
                     _content: [...selfVSN]
                 })] : []
 
                 /*  2. create node for the SELF tag */
-                const selfNode = NEW_NODE({
+                const selfNode = NEW_NEW_NODE({
                     _tag: token.tag,
                     _content: VsnWrapper, /*  [] if no content */
                     _meta: {
@@ -352,7 +353,7 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                     let childNode = selfNode;
                     if (currentParent._tag === ARRAY_TAG) {
                         $log(`[token_to_node SELF] parent is √ array; wrapping <${selfNode._tag}> in <_ii>`);
-                        childNode = NEW_NODE({
+                        childNode = NEW_NEW_NODE({
                             _tag: INDEX_TAG,
                             _content: [selfNode],
                             _meta: { attrs: { "data-index": currentParent._content.length.toString() }, flags: [] }
@@ -411,12 +412,12 @@ export function parse_tokens($tokens: AllTokens[]): HsonNode {
                 if (primitiveValue !== undefined) {
                     /* create value node (_text or _val VSN) */
                     const tag = (is_not_string(primitiveValue)) ? VAL_TAG : STRING_TAG
-                    const content_node = NEW_NODE({ _tag: tag, _content: [primitiveValue] }); /* node._content is array! */
+                    const content_node = NEW_NEW_NODE({ _tag: tag, _content: [primitiveValue] }); /* node._content is array! */
                     const currentParent = nodeStack[nodeStack.length - 1];
                     let finalNode = content_node;
 
                     if (currentParent._tag === ARRAY_TAG) {
-                        finalNode = NEW_NODE({
+                        finalNode = NEW_NEW_NODE({
                             _tag: INDEX_TAG, _content: [content_node], _meta: {
                                 attrs: { "data-index": currentParent._content.length.toString() }, flags: []
                             }

@@ -46,11 +46,16 @@ export const ARRAY_TAG = '_array' as const;
 export const ELEM_TAG = '_elem' as const;
 
 
-/* these are important; keep */
+/**
+ * defines all VSNs *except* <_root>
+ **/
 export const VSN_TAGS: string[] = [
   INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG,
 ] as const;
 
+/**
+ * defines all VSNs *including* <_root>
+ **/
 export const EVERY_VSN: string[] = [
   INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG, ROOT_TAG,
 ] as const;

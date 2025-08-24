@@ -1,6 +1,6 @@
 // parse_html_attrs.utils.hson.ts
 
-import { HsonAttrs_NEW, HsonMeta_NEW } from "../new/types-consts/new.types.hson";
+import { HsonAttrs_NEW, HsonMeta_NEW } from "../new/types-consts/node.new.types.hson";
 import { parse_css_attrs } from "./parse-css.utils.hson";
 
 

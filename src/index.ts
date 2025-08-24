@@ -4,7 +4,7 @@
 export * from './hson';
 
 export { HsonNode, HsonAttrs, HsonMeta } from './types-consts/node.types.hson';
-export { HsonNode_NEW, HsonAttrs_NEW, HsonMeta_NEW } from './new/types-consts/new.types.hson';
+export { HsonNode_NEW, HsonAttrs_NEW, HsonMeta_NEW } from './new/types-consts/node.new.types.hson';
 export { Primitive, BasicValue } from './core/types-consts/core.types.hson';
 
 

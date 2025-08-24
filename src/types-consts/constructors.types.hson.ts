@@ -10,7 +10,6 @@ export type ProxyBackdoor = { _withNodes: HsonNode; [key: string]: any; };
 export interface FrameConstructor {
     input: string | Element;
     node: HsonNode;
-    tokens?: AllTokens[];
     hson?: string;
     html?: string;
     json?: JsonType | string;
