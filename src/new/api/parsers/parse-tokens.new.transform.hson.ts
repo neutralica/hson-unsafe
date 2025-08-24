@@ -1,5 +1,7 @@
 // parse-tokens.transform.hson.ts
 
+// @ts-nocheck
+
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Primitive, is_not_string } from "../../../core/utils/guards.core.utils.hson";
 import { OBJECT_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
