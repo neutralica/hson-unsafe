@@ -3,7 +3,7 @@
 import { is_indexed } from "../../../utils/node-guards.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson"
 import {_throw_transform_err} from "../../../utils/throw-transform-err.utils.hson"
-import { ROOT_TAG, ARRAY_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG, ELEM_TAG, INDEX_TAG } from "../../../types-consts/constants.hson";
+import { ROOT_TAG, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../../types-consts/constants.hson";
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { HsonNode_NEW, JsonType_NEW, JsonObj_NEW } from "../../types-consts/node.new.types.hson";
 import { is_indexed_NEW } from "../../utils/node-guards.new.utils.hson";
@@ -71,7 +71,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             return jsonFromNode($node._content[0] as HsonNode_NEW);
         }
 
-        case ARRAY_TAG: {
+        case ARR_TAG: {
             _log(`  <_array> tag reached: creating JSON array`);
             _log(make_string($node));
             let array: JsonType_NEW[] = [];
@@ -88,12 +88,12 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             return array;
         }
 
-        case OBJECT_TAG: {
+        case OBJ_TAG: {
             const jsonObj: JsonObj_NEW = {};
             if ($node._content && $node._content.length === 1) {
                 const only = $node._content[0] as HsonNode_NEW;
                 // unwrap primitive/array/object/elem wrappers produced by the parser
-                if (only._tag === STRING_TAG || only._tag === VAL_TAG || only._tag === ARRAY_TAG || only._tag === OBJECT_TAG || only._tag === ELEM_TAG) {
+                if (only._tag === STR_TAG || only._tag === VAL_TAG || only._tag === ARR_TAG || only._tag === OBJ_TAG || only._tag === ELEM_TAG) {
                     return jsonFromNode(only); // <- avoids calling with a primitive later
                 }
             }
@@ -113,7 +113,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
         }
 
 
-        case STRING_TAG:
+        case STR_TAG:
         case VAL_TAG: {
             /* return Primitive content directly */
             _log(`  <_prim>: returning number value: ${$node._content[0]}`);
@@ -136,7 +136,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             _log('returning list items:', elemItems)
             return { [ELEM_TAG]: elemItems };
         }
-        case INDEX_TAG: {
+        case II_TAG: {
             if (!$node._content || $node._content.length !== 1) {
                 _throw_transform_err('misconfigured _ii node', 'serialize_json', $node);
             }

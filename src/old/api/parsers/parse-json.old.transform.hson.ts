@@ -1,6 +1,6 @@
 // parse-json.transform.hson.ts
 
-import { VAL_TAG, STRING_TAG, ARRAY_TAG, OBJECT_TAG, NEW_NODE, INDEX_TAG, ELEM_TAG, ROOT_TAG, BLANK_META } from "../../../types-consts/constants.hson";
+import { VAL_TAG, STR_TAG, ARR_TAG, OBJ_TAG, NEW_NODE, II_TAG, ELEM_TAG, ROOT_TAG, BLANK_META } from "../../../types-consts/constants.hson";
 import {  JsonObj, Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_not_string, is_Primitive, is_Object } from "../../../core/utils/guards.core.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
@@ -20,13 +20,13 @@ const _log = _VERBOSE
 function getTag($value: JsonType_OLD): string {
     if (is_not_string($value)) return VAL_TAG;
     if (is_Primitive($value)) {
-        return STRING_TAG;
+        return STR_TAG;
     }
     if (Array.isArray($value)) {
-        return ARRAY_TAG;
+        return ARR_TAG;
     }
     if ((typeof $value === 'object') && $value !== null) {
-        return OBJECT_TAG;
+        return OBJ_TAG;
     }
     _throw_transform_err('invalid value provided', 'getTag', $value);
 }
@@ -54,7 +54,7 @@ function nodeFromJson(
 ): { node: HsonNode } {
 
     /* catch BasicValue nodes */
-    if ($parentTag === STRING_TAG || $parentTag === VAL_TAG) {
+    if ($parentTag === STR_TAG || $parentTag === VAL_TAG) {
         if (!is_Primitive($srcJson)) {
             _throw_transform_err('values must be string, bool, number, or null', 'parse_json', $srcJson);
         }
@@ -67,7 +67,7 @@ function nodeFromJson(
             };
         } else {
             const node = NEW_NODE({
-                _tag: STRING_TAG,
+                _tag: STR_TAG,
                 _content: [$srcJson as Primitive],
             });
             return { node };
@@ -75,7 +75,7 @@ function nodeFromJson(
     }
 
     /*  arrays -> _array VSN */
-    if ($parentTag === ARRAY_TAG) {
+    if ($parentTag === ARR_TAG) {
         const array = $srcJson as JsonType_OLD[];
         const items: HsonNode[] = array.map((val, ix) => {
             const itemStructuralTag = getTag(val);
@@ -84,21 +84,21 @@ function nodeFromJson(
             let dataIx: HsonMeta = { attrs: { "data-index": String(ix) }, flags: [] };
 
             return NEW_NODE({
-                _tag: INDEX_TAG, /* <_ii> wrapper */
+                _tag: II_TAG, /* <_ii> wrapper */
                 _content: [itemConversion.node], /* the item itself */
                 _meta: dataIx
             });
         });
         return {
             node: NEW_NODE({
-                _tag: ARRAY_TAG,
+                _tag: ARR_TAG,
                 _content: items,
             }),
         };
     }
 
     /* catch objects */
-    if ($parentTag === OBJECT_TAG) {
+    if ($parentTag === OBJ_TAG) {
         const jsonObj = $srcJson as JsonObj_OLD;
         let objMeta: HsonMeta | undefined = undefined;
 
@@ -119,7 +119,7 @@ function nodeFromJson(
             if (Array.isArray(listContent)) {
                 const contentNodes: HsonNode[] = listContent.map(item => {
                     const recursedItem = nodeFromJson(item as JsonType_OLD, getTag(item as JsonType_OLD));
-                    if (recursedItem.node._tag === OBJECT_TAG && recursedItem.node._content.length === 1) {
+                    if (recursedItem.node._tag === OBJ_TAG && recursedItem.node._content.length === 1) {
                         const singleProperty = recursedItem.node._content[0] as HsonNode;
                         singleProperty._meta = {
                             attrs: { ...singleProperty._meta.attrs || {} },
@@ -157,11 +157,11 @@ function nodeFromJson(
 
                 let finalNode = NEW_NODE();
                 /* check for BasicValue node */
-                if (recursedProps.node._tag === STRING_TAG || recursedProps.node._tag === VAL_TAG) {
+                if (recursedProps.node._tag === STR_TAG || recursedProps.node._tag === VAL_TAG) {
                     /* wrap it in an _obj VSN */
                     if (recursedProps.node._content)
                         finalNode = NEW_NODE({
-                            _tag: OBJECT_TAG,
+                            _tag: OBJ_TAG,
                             _content: [recursedProps.node],
                         });
                 } else {
@@ -181,7 +181,7 @@ function nodeFromJson(
             /* wrap in _obj VSN & return */
             return {
                 node: NEW_NODE({
-                    _tag: OBJECT_TAG,
+                    _tag: OBJ_TAG,
                     _content: propertyNodes,
                 })
             };

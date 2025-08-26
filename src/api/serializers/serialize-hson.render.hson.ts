@@ -1,7 +1,7 @@
 // --- serialize-hson.hson.render.ts ---
 
 import { Primitive } from "../../core/types-consts/core.types.hson.js";
-import { STRING_TAG, VAL_TAG, INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, _FALSE } from "../../types-consts/constants.hson.js";
+import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ELEM_TAG, OBJ_TAG, _FALSE } from "../../types-consts/constants.hson.js";
 import { format_hson_attrs } from "../../utils/format-hson-attrs.utils.hson.js";
 import { get_self_close_value } from "../../utils/get-self-value.utils.hson.js";
 import { is_Primitive, is_void  } from "../../core/utils/guards.core.utils.hson.js";
@@ -50,14 +50,14 @@ function getIndent($level: number): string {
  *
  * @param {HsonNode} $input - the node or primitive value to serialize.
  * @param {number} $indent_level - the current indentation level for pretty-printing.
- * @param {typeof ELEM_TAG | typeof OBJECT_TAG} [$vsn] - the vsn context provided by the parent node, used to determine the correct closer for one-liners.
+ * @param {typeof ELEM_TAG | typeof OBJ_TAG} [$vsn] - the vsn context provided by the parent node, used to determine the correct closer for one-liners.
  * @returns {string} the formatted hson string representation of the node.
  */
 
 function hsonFromNode(
     $input: HsonNode | Primitive,
     $indent_level: number,
-    $vsn?: typeof ELEM_TAG | typeof OBJECT_TAG,
+    $vsn?: typeof ELEM_TAG | typeof OBJ_TAG,
 ): string {
     const currentIndent = getIndent($indent_level);
 
@@ -90,7 +90,7 @@ function hsonFromNode(
     const meta_string = formatHsonMeta({ attrs, flags }); // Your helper
 
     /*  2. disappear VSNs */
-    if (tag === STRING_TAG || tag === VAL_TAG) {
+    if (tag === STR_TAG || tag === VAL_TAG) {
         if (content.length !== 1 || !is_Primitive(content[0])) {
             _throw_transform_err('_str or _val nodes must have 1 and only 1 hson  in content', 'serialize-hson', node);
         }
@@ -98,7 +98,7 @@ function hsonFromNode(
         const value = currentIndent + make_string(content[0])
         return value;
     }
-    if (tag === INDEX_TAG) {
+    if (tag === II_TAG) {
         if (content.length !== 1) { _throw_transform_err('_ii nodes must have 1 & only 1 child', 'serialize-hson', node); }
         if (!is_Node(content[0])) {
             _throw_transform_err('index tag contents are not nodes', 'serialize-hson', content)
@@ -108,7 +108,7 @@ function hsonFromNode(
     }
 
     /* --- 3. container VSNs --- */
-    if (tag === ARRAY_TAG) {
+    if (tag === ARR_TAG) {
         if (content.length === 0) {
             return `«»`;
         }
@@ -135,7 +135,7 @@ function hsonFromNode(
 
     /* 2. check for a VSN to not-include */
     const firstChild = content?.[0] as HsonNode | undefined;
-    const shouldMelt = content.length === 1 && firstChild && (firstChild._tag === ELEM_TAG || firstChild._tag === OBJECT_TAG);
+    const shouldMelt = content.length === 1 && firstChild && (firstChild._tag === ELEM_TAG || firstChild._tag === OBJ_TAG);
 
     if (shouldMelt) {
         /* if found the content content and context come from that child */
@@ -146,15 +146,15 @@ function hsonFromNode(
     /* 3. derive the closer and context */
     const closer = (parentTag === ELEM_TAG) ? '/>' : '>';
     const childVsn = parentTag;
-    let finalVsn: typeof ELEM_TAG | typeof OBJECT_TAG = OBJECT_TAG;
-    if (childVsn === ELEM_TAG || childVsn === OBJECT_TAG) {
+    let finalVsn: typeof ELEM_TAG | typeof OBJ_TAG = OBJ_TAG;
+    if (childVsn === ELEM_TAG || childVsn === OBJ_TAG) {
         finalVsn = childVsn;
     }
 
     const processedNodes = actualContent
         .map(child => hsonFromNode(child, $indent_level + 1, finalVsn)) // Pass context here
         .join('\n');
-    const finalTag = tag === OBJECT_TAG ? '' : tag;
+    const finalTag = tag === OBJ_TAG ? '' : tag;
     return `${currentIndent}<${finalTag}${meta_string}\n${processedNodes}\n${currentIndent}${closer}`;
 }
 

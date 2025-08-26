@@ -1,7 +1,7 @@
 // parse_html_attrs.utils.hson.ts
 
 import { HsonAttrs_NEW, HsonMeta_NEW } from "../new/types-consts/node.new.types.hson";
-import { parse_css_attrs } from "./parse-css.utils.hson";
+import { parse_style } from "./parse-css.utils.hson";
 
 
 /* NEW: collect attrs + meta from an Element */
@@ -31,7 +31,7 @@ export function parse_html_attrs($el: Element): {
     // 2) style → structured object (your rule: parse to object in-memory)
     if (n === "style") {
       // parse_css_attrs returns {} | Record<string,string>
-      (attrs as any).style = parse_css_attrs(v);
+      (attrs as any).style = parse_style(v);
       continue;
     }
 

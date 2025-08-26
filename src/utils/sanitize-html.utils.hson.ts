@@ -1,7 +1,7 @@
 // sanitize-html.util.hson.ts
 
 import  DOMPurify from "dompurify";
-import { _ERROR, _FALSE, ARRAY_TAG, ELEM_OBJ, ELEM_TAG, INDEX_TAG, OBJECT_TAG, VAL_TAG, ROOT_TAG, STRING_TAG } from "../types-consts/constants.hson";
+import { _ERROR, _FALSE, ARR_TAG, ELEM_OBJ, ELEM_TAG, II_TAG, OBJ_TAG, VAL_TAG, ROOT_TAG, STR_TAG } from "../types-consts/constants.hson";
 
 /**
  * sanitizes html strings to prevent potential cross-site scripting (XSS) attacks
@@ -21,8 +21,8 @@ export function sanitize_html($input: string | Element): string {
 
       // 2. Provide a list of all your custom tags to add to the "allow list".
       ADD_TAGS: [ROOT_TAG, ELEM_TAG,
-         OBJECT_TAG, ARRAY_TAG,
-         INDEX_TAG, _FALSE, _ERROR,
-         VAL_TAG, STRING_TAG, ROOT_TAG]
+         OBJ_TAG, ARR_TAG,
+         II_TAG, _FALSE, _ERROR,
+         VAL_TAG, STR_TAG, ROOT_TAG]
    });
 }

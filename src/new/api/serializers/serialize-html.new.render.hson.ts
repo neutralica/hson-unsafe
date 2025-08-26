@@ -1,6 +1,6 @@
 import { Primitive } from '../../../core/types-consts/core.types.hson'
 import { is_Primitive } from '../../../core/utils/guards.core.utils.hson';
-import { BLANK_META, ELEM_TAG, STRING_TAG } from '../../../types-consts/constants.hson';
+import { BLANK_META, ELEM_TAG, STR_TAG } from '../../../types-consts/constants.hson';
 import { build_wire_attrs } from '../../../utils/build-wire-path.utils.hson';
 import { escape_html } from '../../../utils/escape-html.utils.hson';
 import { make_string } from '../../../utils/make-string.utils.hson';
@@ -96,7 +96,7 @@ export function serialize_xml(node: HsonNode_NEW | Primitive | undefined): strin
           Primitives need to retain their types; wrap in _val as a flag. this _val VSN
           will be visible in the html, unlike _str
         */
-    case STRING_TAG: {
+    case STR_TAG: {
       _log('string tag found; flattening')
       if (typeof content[0] !== 'string') {
         _throw_transform_err('need a primitive in a txt node!', 'serialize_html', content);

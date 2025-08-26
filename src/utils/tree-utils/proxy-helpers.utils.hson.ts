@@ -1,7 +1,7 @@
 // proxy-helpers.tree.hson.ts
 
 import { Primitive } from "../../core/types-consts/core.types.hson";
-import { ELEM_TAG, STRING_TAG, NEW_NODE, NODE_ELEMENT_MAP, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
+import { ELEM_TAG, STR_TAG, NEW_NODE, NODE_ELEMENT_MAP, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
 import { HsonNode } from "../../types-consts/node.types.hson";
 import { is_Node } from "../node-guards.utils.hson";
 
@@ -42,7 +42,7 @@ export function update_content(nodeToUpdate: HsonNode, value: Primitive): void {
     if (!hsonContainer) return; 
 
     let hsonTextNode = hsonContainer._content.find(
-        (c): c is HsonNode => is_Node(c) && c._tag === STRING_TAG
+        (c): c is HsonNode => is_Node(c) && c._tag === STR_TAG
     );
 
     /* step 1: update hson model (always) */
@@ -51,7 +51,7 @@ export function update_content(nodeToUpdate: HsonNode, value: Primitive): void {
         hsonTextNode._content[0] = value;
     } else {
         /* no text node exists; create one and prepend it */
-        hsonTextNode = NEW_NODE({_tag: STRING_TAG, _content: [value]});
+        hsonTextNode = NEW_NODE({_tag: STR_TAG, _content: [value]});
         hsonContainer._content.unshift(hsonTextNode);
     }
 
@@ -98,7 +98,7 @@ export function is_selfClosing($node: HsonNode): boolean {
 
     /* the single child must be a STRING_TAG or PRIM_TAG */
     const singleChild = container._content[0];
-    return is_Node(singleChild) && (singleChild._tag === STRING_TAG || singleChild._tag === VAL_TAG)
+    return is_Node(singleChild) && (singleChild._tag === STR_TAG || singleChild._tag === VAL_TAG)
 }
 
 /**
@@ -120,7 +120,7 @@ export function get_contentValue($node: HsonNode): Primitive | undefined {
     /* if there is exactly one child, and it's a BasicValue-carrying node, return its value */
     if (contentSource.length === 1) {
         const singleChild = contentSource[0];
-        if (is_Node(singleChild) && (singleChild._tag === STRING_TAG || singleChild._tag === VAL_TAG)) {
+        if (is_Node(singleChild) && (singleChild._tag === STR_TAG || singleChild._tag === VAL_TAG)) {
             return singleChild._content[0] as Primitive;
         }
     }

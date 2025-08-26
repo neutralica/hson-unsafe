@@ -6,6 +6,7 @@ import { parse_hson_NEW } from "../../new/api/parsers/parse_hson.new.transform.h
 import { parse_hson_OLD } from "../../old/api/parsers/parse-hson.old.transform.hson";
 import { HsonNode } from "../../types-consts/node.types.hson";
 import { clone_node } from "../../utils/clone-node.utils.hson";
+import { make_string } from "../../utils/make-string.utils.hson";
 
 
 export function parse_hson($str: string): HsonNode {
@@ -21,9 +22,9 @@ export function parse_hson($str: string): HsonNode {
       const a = clone_node(oldNode);
       const b = clone_node(newNodeOld);
 
-      console.groupCollapsed('SHADOW_ENABLED - test results:');
-      console.log(a);
-      console.log(b);
+      console.groupCollapsed('HSON tests - SHADOW_ENABLED - test results:');
+      console.log(make_string(a));
+      console.log(make_string(b));
       console.groupEnd();
       if (!equal_old_nodes(a, b)) {
         const diffs = diff_old_nodes(a, b, 10);

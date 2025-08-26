@@ -1,6 +1,6 @@
 // append.tree.hson.ts
 
-import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../../types-consts/constants.hson.js";
+import { ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STR_TAG } from "../../../types-consts/constants.hson.js";
 import { HsonNode } from "../../../types-consts/node.types.hson.js";
 import { is_Node } from "../../../utils/node-guards.utils.hson.js";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson.js";
@@ -21,7 +21,7 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
     
     let nodesToAppend: HsonNode[];
     if (typeof $content === 'string') {
-        nodesToAppend = [NEW_NODE({ _tag: STRING_TAG, _content: [$content] })];
+        nodesToAppend = [NEW_NODE({ _tag: STR_TAG, _content: [$content] })];
     } else if ($content instanceof LiveTree) {
         const sourceNodes = $content.sourceNode(true) as HsonNode[];
         // Use the new utility. It correctly handles the array and returns a flat array.

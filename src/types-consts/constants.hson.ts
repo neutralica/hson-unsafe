@@ -37,12 +37,12 @@ export type FALSE_TYPE = typeof _FALSE;
 export const _ERROR = '_error' as const;
 
 /* VSN tags & some common combinations */
-export const STRING_TAG = '_str' as const;
+export const STR_TAG = '_str' as const;
 export const VAL_TAG = '_val' as const;
 export const ROOT_TAG = '_root' as const;
-export const INDEX_TAG = '_ii' as const;
-export const OBJECT_TAG = '_obj' as const;
-export const ARRAY_TAG = '_array' as const;
+export const II_TAG = '_ii' as const;
+export const OBJ_TAG = '_obj' as const;
+export const ARR_TAG = '_array' as const;
 export const ELEM_TAG = '_elem' as const;
 
 
@@ -50,23 +50,23 @@ export const ELEM_TAG = '_elem' as const;
  * defines all VSNs *except* <_root>
  **/
 export const VSN_TAGS: string[] = [
-  INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG,
+  II_TAG, ARR_TAG, ELEM_TAG, OBJ_TAG, STR_TAG, VAL_TAG,
 ] as const;
 
 /**
  * defines all VSNs *including* <_root>
  **/
 export const EVERY_VSN: string[] = [
-  INDEX_TAG, ARRAY_TAG, ELEM_TAG, OBJECT_TAG, STRING_TAG, VAL_TAG, ROOT_TAG,
+  II_TAG, ARR_TAG, ELEM_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ROOT_TAG,
 ] as const;
 
 export type VSNTag = typeof VSN_TAGS[number];
 
 
-export const ELEM_OBJ_ARR = [ELEM_TAG, ARRAY_TAG, OBJECT_TAG] as string[];
-export const ELEM_OBJ = [ELEM_TAG, OBJECT_TAG];
+export const ELEM_OBJ_ARR = [ELEM_TAG, ARR_TAG, OBJ_TAG] as string[];
+export const ELEM_OBJ = [ELEM_TAG, OBJ_TAG];
 
-export type ElemObjType = typeof ELEM_TAG | typeof OBJECT_TAG;
+export type ElemObjType = typeof ELEM_TAG | typeof OBJ_TAG;
 export type ElemObjArrType = typeof ELEM_OBJ_ARR;;
 
 /* token types */

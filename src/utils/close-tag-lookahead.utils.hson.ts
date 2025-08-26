@@ -1,6 +1,6 @@
 // close-tag-lookahead.hson.util.ts
 
-import { ELEM_OBJ_ARR, ELEM_TAG, ElemObjType, OBJECT_TAG } from "../types-consts/constants.hson.js";
+import { ELEM_OBJ_ARR, ELEM_TAG, ElemObjType, OBJ_TAG } from "../types-consts/constants.hson.js";
 import { _throw_transform_err } from "./throw-transform-err.utils.hson.js";
 
 
@@ -49,7 +49,7 @@ export function close_tag_lookahead(
             }
             if (trimLine === ">") {
                 $log(`[closeTagLookahead] <${$openTag}> (L${$openIndex + 1}) closes with '>' at L${i + 1}; wrapper is _OBJ`);
-                return OBJECT_TAG;
+                return OBJ_TAG;
             }
             /* If it's not a closer for openedTagName at depth 0, it must be an opening tag
             for a child/item, or malformed HSON. */

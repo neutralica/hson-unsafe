@@ -9,6 +9,7 @@ import { toOLD } from "../../_refactor/kompat/kompat-layer.refactor.hson.js";
 import { clone_node } from "../../utils/clone-node.utils.hson.js";
 import { sanitize_for_xml } from "../../utils/html-filtration.utils.hson.js";
 import { bucket_diffs } from "../../_refactor/_refactor-utils/bucket-diffs.utils.hson.js";
+import { make_string } from "../../utils/make-string.utils.hson.js";
 
 /* stable entry: returns OLD; NEW is only used for parity checks */
 export function parse_html($src: string): HsonNode {
@@ -24,9 +25,9 @@ export function parse_html($src: string): HsonNode {
       const a = clone_node(oldNode);
       const b = clone_node(newNodeOld);
 
-      console.groupCollapsed('SHADOW_ENABLED - test results:');
-      console.log(a);
-      console.log(b);
+      console.groupCollapsed('HTML tests - SHADOW_ENABLED - test results:');
+      console.log(make_string(a));
+      console.log(make_string(b));
       console.groupEnd();
       if (!equal_old_nodes(a, b)) {
         const diffs = diff_old_nodes(a, b, 10);

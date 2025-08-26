@@ -1,7 +1,8 @@
 // kompat-layer.refactor.hson.ts
 
 import { Primitive } from '../../core/types-consts/core.types.hson';
-import {HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW, NodeContent_NEW} from '../../new/types-consts/node.new.types.hson'
+import { HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW, NodeContent_NEW } from '../../new/types-consts/node.new.types.hson'
+import { ARR_TAG, ELEM_TAG, OBJ_TAG } from '../../types-consts/constants.hson';
 import { HsonFlags, HsonNode, HsonMeta, NodeContent } from '../../types-consts/node.types.hson';
 import { serialize_css } from '../../utils/serialize-css.utils.hson';
 
@@ -55,7 +56,7 @@ export function toOLD(nodeNew: HsonNode_NEW): HsonNode {
   const { _tag, _content = [], _attrs, _meta } = nodeNew;
 
   /* 1) clone user attrs and extract boolean flags (key === "key") */
-  const attrsOld: Record<string, Primitive> = { ...( _attrs ?? {} ) };
+  const attrsOld: Record<string, Primitive> = { ...(_attrs ?? {}) };
   const flagsOld: string[] = [];
   for (const k of Object.keys(attrsOld)) {
     const v = attrsOld[k] as any;
@@ -72,9 +73,14 @@ export function toOLD(nodeNew: HsonNode_NEW): HsonNode {
   }
 
   /* 2) carry system meta; coerce to strings for stability */
-  const sys: Record<string, Primitive> = { ...( _meta ?? {} ) } as any;
-  if (sys["data-index"] != null) sys["data-index"] = String(sys["data-index"]);
-  if (sys["data-quid"]  != null) sys["data-quid"]  = String(sys["data-quid"]);
+  const sys: Record<string, Primitive> = { ...(_meta ?? {}) };
+  const metaOldAttrs = { ...attrsOld };
+  for (const [k, v] of Object.entries(sys)) {
+    if (k.startsWith('data-')) {
+      metaOldAttrs[k] = String(v); // put under _meta.attrs
+      delete sys[k];               // and remove from top-level
+    }
+  }
 
   const metaOld: HsonMeta = {
     ...sys,                // system keys live at top-level of _meta (OLD)
@@ -83,12 +89,39 @@ export function toOLD(nodeNew: HsonNode_NEW): HsonNode {
   };
 
   /* 3) recurse children */
-  const contentOld: NodeContent = _content.map(c =>
-    (c && typeof c === "object" && "_tag" in (c as any))
-      ? toOLD(c as HsonNode_NEW)
-      : (c as Primitive)
-  );
+  // const contentOld: NodeContent = _content.map(c =>
+  //   (c && typeof c === "object" && "_tag" in (c as any))
+  //     ? toOLD(c as HsonNode_NEW)
+  //     : (c as Primitive)
+  // );
 
+  const flattenSoleArray =
+    Array.isArray(_content) &&
+    _content.length === 1 &&
+    typeof _content[0] === "object" && _content[0] &&
+    "_tag" in _content[0] &&
+    (
+      (_content[0] as any)._tag === OBJ_TAG ||
+      (_content[0] as any)._tag === ELEM_TAG
+    ) &&
+    Array.isArray((_content[0] as any)._content) &&
+    (_content[0] as any)._content.length === 1 &&
+    typeof (_content[0] as any)._content[0] === "object" &&
+    (_content[0] as any)._content[0] &&
+    "_tag" in (_content[0] as any)._content[0] &&
+    ((_content[0] as any)._content[0] as any)._tag === ARR_TAG;
+
+  let contentOld: NodeContent;
+  if (flattenSoleArray) {
+    const arrNode = (_content[0] as any)._content[0] as HsonNode_NEW;
+    contentOld = [toOLD(arrNode)];     // present array directly under the tag in OLD
+  } else {
+    contentOld = _content.map(c =>
+      (c && typeof c === "object" && "_tag" in (c as any))
+        ? toOLD(c as HsonNode_NEW)
+        : (c as Primitive)
+    );
+  }
   /* 4) return exact OLD shape (no _attrs property on OLD) */
   return { _tag, _content: contentOld, _meta: metaOld } as HsonNode;
 }
@@ -105,7 +138,7 @@ function normalizeNEW(v: any): any {
   if (v && typeof v === 'object' && '_tag' in v) {
     const _tag = v._tag as string;
     const _attrs = sortObject(v._attrs ?? {});        /* treat undefined as {} */
-    const _meta  = sortObject(v._meta  ?? {});        /* treat undefined as {} */
+    const _meta = sortObject(v._meta ?? {});        /* treat undefined as {} */
     const raw = Array.isArray(v._content) ? v._content : [];
     const _content = raw.map(normalizeNEW);           /* recurse */
 

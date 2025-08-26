@@ -2,7 +2,7 @@
 
 import { Primitive } from "../../core/types-consts/core.types.hson";
 import { is_Primitive } from "../../core/utils/guards.core.utils.hson";
-import { STRING_TAG, VAL_TAG, INDEX_TAG, ROOT_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
+import { STR_TAG, VAL_TAG, II_TAG, ROOT_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
 import { HsonNode } from "../../types-consts/node.types.hson";
 import { is_Node } from "../node-guards.utils.hson";
 
@@ -20,7 +20,7 @@ export function strip_VSNs(node: HsonNode | Primitive | undefined): any {
         return undefined;
     }
     switch (node._tag) {
-        case STRING_TAG:
+        case STR_TAG:
         case VAL_TAG:
             return node._content[0];
     }
@@ -55,7 +55,7 @@ export function strip_VSNs(node: HsonNode | Primitive | undefined): any {
     }
 
     /* return only the content of index or root */
-    if (node._tag === INDEX_TAG || node._tag === ROOT_TAG) {
+    if (node._tag === II_TAG || node._tag === ROOT_TAG) {
         return contentArray;
     }
 

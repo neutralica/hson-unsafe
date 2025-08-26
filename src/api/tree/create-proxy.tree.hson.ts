@@ -1,5 +1,5 @@
 
-import { STRING_TAG, VAL_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG, BLANK_META, NODE_ELEMENT_MAP, VSN_TAGS } from "../../types-consts/constants.hson.js";
+import { STR_TAG, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG, BLANK_META, NODE_ELEMENT_MAP, VSN_TAGS } from "../../types-consts/constants.hson.js";
 import {  is_Primitive, is_Object } from "../../core/utils/guards.core.utils.hson.js";
 import { find_child_by_tag, find_index_of_tag, get_contentValue, update_content } from "../../utils/tree-utils/proxy-helpers.utils.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
@@ -50,7 +50,7 @@ export function create_proxy(targetNode: HsonNode): any {
             if (typeof propertyKey !== 'string') {
                 return Reflect.get(targetNode, propertyKey, receiver);
             }
-            if (targetNode._tag === STRING_TAG || targetNode._tag === VAL_TAG) {
+            if (targetNode._tag === STR_TAG || targetNode._tag === VAL_TAG) {
                 return targetNode._content[0];
             }
 

@@ -1,7 +1,7 @@
 // is-helpers.hson.util.ts
 
 import { is_Primitive } from "../core/utils/guards.core.utils.hson.js";
-import { INDEX_TAG, VAL_TAG, STRING_TAG } from "../types-consts/constants.hson.js";
+import { II_TAG, VAL_TAG, STR_TAG } from "../types-consts/constants.hson.js";
 import { HsonMeta, HsonNode } from "../types-consts/node.types.hson.js";
 
 
@@ -15,7 +15,7 @@ export function is_PRIM_or_STR_Node(node: HsonNode): boolean {
   return (
     node._content.length === 1 &&
     is_Primitive(node._content[0]) &&
-    (node._tag === STRING_TAG ||
+    (node._tag === STR_TAG ||
       node._tag === VAL_TAG)
   )
 }
@@ -23,7 +23,7 @@ export function is_PRIM_or_STR_Node(node: HsonNode): boolean {
 /* identifies _ii index tags in an _array */
 export function is_indexed(node: HsonNode): boolean {
   return (
-    node._tag === INDEX_TAG && node._content && node._content.length === 1
+    node._tag === II_TAG && node._content && node._content.length === 1
   )
 }
 

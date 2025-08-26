@@ -1,5 +1,5 @@
 import { HsonNode_NEW } from "../new/types-consts/node.new.types.hson";
-import { INDEX_TAG } from "../types-consts/constants.hson";
+import { II_TAG } from "../types-consts/constants.hson";
 import { stringify_style } from "./stringify-style";
 
 function is_vsn(tag: string) { return tag.startsWith("_"); }
@@ -27,7 +27,7 @@ export function build_wire_attrs(n: HsonNode_NEW): Record<string, string> {
     // data-quid allowed on standard tags (first-class) — include on wire
     if (!is_vsn(n._tag) && m["data-quid"] != null) out["data-_quid"] = String(m["data-quid"]);
     // data-index only on <_ii>
-    if (n._tag === INDEX_TAG && m["data-index"] != null) {
+    if (n._tag === II_TAG && m["data-index"] != null) {
       out["data-_index"] = String(m["data-index"]);
     }
   }

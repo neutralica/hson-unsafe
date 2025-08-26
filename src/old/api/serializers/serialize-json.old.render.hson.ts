@@ -1,7 +1,7 @@
 // serialize-json.render.hson.ts
 
 import { JsonType, JsonObj, Primitive } from "../../../core/types-consts/core.types.hson";
-import { ARRAY_TAG, ELEM_TAG, INDEX_TAG, OBJECT_TAG, ROOT_TAG, STRING_TAG, VAL_TAG } from "../../../types-consts/constants.hson";
+import { ARR_TAG, ELEM_TAG, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../../types-consts/constants.hson";
 import { HsonNode } from "../../../types-consts/node.types.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_indexed, is_Node } from "../../../utils/node-guards.utils.hson";
@@ -68,7 +68,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             return root;
         }
 
-        case ARRAY_TAG: {
+        case ARR_TAG: {
             _log(`  <_array> tag reached: creating JSON array`);
             _log(make_string($node));
             let array = [];
@@ -84,13 +84,13 @@ function jsonFromNode($node: HsonNode): JsonType {
             return array;
         }
 
-        case OBJECT_TAG: {
+        case OBJ_TAG: {
             /* check if _obj is just a wrapper around a primitive VSN */
             if ($node._content.length === 1) {
                 const childNode = $node._content[0] as HsonNode;
                 /* If the single child is a _val or _str, this _obj is just a wrapper.
                      unwrap the value directly and return the primitive, ignoring the VSN tags */
-                if (childNode._tag === VAL_TAG || childNode._tag === STRING_TAG) {
+                if (childNode._tag === VAL_TAG || childNode._tag === STR_TAG) {
                     _log(`  <_obj>: unwrapping simple ${typeof childNode._content[0]} value: `, make_string(childNode._content[0]));
                     return jsonFromNode(childNode);
                 }
@@ -127,7 +127,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             return $node._content[0] as Primitive;
         }
 
-        case STRING_TAG: {
+        case STR_TAG: {
             /* need to make sure that string_tag content is stringified; a number will be stored un-stringified
                 in a string node's content; it is still supposed to be stringified before serializing */
             _log(`  <_str>: returning string value: "${String($node._content[0])}"`);
@@ -152,7 +152,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             return { [ELEM_TAG]: elemItems };
         }
 
-        case INDEX_TAG: /* _ii nodes within an array */
+        case II_TAG: /* _ii nodes within an array */
             _log('node.tag is index tag');
             /*  these are _array content wrappers; their JSON form is the JSON form of their single content item */
             let iiContent: JsonType = {}

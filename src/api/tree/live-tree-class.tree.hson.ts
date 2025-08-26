@@ -1,7 +1,7 @@
 // live-tree-class.tree.hson.ts
 
 
-import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STRING_TAG } from "../../types-consts/constants.hson.js";
+import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STR_TAG } from "../../types-consts/constants.hson.js";
 import { parseSelector } from "../../utils/tree-utils/parse-selector.utils.hson.js";
 import { create_live_tree } from "./create-live-tree.tree.hson.js";
 import { DatasetManager } from "./tree-methods/dataset-manager.tree.hson.js";
@@ -121,7 +121,7 @@ export class LiveTree {
 
   setContent($content: string): this {
     for (const node of this.selectedNodes) {
-      const textNode = NEW_NODE({ _tag: STRING_TAG, _content: [$content] });
+      const textNode = NEW_NODE({ _tag: STR_TAG, _content: [$content] });
       node._content = [textNode];
 
       const liveElement = NODE_ELEMENT_MAP.get(node);

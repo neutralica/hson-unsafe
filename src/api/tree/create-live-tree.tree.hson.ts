@@ -1,5 +1,5 @@
 import { Primitive } from "../../core/types-consts/core.types.hson.js";
-import { STRING_TAG, BLANK_META, VSNTag, NODE_ELEMENT_MAP, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson.js";
+import { STR_TAG, BLANK_META, VSNTag, NODE_ELEMENT_MAP, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 import { is_Node } from "../../utils/node-guards.utils.hson.js";
 import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
@@ -21,7 +21,7 @@ export function create_live_tree($node: HsonNode | Primitive): Node {
     const graft = $node as HsonNode;
 
     /*  if the node is a primitive wrapper VSN, treat it like an unwrapped primitive */
-    if (graft._tag === STRING_TAG || graft._tag === VAL_TAG) {
+    if (graft._tag === STR_TAG || graft._tag === VAL_TAG) {
         const textNode = document.createTextNode(String(graft._content?.[0] ?? ''));
         return textNode;
     }

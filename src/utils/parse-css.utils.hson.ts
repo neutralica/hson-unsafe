@@ -7,7 +7,7 @@ import { _throw_transform_err } from "./throw-transform-err.utils.hson";
  * @param {string} $text - e.g., "color: blue; font-weight: bold;"
  * @returns {Record<string, string>} - e.g., { color: 'blue', fontWeight: 'bold' }
  */
-export function parse_css_attrs($text: string): string | Record<string, string> {
+export function parse_style($text: string): string | Record<string, string> {
   try {
     if (!$text) {
       console.warn('no text received');

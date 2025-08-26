@@ -49,7 +49,7 @@ export type TokenEnd_NEW = {
 
 export type TokenArrayOpen_NEW = {
   kind: typeof TOKEN_KIND.ARR_OPEN;
-  variant: ArraySymbol;          /* was: 'guillemet' | 'bracket' */
+  symbol: ArraySymbol;          /* was: 'guillemet' | 'bracket' */
   pos: Position;
 };
 

@@ -1,17 +1,12 @@
 // tokenize-hson.old.hson.ts
 
-import { Primitive } from "../../../core/types-consts/core.types.hson";
-import { is_not_string, is_Primitive } from "../../../core/utils/guards.core.utils.hson";
-import { OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
-import { close_tag_lookahead } from "../../../utils/close-tag-lookahead.utils.hson";
-import { make_string } from "../../../utils/make-string.utils.hson";
-import { is_Node } from "../../../utils/node-guards.utils.hson";
-import { parse_css_attrs } from "../../../utils/parse-css.utils.hson";
+
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { ARR_SYMBOL, CLOSE_KIND, NEW_ARR_CLOSE_TOKEN, NEW_ARR_OPEN_TOKEN, NEW_END_TOKEN, NEW_OPEN_TOKEN, NEW_TEXT_TOKEN, TOKEN_KIND } from "../../types-consts/constants.new.hson";
 import { Position, RawAttr, Tokens_NEW } from "../../types-consts/tokens.new.types.hson";
-import { split_top_level_NEW } from "./tokenizer-helpers/split-top-2.utils.hson";
-import { slice_balanced_arr } from "./tokenizer-helpers/balancers.new.utils.hson";
+import { split_top_level_NEW } from "./hson-helpers/split-top-2.utils.hson";
+import { slice_balanced_arr } from "./hson-helpers/slice-balance.new.utils.hson";
+import { lex_text_piece } from "./hson-helpers/lex-text-piece.utils.hson";
 
 
 /* position tracker */
@@ -28,7 +23,7 @@ const LONE_OPEN_ANGLE_REGEX = /^\s*<(\s*(\/\/.*)?)?$/;
 const IMPLICIT_OBJECT_START_REGEX = /^\s*<\s*<(\s|$)/; /* ensures second '<' is followed by space or EOL */
 
 
-const _VERBOSE = false;
+const _VERBOSE = true;
 const _log = _VERBOSE
     ? console.log
     : () => { };
@@ -58,6 +53,15 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
 
     _log(`[token_from_hson depth=${$depth}]; total lines: ${splitLines.length}`);
 
+    /* returns true if a bare token should be treated as a primitive value, not a flag */
+    function is_primitive_lexeme($s: string): boolean {
+        const t = $s.trim();
+        if (!t) return false;
+        if (t === 'true' || t === 'false' || t === 'null') return true;
+        // number-ish (int, float, sci). no +/- signs for attrs; fine to accept here
+        return /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(t);
+    }
+
     function _bump_line($line: string) { _offset += $line.length + 1; ix++; }
 
     /* advance by N following lines starting at current ix */
@@ -73,10 +77,10 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
     function _read_tag_attrs(
         $trimLine: string,
         $startIx: number,                /* first char after tag name */
-        $endIx: number,                  /* index of '>' or '/' that starts '/>' */
+        $endIx: number,                  /* start index of the trailing closer in trimLine */
         $lineNo: number,
         $leadCol: number                 /* first non-space col in currentLine (1-based) */
-    ): RawAttr[] {
+    ): { attrs: RawAttr[]; endIx: number } {
         const out: RawAttr[] = [];
         let ix = $startIx;
         const end = $endIx;
@@ -84,69 +88,61 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         let inQuote: '"' | "'" | null = null;
         let escaped = false;
 
-        /* helper for positions within trimLine → absolute */
         const _col = (relIx: number) => $leadCol + relIx;                 /* 1-based col */
-        const _pos = (relIx: number): Position => {
+        const _mkpos = (relIx: number): Position => {
             const col = _col(relIx);
             return { line: $lineNo, col, index: _offset + col - 1 };
         };
 
-        /* skip spaces */
         const _skip_ws = () => { while (ix < end && /\s/.test($trimLine[ix])) ix++; };
 
         while (ix < end) {
             _skip_ws();
             if (ix >= end) break;
 
-            /* name */
-            const nameStartIx = ix;
-            if (!/[A-Za-z_:]/.test($trimLine[ix])) {
-                /* not starting an attr name → bail */
-                break;
-            }
-            ix++;
-            while (ix < end && /[\w:.\-]/.test($trimLine[ix])) ix++;
-            const name = $trimLine.slice(nameStartIx, ix);
-            const startPos = _pos(nameStartIx);
+            /* attr name must start with letter/_/: */
+            if (!/[A-Za-z_:]/.test($trimLine[ix])) break;
+
+            const nameStart = ix;
+            ix++; while (ix < end && /[\w:.\-]/.test($trimLine[ix])) ix++;
+            const name = $trimLine.slice(nameStart, ix);
+            const startPos = _mkpos(nameStart);
 
             _skip_ws();
 
-            /* value? '=' then quoted or bare token, else it's a flag */
             if (ix < end && $trimLine[ix] === '=') {
                 ix++; _skip_ws();
                 let valStart = ix;
 
-                /* quoted */
                 if (ix < end && ($trimLine[ix] === '"' || $trimLine[ix] === "'")) {
-                    inQuote = $trimLine[ix] as '"' | "'";
-                    ix++; valStart = ix;
+                    inQuote = $trimLine[ix] as '"' | "'"; ix++; valStart = ix;
                     while (ix < end) {
                         const ch = $trimLine[ix];
                         if (escaped) { escaped = false; ix++; continue; }
                         if (ch === '\\') { escaped = true; ix++; continue; }
-                        if (ch === inQuote) { break; }
+                        if (ch === inQuote) break;
                         ix++;
                     }
                     const text = $trimLine.slice(valStart, ix);
-                    if (ix < end && $trimLine[ix] === inQuote) ix++; /* consume quote */
-                    const endPos = _pos(ix);
+                    if (ix < end && $trimLine[ix] === inQuote) ix++;
+                    const endPos = _mkpos(ix);
                     out.push({ name, value: { text, quoted: true }, start: startPos, end: endPos });
-                }
-                /* unquoted token (stops at ws or end) */
-                else {
+                } else {
                     while (ix < end && !/\s/.test($trimLine[ix])) ix++;
                     const text = $trimLine.slice(valStart, ix);
-                    const endPos = _pos(ix);
+                    const endPos = _mkpos(ix);
                     out.push({ name, value: { text, quoted: false }, start: startPos, end: endPos });
                 }
             } else {
-                /* flag */
-                const endPos = _pos(ix);
-                out.push({ name, start: startPos, end: endPos });
+                if (is_primitive_lexeme(name)) {
+                    return { attrs: out, endIx: nameStart };
+                }
+                const endPos = _mkpos(ix);
+                out.push({ name, start: startPos, end: endPos }); /* flag */
             }
         }
 
-        return out;
+        return { attrs: out, endIx: ix };
     }
 
     let _offset = 0;
@@ -178,13 +174,13 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         /* Step C */
         /* handle empty arrays «» */
         if (/^«\s*»\s*$/.test(trimLine) || /^\[\s*\]\s*$/.test(trimLine)) {
-            const variant = trimLine.startsWith('«') ? ARR_SYMBOL.guillemet : ARR_SYMBOL.bracket;
+            const arrayOpener = trimLine.startsWith('«') ? ARR_SYMBOL.guillemet : ARR_SYMBOL.bracket;
             const col = currentLine.search(/\S|$/) + 1; /* first non-space, 1-based */
             const p = _pos(currentIx + 1, col, _offset + col - 1);
 
-            _log(`[quick]: empty array detected (${variant})`);
-            finalTokens.push(NEW_ARR_OPEN_TOKEN(variant, p));
-            finalTokens.push(NEW_ARR_CLOSE_TOKEN(variant, p));
+            _log(`[quick]: empty array detected (${arrayOpener})`);
+            finalTokens.push(NEW_ARR_OPEN_TOKEN(arrayOpener, p));
+            finalTokens.push(NEW_ARR_CLOSE_TOKEN(arrayOpener, p));
 
             _bump_line(currentLine);
             continue;
@@ -195,9 +191,9 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         if (trimLine.startsWith('«') || trimLine.startsWith('[')) {
             const opener = trimLine.startsWith('«') ? '«' : '[';
             const closer = opener === '«' ? '»' : ']';
-            const variant = opener === '«' ? ARR_SYMBOL.guillemet : ARR_SYMBOL.bracket;
+            const closerSymbol = opener === '«' ? ARR_SYMBOL.guillemet : ARR_SYMBOL.bracket;
 
-            _log(`[tokenize_hson]: processing array (${variant})`);
+            _log(`[tokenize_hson]: processing array (${closerSymbol})`);
 
             /* build a joined view from the current line onward */
             const joinedFromHere = splitLines.slice(ix).join('\n');
@@ -214,7 +210,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             const pOpen = _pos(currentIx + 1, colInLine, _offset + colInLine - 1);
             const pClose = _pos(currentIx + 1 + linesConsumed, 1, _offset + consumedText.length);
 
-            finalTokens.push(NEW_ARR_OPEN_TOKEN(variant, pOpen));
+            finalTokens.push(NEW_ARR_OPEN_TOKEN(closerSymbol, pOpen));
 
             /* split the array body by top-level commas (quote/array/header aware) */
             const items = split_top_level_NEW(body, ',');
@@ -226,12 +222,13 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                 if (item.startsWith('<') || item.startsWith('«') || item.startsWith('[')) {
                     finalTokens.push(...tokenize_hson_NEW(item, $depth + 1));
                 } else {
-                    /* CHANGED: no coerce here; parser will decide _str vs _val */
-                    finalTokens.push(NEW_TEXT_TOKEN(item, /* quoted */ undefined, pOpen));
+                    const { text, quoted } = lex_text_piece(item);
+                    finalTokens.push(NEW_TEXT_TOKEN(text, quoted, pOpen));
+
                 }
             }
 
-            finalTokens.push(NEW_ARR_CLOSE_TOKEN(variant, pClose));
+            finalTokens.push(NEW_ARR_CLOSE_TOKEN(closerSymbol, pClose));
 
             /* advance main loop to the line containing the closer */
             _bump_array(linesConsumed + 1);
@@ -271,6 +268,9 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         }
 
         /* step F: open tags */
+
+
+
         if (trimLine.startsWith('<')) {
 
             /* f.1 implicit object opener "< <...": accept preamble, no tokens, structure only */
@@ -290,77 +290,111 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             }
 
             /* f.2 read tag header minimally: name + find header end (no attrs yet) */
-            let ixHeader = 1;                               /* skip initial '<' */
-            const lineLength = trimLine.length;
-            while (ixHeader < lineLength && /\s/.test(trimLine[ixHeader])) ixHeader++;
+            let ixHeader = 1;                               /* after '<' */
+            const lineLen = trimLine.length;
+            while (ixHeader < lineLen && /\s/.test(trimLine[ixHeader])) ixHeader++;
 
-            const nameStart = ixHeader;
-            while (ixHeader < lineLength && /[A-Za-z0-9:._-]/.test(trimLine[ixHeader])) ixHeader++;
-            const tag = trimLine.slice(nameStart, ixHeader);
-
-            if (!tag) {
-                _throw_transform_err(`[step f depth=${$depth} L=${currentIx + 1}] malformed tag in "${trimLine}"`, 'tokenize-hson', currentLine);
-            }
-
-            /* f.2.1 scan to header end outside quotes, capturing inline tail */
-            let inQ: '"' | "'" | null = null;
-            let esc = false;
-            let closerLex: '>' | '/>' | null = null;
-            let headerEndCol = ixHeader + 1;         /* 1-based col guess; refine when we hit closer */
-            let scanIx = ixHeader;
-
-            while (scanIx < lineLength) {
-                const char = trimLine[scanIx];
-                if (esc) { esc = false; scanIx++; continue; }
-                if (char === '\\') { esc = true; scanIx++; continue; }
-                if (inQ) { if (char === inQ) inQ = null; scanIx++; continue; }
-                if (char === '"' || char === "'") { inQ = char; scanIx++; continue; }
-
-                if (char === '>' || (char === '/' && scanIx + 1 < lineLength && trimLine[scanIx + 1] === '>')) {
-                    if (char === '>') { closerLex = '>'; headerEndCol = scanIx + 1; }
-                    else { closerLex = '/>'; headerEndCol = scanIx + 2; }
-                    break;
-                }
-                scanIx++;
-            }
+            const tagNameStartIx = ixHeader;
+            while (ixHeader < lineLen && /[A-Za-z0-9:._-]/.test(trimLine[ixHeader])) ixHeader++;
+            const tag = trimLine.slice(tagNameStartIx, ixHeader);
+            if (!tag) _throw_transform_err(`[step f depth=${$depth} L=${currentIx + 1}] malformed tag in "${trimLine}"`, 'tokenize-hson', currentLine);
 
             const lineNo = currentIx + 1;
-            const openCol = currentLine.indexOf('<') + 1;
-            const posOpen = _pos(lineNo, openCol, _offset + openCol - 1);
+            const leadCol = currentLine.search(/\S|$/) + 1;          /* first non-space col */
+            const colOpen = leadCol;                                  /* '<' sits here */
+            const posOpen = _pos(lineNo, colOpen, _offset + colOpen - 1);
 
-            const leadCol = currentLine.search(/\S|$/) + 1;       /* first non-space col */
-            const attrsEndIx = closerLex === '/>' ? scanIx /* '/' */ : scanIx /* '>' */; /* scanIx points at '/' or '>' */
-            const rawAttrs = _read_tag_attrs(trimLine, ixHeader /* after name */, attrsEndIx, lineNo, leadCol);
+            /* f.3 detect trailing closer @ end of the raw line (ignore //comment) */
+            const mTrail = currentLine.match(/(\/?>)\s*(?:\/\/.*)?$/);
+            const closerLex = mTrail ? (mTrail[1] as ('>' | '/>')) : null;
 
-            /* emit open with empty rawAttrs for now; attrs come next pass */
-            finalTokens.push(NEW_OPEN_TOKEN(tag, rawAttrs, posOpen));
+            let rawAttrs: RawAttr[] = [];
+            let tailRaw = '';
 
-            /* f.2.2 inline content between header end and closer, if any */
+            /* compute relative indices against trimLine */
+            const leadSpaces = currentLine.match(/^\s*/)?.[0].length ?? 0;
+
             if (closerLex) {
-                const tailStart = headerEndCol;                      /* first char after header */
-                const tail = trimLine.slice(tailStart, trimLine.length - (closerLex === '/>' ? 2 : 1)).trim();
+                const closerLen = closerLex === '/>' ? 2 : 1;
 
-                if (tail) {
-                    if (tail.startsWith('<') || tail.startsWith('«') || tail.startsWith('[')) {
-                        finalTokens.push(...tokenize_hson_NEW(tail, $depth + 1));
-                    } else {
-                        finalTokens.push(NEW_TEXT_TOKEN(tail, /* quoted */ undefined, posOpen));
-                    }
+                /* absolute index of the closer in currentLine */
+                const closerAbs = currentLine.lastIndexOf(closerLex);
+                if (closerAbs < 0) {
+                    _throw_transform_err(`internal: trailing closer not found in "${currentLine}"`, 'tokenize-hson', currentLine);
                 }
 
-                /* emit the end immediately for same-line closer */
-                const posClose = _pos(lineNo, headerEndCol, _offset + headerEndCol - 1);
-                const kind = closerLex === '/>' ? CLOSE_KIND.elem : CLOSE_KIND.obj;
-                finalTokens.push(NEW_END_TOKEN(kind, posClose));
+                /* relative index inside trimLine */
+                const closerRel = Math.max(0, closerAbs - leadSpaces);
+
+                /* parse attrs up to the closer; capture where we stopped for tail */
+                const { attrs, endIx: attrsEndIx } =
+                    _read_tag_attrs(trimLine, ixHeader /* after name */, closerRel, lineNo, leadCol);
+
+                rawAttrs = attrs;
+
+                /* anything between attrs end and trailing closer is the inline tail */
+                tailRaw = trimLine.slice(attrsEndIx, closerRel).trim();
+            } else {
+                /* no same-line closer: parse attrs until we can’t read more */
+                const { attrs } = _read_tag_attrs(trimLine, ixHeader, trimLine.length, lineNo, leadCol);
+                rawAttrs = attrs;
+            }
+
+            /* emit open */
+            finalTokens.push(NEW_OPEN_TOKEN(tag, rawAttrs, posOpen));
+
+            /* inline tail (if any) */
+            if (tailRaw) {
+                if (tailRaw.startsWith('<') || tailRaw.startsWith('«') || tailRaw.startsWith('[')) {
+                    finalTokens.push(...tokenize_hson_NEW(tailRaw, $depth + 1));
+                } else {
+                    const parts = split_top_level_NEW(tailRaw, ',');
+                    if (parts.length > 1) {
+                        _throw_transform_err(`[step f] multiple inline items not allowed after <${tag}>: "${tailRaw}"`, 'tokenize-hson', currentLine);
+                    }
+                    const { text, quoted } = lex_text_piece(parts[0]);
+                    finalTokens.push(NEW_TEXT_TOKEN(text, quoted, posOpen));
+
+                }
+            }
+
+            /* close now or defer to step e */
+            if (closerLex) {
+                const closerLen = closerLex === '/>' ? 2 : 1;
+                const colCloserAbs = leadCol + (trimLine.length - closerLen);
+                const posClose = _pos(lineNo, colCloserAbs, _offset + colCloserAbs - 1);
+                const closeKind = (closerLex === '/>') ? CLOSE_KIND.elem : CLOSE_KIND.obj;
+                finalTokens.push(NEW_END_TOKEN(closeKind, posClose));
                 _bump_line(currentLine);
                 continue;
             } else {
-                /* no closer on this line: push a pending cluster; Step E will close it */
-                contextStack.push({ type: 'CLUSTER' });  /* close kind decided at Step E */
+                contextStack.push({ type: 'CLUSTER' });  /* pending: Step E will close */
                 _bump_line(currentLine);
                 continue;
             }
         } // ---- end of step F ---=|
+
+
+        /* step G: standalone text/primitive lines */
+        {
+            /*  ignore trailing // comments, but keep the literal exactly */
+            const m = currentLine.match(/^\s*(.+?)(?:\s*\/\/.*)?\s*$/);
+            const body = m ? m[1] : '';
+
+            /* quick checks for a standalone literal */
+            const isQuoted = body.startsWith('"') && body.endsWith('"');
+            const isPrim = /^(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)$/.test(body);
+
+            if (isQuoted || isPrim) {
+                const lead = currentLine.match(/^\s*/)?.[0].length ?? 0;
+                const p = _pos(ix + 1, lead + 1, _offset + lead);
+                /* IMPORTANT: pass the raw text as-is; let the parser's coerce() handle it. */
+                /* set quoted = undefined so the parser uses coerce for both quoted and unquoted here. */
+                finalTokens.push(NEW_TEXT_TOKEN(body, undefined, p));
+                _bump_line(currentLine);
+                continue;
+            }
+        }
 
         _bump_line(currentLine);
         continue;
@@ -402,7 +436,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                     console.log(`END ${t.close} @ L${t.pos.line}:C${t.pos.col}`);
                     break;
                 case TOKEN_KIND.ARR_OPEN:
-                    console.log(`ARR_OPEN ${t.variant} @ L${t.pos.line}:C${t.pos.col}`);
+                    console.log(`ARR_OPEN ${t.symbol} @ L${t.pos.line}:C${t.pos.col}`);
                     break;
                 case TOKEN_KIND.ARR_CLOSE:
                     console.log(`ARR_CLOSE ${t.symbol} @ L${t.pos.line}:C${t.pos.col}`);

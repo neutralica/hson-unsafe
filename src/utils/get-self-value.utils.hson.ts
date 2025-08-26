@@ -1,7 +1,7 @@
 // get-self-value.utils.hson.ts
 
 import { Primitive } from "../core/types-consts/core.types.hson";
-import { FALSE_TYPE, ELEM_OBJ_ARR, _FALSE, STRING_TAG, VAL_TAG } from "../types-consts/constants.hson";
+import { FALSE_TYPE, ELEM_OBJ_ARR, _FALSE, STR_TAG, VAL_TAG } from "../types-consts/constants.hson";
 import { HsonNode } from "../types-consts/node.types.hson";
 import { is_Node } from "./node-guards.utils.hson";
 
@@ -48,7 +48,7 @@ export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
     }
     const grandChildNode = childNode._content[0];
     /* 3. that single child node must be a primitive wrapper (_str or _val) */
-    if (grandChildNode._tag === STRING_TAG || grandChildNode._tag === VAL_TAG) {
+    if (grandChildNode._tag === STR_TAG || grandChildNode._tag === VAL_TAG) {
         /* success: return the primitive value directly from inside the wrapper */
         $log(' --> IS self-closing')
         return grandChildNode._content[0] as Primitive;

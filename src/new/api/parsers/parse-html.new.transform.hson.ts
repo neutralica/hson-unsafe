@@ -3,7 +3,7 @@
 import { parse_html } from "../../../api/parsers/parse-html.transform.hson";
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Primitive, is_not_string } from "../../../core/utils/guards.core.utils.hson";
-import { ROOT_TAG, ELEM_TAG, VAL_TAG, STRING_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG, _FALSE, VSN_TAGS, EVERY_VSN } from "../../../types-consts/constants.hson";
+import { ROOT_TAG, ELEM_TAG, VAL_TAG, STR_TAG, OBJ_TAG, ARR_TAG, II_TAG, _FALSE, VSN_TAGS, EVERY_VSN } from "../../../types-consts/constants.hson";
 import { coerce } from "../../../utils/coerce-string.utils.hson";
 import { expand_bools } from "../../../utils/expand-booleans.utils.hson";
 import { expand_entities } from "../../../utils/expand-entities.utils.hson";
@@ -105,7 +105,7 @@ function convert($el: Element): HsonNode_NEW {
     const baseTag = $el.tagName;
     const tagLower = baseTag.toLowerCase();
     const { attrs: sortedAcc, meta: metaAcc } = parse_html_attrs($el);
-    if (tagLower === STRING_TAG) {
+    if (tagLower === STR_TAG) {
         _throw_transform_err("literal <_str> is not allowed in input HTML", "parse-html", $el);
     }
 
@@ -116,7 +116,7 @@ function convert($el: Element): HsonNode_NEW {
         const text_content = $el.textContent?.trim();
         if (text_content) {
             const special_content = [NEW_NEW_NODE({
-                _tag: STRING_TAG,
+                _tag: STR_TAG,
                 _content: [text_content],
             })]
             const wrapper = NEW_NEW_NODE({
@@ -149,7 +149,7 @@ function convert($el: Element): HsonNode_NEW {
         /* primitive values are wrapped in a string or value tag */
         if (is_Primitive(child)) {
             _log(`Primitive child found: ${child}\n creating string or BasicValue node`)
-            const tag = is_string_NEW(child) ? STRING_TAG : VAL_TAG;
+            const tag = is_string_NEW(child) ? STR_TAG : VAL_TAG;
             childNodes.push(NEW_NEW_NODE({ _tag: tag, _content: [child] }));
 
         } else {
@@ -195,7 +195,7 @@ function convert($el: Element): HsonNode_NEW {
                     _throw_transform_err("<_val> payload is not primitive", "parse-html", $el);
                 }
                 prim = c as Primitive;
-            } else if (n._tag === STRING_TAG) {
+            } else if (n._tag === STR_TAG) {
                 // came in as _str "1" → coerce to number/bool/null
                 const s = n._content?.[0];
                 const v = coerce(typeof s === "string" ? s : String(s));
@@ -210,14 +210,14 @@ function convert($el: Element): HsonNode_NEW {
 
         // return canonical _val node
         return NEW_NEW_NODE({ _tag: VAL_TAG, _content: [prim] });
-    } else if (tagLower === OBJECT_TAG) {
+    } else if (tagLower === OBJ_TAG) {
         /*  "children" of <_obj> are the object's properties (as nodes) */
-        return NEW_NEW_NODE({ _tag: OBJECT_TAG, _content: childNodes });
-    } else if (tagLower === ARRAY_TAG) {
+        return NEW_NEW_NODE({ _tag: OBJ_TAG, _content: childNodes });
+    } else if (tagLower === ARR_TAG) {
         _log('array detected; returning in _array wrapper')
         /* children of an <_array> should be <_ii> nodes. */
         if (!childNodes.every(node => is_indexed_NEW(node))) _throw_transform_err('_array children are not valid index tags', 'parse_html', $el);
-        return NEW_NEW_NODE({ _tag: ARRAY_TAG, _content: childNodes });
+        return NEW_NEW_NODE({ _tag: ARR_TAG, _content: childNodes });
     } else if (tagLower === ELEM_TAG) {
         /* _elem should not be wrapped but should disappear back into the HTML */
         _throw_transform_err('_elem tag found in html', 'parse-html', $el);;
@@ -235,14 +235,14 @@ function convert($el: Element): HsonNode_NEW {
         return NEW_NEW_NODE({ _tag: baseTag, _content: [], _attrs: sortedAcc });
     } else if (
         (childNodes.length === 1 && is_Node(childNodes[0])
-            && (childNodes[0]._tag === OBJECT_TAG || childNodes[0]._tag === ARRAY_TAG))) {
+            && (childNodes[0]._tag === OBJ_TAG || childNodes[0]._tag === ARR_TAG))) {
         _log('child nodes tag is: ', childNodes[0]._tag)
         return NEW_NEW_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });
 
-    } else if (tagLower === INDEX_TAG) {
+    } else if (tagLower === II_TAG) {
         if (childNodes.length !== 1) _throw_transform_err('<_ii> must have exactly one child', 'parse-html', $el);
         return NEW_NEW_NODE({
-            _tag: INDEX_TAG,
+            _tag: II_TAG,
             _content: [childNodes[0]],
             _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined
         });

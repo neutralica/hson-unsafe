@@ -1,6 +1,6 @@
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Primitive, is_not_string } from "../../../core/utils/guards.core.utils.hson";
-import { ROOT_TAG, NEW_NODE, ELEM_TAG, VAL_TAG, STRING_TAG, OBJECT_TAG, ARRAY_TAG, INDEX_TAG, BLANK_META } from "../../../types-consts/constants.hson";
+import { ROOT_TAG, NEW_NODE, ELEM_TAG, VAL_TAG, STR_TAG, OBJ_TAG, ARR_TAG, II_TAG, BLANK_META } from "../../../types-consts/constants.hson";
 import { HsonNode, HsonAttrs } from "../../../types-consts/node.types.hson";
 import { coerce } from "../../../utils/coerce-string.utils.hson";
 import { expand_bools } from "../../../utils/expand-booleans.utils.hson";
@@ -8,7 +8,7 @@ import { expand_entities } from "../../../utils/expand-entities.utils.hson";
 import { expand_void_tags } from "../../../utils/expand-self-closing.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
-import { parse_css_attrs } from "../../../utils/parse-css.utils.hson";
+import { parse_style } from "../../../utils/parse-css.utils.hson";
 import { snip_long_string } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
@@ -107,7 +107,7 @@ function convert($el: Element): HsonNode {
         }
         /* 'style' attribute only treated as an object */
         else if (name === 'style') {
-            attrs.style = parse_css_attrs(value);
+            attrs.style = parse_style(value);
         }
         /* all other attributes should be forced to be strings. */
         else {
@@ -131,7 +131,7 @@ function convert($el: Element): HsonNode {
         const text_content = $el.textContent?.trim();
         if (text_content) {
             const special_content = [NEW_NODE({
-                _tag: STRING_TAG,
+                _tag: STR_TAG,
                 _content: [text_content],
             })]
             const list_node = NEW_NODE({
@@ -154,7 +154,7 @@ function convert($el: Element): HsonNode {
             if (inVal) {
                 childNodes.push(NEW_NODE({ _tag: VAL_TAG, _content: [child] }));
             } else {
-                childNodes.push(NEW_NODE({ _tag: STRING_TAG, _content: [String(child)] }));
+                childNodes.push(NEW_NODE({ _tag: STR_TAG, _content: [String(child)] }));
             }
 
         } else {
@@ -165,12 +165,12 @@ function convert($el: Element): HsonNode {
     /*  ---> determine the final Node structure based on tag --- */
     /*  If the current HTML tag ITSELF IS a VSN container tag (e.g., <_obj>, <_array>, <_elem>)
           then its child nodes are its direct content */
-    if (tagLower === OBJECT_TAG) {
+    if (tagLower === OBJ_TAG) {
         /*  "children" of <_obj> are the object's properties (as nodes) */
-        return NEW_NODE({ _tag: OBJECT_TAG, _content: childNodes });
-    } else if (tagLower === ARRAY_TAG) {
+        return NEW_NODE({ _tag: OBJ_TAG, _content: childNodes });
+    } else if (tagLower === ARR_TAG) {
         /* children of an <_array> should be <_ii> nodes. */
-        return NEW_NODE({ _tag: ARRAY_TAG, _content: childNodes });
+        return NEW_NODE({ _tag: ARR_TAG, _content: childNodes });
     } else if (tagLower === ELEM_TAG) {
         /* _elem should not be wrapped but should disappear back into the HTML */
         _throw_transform_err('_elem tag found in html', 'parse-html', $el);;
@@ -187,13 +187,13 @@ function convert($el: Element): HsonNode {
         return NEW_NODE({ _tag: baseTag, _content: [], _meta: currentMeta });
     } else if (
         (childNodes.length === 1 && is_Node(childNodes[0])
-            && (childNodes[0]._tag === OBJECT_TAG || childNodes[0]._tag === ARRAY_TAG))) {
+            && (childNodes[0]._tag === OBJ_TAG || childNodes[0]._tag === ARR_TAG))) {
         return NEW_NODE({
             _tag: baseTag,
             _content: [childNodes[0]], /* return the VSN wrapping the base tag's content */
             _meta: currentMeta
         });
-    } else if ((baseTag === INDEX_TAG || baseTag === VAL_TAG)) {
+    } else if ((baseTag === II_TAG || baseTag === VAL_TAG)) {
         return NEW_NODE({
             _tag: baseTag,
             _content: [childNodes[0]], /* return the VSN wrapping the base tag's content */

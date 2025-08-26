@@ -2,14 +2,14 @@
 
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_not_string, is_Primitive } from "../../../core/utils/guards.core.utils.hson";
-import { CREATE_TOKEN, TokenΔ, OBJECT_TAG, ARRAY_TAG, ELEM_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
+import { CREATE_TOKEN, TokenΔ, OBJ_TAG, ARR_TAG, ELEM_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
 import { HsonAttrs, HsonFlags } from "../../../types-consts/node.types.hson";
 import { AllTokens, HSON_Token_Type } from "../../../types-consts/tokens.types.hson";
 import { close_tag_lookahead } from "../../../utils/close-tag-lookahead.utils.hson";
 import { coerce } from "../../../utils/coerce-string.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
-import { parse_css_attrs } from "../../../utils/parse-css.utils.hson";
+import { parse_style } from "../../../utils/parse-css.utils.hson";
 import { split_top_OLD } from "../../../utils/split-top-level.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
@@ -68,7 +68,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
         /* check for '<' implicit object trigger */
         if (LONE_OPEN_ANGLE_REGEX.test(currentLine)) {
             $log(`[token_from_hson depth=${$depth} L=${currentIx + 1}] lone '<' detected`);
-            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OPEN, tag: OBJECT_TAG }));
+            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OPEN, tag: OBJ_TAG }));
             contextStack.push({ type: 'IMPLICIT_OBJECT' });
             ix++;
             continue;
@@ -77,9 +77,9 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
         /* handle empty arrays «» */
         if (trimLine.match(/^«\s*»/)) {
             $log(`[quick check]: found and processed an empty inline array («»)`);
-            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_OPEN, tag: ARRAY_TAG }));
+            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_OPEN, tag: ARR_TAG }));
             /* no content tokens needed */
-            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_CLOSE, tag: ARRAY_TAG }));
+            finalTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_CLOSE, tag: ARR_TAG }));
 
             ix++; /* consume line */
             continue; /* move on to the next line, skipping logic below */
@@ -89,7 +89,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
         if (trimLine.startsWith('«')) {
             const opener = '«';
             const closer = '»';
-            const tag = ARRAY_TAG;
+            const tag = ARR_TAG;
             const type = TokenΔ.ARRAY_OPEN;
             const closeToken = TokenΔ.ARRAY_CLOSE;
 
@@ -192,7 +192,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
                 /*  validate closer if needed */
                 if (stackCloser.tag === ELEM_TAG && trimLine !== "/>") {
                     console.warn(`step E: [WARN]:\n  <_elem tag <${stackCloser.tag} closes with '${trimLine}' instead of '/>'`);
-                } else if (stackCloser.tag === OBJECT_TAG && trimLine !== ">") {
+                } else if (stackCloser.tag === OBJ_TAG && trimLine !== ">") {
                     console.warn(`step E: [WARN]:\n <_obj tag <${stackCloser.tag} closes with '${trimLine}' instead of '>'`);
                 }
 
@@ -200,8 +200,8 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
                 let finalTokenType: HSON_Token_Type;
                 switch (stackCloser.tag) {
                     case ELEM_TAG: finalTokenType = TokenΔ.ELEM_CLOSE; break;
-                    case ARRAY_TAG: finalTokenType = TokenΔ.ARRAY_CLOSE; break;
-                    case OBJECT_TAG: finalTokenType = TokenΔ.OBJ_CLOSE; break;
+                    case ARR_TAG: finalTokenType = TokenΔ.ARRAY_CLOSE; break;
+                    case OBJ_TAG: finalTokenType = TokenΔ.OBJ_CLOSE; break;
                     default: finalTokenType = TokenΔ.CLOSE; break; /* for standard tags */
                 }
                 finalTokens.push(CREATE_TOKEN({ type: finalTokenType, tag: stackCloser.tag }));
@@ -211,7 +211,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
             else if (topStack.type === 'IMPLICIT_OBJECT' && trimLine === ">") {
                 contextStack.pop();
                 $log(`[Step E] closing 'IMPLICIT_OBJECT' context with '>'`);
-                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OBJ_CLOSE, tag: OBJECT_TAG }));
+                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OBJ_CLOSE, tag: OBJ_TAG }));
                 is_lineConsumed = true;
             }
 
@@ -230,7 +230,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
                 (currently not valid HSON but should be accepted some day) */
             if (IMPLICIT_OBJECT_START_REGEX.test(trimLine)) {
                 $log(`[Step F depth=${$depth} L=${currentIx + 1}] implicit object opener detected`);
-                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OPEN, tag: OBJECT_TAG }));
+                finalTokens.push(CREATE_TOKEN({ type: TokenΔ.OPEN, tag: OBJ_TAG }));
                 contextStack.push({ type: 'IMPLICIT_OBJECT' });
                 const startIx = trimLine.indexOf('<', trimLine.indexOf('<') + 1);
                 const innerContent = startIx !== -1 ? trimLine.substring(startIx).trim() : "";
@@ -307,7 +307,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
                     if (key === 'style') {
                         try {
                             /* try to parse style attributes for direct manipulation in JSON */
-                            attrs.style = parse_css_attrs(valueString);
+                            attrs.style = parse_style(valueString);
                         } catch (e) {
                             _throw_transform_err(`parse error in tokenize_hson(): failed to JSON.parse style attribute: ${valueString}: ${e}`, 'tokenize-hson', remainder);
                             parseError = true;
@@ -483,7 +483,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
                     for (const element of $elements) {
                         if (element !== null && typeof element === 'object' && (element as any).type === 'HSON_ARRAY_SHORTHAND') {
                             const arrayString = (element as any).hsonString;
-                            $outputTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_OPEN, tag: ARRAY_TAG }));
+                            $outputTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_OPEN, tag: ARR_TAG }));
                             const innerContent = arrayString.slice(1, -1).trim();
 
                             const tempTokens: AllTokens[] = [];
@@ -510,7 +510,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
                             }
                             $log(`[emitInlineContentTokens ArrayDebug] <${$currentTagName}> Generated item tokens for array: JSON.stringify(tempItemTokens))`);
                             $outputTokens.push(...tempTokens);
-                            $outputTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_CLOSE, tag: ARRAY_TAG }));
+                            $outputTokens.push(CREATE_TOKEN({ type: TokenΔ.ARRAY_CLOSE, tag: ARR_TAG }));
 
                         } else if (element !== null && typeof element === 'object' && (element as any).type === 'TOKEN_SEQUENCE') {
                             $outputTokens.push(...(element as any).tokens);
@@ -628,8 +628,8 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
                         let contentVSNType: HSON_Token_Type;
                         if (closing_tag === ELEM_TAG) {
                             contentVSNTag = ELEM_TAG; contentVSNType = TokenΔ.ELEM_OPEN;
-                        } else if (closing_tag === OBJECT_TAG) {
-                            contentVSNTag = OBJECT_TAG; contentVSNType = TokenΔ.OBJ_OPEN;
+                        } else if (closing_tag === OBJ_TAG) {
+                            contentVSNTag = OBJ_TAG; contentVSNType = TokenΔ.OBJ_OPEN;
                         } else {  /*  default is smell? */
                             contentVSNTag = tag;
                             contentVSNType = TokenΔ.OBJ_OPEN;
