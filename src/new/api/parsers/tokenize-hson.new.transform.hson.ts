@@ -53,6 +53,16 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
 
     _log(`[token_from_hson depth=${$depth}]; total lines: ${splitLines.length}`);
 
+    function ensureQuotedLiteral(lit: string, where: string) {
+        const piece = lex_text_piece(lit);
+        const t = lit.trim();
+        // If it starts with a quote, it must be a *properly closed* quoted literal.
+        if ((t.startsWith('"') || t.startsWith("'")) && !piece.quoted) {
+            _throw_transform_err(`[${where}] unterminated quoted literal: ${lit}`, 'tokenize-hson', lit);
+        }
+        return piece; // { text, quoted }
+    }
+
     /* returns true if a bare token should be treated as a primitive value, not a flag */
     function is_primitive_lexeme($s: string): boolean {
         const t = $s.trim();
@@ -222,11 +232,14 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                 if (item.startsWith('<') || item.startsWith('«') || item.startsWith('[')) {
                     finalTokens.push(...tokenize_hson_NEW(item, $depth + 1));
                 } else {
-                    const { text, quoted } = lex_text_piece(item);
-                    finalTokens.push(NEW_TEXT_TOKEN(text, quoted, pOpen));
-
+                    // NEW: quote-aware, without endIx
+                    const piece = ensureQuotedLiteral(item, 'array');
+                    finalTokens.push(
+                        NEW_TEXT_TOKEN(piece.text, piece.quoted ? true : undefined, pOpen)
+                    );
                 }
             }
+
 
             finalTokens.push(NEW_ARR_CLOSE_TOKEN(closerSymbol, pClose));
 
@@ -350,11 +363,19 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                 } else {
                     const parts = split_top_level_NEW(tailRaw, ',');
                     if (parts.length > 1) {
-                        _throw_transform_err(`[step f] multiple inline items not allowed after <${tag}>: "${tailRaw}"`, 'tokenize-hson', currentLine);
+                        _throw_transform_err(
+                            `[step f] multiple inline items not allowed after <${tag}>: "${tailRaw}"`,
+                            'tokenize-hson',
+                            currentLine
+                        );
                     }
-                    const { text, quoted } = lex_text_piece(parts[0]);
-                    finalTokens.push(NEW_TEXT_TOKEN(text, quoted, posOpen));
+                    const lit = parts[0].trim();
 
+                    // NEW: quote-aware, without endIx
+                    const piece = ensureQuotedLiteral(lit, 'step f');
+                    finalTokens.push(
+                        NEW_TEXT_TOKEN(piece.text, piece.quoted ? true : undefined, posOpen)
+                    );
                 }
             }
 
