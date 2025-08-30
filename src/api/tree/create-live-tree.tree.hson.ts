@@ -2,7 +2,7 @@ import { Primitive } from "../../core/types-consts/core.types.hson.js";
 import { STR_TAG, BLANK_META, VSNTag, NODE_ELEMENT_MAP, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 import { is_Node } from "../../utils/node-guards.utils.hson.js";
-import { serialize_css } from "../../utils/serialize-css.utils.hson.js";
+import { serialize_style } from "../../utils/serialize-css.utils.hson.js";
 
 /**
  * Recursively renders an HsonNode into a DOM 'liveTree', establishing
@@ -41,7 +41,7 @@ export function create_live_tree($node: HsonNode | Primitive): Node {
             // Check if the attribute is 'style' and its value is an object
             if (key === 'style' && typeof value === 'object' && value !== null) {
                 // Use your helper to convert the object to a CSS string
-                el.setAttribute('style', serialize_css(value));
+                el.setAttribute('style', serialize_style(value));
             } else {
                 // For all other attributes, use the existing logic
                 el.setAttribute(key, String(value));

@@ -1,7 +1,7 @@
 import { bucket_diffs } from "../../_refactor/_refactor-utils/bucket-diffs.utils.hson";
-import { diff_old_nodes, equal_old_nodes } from "../../_refactor/_refactor-utils/compare-nodes.utils.hson";
+import { diff_old_nodes, equal_old_nodes } from "../../_refactor/_refactor-utils/compare-normalize.utils.hson";
 import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
-import { toOLD } from "../../_refactor/kompat/kompat-layer.refactor.hson";
+import { to_OLD } from "../../_refactor/kompat/kompat-layer.refactor.hson";
 import { parse_hson_NEW } from "../../new/api/parsers/parse_hson.new.transform.hson";
 import { parse_hson_OLD } from "../../old/api/parsers/parse-hson.old.transform.hson";
 import { HsonNode } from "../../types-consts/node.types.hson";
@@ -15,9 +15,12 @@ export function parse_hson($str: string): HsonNode {
   const oldNode = parse_hson_OLD($str); // unchanged
 
   if (SHADOW_ENABLED()) {
-    console.log('shadow tests running - html')
+    console.log(`
+      ##x=-------================-------/ / 
+          Shadow Tests - HSON PARSE
+      / /--------================------=E|##|)`)
     try {
-      const newNodeOld = toOLD(parse_hson_NEW($str));
+      const newNodeOld = to_OLD(parse_hson_NEW($str));
 
       const a = clone_node(oldNode);
       const b = clone_node(newNodeOld);

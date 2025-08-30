@@ -1,6 +1,6 @@
-import { equal_old_nodes, diff_old_nodes } from "../_refactor/_refactor-utils/compare-nodes.utils.hson";
+import { equal_old_nodes, diff_old_nodes } from "../_refactor/_refactor-utils/compare-normalize.utils.hson";
 import { SHADOW_ENABLED } from "../_refactor/flags/flags.refactor.hson";
-import { toOLD } from "../_refactor/kompat/kompat-layer.refactor.hson";
+import { to_OLD } from "../_refactor/kompat/kompat-layer.refactor.hson";
 import { parse_html_NEW } from "../new/api/parsers/parse-html.new.transform.hson";
 import { parse_html_OLD } from "../old/api/parsers/parse-html.old.transform.hson";
 import { HsonNode } from "../types-consts/node.types.hson";

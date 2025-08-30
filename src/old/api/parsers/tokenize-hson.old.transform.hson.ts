@@ -728,7 +728,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
     $log(`[end of token from hson depth=${$depth}]\n    ---> processed all lines\n  final contextStack size (should be 0): ${contextStack.length}\n  total tokens generated: ${finalTokens.length}`);
     if (contextStack.length > 0 && $depth === 0) {
         const open_tags = contextStack.map(c => c.type === 'TAG' ? `<${c.tag}>` : '< < (implicit object)').join(', ');
-        _throw_transform_err(`FINAL CHECK FAILED: tokenizer finished with ${contextStack.length} unclosed elements: ${open_tags}`, 'tokenize_hson', splitLines);
+        _throw_transform_err(`FINAL CHECK FAILED: tokenizer finished with ${contextStack.length} unclosed elements: ${open_tags}`, 'tokenize_hson');
     }
 
     $log(`[token_from_hson END depth=${$depth}] returning tokens: ${make_string(finalTokens)})`);

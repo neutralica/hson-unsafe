@@ -3,9 +3,9 @@
 import type { HsonNode } from "../../types-consts/node.types.hson.js";
 import { parse_html_OLD } from "../../old/api/parsers/parse-html.old.transform.hson.js";
 import { parse_html_NEW } from "../../new/api/parsers/parse-html.new.transform.hson.js";
-import { equal_old_nodes, diff_old_nodes } from "../../_refactor/_refactor-utils/compare-nodes.utils.hson.js";
+import { equal_old_nodes, diff_old_nodes } from "../../_refactor/_refactor-utils/compare-normalize.utils.hson.js";
 import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson.js";
-import { toOLD } from "../../_refactor/kompat/kompat-layer.refactor.hson.js";
+import { to_OLD } from "../../_refactor/kompat/kompat-layer.refactor.hson.js";
 import { clone_node } from "../../utils/clone-node.utils.hson.js";
 import { sanitize_for_xml } from "../../utils/html-filtration.utils.hson.js";
 import { bucket_diffs } from "../../_refactor/_refactor-utils/bucket-diffs.utils.hson.js";
@@ -20,7 +20,7 @@ export function parse_html($src: string): HsonNode {
   if (SHADOW_ENABLED()) {
     console.log('shadow tests running - html')
     try {
-      const newNodeOld = toOLD(parse_html_NEW($src));
+      const newNodeOld = to_OLD(parse_html_NEW($src));
 
       const a = clone_node(oldNode);
       const b = clone_node(newNodeOld);

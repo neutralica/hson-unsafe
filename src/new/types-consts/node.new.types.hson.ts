@@ -40,6 +40,6 @@ export type HsonAttrs_NEW = {'style'?: string | Record<string, string> } & Recor
  * @property {string} [data-index] - an optional, explicit index for items within an array.
  */
 export type HsonMeta_NEW = {
-    'data-index'?: string;
-    'data-quid'?: string;
-} & Record<string, Primitive>;
+    'data-_index'?: string;
+    'data-_quid'?: string;
+} & Record<string, string>;

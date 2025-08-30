@@ -9,7 +9,7 @@ import { expand_void_tags } from "../../../utils/expand-self-closing.utils.hson"
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
 import { parse_style } from "../../../utils/parse-css.utils.hson";
-import { snip_long_string } from "../../../utils/preview-long.utils.hson";
+import { _snip } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
 /* debug log */
@@ -18,7 +18,7 @@ const _log: (...args: Parameters<typeof console.log>) => void =
     _VERBOSE
         ? (...args) => console.log(
             '[parse_html_OLD]: ',
-            ...args.map(a => (typeof a === "string" ? snip_long_string(a, 500) : a)))   // ← prefix + passthrough
+            ...args.map(a => (typeof a === "string" ? _snip(a, 500) : a)))   // ← prefix + passthrough
         : () => { };
 
 export function parse_html_OLD($input: string | Element): HsonNode {
@@ -48,12 +48,12 @@ export function parse_html_OLD($input: string | Element): HsonNode {
         }
         if (parseError) {
             console.error("XML Parsing Error:", parseError.textContent);
-            _throw_transform_err(`Failed to parse input HTML/XML`, 'parse_html', parseError.textContent);
+            _throw_transform_err(`Failed to parse input HTML/XML`, 'parse_html');
         }
         if (!parsedXML.documentElement) {
             /* for cases where parsing might result in no documentElement (e.g., empty string after processing) */
             console.warn("HTML string resulted in no documentElement after parsing; Returning _root");
-            _throw_transform_err('[ERROR-no content from xml parse]', 'parse-html', parsedXML);
+            _throw_transform_err('[ERROR-no content from xml parse]', 'parse-html');
         }
         inputElement = parsedXML.documentElement;
     } else {
@@ -173,7 +173,7 @@ function convert($el: Element): HsonNode {
         return NEW_NODE({ _tag: ARR_TAG, _content: childNodes });
     } else if (tagLower === ELEM_TAG) {
         /* _elem should not be wrapped but should disappear back into the HTML */
-        _throw_transform_err('_elem tag found in html', 'parse-html', $el);;
+        _throw_transform_err('_elem tag found in html', 'parse-html');
     }
 
     /*  ---> default: "standard tag" (e.g., "div", "p", "kingdom", "_root") <--- */

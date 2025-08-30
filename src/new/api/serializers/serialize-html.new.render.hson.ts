@@ -4,19 +4,21 @@ import { BLANK_META, ELEM_TAG, STR_TAG } from '../../../types-consts/constants.h
 import { build_wire_attrs } from '../../../utils/build-wire-path.utils.hson';
 import { escape_html } from '../../../utils/escape-html.utils.hson';
 import { make_string } from '../../../utils/make-string.utils.hson';
-import { snip_long_string } from '../../../utils/preview-long.utils.hson';
+import { _snip } from '../../../utils/preview-long.utils.hson';
 import { _throw_transform_err } from '../../../utils/throw-transform-err.utils.hson';
 import { HsonNode_NEW } from '../../types-consts/node.new.types.hson';
 
-const _VERBOSE = false;
-const _log: (...args: Parameters<typeof console.log>) => void =
-  _VERBOSE
-    ? (...args) => console.log(
-      '[serialize_html_NEW]: ',
-      ...args.map(a => (typeof a === "string" ? snip_long_string(a, 500) : a)))   // ← prefix + passthrough
-    : () => { };
-
-
+const _VERBOSE = true;
+const STYLE = 'color:fuschia;font-weight:400;padding:1px 3px;border-radius:4px';
+// tweak _log to style every arg (incl. your prefix), no helpers:
+const _log = _VERBOSE
+  ? (...args: unknown[]) =>
+      console.log(
+        ['%c%s', ...args.map(() => '%c%o')].join(' '),
+        STYLE, '[serialize-html_NEW] →',
+        ...args.flatMap(a => [STYLE, a]),
+      )
+  : () => { };
 
 function escape_attr(v: string): string {
   return v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
@@ -99,7 +101,7 @@ export function serialize_xml(node: HsonNode_NEW | Primitive | undefined): strin
     case STR_TAG: {
       _log('string tag found; flattening')
       if (typeof content[0] !== 'string') {
-        _throw_transform_err('need a primitive in a txt node!', 'serialize_html', content);
+        _throw_transform_err('need a primitive in a txt node!', 'serialize_html');
       }
       return primitive_to_string(content[0] as Primitive)
 

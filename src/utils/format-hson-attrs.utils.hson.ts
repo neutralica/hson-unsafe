@@ -2,7 +2,7 @@
 
 import { Primitive } from "../core/types-consts/core.types.hson.js";
 import { HsonAttrs } from "../types-consts/node.types.hson.js";
-import { serialize_css } from "./serialize-css.utils.hson.js";
+import { serialize_style } from "./serialize-css.utils.hson.js";
 
 /**
  * serializes an attrs object into a single string of hson attributes. 
@@ -24,7 +24,7 @@ export function format_hson_attrs(attrs: HsonAttrs): string {
       if (key === 'style') {
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         /* serialize the object to a CSS string */
-          const cssString = serialize_css(value as Record<string, string>);
+          const cssString = serialize_style(value as Record<string, string>);
           /* format for HSON, ensuring the CSS string is quoted */
           return ` style="${cssString}"`;
         }

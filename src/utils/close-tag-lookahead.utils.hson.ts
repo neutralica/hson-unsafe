@@ -109,7 +109,7 @@ export function close_tag_lookahead(
     }
 
     console.error(`[closeTagLookahead] Reached EOF while scanning for closer of <${$openTag}> (opened L${$openIndex + 1}).`);
-    _throw_transform_err(`could not find closing tag for HSON string!`, 'close_tag_lookahead', $blockLines); /* default if no explicit closer found  */
+    _throw_transform_err(`could not find closing tag for HSON string!`, 'close_tag_lookahead');
 }
 
 /**

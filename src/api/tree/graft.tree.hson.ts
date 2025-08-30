@@ -54,8 +54,7 @@ export function graft(
     if (contentNodes.length !== 1) {
       _throw_transform_err(
         `[ERR: graft()]: expected 1 node, but received ${contentNodes.length}. Wrap multiple elements in a single container.`,
-        'graft',
-        contentNodes
+        'graft'
       );
     }
     const nodeToRender = contentNodes[0];

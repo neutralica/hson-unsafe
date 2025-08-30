@@ -12,11 +12,17 @@ import { is_indexed_NEW } from "../../utils/node-guards.new.utils.hson";
 
 
 /* debug log */
-let _VERBOSE = false;
+let _VERBOSE = true;
+const STYLE = 'color:lightgreen;font-weight:400;padding:1px 3px;border-radius:4px';
 const _log = _VERBOSE
-    ? console.log
+  ? (...args: unknown[]) =>
+      console.log(
+        ['%c%s', ...args.map(() => '%c%o')].join(' '),
+        STYLE, '[serialize-Json_NEW] →',
+        ...args.flatMap(a => [STYLE, a]),
+      )
     : () => { };
-
+  
 export function serialize_json_NEW($node: HsonNode_NEW): string {
     if (_VERBOSE) {
         console.groupCollapsed('---> serializing json');
@@ -36,7 +42,7 @@ export function serialize_json_NEW($node: HsonNode_NEW): string {
         return json;
     } catch (e: any) {
 
-        _throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json', $node);
+        _throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json');
     }
 }
 
@@ -56,7 +62,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
 
     if (!$node || (typeof $node._tag !== 'string')) {
         console.warn('warning! node is type: ', typeof $node);
-        _throw_transform_err(`Invalid node or node tag`, 'serialize_json', $node);
+        _throw_transform_err(`Invalid node or node tag`, 'serialize_json');
     }
 
     /* step 1: catch VSNs */
@@ -65,7 +71,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
     switch ($node._tag) {
         case ROOT_TAG: {
             if (!$node._content || $node._content.length !== 1) {
-                _throw_transform_err('malformed _root node -  must have exactly one child', 'serialize_json', $node);
+                _throw_transform_err('malformed _root node -  must have exactly one child', 'serialize_json');
             }
             // The recursive call now expects the child to be in the NEW format.
             return jsonFromNode($node._content[0] as HsonNode_NEW);
@@ -81,7 +87,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
                     if (is_indexed_NEW(iiNode)) {
                         array.push(jsonFromNode(iiNode._content[0] as HsonNode_NEW));
                     } else {
-                        _throw_transform_err(`malformed _ii node in _array`, 'serialize-json', $node);
+                        _throw_transform_err(`malformed _ii node in _array`, 'serialize-json');
                     }
                 }
             }
@@ -138,7 +144,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
         }
         case II_TAG: {
             if (!$node._content || $node._content.length !== 1) {
-                _throw_transform_err('misconfigured _ii node', 'serialize_json', $node);
+                _throw_transform_err('misconfigured _ii node', 'serialize_json');
             }
             return jsonFromNode($node._content[0] as HsonNode_NEW);
         }
@@ -154,7 +160,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             } else if ($node._content && $node._content.length > 1) {
                 /*  This implies a cluster of values if a standard tag has multiple content VSNs
                     (should be rare or never) */
-                _throw_transform_err(`<${$node._tag}> has multiple content VSN children`, 'serialize_json', $node);
+                _throw_transform_err(`<${$node._tag}> has multiple content VSN children`, 'serialize_json');
             }
 
             /* handle _meta */

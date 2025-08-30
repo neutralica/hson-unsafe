@@ -3,7 +3,7 @@
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Object, is_Primitive } from "../../../core/utils/guards.core.utils.hson";
 import {ARR_TAG, ELEM_TAG, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG}from "../../../types-consts/constants.hson"
-import { snip_long_string } from "../../../utils/preview-long.utils.hson";
+import { _snip } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
 import { JsonType_NEW, HsonNode_NEW, HsonMeta_NEW, JsonObj_NEW, HsonAttrs_NEW } from "../../types-consts/node.new.types.hson";
@@ -17,7 +17,7 @@ const _log: (...args: Parameters<typeof console.log>) => void =
     _VERBOSE
         ? (...args) => console.log(
             '[parse_json_NEW]: ',
-            ...args.map(a => (typeof a === "string" ? snip_long_string(a, 500) : a)))   // ← prefix + passthrough
+            ...args.map(a => (typeof a === "string" ? _snip(a, 500) : a)))   // ← prefix + passthrough
         : () => { };
 
 
@@ -60,7 +60,7 @@ function nodeFromJson(
     /* catch primitive nodes */
     if ($parentTag === STR_TAG || $parentTag === VAL_TAG) {
         if (!is_Primitive($srcJson)) {
-            _throw_transform_err('values must be string, bool, number, or null', 'parse_json', $srcJson);
+            _throw_transform_err('values must be string, bool, number, or null', 'parse_json');
         }
         if (is_not_string_NEW($srcJson)) {
             return {
@@ -129,7 +129,7 @@ function nodeFromJson(
                     node: NEW_NEW_NODE({ _tag: ELEM_TAG, _content: contentNodes }),
                 };
             } else {
-                _throw_transform_err('content must always be in an array', 'parse_json', $srcJson)
+                _throw_transform_err('content must always be in an array', 'parse_json');
             }
         }
 

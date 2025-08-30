@@ -56,7 +56,7 @@ function nodeFromJson(
     /* catch BasicValue nodes */
     if ($parentTag === STR_TAG || $parentTag === VAL_TAG) {
         if (!is_Primitive($srcJson)) {
-            _throw_transform_err('values must be string, bool, number, or null', 'parse_json', $srcJson);
+            _throw_transform_err('values must be string, bool, number, or null', 'parse_json');
         }
         if (is_not_string($srcJson)) {
             return {
@@ -134,7 +134,7 @@ function nodeFromJson(
                     node: NEW_NODE({ _tag: ELEM_TAG, _content: contentNodes }),
                 };
             } else {
-                _throw_transform_err('content must always be in an array', 'parse_json', $srcJson)
+                _throw_transform_err('content must always be in an array', 'parse_json');
             }
         }
 

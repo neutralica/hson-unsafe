@@ -2,6 +2,20 @@
 
 import { _throw_transform_err } from "./throw-transform-err.utils.hson";
 
+/* debug log */
+let _VERBOSE = true;
+const STYLE = 'color:grey;font-weight:600;padding:1px 3px;border-radius:4px';
+// tweak _log to style every arg (incl. your prefix), no helpers:
+const _log = _VERBOSE
+  ? (...args: unknown[]) =>
+    console.log(
+      ['%c%s', ...args.map(() => '%c%o')].join(' '),
+      STYLE, '[parse_style] →',
+      ...args.flatMap(a => [STYLE, a]),
+    )
+  : () => { };
+
+
 /**
  * Parses a CSS style string into a camelCased JavaScript object.
  * @param {string} $text - e.g., "color: blue; font-weight: bold;"

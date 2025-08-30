@@ -33,7 +33,7 @@ export function serialize_json_OLD($node: HsonNode): string {
         return json;
     } catch (e: any) {
 
-        _throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json', $node);
+        _throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json');
     }
 }
 
@@ -52,7 +52,7 @@ export function serialize_json_OLD($node: HsonNode): string {
 function jsonFromNode($node: HsonNode): JsonType {
 
     if (!$node || typeof $node._tag !== 'string') {
-        _throw_transform_err(`error in node or node tag: ${$node}`, 'serialize_json', $node);
+        _throw_transform_err(`error in node or node tag: ${$node}`, 'serialize_json');
     }
 
 
@@ -64,7 +64,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             let root: JsonType | null = null;
             _log(`  <_root>: processing content`);
             root = jsonFromNode($node._content[0] as HsonNode);
-            if (root === null) _throw_transform_err('_root is null', 'serialize_json', $node);
+            if (root === null) _throw_transform_err('_root is null', 'serialize_json');
             return root;
         }
 
@@ -77,7 +77,7 @@ function jsonFromNode($node: HsonNode): JsonType {
                     if (is_indexed(iiNode)) {
                         array.push(jsonFromNode(iiNode._content[0] as HsonNode));
                     } else {
-                        _throw_transform_err(`malformed _ii node in _array`, 'serialize-json', $node);
+                        _throw_transform_err(`malformed _ii node in _array`, 'serialize-json');
                     }
                 }
             }
@@ -104,7 +104,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             /* get the object's properties--the nodes in its .content */
             for (const prop of ($node._content as HsonNode[])) {
                 if (!is_Node(prop) || !prop._tag) {
-                    _throw_transform_err(`invalid child inside _obj:${prop}`, 'serialize_json', $node._content);
+                    _throw_transform_err(`invalid child inside _obj:${prop}`, 'serialize_json');
                 }
 
                 const key = prop._tag;
@@ -159,7 +159,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             if ($node._content && $node._content.length === 1) {
                 iiContent = jsonFromNode($node._content[0] as HsonNode);
             } else {
-                _throw_transform_err(`misconfigured index tag:  make_string($node)`, 'serialize_json', $node._content);
+                _throw_transform_err(`misconfigured index tag:  make_string($node)`, 'serialize_json');
             }
             return iiContent;
 
@@ -173,7 +173,7 @@ function jsonFromNode($node: HsonNode): JsonType {
             } else if ($node._content && $node._content.length > 1) {
                 /*  This implies a cluster of values if a standard tag has multiple content VSNs
                     (should be rare or never) */
-                _throw_transform_err(`<${$node._tag}> has multiple content VSN children`, 'serialize_json', $node);
+                _throw_transform_err(`<${$node._tag}> has multiple content VSN children`, 'serialize_json');
             } else { /*  empty content, value remains [] */
                 stdJson = { [$node._tag]: '' };
             }

@@ -4,7 +4,7 @@ import { BLANK_META, ELEM_TAG, STR_TAG } from "../../../types-consts/constants.h
 import { HsonNode } from "../../../types-consts/node.types.hson";
 import { escape_html } from "../../../utils/escape-html.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
-import { serialize_css } from "../../../utils/serialize-css.utils.hson";
+import { serialize_style } from "../../../utils/serialize-css.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
 
@@ -76,7 +76,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
     case STR_TAG: {
       _log('string tag found; flattening')
       if (typeof content[0] !== 'string') {
-        _throw_transform_err('need a primitive in a txt node!', 'serialize_html', content);
+        _throw_transform_err('need a primitive in a txt node!', 'serialize_html');
       }
       return primitive_to_string(content[0] as Primitive)
 
@@ -99,7 +99,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
           perhaps we could create a _parse="" attr that forces parsing of its attribute content 
                         (no that wouldn't do what I want) */
       /* serialize the style object back into a CSS string */
-      const styleString = serialize_css(value as Record<string, string>);
+      const styleString = serialize_style(value as Record<string, string>);
 
       /* append completed style attribute to the WIP tag string */
       openLine += ` style="${escape_html(styleString)}"`;

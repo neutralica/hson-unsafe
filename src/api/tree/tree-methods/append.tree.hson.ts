@@ -30,7 +30,7 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
         // Use the same utility for a single node. It will return a clean array.
         nodesToAppend = unwrap_root($content);
     } else {
-        _throw_transform_err('[ERR] invalid content provided', 'append', $content);
+        _throw_transform_err('[ERR] invalid content provided', 'append');
     }
 
     for (const targetNode of selectedNodes) {

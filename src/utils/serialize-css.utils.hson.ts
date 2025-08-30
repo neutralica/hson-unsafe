@@ -20,7 +20,7 @@ export function camel_to_kebab($str: string): string {
  * @param $style - a Dictionary-like object of CSS properties
  * @returns {string} a browser-compatible CSS string
  */
-export function serialize_css($style: Record<string, string>): string {
+export function serialize_style($style: Record<string, string>): string {
   let cssText = "";
 
   /* get keys, sort alphabetically before iterating (for node consistency) */

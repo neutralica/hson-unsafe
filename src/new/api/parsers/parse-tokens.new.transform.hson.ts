@@ -14,7 +14,7 @@ import { unescape_hson_string } from "../../utils/unescape-hson.utils.hson";
 import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils.hson";
 
 /* debug log */
-const _VERBOSE = false;
+const _VERBOSE = true;
 const boundLog = console.log.bind(console, '%c[hson]', 'color: green; background: lightblue;'); 
 const _log = _VERBOSE ? boundLog : () => { };
 
@@ -49,7 +49,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
     function _take(): Tokens_NEW { return $tokens[ix++] as Tokens_NEW; }
     function _expect(kind: TokenKind): Tokens_NEW {
         const t = _take();
-        if (!t || t.kind !== kind) _throw_transform_err(`expected ${kind}, got ${t?.kind ?? 'eof'}`, 'parse_tokens_new', $tokens);
+        if (!t || t.kind !== kind) _throw_transform_err(`expected ${kind}, got ${t?.kind ?? 'eof'}`, 'parse_tokens_new');
         return t;
     }
 
@@ -57,7 +57,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
     function _read_tag($isTopLevel = false): { node: HsonNode_NEW; closeKind: CloseKind } {
         const open = _take();
         if (!open || open.kind !== TOKEN_KIND.OPEN) {
-            _throw_transform_err(`expected OPEN, got ${open?.kind ?? 'eof'}`, 'parse_tokens_new', open);
+            _throw_transform_err(`expected OPEN, got ${open?.kind ?? 'eof'}`, 'parse_tokens_new');
         }
 
         const { _attrs, _meta } = split_attrs_meta(open.rawAttrs);
@@ -96,10 +96,10 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
             if (t.kind === TOKEN_KIND.ARR_OPEN) { kids.push(_read_array()); continue; }
             if (t.kind === TOKEN_KIND.OPEN) { kids.push(_read_tag(false).node); continue; }
 
-            _throw_transform_err(`unexpected token ${t.kind} inside <${open.tag}>`, 'parse_tokens_new', t);
+            _throw_transform_err(`unexpected token ${t.kind} inside <${open.tag}>`, 'parse_tokens_NEW');
         }
 
-        if (!sawClose) _throw_transform_err(`missing CLOSE for <${open.tag}>`, 'parse_tokens_new', open);
+        if (!sawClose) _throw_transform_err(`missing CLOSE for <${open.tag}>`, 'parse_tokens_NEW');
 
         const hasKids = kids.length > 0;
 
@@ -152,7 +152,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
     function _read_array(): HsonNode_NEW {
         const arrOpen = _take();
         if (!arrOpen || arrOpen.kind !== TOKEN_KIND.ARR_OPEN) {
-            _throw_transform_err(`expected ARR_OPEN, got ${arrOpen?.kind ?? 'eof'}`, 'parse_tokens_new', arrOpen);
+            _throw_transform_err(`expected ARR_OPEN, got ${arrOpen?.kind ?? 'eof'}`, 'parse_tokens_new');
         }
         const items: HsonNode_NEW[] = [];
         let idx = 0;
@@ -173,7 +173,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
             } else if (t.kind === TOKEN_KIND.ARR_OPEN) {
                 childNode = _read_array();
             } else {
-                _throw_transform_err(`unexpected ${t.kind} in array`, 'parse_tokens_new', t);
+                _throw_transform_err(`unexpected ${t.kind} in array`, 'parse_tokens_new');
             }
 
             items.push({
@@ -220,7 +220,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
             );
             continue;
         }
-        _throw_transform_err(`unexpected top-level token ${t.kind}`, 'parse_tokens_new', t);
+        _throw_transform_err(`unexpected top-level token ${t.kind}`, 'parse_tokens_new');
     }
     if (nodes.length === 1 && nodes[0]._tag === ROOT_TAG) {
         return nodes[0];

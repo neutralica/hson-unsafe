@@ -8,11 +8,10 @@ export type BasicValue = boolean | number | null;
 /** recursive type representing any valid json structur. */
 export type JsonType =
     | Primitive
-    // | { [key: string]: JsonType } /* replaced with JsonObj: */
     | JsonObj
     | JsonType[];
 
 
-/** represents a standard javascript object, extended with an optional _meta property */
+/** represents a standard javascript object */
 export type JsonObj = { [key: string]: JsonType };
 

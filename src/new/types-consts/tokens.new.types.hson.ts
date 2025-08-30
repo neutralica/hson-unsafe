@@ -7,28 +7,29 @@ import { TOKEN_KIND } from "./constants.new.hson";
 export type Position = { line: number; col: number; index: number };
 
 export type RawAttr = {
-    name: string;
-    value?: { text: string; quoted: boolean };
-    start: Position;
-    end: Position;
+  name: string;
+  value?: { text: string; quoted: boolean };
+  start: Position;
+  end: Position;
 };
 
 
 export interface BaseToken_NEW {
-    /** Discriminator */
-    type: Tokens_NEW;
-    /** Tag name or JSON key */
-    tag?: string;
-    /** Parsed key→value attributes */
-    rawAttrs?: RawAttr[];
-    quoted?: boolean;
+  /** Discriminator */
+  kind: TokenKind;
+  /** Tag name or JSON key */
+  tag?: string;
+  /** Parsed key→value attributes */
+  rawAttrs?: RawAttr[];
+  quoted?: boolean;
+  pos?: Position;
 }
 
 /* new refactor types: */
 export type TokenKind =
-    | 'OPEN' | 'CLOSE'
-    | 'ARR_OPEN' | 'ARR_CLOSE'
-    | 'TEXT';
+  | 'OPEN' | 'CLOSE'
+  | 'ARR_OPEN' | 'ARR_CLOSE'
+  | 'TEXT';
 
 export type CloseKind = 'obj' | 'elem';
 
@@ -67,6 +68,6 @@ export type TokenText_NEW = {
 };
 
 export type Tokens_NEW =
-    | TokenOpen_NEW  | TokenEnd_NEW
-    | TokenArrayOpen_NEW | TokenArrayClose_NEW
-    | TokenText_NEW;
+  | TokenOpen_NEW | TokenEnd_NEW
+  | TokenArrayOpen_NEW | TokenArrayClose_NEW
+  | TokenText_NEW;

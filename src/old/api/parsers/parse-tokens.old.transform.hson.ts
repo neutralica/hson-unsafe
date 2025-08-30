@@ -30,7 +30,7 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
     let finalNode: HsonNode | null = null;
 
     if (!$tokens || $tokens.length === 0) {
-        _throw_transform_err("token_to_node received no tokens", 'parse_tokens', $tokens);
+        _throw_transform_err("token_to_node received no tokens", 'parse_tokens');
         return NEW_NODE({ _tag: ROOT_TAG, _content: [NEW_NODE({ _tag: OBJ_TAG, _content: [], _meta: BLANK_META })], _meta: BLANK_META });
     }
     if (_VERBOSE) {
@@ -49,7 +49,7 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
                 parent._content = [];
             } else {
                 /* this warning indicates a malformed VSN */
-                _throw_transform_err(`node on stack (tag: ${parent._tag}) missing content array when trying to add children not via OPEN/ARRAY_OPEN`, 'parse_tokens', $tokens);
+                _throw_transform_err(`node on stack (tag: ${parent._tag}) missing content array when trying to add children not via OPEN/ARRAY_OPEN`, 'parse_tokens');
             }
         }
 
@@ -119,7 +119,7 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
             case TokenΔ.OBJ_OPEN: {
                 /* for processing JSON data */
                 if (currentToken.tag !== OBJ_TAG) {
-                    _throw_transform_err(`[token_to_node] OBJ_OPEN token with unexpected tag: ${currentToken.tag}`, 'parse_tokens', $tokens);
+                    _throw_transform_err(`[token_to_node] OBJ_OPEN token with unexpected tag: ${currentToken.tag}`, 'parse_tokens');
                 }
 
                 const newObj = NEW_NODE({
@@ -163,7 +163,7 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
             /* handle _elem nodes (from html sources) */
             case TokenΔ.ELEM_OPEN: {
                 if (currentToken.tag !== ELEM_TAG) {
-                    _throw_transform_err(`[token_to_node] ELEM_OPEN token with unexpected tag: ${currentToken.tag} (should be '_elem')`, 'parse_tokens', $tokens);
+                    _throw_transform_err(`[token_to_node] ELEM_OPEN token with unexpected tag: ${currentToken.tag} (should be '_elem')`, 'parse_tokens');
 
                 }
 
@@ -182,7 +182,7 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
 
             case TokenΔ.ARRAY_OPEN: {
                 if (currentToken.tag !== ARR_TAG) {
-                    _throw_transform_err(`[token_to_node] ARRAY_OPEN token with unexpected tag: ${currentToken.tag}`, 'parse_tokens', $tokens);
+                    _throw_transform_err(`[token_to_node] ARRAY_OPEN token with unexpected tag: ${currentToken.tag}`, 'parse_tokens');
                 }
 
                 const arrayNode = NEW_NODE({
@@ -213,13 +213,13 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
                 const closingTag = token.tag; /* this should be `_obj` */
 
                 if (nodeStack.length === 0) {
-                    _throw_transform_err(`[token_to_node OBJ_CLOSE] mismatched CLOSE token </${closingTag}> (expected VSN type ${OBJ_TAG})\n node stack is empty`, 'parse_tokens', $tokens);
+                    _throw_transform_err(`[token_to_node OBJ_CLOSE] mismatched CLOSE token </${closingTag}> (expected VSN type ${OBJ_TAG})\n node stack is empty`, 'parse_tokens');
                 }
 
                 const closingNode = nodeStack[nodeStack.length - 1];
 
                 if (closingTag !== OBJ_TAG) { /* Token's tag itself should also be _obj */
-                    _throw_transform_err(`[token_to_node OBJ_CLOSE] token tag is <${closingTag}> but expected ${OBJ_TAG}\n closing ${closingNode._tag} based on stack`, 'parse_tokens',$tokens );
+                    _throw_transform_err(`[token_to_node OBJ_CLOSE] token tag is <${closingTag}> but expected ${OBJ_TAG}\n closing ${closingNode._tag} based on stack`, 'parse_tokens');
                 }
 
                 const poppedNode = nodeStack.pop()!;
@@ -239,15 +239,15 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
 
                 /* 1. validate */
                 if (nodeStack.length === 0) {
-                    _throw_transform_err(`Mismatched CLOSE token </${close_tag}> -- node stack empty`, 'parse_tokens', $tokens);
+                    _throw_transform_err(`Mismatched CLOSE token </${close_tag}> -- node stack empty`, 'parse_tokens');
                 }
                 const closingNode = nodeStack.pop();
                 if (!closingNode) {
-                    _throw_transform_err('could not pop nodestack', 'parse_tokens', $tokens);
+                    _throw_transform_err('could not pop nodestack', 'parse_tokens');
                     
                 }
                 if (closingNode._tag !== close_tag) {
-                    _throw_transform_err(`mismatched CLOSE token: expected </${closingNode._tag}> but got </${close_tag}>`, 'parse_tokens', $tokens);
+                    _throw_transform_err(`mismatched CLOSE token: expected </${closingNode._tag}> but got </${close_tag}>`, 'parse_tokens');
                 }
 
                 /* pop stack, get collect children directly into content */
@@ -293,7 +293,7 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
                 let primValue: Primitive | undefined = undefined;
                 let has_content = false;
                 if (parent?._tag !== ELEM_TAG && parent?._tag !== OBJ_TAG) {
-                    _throw_transform_err(`[error in parse-tokens!!] parent.tag is not _elem or _obj: should be VSN\n (${parent?._tag})`, 'parse_tokens', $tokens);
+                    _throw_transform_err(`[error in parse-tokens!!] parent.tag is not _elem or _obj: should be VSN\n (${parent?._tag})`, 'parse_tokens');
                 }
 
                 /* null check if token._content exists and analyze */
@@ -367,7 +367,7 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
 
                         finalNode = selfNode;
                     } else {
-                       _throw_transform_err(`[token_to_node SELF] <${token.tag}> has no parent on stack and is not root.`, 'parse_tokens', token);
+                       _throw_transform_err(`[token_to_node SELF] <${token.tag}> has no parent on stack and is not root.`, 'parse_tokens');
                     }
                 }
                 break;  /* do not push onto nodeStack */
@@ -378,10 +378,10 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
                 /* handle nodes containing BasicValues (primitives) */
                 _log('[token_to_node #TEXT] processing token:', JSON.stringify(token));
                 if (!parent) {
-                    _throw_transform_err(`HASHTAG_TEXT token encountered with no parent node on stack. Token: ${JSON.stringify(token)}`, 'parse_tokens', $tokens);
+                    _throw_transform_err(`HASHTAG_TEXT token encountered with no parent node on stack. Token: ${JSON.stringify(token)}`, 'parse_tokens');
                 }
                 if (token.content != undefined && token.content.length > 1) {
-                    _throw_transform_err(`hashtag content length longer than 1.`, 'parse_tokens', token);
+                    _throw_transform_err(`hashtag content length longer than 1.`, 'parse_tokens');
                 }
                 let primitiveValue: Primitive | undefined = undefined;
 
@@ -398,14 +398,14 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
 
                     } else {
                         _log(token + '.content.length === 2+');
-                        _throw_transform_err(`[token_to_node HASHTAG_TEXT] content is an array but not a single primitive: ${JSON.stringify(token.content)}. Skipping.`, 'parse_tokens', token);
+                        _throw_transform_err(`[token_to_node HASHTAG_TEXT] content is an array but not a single primitive: ${JSON.stringify(token.content)}. Skipping.`, 'parse_tokens');
                     }
                 } else if (is_Primitive(token.content)) {
                     /* should not get here but what if */
-                    _throw_transform_err(' token.content is primitive', 'parse_tokens', token);
+                    _throw_transform_err(' token.content is primitive', 'parse_tokens');
                 } else {
                     /* token.content is undefined or some other unexpected type */
-                    _throw_transform_err(' [token_to_node HASHTAG_TEXT] content is undefined or not a primitive/array: ${JSON.stringify(token.content)}. Skipping.', 'parse_tokens', token);
+                    _throw_transform_err(' [token_to_node HASHTAG_TEXT] content is undefined or not a primitive/array: ${JSON.stringify(token.content)}. Skipping.', 'parse_tokens');
                 }
 
                 if (primitiveValue !== undefined) {
@@ -430,14 +430,14 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
                 break;
             }
             default: {
-                _throw_transform_err(`Unknown token type: ${(token as any)?.type} encountered near token index ${i}`, 'parse_tokens', $tokens);
+                _throw_transform_err(`Unknown token type: ${(token as any)?.type} encountered near token index ${i}`, 'parse_tokens');
             }
         }
     }
 
     if (nodeStack.length !== 0) {
         console.error("final stack should be empty!\n", make_string(nodeStack.map(n => n._tag)));
-        _throw_transform_err(`unbalanced OPEN/CLOSE tokens: ${nodeStack.length} nodes left on stack.`, 'parse_tokens', finalNode);
+        _throw_transform_err(`unbalanced OPEN/CLOSE tokens: ${nodeStack.length} nodes left on stack.`, 'parse_tokens');
         
     }
 
@@ -445,10 +445,10 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
         if ($tokens.length > 0) {
             /* if there were tokens but no root, something has gone wrong */
             console.error("parsing finished but no root node was completed, despite tokens being present");
-            _throw_transform_err("parsing finished but no root node was completed", 'parse_tokens', $tokens);
+            _throw_transform_err("parsing finished but no root node was completed", 'parse_tokens');
         }
         /* if tokens array was empty and we didn't hit the initial check (should not happen), make a default empty root */
-        _throw_transform_err("no tokens processed and no root node completed. Creating default empty root.", 'parse_tokens', $tokens);
+        _throw_transform_err("no tokens processed and no root node completed. Creating default empty root.", 'parse_tokens');
     }
 
     _log(`[token_to_node END] final check: completedRootNode is ${finalNode ? `set (tag: ${finalNode._tag})` : 'null/undefined'}\n nodeStack size: ${nodeStack.length}`);
@@ -457,7 +457,7 @@ export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
     /*  check if root node exists *if* there were tokens to process */
     if (!finalNode && $tokens.length > 0) {
         console.error("parsing finished but no root node was completed");
-        _throw_transform_err("parsing finished but no root node was completed", 'parse_tokens', $tokens);
+        _throw_transform_err("parsing finished but no root node was completed", 'parse_tokens');
     } else if (!finalNode && $tokens.length === 0) {
         /*  handle empty input - error or empty root node? */
         console.warn("input token array was empty. Returning empty root");

@@ -1,4 +1,5 @@
 import { Primitive } from "../../core/types-consts/core.types.hson";
+import { _META_DATA_PREFIX } from "../../new/types-consts/constants.new.hson";
 import { HsonAttrs, HsonFlags, HsonMeta, HsonNode } from "../../types-consts/node.types.hson";
 import { canonicalize } from "../../utils/canonicalize.utils.hson";
 import { is_Node } from "../../utils/node-guards.utils.hson";
@@ -28,7 +29,7 @@ function _peek(x: any, y: any, path: string) {
 
 
 /* normalize style to a stable object */
-function normalize_style(
+export function normalize_style(
   s: string | Record<string, string> | undefined
 ): Record<string, string> | undefined {
   if (!s) return undefined;
@@ -70,27 +71,13 @@ function normalize_style(
 
 function normalize_meta(n: HsonNode): Record<string, string> {
   const meta: any = (n as any)._meta ?? {};
-  const topAttrs: any = (n as any)._attrs ?? {};
-  const oldMetaAttrs: any = meta?.attrs ?? {};
-
-  // helper: get canonical meta value from multiple legacy slots
-  const pick = (canonKey: "data-index" | "data-quid"): string | undefined => {
-    // 1) canonical location (NEW)
-    if (meta[canonKey] != null) return String(meta[canonKey]);
-
-    // 2) legacy attr names (OLD): data-_<name>
-    const underscored = "data-_" + canonKey.slice("data-".length); // e.g., "data-_index"
-    if (topAttrs[underscored] != null) return String(topAttrs[underscored]);
-    if (oldMetaAttrs[underscored] != null) return String(oldMetaAttrs[underscored]);
-
-    return undefined;
-  };
-
   const out: Record<string, string> = {};
-  const di = pick("data-index");
-  if (di !== undefined) out["data-index"] = di;
-  const dq = pick("data-quid");
-  if (dq !== undefined) out["data-quid"] = dq;
+  for (const k of Object.keys(meta)) {
+    if (k.startsWith(_META_DATA_PREFIX) && meta[k] != null) {
+      out[k] = String(meta[k]);
+      
+    }
+  }
   return out;
 }
 

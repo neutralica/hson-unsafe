@@ -1,189 +1,97 @@
 // --- serialize-hson.hson.render.ts ---
 
-import { Primitive } from "../../core/types-consts/core.types.hson.js";
-import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ELEM_TAG, OBJ_TAG, _FALSE } from "../../types-consts/constants.hson.js";
-import { format_hson_attrs } from "../../utils/format-hson-attrs.utils.hson.js";
-import { get_self_close_value } from "../../utils/get-self-value.utils.hson.js";
-import { is_Primitive, is_void  } from "../../core/utils/guards.core.utils.hson.js";
-import { make_string } from "../../utils/make-string.utils.hson.js";
-import { serialize_primitive } from "../../utils/serialize-primitive.utils.hson.js";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
-import { HsonMeta, HsonNode } from "../../types-consts/node.types.hson.js";
-import { is_Node } from "../../utils/node-guards.utils.hson.js";
-
+import { diffNEW } from "../../_refactor/_refactor-utils/diff-new-nodes.new.utils.hson";
+import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
+import { equalNEW, to_NEW } from "../../_refactor/kompat/kompat-layer.refactor.hson";
+import { normalizeNEWStrict } from "../../_refactor/kompat/normalizers.kompat.hson";
+import { parse_hson_NEW } from "../../new/api/parsers/parse_hson.new.transform.hson";
+import { serialize_hson_NEW } from "../../new/api/serializers/serialize-hson.new.render.hson";
+import { parse_hson_OLD } from "../../old/api/parsers/parse-hson.old.transform.hson";
+import { serialize_hson_OLD } from "../../old/api/serializers/serialize-hson.old.render.hson";
+import { HsonNode } from "../../types-consts/node.types.hson";
+import { make_string } from "../../utils/make-string.utils.hson";
+import { _snip } from "../../utils/preview-long.utils.hson";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson";
 
 
 /* debug log */
-let _VERBOSE = false;
-const $log = _VERBOSE
-    ? console.log
-    : () => { };
+let _VERBOSE = true;
+const STYLE = 'color:lightgreen;font-weight:600;padding:1px 3px;border-radius:4px';
+// tweak _log to style every arg (incl. your prefix), no helpers:
+const _log = _VERBOSE
+  ? (...args: unknown[]) =>
+    console.log(
+      ['%c%s', ...args.map(() => '%c%o')].join(' '),
+      STYLE, '[srlz hson ***WRAPPER***] →',
+      ...args.flatMap(a => [STYLE, a]),
+    )
+  : () => { };
 
 
-function formatHsonMeta($meta: HsonMeta | undefined): string {
-    if (!$meta) {
-        return "";
-    }
-
-    /* call the attrs helper once with the entire attrs object */
-    const attributesString = $meta.attrs ? format_hson_attrs($meta.attrs) : "";
-
-    /* format flags (simple unquoted strings) */
-    const flagsString = $meta.flags ? ` ${$meta.flags.join(' ')}` : "";
-
-    /* combine them; the leading space is handled by the helper/formatter */
-    return `${attributesString}${flagsString}`;
+/* helper: keep logs lightweight (no nodes) */
+function summarizeChanges(changes: ReturnType<typeof diffNEW>, max = 8) {
+  return changes.slice(0, max).map(c => ({ kind: c.kind, path: c.path }));
 }
 
-/* indentation getter */
-function getIndent($level: number): string {
-    return "  ".repeat($level); /* currently 2 spaces per level */
-}
+export function serialize_hson(root: HsonNode /* OLD shape OK here */): string {
+  _log('SERIALIZE HSON WRAPPER - beginning');
+  if (_VERBOSE) {
+    console.groupCollapsed('node:');
+    _log(root);
+    console.groupEnd();
+  }
+  const oldWire = serialize_hson_OLD(root);
+  _log('old path successful: ', _snip(oldWire, 500))
+  if (!SHADOW_ENABLED()) return oldWire;
 
-/**
- * recursively serializes an hsonnode tree into a formatted hson string.
- *
- * this function is the core serializer for the hson format. it handles
- * indentation, attribute formatting, and correctly applies context-aware
- * closers ('>' for object properties vs. '/>' for list items) based
- * on the parent's vsn.
- *
- * @param {HsonNode} $input - the node or primitive value to serialize.
- * @param {number} $indent_level - the current indentation level for pretty-printing.
- * @param {typeof ELEM_TAG | typeof OBJ_TAG} [$vsn] - the vsn context provided by the parent node, used to determine the correct closer for one-liners.
- * @returns {string} the formatted hson string representation of the node.
- */
-
-function hsonFromNode(
-    $input: HsonNode | Primitive,
-    $indent_level: number,
-    $vsn?: typeof ELEM_TAG | typeof OBJ_TAG,
-): string {
-    const currentIndent = getIndent($indent_level);
-
-    /* Primitives */
-    if (is_Primitive($input)) {
-        const value = serialize_primitive($input)
-        return currentIndent + value;
-    }
-    const node: HsonNode = { ...($input || {}) };
-    const oneLinerValue = get_self_close_value(node);
-    /* 2. if the helper returned a value, format the one-liner */
-    if (oneLinerValue !== _FALSE) { /* sentinel value for generic no-result boolean */
-        /* (self nodes may have no attributes) */
-        const tag = node._tag;
-        const valString = serialize_primitive(oneLinerValue);
-
-        if ($vsn === ELEM_TAG) {
-            return `${currentIndent}<${tag} ${valString} />`;
-        } else {
-            return `${currentIndent}<${tag} ${valString}>`;
-        }
-    }
-
-    const {  _tag: tag,  _content: content = [], _meta } = node || {};
-
-    const attrs = _meta.attrs ?? {};
-    const flags = _meta.flags ?? [];
-
-
-    const meta_string = formatHsonMeta({ attrs, flags }); // Your helper
-
-    /*  2. disappear VSNs */
-    if (tag === STR_TAG || tag === VAL_TAG) {
-        if (content.length !== 1 || !is_Primitive(content[0])) {
-            _throw_transform_err('_str or _val nodes must have 1 and only 1 hson  in content', 'serialize-hson', node);
-        }
-
-        const value = currentIndent + make_string(content[0])
-        return value;
-    }
-    if (tag === II_TAG) {
-        if (content.length !== 1) { _throw_transform_err('_ii nodes must have 1 & only 1 child', 'serialize-hson', node); }
-        if (!is_Node(content[0])) {
-            _throw_transform_err('index tag contents are not nodes', 'serialize-hson', content)
-        }
-        /* recurse the child with the SAME indent level. */
-        return hsonFromNode(content[0], $indent_level + 1, $vsn);
-    }
-
-    /* --- 3. container VSNs --- */
-    if (tag === ARR_TAG) {
-        if (content.length === 0) {
-            return `«»`;
-        }
-
-        const hson_content = content
-            .map(itemNode => `${hsonFromNode(itemNode, $indent_level)}`)
-            .join(',\n');
-        return `${currentIndent}«\n${hson_content}\n${currentIndent}»`;
-    }
-
-    /* --- 4. 'standard' tags --- */
-
-    /*  determine the node's type and structure,
-         build the output based on those characteristics */
-    if (is_void(content)) {
-        /*  case A: void node -> self closing: <tag /> */
-        return `${currentIndent}<${tag}${meta_string} />`;
-    }
-
-    /* case C: all other nodes are treated as blocks */
-    /* 1. establish defaults */
-    let actualContent = content as HsonNode[];
-    let parentTag = tag; // The VSN context we will pass to children.
-
-    /* 2. check for a VSN to not-include */
-    const firstChild = content?.[0] as HsonNode | undefined;
-    const shouldMelt = content.length === 1 && firstChild && (firstChild._tag === ELEM_TAG || firstChild._tag === OBJ_TAG);
-
-    if (shouldMelt) {
-        /* if found the content content and context come from that child */
-        actualContent = firstChild._content as HsonNode[];
-        parentTag = firstChild._tag;
-    }
-
-    /* 3. derive the closer and context */
-    const closer = (parentTag === ELEM_TAG) ? '/>' : '>';
-    const childVsn = parentTag;
-    let finalVsn: typeof ELEM_TAG | typeof OBJ_TAG = OBJ_TAG;
-    if (childVsn === ELEM_TAG || childVsn === OBJ_TAG) {
-        finalVsn = childVsn;
-    }
-
-    const processedNodes = actualContent
-        .map(child => hsonFromNode(child, $indent_level + 1, finalVsn)) // Pass context here
-        .join('\n');
-    const finalTag = tag === OBJ_TAG ? '' : tag;
-    return `${currentIndent}<${finalTag}${meta_string}\n${processedNodes}\n${currentIndent}${closer}`;
-}
-
-/**
- * serializes the entire hson node tree into a final hson string
- *
- * this function serves as the main entry point for hson serialization,
- * initiating the recursive process by calling the `hsonFromNode` helper
- * on the root node
- *
- * @param {HsonNode} $root - the root node of the data structure to be serialized.
- * @returns {string} the complete, formatted hson string.
- */
-
-export function serialize_hson($root: HsonNode): string {
+  try {
+    _log('attempting new serialization route');
+    /* CHANGED: normalize to canonical NEW before hitting NEW serializer */
+    _log('converting HsonNode to _NEW and normalizing...');
+    const rootNEW = normalizeNEWStrict(to_NEW(root));                // /* added */
     if (_VERBOSE) {
-        console.groupCollapsed('---> serializing hson')
-        console.log('beginning node:')
-        console.log(make_string($root));
-        console.groupEnd()
+      console.groupCollapsed('node:');
+      _log(rootNEW);
+      console.groupEnd();
     }
+    _log('serializing hson via _NEW path');
+    const newWire: string = serialize_hson_NEW(rootNEW);                    // /* changed: pass normalized NEW */
 
-    if (!$root || !is_Node($root)) _throw_transform_err('no _root node found in data', 'serialize-hson', $root);
-    const hson = hsonFromNode($root, 0).trim();
-
+    /* Compare NEW→NEW by parsing both wires with OLD parser → toNEW → normalizeNEWStrict */
+    _log('re-parsing OLD serialization & converting ...')
+    const oldBackNEW = normalizeNEWStrict(to_NEW(parse_hson_OLD(oldWire)));
     if (_VERBOSE) {
-        console.groupCollapsed('returning HSON:')
-        console.log(hson);
-        console.groupEnd()
+      console.groupCollapsed('oldBack:');
+      _log(oldBackNEW);
+      console.groupEnd();
     }
-    return hson;
+    _log('re-parsing NEW serialization & converting ...')
+    const newBackNEW = normalizeNEWStrict(parse_hson_NEW(newWire));
+    if (_VERBOSE) {
+      console.groupCollapsed('newBack:');
+      _log(newBackNEW);
+      console.groupEnd();
+    }
+    const seen = new Set<string>(); // process-wide or module-local
+
+    // ...
+    const changes = diffNEW(newBackNEW, oldBackNEW);
+    if (changes.length) {
+      const sig = JSON.stringify({ a: newBackNEW._tag, b: oldBackNEW._tag, wires: [oldWire.length, newWire.length], first: changes[0]?.path });
+      if (!seen.has(sig)) {
+        seen.add(sig);
+        console.warn("[shadow-HSON][serialize] NEW≠OLD",
+          make_string(changes.slice(0, 12).map(c => ({ kind: c.kind, path: c.path }))));
+      }
+    } else {
+      _log('hson nodes old and _NEW are equal!!')
+    }
+  } catch (err) {
+    /* CHANGED: keep error path “cold” — do not call make_string/canonicalize here */
+    const msg = err instanceof Error ? err.message : String(err);
+    // minimal context; no node serialization
+    _throw_transform_err(`[shadow-HSON][serialize] NEW crashed: ${msg}`, 'serialize-hson WRAPPER');
+  }
+
+  return oldWire;
 }

@@ -11,7 +11,7 @@ import { expand_void_tags } from "../../../utils/expand-self-closing.utils.hson"
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
 import { parse_html_attrs } from "../../../utils/parse_html_attrs.utils.hson";
-import { snip_long_string } from "../../../utils/preview-long.utils.hson";
+import { _snip } from "../../../utils/preview-long.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
 import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types.hson";
@@ -23,7 +23,7 @@ const _log: (...args: Parameters<typeof console.log>) => void =
     _VERBOSE
         ? (...args) => console.log(
             '[parse_html_NEW]: ',
-            ...args.map(a => (typeof a === "string" ? snip_long_string(a, 500) : a)))   // ← prefix + passthrough
+            ...args.map(a => (typeof a === "string" ? _snip(a, 500) : a)))   // ← prefix + passthrough
         : () => { };
 
 
@@ -59,12 +59,12 @@ export function parse_html_NEW($input: string | Element): HsonNode_NEW {
         }
         if (parseError) {
             console.error("XML Parsing Error:", parseError.textContent);
-            _throw_transform_err(`Failed to parse input HTML/XML`, 'parse_html', parseError.textContent);
+            _throw_transform_err(`Failed to parse input HTML/XML`, 'parse_html');
         }
         if (!parsedXML.documentElement) {
             /* for cases where parsing might result in no documentElement (e.g., empty string after processing) */
             console.warn("HTML string resulted in no documentElement after parsing; Returning _root");
-            _throw_transform_err('[ERROR-no content from xml parse]', 'parse-html', parsedXML);
+            _throw_transform_err('[ERROR-no content from xml parse]', 'parse-html');
         }
 
         inputElement = parsedXML.documentElement;
@@ -106,7 +106,7 @@ function convert($el: Element): HsonNode_NEW {
     const tagLower = baseTag.toLowerCase();
     const { attrs: sortedAcc, meta: metaAcc } = parse_html_attrs($el);
     if (tagLower === STR_TAG) {
-        _throw_transform_err("literal <_str> is not allowed in input HTML", "parse-html", $el);
+        _throw_transform_err("literal <_str> is not allowed in input HTML", "parse-html");
     }
 
     /* tags that the HTML spec defines as "raw text elements": */
@@ -135,7 +135,7 @@ function convert($el: Element): HsonNode_NEW {
 
     }
     if (tagLower.startsWith("_") && !EVERY_VSN.includes(tagLower)) {
-        _throw_transform_err(`unknown VSN-like tag: <${tagLower}>`, 'parse-html', $el);
+        _throw_transform_err(`unknown VSN-like tag: <${tagLower}>`, 'parse-html');
     }
     /*  proceed with general handling: */
 
@@ -169,7 +169,7 @@ function convert($el: Element): HsonNode_NEW {
     if (tagLower === VAL_TAG.toLowerCase()) {
         // guard: exactly one child
         if (childNodes.length !== 1) {
-            _throw_transform_err("<_val> must contain exactly one value", "parse-html", $el);
+            _throw_transform_err("<_val> must contain exactly one value", "parse-html");
         }
 
         const only = children[0]; // note: use *children* (pre-wrapped) not childNodes
@@ -182,7 +182,7 @@ function convert($el: Element): HsonNode_NEW {
 
             // if coercion stayed string, that's invalid for _val
             if (typeof prim === "string") {
-                _throw_transform_err("<_val> cannot contain a plain string", "parse-html", $el);
+                _throw_transform_err("<_val> cannot contain a plain string", "parse-html");
             }
         } else {
             // child is a node; allow _val or _str produced earlier, else error
@@ -192,7 +192,7 @@ function convert($el: Element): HsonNode_NEW {
                 // unwrap one level: must be exactly one primitive child
                 const c = n._content?.[0];
                 if (!is_Primitive(c)) {
-                    _throw_transform_err("<_val> payload is not primitive", "parse-html", $el);
+                    _throw_transform_err("<_val> payload is not primitive", "parse-html");
                 }
                 prim = c as Primitive;
             } else if (n._tag === STR_TAG) {
@@ -200,11 +200,11 @@ function convert($el: Element): HsonNode_NEW {
                 const s = n._content?.[0];
                 const v = coerce(typeof s === "string" ? s : String(s));
                 if (typeof v === "string") {
-                    _throw_transform_err("<_val> cannot contain a plain string", "parse-html", $el);
+                    _throw_transform_err("<_val> cannot contain a plain string", "parse-html");
                 }
                 prim = v as Primitive;
             } else {
-                _throw_transform_err("<_val> must contain a primitive (_val/_str/primitive)", "parse-html", $el);
+                _throw_transform_err("<_val> must contain a primitive (_val/_str/primitive)", "parse-html");
             }
         }
 
@@ -216,11 +216,11 @@ function convert($el: Element): HsonNode_NEW {
     } else if (tagLower === ARR_TAG) {
         _log('array detected; returning in _array wrapper')
         /* children of an <_array> should be <_ii> nodes. */
-        if (!childNodes.every(node => is_indexed_NEW(node))) _throw_transform_err('_array children are not valid index tags', 'parse_html', $el);
+        if (!childNodes.every(node => is_indexed_NEW(node))) _throw_transform_err('_array children are not valid index tags', 'parse_html');
         return NEW_NEW_NODE({ _tag: ARR_TAG, _content: childNodes });
     } else if (tagLower === ELEM_TAG) {
         /* _elem should not be wrapped but should disappear back into the HTML */
-        _throw_transform_err('_elem tag found in html', 'parse-html', $el);;
+        _throw_transform_err('_elem tag found in html', 'parse-html');
     }
 
     /*  ---> default: "standard tag" (e.g., "div", "p", "kingdom", "_root") <--- */
@@ -240,7 +240,7 @@ function convert($el: Element): HsonNode_NEW {
         return NEW_NEW_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });
 
     } else if (tagLower === II_TAG) {
-        if (childNodes.length !== 1) _throw_transform_err('<_ii> must have exactly one child', 'parse-html', $el);
+        if (childNodes.length !== 1) _throw_transform_err('<_ii> must have exactly one child', 'parse-html');
         return NEW_NEW_NODE({
             _tag: II_TAG,
             _content: [childNodes[0]],
@@ -266,7 +266,7 @@ function convert($el: Element): HsonNode_NEW {
 
 
     console.error($el)
-    _throw_transform_err('end of parser function reached; tag does not match any case', 'parse_html', $el);
+    _throw_transform_err('end of parser function reached; tag does not match any case', 'parse_html');
 }
 
 /** 

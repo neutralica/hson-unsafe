@@ -1,4 +1,5 @@
 // lex-text-piece.utils.hson.ts
+
 export function lex_text_piece(s: string): { text: string; quoted: boolean } {
   const t = s.trim();
   if (!t) return { text: "", quoted: false };

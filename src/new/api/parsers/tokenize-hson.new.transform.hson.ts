@@ -3,7 +3,7 @@
 
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { ARR_SYMBOL, CLOSE_KIND, NEW_ARR_CLOSE_TOKEN, NEW_ARR_OPEN_TOKEN, NEW_END_TOKEN, NEW_OPEN_TOKEN, NEW_TEXT_TOKEN, TOKEN_KIND } from "../../types-consts/constants.new.hson";
-import { Position, RawAttr, Tokens_NEW } from "../../types-consts/tokens.new.types.hson";
+import { CloseKind, Position, RawAttr, Tokens_NEW } from "../../types-consts/tokens.new.types.hson";
 import { split_top_level_NEW } from "./hson-helpers/split-top-2.utils.hson";
 import { slice_balanced_arr } from "./hson-helpers/slice-balance.new.utils.hson";
 import { lex_text_piece } from "./hson-helpers/lex-text-piece.utils.hson";
@@ -15,7 +15,7 @@ const _pos = (lineno: number, colno: number, posix: number): Position => ({ line
 /* structure for items stored on the context stack */
 type ContextStackItem =
     | { type: 'TAG'; tag: string }
-    | { type: 'CLUSTER'; close?: 'obj' | 'elem' }   /* replaces the old _obj/_elem sentinels */
+    | { type: 'CLUSTER'; close?: CloseKind; implicit?: boolean } /* replaces the old _obj/_elem sentinels */
     | { type: 'IMPLICIT_OBJECT' };
 
 const LONE_OPEN_ANGLE_REGEX = /^\s*<(\s*(\/\/.*)?)?$/;
@@ -43,7 +43,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         }
     }
     if ($depth >= maxDepth) {
-        _throw_transform_err(`stopping potentially infinite loop (depth >= ${maxDepth})`, 'tokenize_hson', $hson);
+        _throw_transform_err(`stopping potentially infinite loop (depth >= ${maxDepth})`, 'tokenize_hson');
     }
 
     const finalTokens: Tokens_NEW[] = [];
@@ -58,7 +58,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         const t = lit.trim();
         // If it starts with a quote, it must be a *properly closed* quoted literal.
         if ((t.startsWith('"') || t.startsWith("'")) && !piece.quoted) {
-            _throw_transform_err(`[${where}] unterminated quoted literal: ${lit}`, 'tokenize-hson', lit);
+            _throw_transform_err(`[${where}] unterminated quoted literal: ${lit}`, 'tokenize-hson');
         }
         return piece; // { text, quoted }
     }
@@ -176,7 +176,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         if (LONE_OPEN_ANGLE_REGEX.test(currentLine)) {
             _log(`[tokenize_hson depth=${$depth} L=${currentIx + 1}] lone '<' detected`);
             contextStack.push({ type: 'IMPLICIT_OBJECT' });      /* keep marker if you need it */
-            contextStack.push({ type: 'CLUSTER', close: 'obj' });/* structural intent */
+            contextStack.push({ type: 'CLUSTER', close: CLOSE_KIND.obj, implicit: true }); /* structural intent */
             _bump_line(currentLine);
             continue;
         }
@@ -252,32 +252,36 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         const closerMatch = currentLine.match(/^\s*(\/?>)\s*(?:\/\/.*)?$/);
         if (closerMatch) {
             const closerLex = closerMatch[1];
-            const close = closerLex === '/>' ? CLOSE_KIND.elem : CLOSE_KIND.obj;
-            const col = currentLine.indexOf(closerLex) + 1;
-            const pos = _pos(currentIx + 1, col, _offset + col - 1);
+            if (closerLex) {
+                const close = closerLex === '/>' ? CLOSE_KIND.elem : CLOSE_KIND.obj;
+                const col = currentLine.indexOf(closerLex) + 1;
+                const pos = _pos(currentIx + 1, col, _offset + col - 1);
 
-            const top = contextStack[contextStack.length - 1];
-            if (!top || top.type !== 'CLUSTER') {
-                _throw_transform_err(`[step e] closer '${closerLex}' but stack top is ${JSON.stringify(top)}`, 'tokenize-hson', currentLine);
+                const top = contextStack[contextStack.length - 1];
+                if (!top || top.type !== 'CLUSTER') {
+                    _throw_transform_err(`[step e] closer '${closerLex}' but stack top is ${JSON.stringify(top)}`, 'tokenize-hson');
+                }
+                if (top.close && top.close !== close) {
+                    _throw_transform_err(`[step e] mismatched closer '${closerLex}' for cluster '${top.close}'`, 'tokenize-hson');
+                }
+
+                // pop cluster and optionally emit END
+                const popped = contextStack.pop() as Extract<ContextStackItem, { type: 'CLUSTER' }>;
+                if (!popped.implicit) {
+                    finalTokens.push(NEW_END_TOKEN(close, pos));   // only for real OPENs
+                } else {
+                    _log(`[step e] suppress END for implicit cluster at L${currentIx + 1}`);
+                }
+
+                // clean up implicit marker if present
+                const maybeImplicit = contextStack[contextStack.length - 1];
+                if (maybeImplicit && maybeImplicit.type === 'IMPLICIT_OBJECT' && close === CLOSE_KIND.obj) {
+                    contextStack.pop();
+                }
+
+                _bump_line(currentLine);
+                continue;
             }
-            if (top.close && top.close !== close) {
-                _throw_transform_err(`[step e] mismatched closer '${closerLex}' for cluster '${top.close}'`, 'tokenize-hson', currentLine);
-            }
-            /* set if pending */
-            top.close = close;
-
-            /* pop + emit */
-            contextStack.pop();
-            finalTokens.push(NEW_END_TOKEN(close, pos));
-
-            /* clean up implicit marker if present */
-            const maybeImplicit = contextStack[contextStack.length - 1];
-            if (maybeImplicit && maybeImplicit.type === 'IMPLICIT_OBJECT' && close === CLOSE_KIND.obj) {
-                contextStack.pop();
-            }
-
-            _bump_line(currentLine);
-            continue;
         }
 
         /* step F: open tags */
@@ -290,7 +294,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             if (IMPLICIT_OBJECT_START_REGEX.test(trimLine)) {
                 _log(`[step f depth=${$depth} L=${currentIx + 1}] implicit object opener`);
                 contextStack.push({ type: 'IMPLICIT_OBJECT' });
-                contextStack.push({ type: 'CLUSTER' }); /* pending close kind */
+                contextStack.push({ type: 'CLUSTER' });/* pending close kind */
 
                 const secondIx = trimLine.indexOf('<', trimLine.indexOf('<') + 1);
                 const inner = secondIx >= 0 ? trimLine.substring(secondIx).trim() : '';
@@ -310,7 +314,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             const tagNameStartIx = ixHeader;
             while (ixHeader < lineLen && /[A-Za-z0-9:._-]/.test(trimLine[ixHeader])) ixHeader++;
             const tag = trimLine.slice(tagNameStartIx, ixHeader);
-            if (!tag) _throw_transform_err(`[step f depth=${$depth} L=${currentIx + 1}] malformed tag in "${trimLine}"`, 'tokenize-hson', currentLine);
+            if (!tag) _throw_transform_err(`[step f depth=${$depth} L=${currentIx + 1}] malformed tag in "${trimLine}"`, 'tokenize-hson');
 
             const lineNo = currentIx + 1;
             const leadCol = currentLine.search(/\S|$/) + 1;          /* first non-space col */
@@ -365,8 +369,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                     if (parts.length > 1) {
                         _throw_transform_err(
                             `[step f] multiple inline items not allowed after <${tag}>: "${tailRaw}"`,
-                            'tokenize-hson',
-                            currentLine
+                            'tokenize-hson'
                         );
                     }
                     const lit = parts[0].trim();
@@ -438,11 +441,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             /* c.type === 'TAG' if you still use it elsewhere */
             return '<tag?>';
         }).join(', ');
-        _throw_transform_err(
-            `final check failed: tokenizer finished with ${contextStack.length} unclosed items: ${residual}`,
-            'tokenize-hson',
-            splitLines
-        );
+        _throw_transform_err(`final check failed: tokenizer finished with ${contextStack.length} unclosed items: ${residual}`, 'tokenize-hson');
     }
 
     /* debug print — neutral summary, not the old make_string */

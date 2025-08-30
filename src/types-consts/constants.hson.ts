@@ -42,7 +42,7 @@ export const VAL_TAG = '_val' as const;
 export const ROOT_TAG = '_root' as const;
 export const II_TAG = '_ii' as const;
 export const OBJ_TAG = '_obj' as const;
-export const ARR_TAG = '_array' as const;
+export const ARR_TAG = '_arr' as const;
 export const ELEM_TAG = '_elem' as const;
 
 
