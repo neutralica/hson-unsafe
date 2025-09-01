@@ -9,6 +9,7 @@ import { to_NEW } from "../../_refactor/kompat/kompat-layer.refactor.hson";
 import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
 import type { HsonNode } from "../../types-consts/node.types.hson";
 import { canonicalize } from "../../utils/canonicalize.utils.hson";
+import { assert_invariants_NEW } from "../../new/utils/assert-invariants.utils.hson";
 
 /* exported wrapper */
 export function serialize_json($node: HsonNode): string {
@@ -17,6 +18,7 @@ export function serialize_json($node: HsonNode): string {
 
     if (SHADOW_ENABLED()) {
         try {
+            assert_invariants_NEW(to_NEW($node));
             const newStr = serialize_json_NEW(to_NEW($node));
             const a = JSON.parse(oldStr);
             const b = JSON.parse(newStr);

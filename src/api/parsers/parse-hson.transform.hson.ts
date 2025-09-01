@@ -25,9 +25,9 @@ export function parse_hson($str: string): HsonNode {
 
       // ADDED: compare the new-converted nodes as well as the old-converted
       const c = to_NEW(oldNode);
-      const d = clone_node(newNode)
+      const d = clone_node(newNode);
       assert_invariants_NEW(d);
-      assert_invariants_NEW(c)
+      assert_invariants_NEW(c);
 
       console.groupCollapsed('HSON parser tests - SHADOW_ENABLED - test results:');
       console.log(make_string(a));

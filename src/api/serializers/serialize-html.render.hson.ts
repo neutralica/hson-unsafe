@@ -4,6 +4,7 @@ import { equal_old_nodes, diff_old_nodes } from "../../_refactor/_refactor-utils
 import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
 import { to_NEW } from "../../_refactor/kompat/kompat-layer.refactor.hson";
 import { serialize_html_NEW } from "../../new/api/serializers/serialize-html.new.render.hson";
+import { assert_invariants_NEW } from "../../new/utils/assert-invariants.utils.hson";
 import { parse_html_OLD } from "../../old/api/parsers/parse-html.old.transform.hson";
 import { serialize_html_OLD } from "../../old/api/serializers/serialize-html.old.render.hson";
 import { HsonNode } from "../../types-consts/node.types.hson";
@@ -15,6 +16,7 @@ console.log('serializing html - beginning')
 
   if (SHADOW_ENABLED()) {
     try {
+      assert_invariants_NEW(to_NEW($node));
       const newStr = serialize_html_NEW(to_NEW($node));
       /* normalize whitespace/attribute order by reparsing both with the same parser */
       const A = parse_html_OLD(oldStr);

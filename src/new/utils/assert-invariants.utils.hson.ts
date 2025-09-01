@@ -13,7 +13,7 @@ const _log = _VERBOSE
   ? (...args: unknown[]) =>
     console.log(
       ['%c%s', ...args.map(() => '%c%o')].join(' '),
-      STYLE, '[serialize-html_NEW] →',
+      STYLE, '[ASSERT_INVARIANTS] →',
       ...args.flatMap(a => [STYLE, a]),
     )
   : () => { };
