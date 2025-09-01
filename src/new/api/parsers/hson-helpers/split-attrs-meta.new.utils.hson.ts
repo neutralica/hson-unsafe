@@ -9,44 +9,34 @@ import { RawAttr } from "../../../types-consts/tokens.new.types.hson";
    - style parses to an object (kebab keys)
    - meta wires data-_index→'data-index', data-_quid→'data-quid'
 */
-export function split_attrs_meta($raw: RawAttr[]): { _attrs: HsonAttrs_NEW; _meta: HsonMeta_NEW } {
-  const _attrs: HsonAttrs_NEW = {};
-  const _meta: HsonMeta_NEW = {};
+export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs_NEW; meta: HsonMeta_NEW } {
+  const attrs: HsonAttrs_NEW = {};
+  const meta:  HsonMeta_NEW  = {};
 
-  for (const ra of $raw) {
-    const name = ra.name;
+  for (const ra of raw) {
+    const k = ra.name;
 
-    /* meta mapping on wire */
-    if (name.startsWith(_META_DATA_PREFIX)) { /* as of this writing, 'data-_' */
+    // Route meta: ONLY data-_* goes to _meta
+    if (k.startsWith(_META_DATA_PREFIX)) {
       if (ra.value) {
-        const canon = 'data-' + name.slice(_META_DATA_PREFIX.length);
-        _meta[canon] = String(ra.value.text);
+        meta[k] = String(ra.value.text);     // keep as 'data-_…' to match serializer
       }
-      continue; // never mirror meta keys back into _attrs
-    }
-
-
-    /* style parsing */
-    if (name === 'style') {
-      if (!ra.value) { _attrs.style = {}; continue; }
-      _attrs.style = parse_style(ra.value.text);
+      // else: bare meta keys are unusual; either ignore or set to ""
       continue;
     }
 
-    /* user attrs and flags */
-    if (!ra.value) {
-      /* bare flag → key:"key" */
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      _attrs[name] = name;
+    // style: parse to object (you already do this)
+    if (k === "style") {
+      attrs.style = ra.value ? parse_style(ra.value.text) : {};
       continue;
     }
 
-    /* keep string as-is; no number/bool coercion here */
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    _attrs[name] = ra.value.text;
+    // flags & normal values
+    if (!ra.value) { attrs[k] = k as any; continue; }     // bare flag → key:"key"
+    const v = ra.value.text;
+    if (v === "" || v === k) { attrs[k] = k as any; }     // disabled="" or disabled="disabled"
+    else { attrs[k] = v as any; }
   }
 
-  return { _attrs, _meta };
+  return { attrs, meta };
 }

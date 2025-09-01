@@ -8,7 +8,7 @@ import { _snip } from '../../../utils/preview-long.utils.hson';
 import { _throw_transform_err } from '../../../utils/throw-transform-err.utils.hson';
 import { HsonNode_NEW } from '../../types-consts/node.new.types.hson';
 
-const _VERBOSE = true;
+const _VERBOSE = false;
 const STYLE = 'color:fuschia;font-weight:400;padding:1px 3px;border-radius:4px';
 // tweak _log to style every arg (incl. your prefix), no helpers:
 const _log = _VERBOSE

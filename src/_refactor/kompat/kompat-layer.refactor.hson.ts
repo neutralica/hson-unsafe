@@ -17,7 +17,7 @@ import { normalizeNode } from './normalizers.kompat.hson';
 
 
 /* debug log */
-let _VERBOSE = true;
+let _VERBOSE = false;
 const STYLE = 'color:hotpink;font-weight:400;padding:1px 3px;border-radius:4px';
 // tweak _log to style every arg (incl. your prefix), no helpers:
 const _log = _VERBOSE
@@ -68,12 +68,21 @@ export function to_NEW(nodeOld: HsonNode): HsonNode_NEW {
   const _attrs: HsonAttrs_NEW = {};
   const _metaNew: HsonMeta_NEW = {};
   for (const [k, v] of Object.entries(attrsOld)) {
+    if (k === "data-index") {                 // OLD storage under _meta.attrs
+      _metaNew["data-_index"] = String(v);
+      continue;
+    }
+    if (k === "data-quid") {
+      _metaNew["data-_quid"] = String(v);
+      continue;
+    }
     if (typeof k === "string" && k.startsWith(_META_DATA_PREFIX)) {
       if (v != null) _metaNew[k] = String(v);
     } else {
       _attrs[k] = v as any;
     }
   }
+  
 
   // 1a) Optional: normalize style string → object for NEW
   if (typeof _attrs.style === "string") {

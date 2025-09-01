@@ -1,6 +1,7 @@
 // is-helpers.hson.util.ts
 
 import { is_Primitive } from "../core/utils/guards.core.utils.hson.js";
+import { HsonMeta_NEW } from "../new/types-consts/node.new.types.hson.js";
 import { II_TAG, VAL_TAG, STR_TAG } from "../types-consts/constants.hson.js";
 import { HsonMeta, HsonNode } from "../types-consts/node.types.hson.js";
 

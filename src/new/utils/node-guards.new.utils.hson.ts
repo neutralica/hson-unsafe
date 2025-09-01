@@ -2,12 +2,17 @@
 
 import { II_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants.hson";
 import { BasicValue } from "../../core/types-consts/core.types.hson";
-import { HsonNode_NEW, JsonType_NEW, NodeContent_NEW } from "../types-consts/node.new.types.hson";
+import { HsonMeta_NEW, HsonNode_NEW, JsonType_NEW, NodeContent_NEW } from "../types-consts/node.new.types.hson";
 import { is_Primitive } from "../../core/utils/guards.core.utils.hson"
 
 /* identifies HsonNode (new structure) */
 export function is_Node_NEW(bit: unknown): bit is HsonNode_NEW {
-  return typeof bit === 'object' && bit !== null && '_tag' in bit;
+  return typeof bit === 'object' &&
+    bit !== null &&
+    '_tag' in bit &&
+    '_meta' in bit &&
+    !('attrs' in (bit._meta as HsonMeta_NEW)) &&
+    !('flags' in (bit._meta as HsonMeta_NEW));
 }
 
 export function is_not_string_NEW(txt: JsonType_NEW): txt is BasicValue {

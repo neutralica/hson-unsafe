@@ -35,7 +35,7 @@ import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
 
 
 /* debug log */
-let _VERBOSE = true;
+let _VERBOSE = false;
 const STYLE = 'color:dodgerblue;font-weight:400;padding:1px 3px;border-radius:4px';
 const _log = _VERBOSE
     ? (...args: unknown[]) =>
@@ -95,27 +95,27 @@ function formatAttrsNEW(attrs: HsonAttrs_NEW | undefined): string {
     if (!entries.length) return "";
     _log('formatting _attrs')
 
-    
-  // partition without sorting: non-flags first, then flags (value === key)
-  const nonFlags = entries.filter(([k, v]) => v !== k);
-  const flags    = entries.filter(([k, v]) => v === k);
 
-  const kv = (k: string, v: Primitive | Record<string, string>) => {
-    if (k === "style" && v && typeof v === "object" && !Array.isArray(v)) {
-      // style object → canonical CSS string
-      return ` style="${serialize_style(v as Record<string, string>)}"`;
-    }
-    if (typeof v === "string") {
-      return ` ${k}="${v.replace(/"/g, '\\"')}"`;
-    }
-    return ` ${k}=${String(v)}`;
-  };
+    // partition without sorting: non-flags first, then flags (value === key)
+    const nonFlags = entries.filter(([k, v]) => v !== k);
+    const flags = entries.filter(([k, v]) => v === k);
 
-  const parts: string[] = [];
-  for (const [k, v] of nonFlags) parts.push(kv(k, v as any));
-  for (const [k]   of flags)    parts.push(` ${k}`); // flags as bare keys
+    const kv = (k: string, v: Primitive | Record<string, string>) => {
+        if (k === "style" && v && typeof v === "object" && !Array.isArray(v)) {
+            // style object → canonical CSS string
+            return ` style="${serialize_style(v as Record<string, string>)}"`;
+        }
+        if (typeof v === "string") {
+            return ` ${k}="${v.replace(/"/g, '\\"')}"`;
+        }
+        return ` ${k}=${String(v)}`;
+    };
 
-  return parts.join("");
+    const parts: string[] = [];
+    for (const [k, v] of nonFlags) parts.push(kv(k, v as any));
+    for (const [k] of flags) parts.push(` ${k}`); // flags as bare keys
+
+    return parts.join("");
 }
 
 /* merge user _attrs and meta(data-_) into a single on-wire attrs string */
@@ -188,13 +188,15 @@ function emitNode(
 
             if (node._tag === STR_TAG) {
                 if (typeof v !== "string") {
+                    const v = node._content?.[0];
+                    console.warn("STR payload not string:", v, node);
                     _throw_transform_err(`serialize-hson: _str must contain a string`, 'serialize_hson_NEW.emitNode()')
                 }
                 return pad + JSON.stringify(v);
             }
-            
+
             if (!(typeof v === "number" || typeof v === "boolean" || v === null)) {
-                _throw_transform_err("serialize-hson: _val must contain number|boolean|null", 'serialize_hson_NEW.emitNode()');
+                _throw_transform_err("serialize-hson: _val must contain number|boolean|null : ", 'serialize_hson_NEW.emitNode()', `${v}`);
             }
             return pad + String(v);
         }
@@ -226,9 +228,9 @@ function emitNode(
 
         /* 4) _obj / _elem clusters: melt; never emit their tags */
         if (node._tag === OBJ_TAG || node._tag === ELEM_TAG) {
-            _log('cluster node detected: ' , node._tag);
+            _log('cluster node detected: ', node._tag);
             if (node._attrs && Object.keys(node._attrs).length) {
-                _throw_transform_err(`serialize-hson: ${node._tag} may not carry _attrs`,'serialize_hson_NEW.emitNode()');
+                _throw_transform_err(`serialize-hson: ${node._tag} may not carry _attrs`, 'serialize_hson_NEW.emitNode()');
             }
             const kids = (node._content ?? []).filter(
                 k => typeof k === "object" && k && "_tag" in (k as any)
@@ -259,7 +261,7 @@ function emitNode(
         }
 
         /* 6) Standard tag element */
-        
+
         _log('building attrs string for standard tag');
         const attrsStr = buildAttrString(node._attrs, node._meta);
 

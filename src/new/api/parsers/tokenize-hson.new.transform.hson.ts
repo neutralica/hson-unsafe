@@ -23,10 +23,11 @@ const LONE_OPEN_ANGLE_REGEX = /^\s*<(\s*(\/\/.*)?)?$/;
 const IMPLICIT_OBJECT_START_REGEX = /^\s*<\s*<(\s|$)/; /* ensures second '<' is followed by space or EOL */
 
 
-const _VERBOSE = true;
+const _VERBOSE = false;
 const _log = _VERBOSE
     ? console.log
     : () => { };
+    
 let tokenFirst: boolean = true;
 
 export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {

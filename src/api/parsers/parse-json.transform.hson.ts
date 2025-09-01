@@ -1,6 +1,6 @@
 // parse-json.transform.hson.ts
 
-import { to_OLD } from "../../_refactor/kompat/kompat-layer.refactor.hson";
+import { to_NEW, to_OLD } from "../../_refactor/kompat/kompat-layer.refactor.hson";
 import { parse_json_NEW } from "../../new/api/parsers/parse-json.new.transform.hson"
 import { HsonNode } from "../../types-consts/node.types.hson";
 import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
@@ -8,6 +8,7 @@ import { diff_old_nodes, equal_old_nodes } from "../../_refactor/_refactor-utils
 import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson";
 import { clone_node } from "../../utils/clone-node.utils.hson";
 import { make_string } from "../../utils/make-string.utils.hson";
+import { assert_invariants_NEW } from "../../new/utils/assert-invariants.utils.hson";
 
 
 export function parse_json($json: string): HsonNode {
@@ -17,11 +18,17 @@ export function parse_json($json: string): HsonNode {
   if (SHADOW_ENABLED()) {
     console.log('shadow tests running - json')
     try {
-      const newNodeOld = to_OLD(parse_json_NEW($json));
+      const newNode = parse_json_NEW($json)
+      const newNodeOld = to_OLD(newNode);
 
       // CHANGED: cloned inputs for compare only
       const a = clone_node(oldNode);
       const b = clone_node(newNodeOld);
+      const c = clone_node(newNode);
+      const d = to_NEW(oldNode);
+
+      assert_invariants_NEW(c);
+      assert_invariants_NEW(d);
 
       console.groupCollapsed('JSON tests - SHADOW_ENABLED - test results:');
       console.log(make_string(a));

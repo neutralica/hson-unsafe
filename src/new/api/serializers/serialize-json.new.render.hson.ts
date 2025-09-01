@@ -12,7 +12,7 @@ import { is_indexed_NEW } from "../../utils/node-guards.new.utils.hson";
 
 
 /* debug log */
-let _VERBOSE = true;
+let _VERBOSE = false;
 const STYLE = 'color:lightgreen;font-weight:400;padding:1px 3px;border-radius:4px';
 const _log = _VERBOSE
   ? (...args: unknown[]) =>

@@ -1,7 +1,10 @@
 import { Primitive } from "../../core/types-consts/core.types.hson";
 import { _META_DATA_PREFIX } from "../../new/types-consts/constants.new.hson";
 import { HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
+import { is_Node_NEW } from "../../new/utils/node-guards.new.utils.hson";
 import { ARR_TAG, ELEM_TAG, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants.hson";
+import { serialize_style } from "../../utils/serialize-css.utils.hson";
+import { normalize_style } from "./compare-normalize.utils.hson";
 // --- diff-new.nodes.hson.ts ---
 // NEW-shape differ for HsonNode_NEW trees.
 // Assumes inputs were already normalized (normalizeNEWStrict):
@@ -84,31 +87,65 @@ function isValueTag(tag: string): tag is typeof STR_TAG | typeof VAL_TAG {
 
 /* ───────────────────────────── attrs/meta diff ───────────────────────────── */
 
-function diffAttrs(path: string, a?: HsonAttrs_NEW, b?: HsonAttrs_NEW, out: Change[] = outArr): void {
-  const aKeys = a ? Object.keys(a).sort() : [];
-  const bKeys = b ? Object.keys(b).sort() : [];
-  let i = 0, j = 0;
-  while (i < aKeys.length || j < bKeys.length) {
-    const ak = aKeys[i];
-    const bk = bKeys[j];
-    if (bk === undefined || (ak !== undefined && ak < bk)) {
-      // deleted
-      const prev = (a as any)[ak] as Primitive;
-      out.push({ kind: "delAttr", path: pAttr(path, ak), key: ak, prev });
-      i++;
-    } else if (ak === undefined || bk < ak) {
-      // added
-      const value = (b as any)[bk] as Primitive;
-      out.push({ kind: "addAttr", path: pAttr(path, bk), key: bk, value });
-      j++;
-    } else {
-      // present both
-      const av = (a as any)[ak] as Primitive;
-      const bv = (b as any)[bk] as Primitive;
-      if (!primEq(av, bv)) {
-        out.push({ kind: "chgAttr", path: pAttr(path, ak), key: ak, from: av, to: bv });
+function canonStyle(v: unknown): string {
+  const obj = normalize_style(v as any) || {}; /* <-- default to {} */
+  return serialize_style(obj as Record<string, string>);
+}
+function diffAttrs(path: string, aAttrs?: HsonAttrs_NEW, bAttrs?: HsonAttrs_NEW): void {
+  const A = aAttrs ?? {};
+  const B = bAttrs ?? {};
+
+  const aKeys = new Set(Object.keys(A));
+  const bKeys = new Set(Object.keys(B));
+
+  // deletions
+  for (const k of aKeys) {
+    if (!bKeys.has(k)) {
+      const av = (A as any)[k];
+      const prev: Primitive = k === "style" ? (canonStyle(av) as unknown as Primitive) : (av as Primitive);
+      outArr.push({ kind: "delAttr", path: `${path}@attr:${k}`, key: k, prev });
+    }
+  }
+
+  // additions
+  for (const k of bKeys) {
+    if (!aKeys.has(k)) {
+      const bv = (B as any)[k];
+      const value: Primitive = k === "style" ? (canonStyle(bv) as unknown as Primitive) : (bv as Primitive);
+      outArr.push({ kind: "addAttr", path: `${path}@attr:${k}`, key: k, value });
+    }
+  }
+
+  // changes
+  for (const k of aKeys) {
+    if (!bKeys.has(k)) continue;
+    const av = (A as any)[k];
+    const bv = (B as any)[k];
+
+    if (k === "style") {
+      const from = canonStyle(av);
+      const to   = canonStyle(bv);
+      if (from !== to) {
+        outArr.push({
+          kind: "chgAttr",
+          path: `${path}@attr:${k}`,
+          key: k,
+          from: from as unknown as Primitive,
+          to:   to   as unknown as Primitive,
+        });
       }
-      i++; j++;
+      continue;
+    }
+
+    // shallow primitive compare (attrs values are Primitive except style)
+    if (JSON.stringify(av) !== JSON.stringify(bv)) {
+      outArr.push({
+        kind: "chgAttr",
+        path: `${path}@attr:${k}`,
+        key: k,
+        from: av as Primitive,
+        to:   bv as Primitive,
+      });
     }
   }
 }

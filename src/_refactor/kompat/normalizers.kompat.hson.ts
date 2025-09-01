@@ -12,7 +12,7 @@ import { sortObjectStrings, to_NEW } from "./kompat-layer.refactor.hson";
 
 
 /* debug log */
-let _VERBOSE = true;
+let _VERBOSE = false;
 const STYLE = 'color:yellow;font-weight:400;padding:1px 3px;border-radius:4px';
 // tweak _log to style every arg (incl. your prefix), no helpers:
 const _log = _VERBOSE
@@ -86,6 +86,18 @@ function normalizeNEWNode(n: HsonNode_NEW, seen: WeakSet<object>): HsonNode_NEW 
     let kids = raw.map((c): HsonNode_NEW | Primitive =>
         is_Node_NEW(c) ? normalizeNEWNode(c as HsonNode_NEW, seen) : (c as Primitive)  /* CHANGED */
     );
+    if (n._tag === ARR_TAG) {
+        kids = kids.map((k, i) => {
+            if (is_Node_NEW(k) && k._tag === II_TAG) {
+                const m = { ...(k._meta ?? {}) } as Record<string, string>;
+                const cur = String(m["data-_index"] ?? "");
+                if (cur !== String(i)) m["data-_index"] = String(i);
+                return { ...k, _meta: m } as HsonNode_NEW;
+            }
+            return k;
+        });
+    }
+
 
     /* COLLAPSE: [_obj|_elem([_arr])] → [_arr] */
     if (kids.length === 1 && is_Node_NEW(kids[0])) {

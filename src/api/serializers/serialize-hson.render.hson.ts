@@ -6,6 +6,7 @@ import { equalNEW, to_NEW } from "../../_refactor/kompat/kompat-layer.refactor.h
 import { normalizeNEWStrict } from "../../_refactor/kompat/normalizers.kompat.hson";
 import { parse_hson_NEW } from "../../new/api/parsers/parse_hson.new.transform.hson";
 import { serialize_hson_NEW } from "../../new/api/serializers/serialize-hson.new.render.hson";
+import { assert_invariants_NEW } from "../../new/utils/assert-invariants.utils.hson";
 import { parse_hson_OLD } from "../../old/api/parsers/parse-hson.old.transform.hson";
 import { serialize_hson_OLD } from "../../old/api/serializers/serialize-hson.old.render.hson";
 import { HsonNode } from "../../types-consts/node.types.hson";
@@ -35,9 +36,10 @@ function summarizeChanges(changes: ReturnType<typeof diffNEW>, max = 8) {
 
 export function serialize_hson(root: HsonNode /* OLD shape OK here */): string {
   _log('SERIALIZE HSON WRAPPER - beginning');
+
   if (_VERBOSE) {
     console.groupCollapsed('node:');
-    _log(root);
+    _log(make_string(root));
     console.groupEnd();
   }
   const oldWire = serialize_hson_OLD(root);
@@ -45,33 +47,29 @@ export function serialize_hson(root: HsonNode /* OLD shape OK here */): string {
   if (!SHADOW_ENABLED()) return oldWire;
 
   try {
-    _log('attempting new serialization route');
+    _log('attempting new HSON serialization route');
     /* CHANGED: normalize to canonical NEW before hitting NEW serializer */
     _log('converting HsonNode to _NEW and normalizing...');
     const rootNEW = normalizeNEWStrict(to_NEW(root));                // /* added */
-    if (_VERBOSE) {
-      console.groupCollapsed('node:');
-      _log(rootNEW);
-      console.groupEnd();
-    }
+    assert_invariants_NEW(rootNEW);
+    
     _log('serializing hson via _NEW path');
     const newWire: string = serialize_hson_NEW(rootNEW);                    // /* changed: pass normalized NEW */
 
     /* Compare NEW→NEW by parsing both wires with OLD parser → toNEW → normalizeNEWStrict */
     _log('re-parsing OLD serialization & converting ...')
     const oldBackNEW = normalizeNEWStrict(to_NEW(parse_hson_OLD(oldWire)));
-    if (_VERBOSE) {
-      console.groupCollapsed('oldBack:');
-      _log(oldBackNEW);
-      console.groupEnd();
-    }
+    console.groupCollapsed('< HSON serializer test > \n -> wire & node from old path (old-parsed and normalized) :');
+    console.log(oldWire);
+    console.log(make_string(oldBackNEW));
+    console.groupEnd();
+
     _log('re-parsing NEW serialization & converting ...')
     const newBackNEW = normalizeNEWStrict(parse_hson_NEW(newWire));
-    if (_VERBOSE) {
-      console.groupCollapsed('newBack:');
-      _log(newBackNEW);
-      console.groupEnd();
-    }
+    console.groupCollapsed('< HSON serializer test > \n -> wire & node from new path (new-parsed and normalized):');
+    console.log(newWire);
+    console.log(make_string(newBackNEW));
+    console.groupEnd();
     const seen = new Set<string>(); // process-wide or module-local
 
     // ...
@@ -80,11 +78,11 @@ export function serialize_hson(root: HsonNode /* OLD shape OK here */): string {
       const sig = JSON.stringify({ a: newBackNEW._tag, b: oldBackNEW._tag, wires: [oldWire.length, newWire.length], first: changes[0]?.path });
       if (!seen.has(sig)) {
         seen.add(sig);
-        console.warn("[shadow-HSON][serialize] NEW≠OLD",
+        console.warn("[shadow-HSON][serialize-hson] NEW ≠ OLD",
           make_string(changes.slice(0, 12).map(c => ({ kind: c.kind, path: c.path }))));
       }
     } else {
-      _log('hson nodes old and _NEW are equal!!')
+      console.log('hson nodes old and _NEW are equal!!')
     }
   } catch (err) {
     /* CHANGED: keep error path “cold” — do not call make_string/canonicalize here */

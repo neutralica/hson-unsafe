@@ -10,12 +10,13 @@ import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.h
 import { CLOSE_KIND, NEW_NEW_NODE, TOKEN_KIND } from "../../types-consts/constants.new.hson";
 import { HsonAttrs_NEW, HsonNode_NEW, NodeContent_NEW } from "../../types-consts/node.new.types.hson";
 import { CloseKind, TokenArrayClose_NEW, TokenArrayOpen_NEW, TokenEnd_NEW, TokenKind, TokenOpen_NEW, Tokens_NEW, TokenText_NEW } from "../../types-consts/tokens.new.types.hson";
+import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
 import { unescape_hson_string } from "../../utils/unescape-hson.utils.hson";
 import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils.hson";
 
 /* debug log */
-const _VERBOSE = true;
-const boundLog = console.log.bind(console, '%c[hson]', 'color: green; background: lightblue;'); 
+const _VERBOSE = false;
+const boundLog = console.log.bind(console, '%c[hson]', 'color: green; background: lightblue;');
 const _log = _VERBOSE ? boundLog : () => { };
 
 const make_leaf = (v: Primitive): HsonNode_NEW =>
@@ -59,25 +60,18 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
         if (!open || open.kind !== TOKEN_KIND.OPEN) {
             _throw_transform_err(`expected OPEN, got ${open?.kind ?? 'eof'}`, 'parse_tokens_new');
         }
+        const { attrs,  meta } = split_attrs_meta(open.rawAttrs);
+        const node: HsonNode_NEW = { _tag: open.tag, _meta: meta, _content: [] };
 
-        const { _attrs, _meta } = split_attrs_meta(open.rawAttrs);
-        const node: HsonNode_NEW = { _tag: open.tag, _attrs, _meta, _content: [] };
-        const attrs: HsonAttrs_NEW = {};
-        for (const ra of open.rawAttrs) {
-            if (ra.value) {
-                const raw = ra.value.text;
-                const val = ra.value.quoted ? unescape_hson_string(raw) : raw;
-                // bare/bool-flag semantics
-                if (val === '' || val === ra.name) {
-                    attrs[ra.name] = ra.name as any; // flag → key:"key"
-                } else {
-                    attrs[ra.name] = val as any;
-                }
-            } else {
-                attrs[ra.name] = ra.name as any; // bare flag
-            }
+        // VSNs carry no _attrs
+        const isVSN = open.tag === STR_TAG || open.tag === VAL_TAG
+            || open.tag === ARR_TAG || open.tag === OBJ_TAG
+            || open.tag === ELEM_TAG || open.tag === ROOT_TAG
+            || open.tag === II_TAG;
+
+        if (!isVSN && Object.keys(attrs).length) {
+            node._attrs = attrs;
         }
-        node._attrs = attrs;
         let sawClose: TokenEnd_NEW | null = null;
         const kids: HsonNode_NEW[] = []; // CHANGED: keep only nodes, not primitives
 
@@ -223,7 +217,28 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
         _throw_transform_err(`unexpected top-level token ${t.kind}`, 'parse_tokens_new');
     }
     if (nodes.length === 1 && nodes[0]._tag === ROOT_TAG) {
-        return nodes[0];
+        const root = nodes[0];
+        const kids = (root._content ?? []).filter(is_Node_NEW);
+
+        // Already correct?
+        if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ELEM_TAG)) {
+            return root; // OK
+        }
+
+        // Decide cluster: prefer the recorded closer for <_root …> if you captured it,
+        // else fall back to choose_root_cluster(kids, topCloseKinds).
+        const rootCloser: CloseKind | null = topCloseKinds.length
+            ? topCloseKinds[topCloseKinds.length - 1]   // or topCloseKinds.at(-1) if your target supports it
+            : null;
+
+        const clusterTag =
+            rootCloser
+                ? (rootCloser === CLOSE_KIND.obj ? OBJ_TAG : ELEM_TAG)
+                : choose_root_cluster(kids, topCloseKinds);
+        // Wrap (even if kids is empty):
+        root._content = [{ _tag: clusterTag, _meta: {}, _content: kids }];
+        // Make sure you did NOT leave stray non-cluster nodes at root level.
+        return root;
     }
 
     /* root wrapper here, not in tokenizer */
@@ -235,6 +250,6 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
     };
 
     _log('returning: ', root);
-    
+
     return root;
 }
