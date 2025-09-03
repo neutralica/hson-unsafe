@@ -2,7 +2,7 @@ import { bucket_diffs } from "../../../_refactor/_refactor-utils/bucket-diffs.ut
 import { equal_old_nodes, diff_old_nodes } from "../../../_refactor/_refactor-utils/compare-normalize.utils.hson";
 import { SHADOW_ENABLED } from "../../../_refactor/flags/flags.refactor.hson";
 import { to_OLD } from "../../../_refactor/kompat/kompat-layer.refactor.hson";
-import { parse_tokens } from "../../../api/parsers/parse-tokens.transform.hson";
+import { parse_tokens_DO_NOT_USE } from "../../../api/parsers/parse-tokens.transform.hson";
 import { parse_tokens_NEW } from "../../../new/api/parsers/parse-tokens.new.transform.hson";
 import { tokenize_hson_NEW } from "../../../new/api/parsers/tokenize-hson.new.transform.hson";
 import { HsonNode_NEW } from "../../../new/types-consts/node.new.types.hson";

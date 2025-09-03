@@ -1,26 +1,22 @@
 // parse-tokens.transform.hson.ts
 
 import { Primitive } from "../../../core/types-consts/core.types.hson";
-import { is_Primitive, is_not_string } from "../../../core/utils/guards.core.utils.hson";
-import { all_Css_Properties } from "../../../types-consts/all-css-props.const.hson";
 import { ARR_TAG, ELEM_TAG, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../../types-consts/constants.hson";
 import { coerce } from "../../../utils/coerce-string.utils.hson";
-import { make_string } from "../../../utils/make-string.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
-import { CLOSE_KIND, NEW_NEW_NODE, TOKEN_KIND } from "../../types-consts/constants.new.hson";
-import { HsonAttrs_NEW, HsonNode_NEW, NodeContent_NEW } from "../../types-consts/node.new.types.hson";
-import { CloseKind, TokenArrayClose_NEW, TokenArrayOpen_NEW, TokenEnd_NEW, TokenKind, TokenOpen_NEW, Tokens_NEW, TokenText_NEW } from "../../types-consts/tokens.new.types.hson";
-import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
-import { unescape_hson_string } from "../../utils/unescape-hson.utils.hson";
+import { _DATA_INDEX, _META_DATA_PREFIX, CLOSE_KIND, TOKEN_KIND } from "../../types-consts/constants.new.hson";
+import { HsonNode_NEW, NodeContent_NEW } from "../../types-consts/node.new.types.hson";
+import { CloseKind, TokenEnd_NEW, TokenKind, Tokens_NEW, TokenText_NEW } from "../../types-consts/tokens.new.types.hson";
+import { is_Node_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
 import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils.hson";
 
 /* debug log */
-const _VERBOSE = false;
+const _VERBOSE = true;
 const boundLog = console.log.bind(console, '%c[hson]', 'color: green; background: lightblue;');
 const _log = _VERBOSE ? boundLog : () => { };
 
 const make_leaf = (v: Primitive): HsonNode_NEW =>
-(typeof v === 'string'
+(is_string_NEW(v)
     ? { _tag: STR_TAG, _meta: {}, _content: [v] }
     : { _tag: VAL_TAG, _meta: {}, _content: [v] });
 
@@ -55,12 +51,12 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
     }
 
     /* parse a tag starting at TAG_OPEN */
-    function _read_tag($isTopLevel = false): { node: HsonNode_NEW; closeKind: CloseKind } {
+    function readTag($isTopLevel = false): { node: HsonNode_NEW; closeKind: CloseKind } {
         const open = _take();
         if (!open || open.kind !== TOKEN_KIND.OPEN) {
             _throw_transform_err(`expected OPEN, got ${open?.kind ?? 'eof'}`, 'parse_tokens_new');
         }
-        const { attrs,  meta } = split_attrs_meta(open.rawAttrs);
+        const { attrs, meta } = split_attrs_meta(open.rawAttrs);
         const node: HsonNode_NEW = { _tag: open.tag, _meta: meta, _content: [] };
 
         // VSNs carry no _attrs
@@ -87,8 +83,8 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
                 continue;
             }
 
-            if (t.kind === TOKEN_KIND.ARR_OPEN) { kids.push(_read_array()); continue; }
-            if (t.kind === TOKEN_KIND.OPEN) { kids.push(_read_tag(false).node); continue; }
+            if (t.kind === TOKEN_KIND.ARR_OPEN) { kids.push(readArray()); continue; }
+            if (t.kind === TOKEN_KIND.OPEN) { kids.push(readTag(false).node); continue; }
 
             _throw_transform_err(`unexpected token ${t.kind} inside <${open.tag}>`, 'parse_tokens_NEW');
         }
@@ -143,7 +139,11 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
 
     /* parse an array starting at ARRAY_OPEN */
 
-    function _read_array(): HsonNode_NEW {
+    function make_ii(item: HsonNode_NEW, i: number): HsonNode_NEW {
+        return { _tag: II_TAG, _meta: { [_DATA_INDEX]: String(i) }, _content: [item] };
+    }
+
+    function readArray(): HsonNode_NEW {
         const arrOpen = _take();
         if (!arrOpen || arrOpen.kind !== TOKEN_KIND.ARR_OPEN) {
             _throw_transform_err(`expected ARR_OPEN, got ${arrOpen?.kind ?? 'eof'}`, 'parse_tokens_new');
@@ -163,16 +163,16 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
                 const prim = tt.quoted ? tt.raw : coerce(tt.raw);
                 childNode = make_leaf(prim);
             } else if (t.kind === TOKEN_KIND.OPEN) {
-                childNode = _read_tag(false).node;
+                childNode = readTag(false).node;
             } else if (t.kind === TOKEN_KIND.ARR_OPEN) {
-                childNode = _read_array();
+                childNode = readArray();
             } else {
                 _throw_transform_err(`unexpected ${t.kind} in array`, 'parse_tokens_new');
             }
 
             items.push({
                 _tag: II_TAG,
-                _meta: { 'data-index': String(idx) },
+                _meta: { [_DATA_INDEX]: String(idx) },
                 _content: [childNode]
             });
             idx++;
@@ -180,7 +180,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
 
         return { _tag: ARR_TAG, _meta: {}, _content: items };
     }
-    function choose_root_cluster($nodes: HsonNode_NEW[], $kinds: CloseKind[]): typeof OBJ_TAG | typeof ELEM_TAG {
+    function chooseRootCluster($nodes: HsonNode_NEW[], $kinds: CloseKind[]): typeof OBJ_TAG | typeof ELEM_TAG {
         /* if any non-tag leaf (TEXT→_str/_val or _array) at top, prefer element semantics */
         const hasLeaf = $nodes.some(n => n._tag === STR_TAG || n._tag === VAL_TAG || n._tag === ARR_TAG);
         if (hasLeaf) return ELEM_TAG;
@@ -202,8 +202,8 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
         const t = _peek();
         if (!t) break;
 
-        if (t.kind === TOKEN_KIND.OPEN) { nodes.push(_read_tag(true).node); continue; }
-        if (t.kind === TOKEN_KIND.ARR_OPEN) { nodes.push(_read_array()); continue; }
+        if (t.kind === TOKEN_KIND.OPEN) { nodes.push(readTag(true).node); continue; }
+        if (t.kind === TOKEN_KIND.ARR_OPEN) { nodes.push(readArray()); continue; }
         if (t.kind === TOKEN_KIND.TEXT) {
             const tt = _take() as TokenText_NEW;
             const prim = tt.quoted ? tt.raw : coerce(tt.raw);
@@ -234,7 +234,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
         const clusterTag =
             rootCloser
                 ? (rootCloser === CLOSE_KIND.obj ? OBJ_TAG : ELEM_TAG)
-                : choose_root_cluster(kids, topCloseKinds);
+                : chooseRootCluster(kids, topCloseKinds);
         // Wrap (even if kids is empty):
         root._content = [{ _tag: clusterTag, _meta: {}, _content: kids }];
         // Make sure you did NOT leave stray non-cluster nodes at root level.
@@ -242,7 +242,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
     }
 
     /* root wrapper here, not in tokenizer */
-    const clusterTag = choose_root_cluster(nodes, topCloseKinds);
+    const clusterTag = chooseRootCluster(nodes, topCloseKinds);
     const root: HsonNode_NEW = {
         _tag: ROOT_TAG,
         _meta: {},

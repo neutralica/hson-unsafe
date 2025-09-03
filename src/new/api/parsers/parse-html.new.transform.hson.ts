@@ -11,14 +11,14 @@ import { expand_void_tags } from "../../../utils/expand-self-closing.utils.hson"
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
 import { parse_html_attrs } from "../../../utils/parse_html_attrs.utils.hson";
-import { _snip } from "../../../utils/preview-long.utils.hson";
+import { _snip } from "../../../utils/snip.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
 import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types.hson";
 import { is_indexed_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
 
 /* debug log */
-let _VERBOSE = false;
+let _VERBOSE = true;
 const _log: (...args: Parameters<typeof console.log>) => void =
     _VERBOSE
         ? (...args) => console.log(

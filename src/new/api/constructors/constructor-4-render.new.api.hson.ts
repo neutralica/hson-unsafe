@@ -1,11 +1,3 @@
-import { hson } from "../../hson.js";
-import {  JsonType, Primitive } from "../../core/types-consts/core.types.hson.js";
-import { RenderΔ } from "../../types-consts/constants.hson.js";
-import { RenderConstructor_4 } from "../../core/types-consts/constructors.core.types.hson.js";
-import { FrameRender } from "../../old/types/constructors.old.types.hson.js";
-import { make_string } from "../../utils/make-string.utils.hson.js";
-import { create_proxy } from "../tree/create-proxy.tree.hson.js";
-import { HsonNode } from "../../types-consts/node.types.hson.js";
 
 
 
@@ -17,7 +9,16 @@ import { HsonNode } from "../../types-consts/node.types.hson.js";
  * @returns {RenderConstructor_4} an object with terminal methods to get the final result.
  */
 
-export function construct_render_4($context: FrameRender): RenderConstructor_4 {
+import { ensure_OLD } from "../../../_refactor/_refactor-utils/ensure-old.utils.hson";
+import { create_proxy } from "../../../api/tree/create-proxy.tree.hson";
+import { RenderConstructor_4 } from "../../../core/types-consts/constructors.core.types.hson";
+import { JsonType, Primitive } from "../../../core/types-consts/core.types.hson";
+import { RenderΔ } from "../../../types-consts/constants.hson";
+import { make_string } from "../../../utils/make-string.utils.hson";
+import { FrameRender_NEW } from "../../types-consts/constructors.new.types.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+
+export function construct_render_4_NEW($context: FrameRender_NEW): RenderConstructor_4 {
     const { frame, output } = $context;
 
     return {
@@ -46,9 +47,9 @@ export function construct_render_4($context: FrameRender): RenderConstructor_4 {
         /**
          * returns the "valueful" json data or hson node data (mainly for inspection.debugging) 
          * useful for direct data manipulation in js without the need for an extra parsing step.
-         * @returns {JsonType | HsonNode | Primitive} a js object, array, or primitive, or the hson node tree.
+         * @returns {JsonType | HsonNode_NEW | Primitive} a js object, array, or primitive, or the hson node tree.
         */
-        parse(): JsonType | HsonNode | Primitive {
+        parse(): JsonType | HsonNode_NEW | Primitive {
             switch (output) {
                 case RenderΔ.JSON:
                     if (frame.json)
@@ -77,7 +78,7 @@ export function construct_render_4($context: FrameRender): RenderConstructor_4 {
         // TODO--this is not correct I don't think; should invoke the newer tree methods
         asBranch(): any {
             // return hson.transform.fromHSON
-            return create_proxy(frame.node);
+            return create_proxy(ensure_OLD(frame.node));
         }
     };
 }

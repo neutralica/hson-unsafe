@@ -1,9 +1,7 @@
-
-import { OptionsConstructor_3, FrameOptions, RenderConstructor_4 } from "../../core/types-consts/constructors.core.types.hson.js";
-import { FrameRender } from "../../old/types/constructors.old.types.hson.js";
-import { construct_render_4 } from "./constructor-4-render.api.hson.js";
-
-
+import { OptionsConstructor_3, RenderConstructor_4 } from "../../../core/types-consts/constructors.core.types.hson";
+import { FrameRender_NEW } from "../../types-consts/constructors.new.types.hson";
+import { FrameOptions } from "../../../core/types-consts/constructors.core.types.hson";
+import { construct_render_4_NEW } from "./constructor-4-render.new.api.hson";
 
 /**
  * stage 3 (optional): applying output options.
@@ -12,10 +10,10 @@ import { construct_render_4 } from "./constructor-4-render.api.hson.js";
  * each updates the 'options' on the frame and returns the
  * final render object, immediately ready for serialization.
  *
- * @param {FrameRender} $render - Tthe render context from stage 2.
+ * @param {FrameRender_NEW} $render - Tthe render context from stage 2.
  * @returns {OptionsConstructor_3} an object with 3 layers of chained transforms
  */
-export function construct_options_3 ($render: FrameRender): OptionsConstructor_3 {
+export function construct_options_3_NEW ($render: FrameRender_NEW): OptionsConstructor_3 {
     const {frame, output} = $render;
     return {
       /**
@@ -28,7 +26,7 @@ export function construct_options_3 ($render: FrameRender): OptionsConstructor_3
               ...frame,
               options: { ...frame.options, ...$opts }
           };
-          return construct_render_4({frame: updatedFrame, output});
+          return construct_render_4_NEW({frame: updatedFrame, output});
       },
       /**
        * formats the output on a single line with no breaks.
@@ -36,7 +34,7 @@ export function construct_options_3 ($render: FrameRender): OptionsConstructor_3
        */
       noBreak():RenderConstructor_4 {
           const updatedFrame = { ...frame, options: { ...frame.options, noBreak: true } };
-          return construct_render_4({frame: updatedFrame, output})
+          return construct_render_4_NEW({frame: updatedFrame, output})
       },
       /**
        * adds human-readable spacing and indentation to the output.
@@ -44,7 +42,7 @@ export function construct_options_3 ($render: FrameRender): OptionsConstructor_3
        */
       spaced():RenderConstructor_4 {
           const updatedFrame = { ...frame, options: { ...frame.options, spaced: true } };
-          return construct_render_4({ frame: updatedFrame, output });
+          return construct_render_4_NEW({ frame: updatedFrame, output });
       },
       /**
        * applies linting rules to the output for canonical formatting.
@@ -52,7 +50,7 @@ export function construct_options_3 ($render: FrameRender): OptionsConstructor_3
        */
       linted(): RenderConstructor_4 {
         const updatedFrame = { ...frame, options: { ...frame.options, linted: true } };
-        return construct_render_4({ frame: updatedFrame, output });
+        return construct_render_4_NEW({ frame: updatedFrame, output });
     },
   };
 }

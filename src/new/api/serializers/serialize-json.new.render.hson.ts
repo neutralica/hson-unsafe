@@ -2,7 +2,7 @@
 
 import { is_indexed } from "../../../utils/node-guards.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson"
-import {_throw_transform_err} from "../../../utils/throw-transform-err.utils.hson"
+import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson"
 import { ROOT_TAG, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../../types-consts/constants.hson";
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { HsonNode_NEW, JsonType_NEW, JsonObj_NEW } from "../../types-consts/node.new.types.hson";
@@ -12,17 +12,17 @@ import { is_indexed_NEW } from "../../utils/node-guards.new.utils.hson";
 
 
 /* debug log */
-let _VERBOSE = false;
+let _VERBOSE = true;
 const STYLE = 'color:lightgreen;font-weight:400;padding:1px 3px;border-radius:4px';
 const _log = _VERBOSE
-  ? (...args: unknown[]) =>
-      console.log(
-        ['%c%s', ...args.map(() => '%c%o')].join(' '),
-        STYLE, '[serialize-Json_NEW] →',
-        ...args.flatMap(a => [STYLE, a]),
-      )
+    ? (...args: unknown[]) =>
+        console.log(
+            ['%c%s', ...args.map(() => '%c%o')].join(' '),
+            STYLE, '[serialize-Json_NEW] →',
+            ...args.flatMap(a => [STYLE, a]),
+        )
     : () => { };
-  
+
 export function serialize_json_NEW($node: HsonNode_NEW): string {
     if (_VERBOSE) {
         console.groupCollapsed('---> serializing json');
@@ -66,7 +66,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
     }
 
     /* step 1: catch VSNs */
-    _log(`NEXT: ${$node._tag}`)
+    _log(`NEXT: { ${$node._tag} }`)
 
     switch ($node._tag) {
         case ROOT_TAG: {
@@ -136,7 +136,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
                 _log('recursing: ', itemNode)
                 const jsonItem = jsonFromNode(itemNode as HsonNode_NEW);
                 elemItems.push(jsonItem);
-                _log('pushing list item to _elem:')
+                _log('pushing list item to <_elem >:')
                 _log(jsonItem)
             }
             _log('returning list items:', elemItems)
@@ -153,7 +153,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             _log(`  standardTag <${$node._tag}> processing its value/content.`);
             _log(make_string($node._content));
 
-            let tempJson: JsonType_NEW = {};
+            let tempJson: JsonObj_NEW = {};
             if ($node._content && $node._content.length === 1) {
                 const recursed = jsonFromNode($node._content[0] as HsonNode_NEW);
                 tempJson = { [$node._tag]: recursed };
@@ -166,7 +166,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             /* handle _meta */
             const hasAttrs = $node._attrs && Object.keys($node._attrs).length > 0;
             const hasMeta = $node._meta && Object.keys($node._meta).length > 0;
-            const finalJson: JsonObj_NEW = { [$node._tag]: tempJson };
+            const finalJson: JsonObj_NEW = tempJson;
 
             // merge on any attributes
             if (hasAttrs) {

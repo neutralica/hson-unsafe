@@ -4,30 +4,17 @@ import { equal_old_nodes, diff_old_nodes } from "../../_refactor/_refactor-utils
 import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
 import { to_NEW } from "../../_refactor/kompat/kompat-layer.refactor.hson";
 import { serialize_html_NEW } from "../../new/api/serializers/serialize-html.new.render.hson";
+import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
 import { assert_invariants_NEW } from "../../new/utils/assert-invariants.utils.hson";
+import { is_Node_NEW } from "../../new/utils/node-guards.new.utils.hson";
 import { parse_html_OLD } from "../../old/api/parsers/parse-html.old.transform.hson";
 import { serialize_html_OLD } from "../../old/api/serializers/serialize-html.old.render.hson";
 import { HsonNode } from "../../types-consts/node.types.hson";
 
 /* stable entry: returns OLD; parity by reparsing both strings through OLD parser */
-export function serialize_html($node: HsonNode): string {
-console.log('serializing html - beginning')
-  const oldStr = serialize_html_OLD($node);
 
-  if (SHADOW_ENABLED()) {
-    try {
-      assert_invariants_NEW(to_NEW($node));
-      const newStr = serialize_html_NEW(to_NEW($node));
-      /* normalize whitespace/attribute order by reparsing both with the same parser */
-      const A = parse_html_OLD(oldStr);
-      const B = parse_html_OLD(newStr);
-      if (!equal_old_nodes(A, B)) {
-        console.warn("[shadow-html][serialize] mismatch:", diff_old_nodes(A, B, 10));
-      } else console.log('SUCCESS! both new and old node paths match')
-    } catch (e: any) {
-      console.warn("[shadow-html][serialize] NEW crashed:", e.message);
-    }
-  }
-
-  return oldStr;
+export function serialize_html(root: HsonNode | HsonNode_NEW): string {
+  const n = is_Node_NEW(root as any) ? (root as HsonNode_NEW) : to_NEW(root as HsonNode);
+  assert_invariants_NEW(n, 'serialize-html');
+  return serialize_html_NEW(n);
 }

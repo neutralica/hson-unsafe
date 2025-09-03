@@ -1,7 +1,7 @@
 // normalizers.kompat.hson.ts
 
 import { Primitive } from "../../core/types-consts/core.types.hson";
-import { _META_DATA_PREFIX } from "../../new/types-consts/constants.new.hson";
+import { _DATA_INDEX, _DATA_QUID, _META_DATA_PREFIX } from "../../new/types-consts/constants.new.hson";
 import { HsonNode_NEW, HsonAttrs_NEW, NodeContent_NEW } from "../../new/types-consts/node.new.types.hson";
 import { is_Node_NEW } from "../../new/utils/node-guards.new.utils.hson";
 import { OBJ_TAG, ELEM_TAG, ARR_TAG, STR_TAG, VAL_TAG, ROOT_TAG, II_TAG } from "../../types-consts/constants.hson";
@@ -25,6 +25,22 @@ const _log = _VERBOSE
     : () => { };
 
 
+
+    export const NORMALIZER_ID = "normalizeNEWStrict@kompat-layer.refactor.hson";
+
+function migrate_legacy_keys(tag: string, srcAttrs: Record<string, any>, meta: Record<string,string>) {
+  // tiny logger to prove we're here
+  if (srcAttrs && "data-index" in srcAttrs) {
+    console.warn("[normalizer] migrating legacy key on <", tag, ">", { id: NORMALIZER_ID });
+  }
+  if (tag === II_TAG) {
+    if ("data-index" in srcAttrs) { meta[_DATA_INDEX] = String(srcAttrs["data-index"]); delete srcAttrs["data-index"]; }
+    if ("data-index" in meta)     { meta[_DATA_INDEX] = String(meta["data-index"]);     delete meta["data-index"]; }
+  } else {
+    if ("data-quid" in srcAttrs) { meta[_DATA_QUID] = String(srcAttrs["data-quid"]); delete srcAttrs["data-quid"]; }
+    if ("data-quid" in meta)     { meta[_DATA_QUID] = String(meta["data-quid"]);     delete meta["data-quid"]; }
+  }
+}
 /* --------------------------------------------
  * normalizeNEWStrict: structural-only, NEW-only
  * --------------------------------------------
@@ -80,6 +96,7 @@ function normalizeNEWNode(n: HsonNode_NEW, seen: WeakSet<object>): HsonNode_NEW 
     for (const k of Object.keys(meta)) {
         if (k.startsWith(_META_DATA_PREFIX) && meta[k] != null) meta[k] = String(meta[k]);
     }
+    
 
     /* CHILDREN: recurse NEW nodes only; do NOT coerce primitives/OLD here */
     const raw = Array.isArray(n._content) ? n._content : [];
@@ -90,8 +107,8 @@ function normalizeNEWNode(n: HsonNode_NEW, seen: WeakSet<object>): HsonNode_NEW 
         kids = kids.map((k, i) => {
             if (is_Node_NEW(k) && k._tag === II_TAG) {
                 const m = { ...(k._meta ?? {}) } as Record<string, string>;
-                const cur = String(m["data-_index"] ?? "");
-                if (cur !== String(i)) m["data-_index"] = String(i);
+                const cur = String(m[_DATA_INDEX] ?? "");
+                if (cur !== String(i)) m[_DATA_INDEX] = String(i);
                 return { ...k, _meta: m } as HsonNode_NEW;
             }
             return k;

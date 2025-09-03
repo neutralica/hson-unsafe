@@ -1,13 +1,13 @@
 import { Primitive } from "../../core/types-consts/core.types.hson";
-import { _META_DATA_PREFIX } from "../../new/types-consts/constants.new.hson";
+import { _DATA_INDEX, _DATA_QUID, _META_DATA_PREFIX } from "../../new/types-consts/constants.new.hson";
 import { HsonAttrs, HsonFlags, HsonMeta, HsonNode } from "../../types-consts/node.types.hson";
 import { canonicalize } from "../../utils/canonicalize.utils.hson";
 import { is_Node } from "../../utils/node-guards.utils.hson";
 import { camel_to_kebab } from "../../utils/serialize-css.utils.hson";
 
-const RESERVED_META = new Set(["data-index", "data-quid"]);
+const RESERVED_META = new Set([_DATA_INDEX, _DATA_QUID]);
 const IS_reservedMeta = (k: string) =>
-  RESERVED_META.has(k) || k.startsWith("data-_");
+  RESERVED_META.has(k) || k.startsWith(_META_DATA_PREFIX);
 
 /* stable stringify with lexicographic key order */
 function stable_stringify(x: unknown): string {
@@ -173,8 +173,8 @@ function normalize_flags(flags: HsonFlags | undefined): string[] {
 /* convert OLD meta to a stable, json-serializable shape */
 function normalize_meta_OLD(meta: HsonMeta | undefined) {
   return {
-    ...(typeof (meta as any)?.["data-index"] !== "undefined" ? { "data-index": String((meta as any)["data-index"]) } : {}),
-    ...(typeof (meta as any)?.["data-quid"] !== "undefined" ? { "data-quid": String((meta as any)["data-quid"]) } : {}),
+    ...(typeof (meta as any)?.[_DATA_INDEX] !== "undefined" ? { [_DATA_INDEX]: String((meta as any)[_DATA_INDEX]) } : {}),
+    ...(typeof (meta as any)?.[_DATA_QUID] !== "undefined" ? { [_DATA_QUID]: String((meta as any)[_DATA_QUID]) } : {}),
   };
 }
 

@@ -3,16 +3,16 @@
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Object, is_Primitive } from "../../../core/utils/guards.core.utils.hson";
 import {ARR_TAG, ELEM_TAG, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG}from "../../../types-consts/constants.hson"
-import { _snip } from "../../../utils/preview-long.utils.hson";
+import { _snip } from "../../../utils/snip.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
-import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
+import { _DATA_INDEX, NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
 import { JsonType_NEW, HsonNode_NEW, HsonMeta_NEW, JsonObj_NEW, HsonAttrs_NEW } from "../../types-consts/node.new.types.hson";
 import { is_not_string_NEW } from "../../utils/node-guards.new.utils.hson";
 
 
 
 /* debug log */
-let _VERBOSE = false;
+let _VERBOSE = true;
 const _log: (...args: Parameters<typeof console.log>) => void =
     _VERBOSE
         ? (...args) => console.log(
@@ -85,7 +85,7 @@ function nodeFromJson(
             const itemStructuralTag = getTag(val);
             const itemConversion = nodeFromJson(val, itemStructuralTag);
 
-            let dataIx: HsonMeta_NEW = { "data-index": String(ix) };
+            let dataIx: HsonMeta_NEW = { [_DATA_INDEX]: String(ix) };
 
             return NEW_NEW_NODE({
                 _tag: II_TAG, /* <_ii> wrapper */
@@ -190,6 +190,7 @@ function nodeFromJson(
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
 export function parse_json_NEW($input: string): HsonNode_NEW {
+    _log('parse_json_new called');
     if (_VERBOSE) {
         console.groupCollapsed('---> parsing json:');
         console.log($input);

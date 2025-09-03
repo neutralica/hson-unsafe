@@ -7,7 +7,7 @@ import { RawAttr } from "../../../types-consts/tokens.new.types.hson";
 /* split raw attrs into _attrs and _meta
    - flags become key:"key"
    - style parses to an object (kebab keys)
-   - meta wires data-_index→'data-index', data-_quid→'data-quid'
+   - meta wires data-_index, data-_quid (for now)
 */
 export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs_NEW; meta: HsonMeta_NEW } {
   const attrs: HsonAttrs_NEW = {};

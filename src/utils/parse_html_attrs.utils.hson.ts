@@ -1,5 +1,6 @@
 // parse_html_attrs.utils.hson.ts
 
+import { _DATA_INDEX, _DATA_QUID } from "../new/types-consts/constants.new.hson";
 import { HsonAttrs_NEW, HsonMeta_NEW } from "../new/types-consts/node.new.types.hson";
 import { parse_style } from "./parse-css.utils.hson";
 
@@ -19,12 +20,12 @@ export function parse_html_attrs($el: Element): {
     const v = a.value ?? "";
 
     // 1) system meta on wire: data-_{index,quid} → _meta
-    if (n === "data-_index") {
-      (meta ??= {})["data-index"] = v;
+    if (n === _DATA_INDEX) {
+      (meta ??= {})[_DATA_INDEX] = v;
       continue;
     }
-    if (n === "data-_quid") {
-      (meta ??= {})["data-quid"] = v;
+    if (n === _DATA_QUID) {
+      (meta ??= {})[_DATA_QUID] = v;
       continue;
     }
 

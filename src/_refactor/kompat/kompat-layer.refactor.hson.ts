@@ -1,7 +1,7 @@
 // kompat-layer.refactor.hson.ts
 
 import { Primitive } from '../../core/types-consts/core.types.hson';
-import { _META_DATA_PREFIX } from '../../new/types-consts/constants.new.hson';
+import { _DATA_INDEX, _DATA_QUID, _META_DATA_PREFIX } from '../../new/types-consts/constants.new.hson';
 import { HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW, NodeContent_NEW } from '../../new/types-consts/node.new.types.hson'
 import { is_Node_NEW } from '../../new/utils/node-guards.new.utils.hson';
 import { parse_primitive } from '../../new/utils/parse-primitive.new.utils.hson';
@@ -11,7 +11,7 @@ import { is_Node } from '../../utils/node-guards.utils.hson';
 import { parse_style } from '../../utils/parse-css.utils.hson';
 import { serialize_style } from '../../utils/serialize-css.utils.hson';
 import { normalize_style } from '../_refactor-utils/compare-normalize.utils.hson';
-import { diffNEW } from '../_refactor-utils/diff-new-nodes.new.utils.hson';
+import { diff_New } from '../_refactor-utils/diff-new-nodes.new.utils.hson';
 import { normalizeNode } from './normalizers.kompat.hson';
 
 
@@ -68,12 +68,12 @@ export function to_NEW(nodeOld: HsonNode): HsonNode_NEW {
   const _attrs: HsonAttrs_NEW = {};
   const _metaNew: HsonMeta_NEW = {};
   for (const [k, v] of Object.entries(attrsOld)) {
-    if (k === "data-index") {                 // OLD storage under _meta.attrs
-      _metaNew["data-_index"] = String(v);
+    if (k === _DATA_INDEX) {                 // OLD storage under _meta.attrs
+      _metaNew[_DATA_INDEX] = String(v);
       continue;
     }
-    if (k === "data-quid") {
-      _metaNew["data-_quid"] = String(v);
+    if (k === _DATA_QUID) {
+      _metaNew[_DATA_QUID] = String(v);
       continue;
     }
     if (typeof k === "string" && k.startsWith(_META_DATA_PREFIX)) {
@@ -182,7 +182,7 @@ export function to_OLD(nodeNew: HsonNode_NEW): HsonNode {
 }
 
 export function equalNEW(a: HsonNode_NEW, b: HsonNode_NEW): boolean {
-  return diffNEW(a, b).length === 0;  // ← replace stringify-equal
+  return diff_New(a, b).length === 0;  // ← replace stringify-equal
 }
 
 

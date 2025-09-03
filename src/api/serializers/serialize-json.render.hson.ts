@@ -10,26 +10,13 @@ import { SHADOW_ENABLED } from "../../_refactor/flags/flags.refactor.hson";
 import type { HsonNode } from "../../types-consts/node.types.hson";
 import { canonicalize } from "../../utils/canonicalize.utils.hson";
 import { assert_invariants_NEW } from "../../new/utils/assert-invariants.utils.hson";
+import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
+import { is_Node_NEW } from "../../new/utils/node-guards.new.utils.hson";
 
 /* exported wrapper */
-export function serialize_json($node: HsonNode): string {
-    console.log('serializing json - beginning')
-    const oldStr = serialize_json_OLD($node);
 
-    if (SHADOW_ENABLED()) {
-        try {
-            assert_invariants_NEW(to_NEW($node));
-            const newStr = serialize_json_NEW(to_NEW($node));
-            const a = JSON.parse(oldStr);
-            const b = JSON.parse(newStr);
-            if (canonicalize(a) !== canonicalize(b)) {
-                /* non-fatal: log and keep returning OLD */
-                console.warn("[shadow-json][serialize] parity mismatch");
-            } else console.log('SUCCESS! both new and old node paths match')
-        } catch (e: any) {
-            console.error("[shadow-json][serialize] NEW crashed:", e.message);
-        }
-    }
-
-    return oldStr;
+export function serialize_json(root: HsonNode | HsonNode_NEW): string {
+  const n = is_Node_NEW(root as any) ? (root as HsonNode_NEW) : to_NEW(root as HsonNode);
+  assert_invariants_NEW(n, 'serialize-json');
+  return serialize_json_NEW(n);
 }

@@ -4,6 +4,7 @@ import { II_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants.hson";
 import { BasicValue } from "../../core/types-consts/core.types.hson";
 import { HsonMeta_NEW, HsonNode_NEW, JsonType_NEW, NodeContent_NEW } from "../types-consts/node.new.types.hson";
 import { is_Primitive } from "../../core/utils/guards.core.utils.hson"
+import { _DATA_INDEX } from "../types-consts/constants.new.hson";
 
 /* identifies HsonNode (new structure) */
 export function is_Node_NEW(bit: unknown): bit is HsonNode_NEW {
@@ -39,6 +40,9 @@ export function is_NEW_PRIM_or_STR(node: HsonNode_NEW): boolean {
 /* identifies _ii index tags in an _array */
 export function is_indexed_NEW(node: HsonNode_NEW): boolean {
   return (
-    node._tag === II_TAG && node._content && node._content.length === 1
-  )
+    node._tag === II_TAG &&
+    Array.isArray(node._content) &&
+    node._content.length === 1 &&
+    typeof node._meta?.[_DATA_INDEX] === "string"
+  );
 }

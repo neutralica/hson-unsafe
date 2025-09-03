@@ -2,7 +2,8 @@
 
 import { serialize_json_OLD } from "../../old/api/serializers/serialize-json.old.render.hson.js";
 import { RenderΔ } from "../../types-consts/constants.hson.js";
-import { FrameConstructor, OutputConstructor_2, FrameRender } from "../../types-consts/constructors.types.hson.js";
+import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types.hson.js";
+import { FrameConstructor, FrameRender } from "../../old/types/constructors.old.types.hson.js";
 import { serialize_hson } from "../serializers/serialize-hson.render.hson.js";
 import { serialize_html } from "../serializers/serialize-html.render.hson.js";
 import { create_proxy } from "../tree/create-proxy.tree.hson.js";

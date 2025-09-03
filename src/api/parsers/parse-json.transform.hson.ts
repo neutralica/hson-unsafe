@@ -9,40 +9,12 @@ import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.h
 import { clone_node } from "../../utils/clone-node.utils.hson";
 import { make_string } from "../../utils/make-string.utils.hson";
 import { assert_invariants_NEW } from "../../new/utils/assert-invariants.utils.hson";
+import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
 
 
-export function parse_json($json: string): HsonNode {
-  console.log('parse-json wrapper reached');
-  const oldNode = parse_json_OLD($json);
-
-  if (SHADOW_ENABLED()) {
-    console.log('shadow tests running - json')
-    try {
-      const newNode = parse_json_NEW($json)
-      const newNodeOld = to_OLD(newNode);
-
-      // CHANGED: cloned inputs for compare only
-      const a = clone_node(oldNode);
-      const b = clone_node(newNodeOld);
-      const c = clone_node(newNode);
-      const d = to_NEW(oldNode);
-
-      assert_invariants_NEW(c);
-      assert_invariants_NEW(d);
-
-      console.groupCollapsed('JSON tests - SHADOW_ENABLED - test results:');
-      console.log(make_string(a));
-      console.log(make_string(b));
-      console.groupEnd();
-      if (!equal_old_nodes(a, b)) {
-        const diffs = diff_old_nodes(a, b, 10);
-        console.warn("[shadow-json][parse] mismatch(len=%d):", $json.length, diffs);
-      } else console.log('GO GO GO nodes are equal!')
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn("[shadow-json][parse] NEW crashed:", msg);
-    }
-  }
-
-  return oldNode;
+export function parse_json(json: string): HsonNode_NEW {
+  console.log('parse json wrapper')
+  const node = parse_json_NEW(json);
+  assert_invariants_NEW(node, 'parse-json');
+  return node;
 }

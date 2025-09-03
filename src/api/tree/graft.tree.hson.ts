@@ -9,6 +9,7 @@ import { make_string } from "../../utils/make-string.utils.hson.js";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
 import { unwrap_root } from "../../utils/unwrap-root.utils.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
+import { ensure_OLD } from "../../_refactor/_refactor-utils/ensure-old.utils.hson.js";
 
 /* debug log */
 let _VERBOSE = true;
@@ -41,7 +42,7 @@ export function graft(
   const sourceHTML = targetElement.innerHTML;
   /* parse html into nodes */
   const cleanHTML = $options.unsafe ? sourceHTML : sanitize_html(sourceHTML);
-  const rootNode: HsonNode = parse_html(cleanHTML);
+  const rootNode: HsonNode = ensure_OLD(parse_html(cleanHTML));
 
   /* recursively render the HsonNode tree back into live DOM elements,
       then populate the `nodeElementMap`, linking the two */

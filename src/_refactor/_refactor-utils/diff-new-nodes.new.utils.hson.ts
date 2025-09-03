@@ -192,7 +192,7 @@ let outArr: Change[] = []; // re-used buffer for recursion
 
 
 
-export function diffNEW(a: HsonNode_NEW, b: HsonNode_NEW): Change[] {
+export function diff_New(a: HsonNode_NEW, b: HsonNode_NEW): Change[] {
   outArr = [];
   walkNode("", a, b);
   const out = outArr;

@@ -1,6 +1,7 @@
 // base.hson.types.ts
 
 import { Primitive } from "../../core/types-consts/core.types.hson";
+import { _DATA_INDEX, _DATA_QUID } from "./constants.new.hson";
 
 
 export type JsonType_NEW =
@@ -28,7 +29,7 @@ export type NodeContent_NEW = (HsonNode_NEW | Primitive)[];
  * represents the HTML attributes property
  * the keys are strings, and the values are primitives.
  * TODO: flags will be subsumed into this; any flag is an attribute where key=value
- * @property {string} [data-index] - an optional, explicit index for items within an array.
+ * @property {string} [style] - for capturing parsed style when applicable.
  */
 export type HsonAttrs_NEW = {'style'?: string | Record<string, string> } & Record<string, Primitive>;
 
@@ -37,9 +38,9 @@ export type HsonAttrs_NEW = {'style'?: string | Record<string, string> } & Recor
  * represents the HTML attributes property
  * the keys are strings, and the values are primitives.
  * TODO: flags will be subsumed into this; any flag is an attribute where key=value
- * @property {string} [data-index] - an optional, explicit index for items within an array.
+ * @property {string} [data-_index] - an optional, explicit index for items within an array.
  */
 export type HsonMeta_NEW = {
-    'data-_index'?: string;
-    'data-_quid'?: string;
+    [_DATA_INDEX]?: string;
+    [_DATA_QUID]?: string;
 } & Record<string, string>;

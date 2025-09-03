@@ -3,7 +3,7 @@ import { _ERROR, _FALSE, BLANK_META } from "../../types-consts/constants.hson.js
 import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../../types-consts/tree.types.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
-import { parse_tokens } from "../parsers/parse-tokens.transform.hson.js";
+import { parse_tokens_DO_NOT_USE } from "../parsers/parse-tokens.transform.hson.js";
 import { tokenize_hson } from "../parsers/tokenize-hson.transform.hson.js";
 import { create_live_tree } from "../tree/create-live-tree.tree.hson.js";
 import { graft } from "../tree/graft.tree.hson.js";
@@ -11,6 +11,8 @@ import { LiveTree } from "../tree/live-tree-class.tree.hson.js";
 import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 import { parse_hson } from "../parsers/parse-hson.transform.hson.js";
+import { parse_json } from "../parsers/parse-json.transform.hson.js";
+import { ensure_OLD } from "../../_refactor/_refactor-utils/ensure-old.utils.hson.js";
 
 /**
  * factory function that builds the entry-point for the liveTree pipeline
@@ -35,7 +37,7 @@ export function construct_tree(
 
     fromHTML($html: string): BranchConstructor {
       const cleanHtml = $options.unsafe ? $html : sanitize_html($html);
-      const rootNode = parse_html(cleanHtml);
+      const rootNode = ensure_OLD(parse_html(cleanHtml));
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,
@@ -43,7 +45,7 @@ export function construct_tree(
     },
 
     fromJSON($json: string | JsonType): BranchConstructor {
-      const rootNode = parse_json_OLD($json as string);
+      const rootNode = ensure_OLD(parse_json($json as string));
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,
@@ -54,7 +56,7 @@ export function construct_tree(
     fromHSON($hson: string): BranchConstructor {
       // assumes you have tokenize_hson and parse_tokens available
       const tokens = tokenize_hson($hson);
-      const rootNode = parse_hson($hson);
+      const rootNode = ensure_OLD(parse_hson($hson));
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,

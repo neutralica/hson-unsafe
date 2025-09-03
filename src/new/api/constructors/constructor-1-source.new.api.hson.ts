@@ -1,18 +1,14 @@
-
-import { JsonType } from "../../core/types-consts/core.types.hson.js";
-import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types.hson.js";
-import { SourceConstructor_1 } from "../../old/types/constructors.old.types.hson.js";
-import { FrameConstructor } from "../../old/types/constructors.old.types.hson.js";
-import { make_string } from "../../utils/make-string.utils.hson.js";
-import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
-import { parse_html } from "../parsers/parse-html.transform.hson.js";
-import { parse_tokens_DO_NOT_USE } from "../parsers/parse-tokens.transform.hson.js";
-import { tokenize_hson } from "../parsers/tokenize-hson.transform.hson.js";
-import { construct_output_2 } from "./constructor-2-output.api.hson.js";
-import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson.js";
-import { HsonNode } from "../../types-consts/node.types.hson.js";
-import { parse_hson } from "../parsers/parse-hson.transform.hson.js";
-import { ensure_OLD } from "../../_refactor/_refactor-utils/ensure-old.utils.hson.js";
+import { construct_output_2 } from "../../../api/constructors/constructor-2-output.api.hson";
+import { parse_hson } from "../../../api/parsers/parse-hson.transform.hson";
+import { parse_html } from "../../../api/parsers/parse-html.transform.hson";
+import { parse_json } from "../../../api/parsers/parse-json.transform.hson";
+import { OutputConstructor_2 } from "../../../core/types-consts/constructors.core.types.hson";
+import { SourceConstructor_1 } from "../../../old/types/constructors.old.types.hson";
+import { JsonType } from "../../../core/types-consts/core.types.hson";
+import { make_string } from "../../../utils/make-string.utils.hson";
+import { FrameConstructor_NEW, SourceConstructor_1_NEW } from "../../types-consts/constructors.new.types.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { construct_output_2_NEW } from "./constructor-2-output.new.api.hson";
 
 
 /* debug log */
@@ -31,9 +27,9 @@ const $log = _VERBOSE
  * this is the entry point for the fluent data transformation API.
  * * @returns {source_constructor_1} an object with methods to specify the input data.
  */
-export function construct_source_1(
+export function construct_source_1_NEW(
   options: { unsafe: boolean } = { unsafe: false }
-): SourceConstructor_1 {
+): SourceConstructor_1_NEW {
   return {
     /**
      * accepts an html string or HTMLElement and converts to hson nodes
@@ -58,14 +54,14 @@ export function construct_source_1(
       //   meta.sanitized = true;
       // }
 
-      const node = ensure_OLD(parse_html(content));
-      const frame: FrameConstructor = { input: content, node, meta };
+      const node = parse_html(content);
+      const frame: FrameConstructor_NEW = { input: content, node, meta };
       if (_VERBOSE) {
         console.groupCollapsed('frame')
         console.log(make_string(frame))
         console.groupEnd();
       }
-      return construct_output_2(frame);
+      return construct_output_2_NEW(frame);
     },
 
     /**
@@ -74,12 +70,12 @@ export function construct_source_1(
      * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
      */
     fromJSON($input: string | JsonType): OutputConstructor_2 {
-      const node = parse_json_OLD($input as string);
-      const frame: FrameConstructor = {
+      const node = parse_json($input as string);
+      const frame: FrameConstructor_NEW = {
         input: typeof $input === "string" ? $input : JSON.stringify($input),
         node
       };
-      return construct_output_2(frame);
+      return construct_output_2_NEW(frame);
     },
 
     /**
@@ -88,21 +84,21 @@ export function construct_source_1(
      * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
      */
     fromHSON($input: string): OutputConstructor_2 {
-      const node = ensure_OLD(parse_hson($input));
-      const frame: FrameConstructor = { input: $input, node };
-      return construct_output_2(frame);
+      const node = parse_hson($input);
+      const frame: FrameConstructor_NEW = { input: $input, node };
+      return construct_output_2_NEW(frame);
     },
 
-      /**
-     * initializes the pipeline from an existing HsonNode.
-     * @param {HsonNode} $node the hson node structure.
-     * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
-     */
-      fromNode($node: HsonNode): OutputConstructor_2 {
-        const frame: FrameConstructor = { input: JSON.stringify($node), node: $node };
-        return construct_output_2(frame);
+    /**
+   * initializes the pipeline from an existing HsonNode.
+   * @param {HsonNode_NEW} $node the hson node structure.
+   * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
+   */
+    fromNode($node: HsonNode_NEW): OutputConstructor_2 {
+      const frame: FrameConstructor_NEW = { input: JSON.stringify($node), node: $node };
+      return construct_output_2_NEW(frame);
     },
-      
+
 
     queryDOM(selector: string): OutputConstructor_2 {
       const element = document.querySelector(selector);

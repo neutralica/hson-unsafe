@@ -4,6 +4,8 @@ import { HsonNode_NEW } from "./node.new.types.hson";
 import { ArraySymbol, CloseKind, Position, RawAttr, Tokens_NEW, TokenArrayClose_NEW, TokenArrayOpen_NEW, TokenEnd_NEW, TokenKind, TokenOpen_NEW, TokenText_NEW } from "./tokens.new.types.hson";
 
 export const _META_DATA_PREFIX = 'data-_';
+export const _DATA_INDEX = 'data-_index';
+export const _DATA_QUID = 'data-quid';
 
 export const NEW_NEW_NODE = (partial: Partial<HsonNode_NEW> = {}): HsonNode_NEW => ({
   _tag: partial._tag ?? '', 

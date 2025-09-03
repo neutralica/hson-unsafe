@@ -25,7 +25,8 @@ const $log = _VERBOSE
  * @returns {HsonNode} the fully constructed, hierarchical root hsonnode.
  */
 
-export function parse_tokens($tokens: AllTokens[]): HsonNode {
+export function parse_tokens_DO_NOT_USE($tokens: AllTokens[]): HsonNode {
+    console.error('this function should be removed when it is safe do not call')
     const nodeStack: HsonNode[] = [];
     let finalNode: HsonNode | null = null;
 

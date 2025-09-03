@@ -1,6 +1,7 @@
 // src/utils/style-manager.utils.hson.ts
 
 import { Primitive } from "../../../core/types-consts/core.types.hson.js";
+import { _META_DATA_PREFIX } from "../../../new/types-consts/constants.new.hson.js";
 import { LiveTree } from "../live-tree-class.tree.hson.js";
 
 
@@ -19,6 +20,8 @@ export class DatasetManager {
      * set `data-*` attribute on selected nodes
      * @param key key in kebab (e.g., 'userId' becomes 'data-user-id').
      * @param value new value 
+     * 
+     * *** note - this is not a typo for _META_DATA_PREFIX - do not change *** 
      */
     set(key: string, value: string | null): LiveTree {
         const dataAttrName = `data-${key}`;
@@ -29,6 +32,9 @@ export class DatasetManager {
     /**
      * get a `data-*` attribute from the first selected node
      * @param key the data attribute's key
+     * 
+     * * *** note - this is not a typo for _META_DATA_PREFIX - do not change*** 
+     * 
      */
     get(key: string): Primitive | undefined {
         const dataAttrName = `data-${key}`;

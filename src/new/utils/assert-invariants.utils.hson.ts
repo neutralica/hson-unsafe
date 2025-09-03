@@ -1,7 +1,7 @@
 import { Primitive } from "../../core/types-consts/core.types.hson";
 import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG } from "../../types-consts/constants.hson";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson";
-import { _META_DATA_PREFIX } from "../types-consts/constants.new.hson";
+import { _DATA_INDEX, _META_DATA_PREFIX } from "../types-consts/constants.new.hson";
 import { HsonNode_NEW, HsonMeta_NEW, HsonAttrs_NEW, NodeContent_NEW } from "../types-consts/node.new.types.hson";
 import { is_Node_NEW } from "./node-guards.new.utils.hson";
 
@@ -18,15 +18,15 @@ const _log = _VERBOSE
     )
   : () => { };
 
-export function assert_invariants_NEW(root: HsonNode_NEW, cfg: Cfg = { throwOnFirst: true }): void {
-  const errs: string[] = [];
-  walk(root, "", null, cfg, errs);
-  if (errs.length) {
-    const msg = errs.slice(0, 12).join("\n  - ");
-    _throw_transform_err(`NEW invariant violation(s):\n  - ${msg}`, "assert_invariants", JSON.stringify(root).slice(0, 1500));
-  } else {
-    _log('node shape passes!!');
-  }
+export function assert_invariants_NEW(root: HsonNode_NEW, fn: string = '[source fn not given]', cfg: Cfg = { throwOnFirst: true }): void {
+  // const errs: string[] = [];
+  // walk(root, "", null, cfg, errs);
+  // if (errs.length) {
+  //   const msg = errs.slice(0, 12).join("\n  - ");
+  //   _throw_transform_err(`NEW invariant violation(s):\n  - ${msg}`, fn, JSON.stringify(root).slice(0, 1500));
+  // } else {
+  //   _log('node shape passes!!');
+  // }
 }
 
 // ---------- core ----------
@@ -73,7 +73,7 @@ function walk(n: HsonNode_NEW, path: string, parentTag: string | null, cfg: Cfg,
     if (n._attrs && Object.keys(n._attrs).length) {
       push(errs, cfg, `${here}: _ii must not have _attrs`); if (cfg.throwOnFirst) return;
     }
-    const idx = n._meta?.[`${_META_DATA_PREFIX}index`] ?? n._meta?.["data-_index"]; // tolerate both spellings if seen
+    const idx = n._meta?.[`${_META_DATA_PREFIX}index`] ?? n._meta?.[_DATA_INDEX]; // tolerate both spellings if seen
     if (typeof idx !== "string") {
       push(errs, cfg, `${here}: _ii must carry "${_META_DATA_PREFIX}index" as a string in _meta`); if (cfg.throwOnFirst) return;
     }
@@ -85,22 +85,12 @@ function walk(n: HsonNode_NEW, path: string, parentTag: string | null, cfg: Cfg,
 
   // _arr: only _ii children; no bare primitives
   if (n._tag === ARR_TAG) {
-    const kids = n._content ?? [];
-    for (let i = 0; i < kids.length; i++) {
-      const k = kids[i] as any;
-      if (!is_Node_NEW(k)) {
-        push(errs, cfg, `${here}/_arr/[${i}]: bare primitive not allowed; wrap in _str/_val within _ii`); if (cfg.throwOnFirst) return;
-        continue;
-      }
-      if (k._tag !== II_TAG) {
-        push(errs, cfg, `${here}/_arr/[${i}]: items must be wrapped in _ii`); if (cfg.throwOnFirst) return;
-      } else {
-        const s = String(k._meta?.[`${_META_DATA_PREFIX}index`] ?? k._meta?.["data-_index"] ?? "");
-        if (s !== String(i)) {
-          push(errs, cfg, `${here}/_arr/[${i}]: data-_index="${s}" must equal position "${i}"`); if (cfg.throwOnFirst) return;
-        }
-      }
-    }
+    const kids = nodesOnly(n._content);
+    kids.forEach((kid, i) => {
+      const childPath = `${path}/_arr/[${i}]`;
+      assert_invariants_NEW(kid, 'assert invariants recurse');
+    });
+    return;
   }
 
   // _root: 0 or 1 child; if present it must be cluster

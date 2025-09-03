@@ -1,5 +1,5 @@
 import { construct_tree } from "./api/constructors/construct-tree.api.hson.js";
-import { construct_source_1 } from "./api/constructors/constructor-1-source.api.hson.js";
+import { construct_source_1_NEW } from "./new/api/constructors/constructor-1-source.new.api.hson.js";
 
 (globalThis as any)._test_ON  = () => { (globalThis as any).test_new = true;  location.reload(); };
 (globalThis as any)._test_OFF = () => { (globalThis as any).test_new = false; location.reload(); };
@@ -17,7 +17,7 @@ export const hson = {
    * sanitizes html by default
    */
   get transform() {
-    return construct_source_1({ unsafe: false });
+    return construct_source_1_NEW({ unsafe: false });
   },
 
   /**
@@ -38,7 +38,7 @@ export const hson = {
      * accesses the unsafe stateless data transformation pipeline
      */
     get transform() {
-      return construct_source_1({ unsafe: true });
+      return construct_source_1_NEW({ unsafe: true });
     },
     /**
      * accesses the unsafe stateful dom interaction pipeline
