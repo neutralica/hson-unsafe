@@ -19,14 +19,15 @@ const _log = _VERBOSE
   : () => { };
 
 export function assert_invariants_NEW(root: HsonNode_NEW, fn: string = '[source fn not given]', cfg: Cfg = { throwOnFirst: true }): void {
-  // const errs: string[] = [];
-  // walk(root, "", null, cfg, errs);
-  // if (errs.length) {
-  //   const msg = errs.slice(0, 12).join("\n  - ");
-  //   _throw_transform_err(`NEW invariant violation(s):\n  - ${msg}`, fn, JSON.stringify(root).slice(0, 1500));
-  // } else {
-  //   _log('node shape passes!!');
-  // }
+  const errs: string[] = [];
+  walk(root, "", root._tag, cfg, errs); // was: walk(root, "", null, cfg, errs)
+
+  if (errs.length) {
+    const msg = errs.slice(0, 12).join("\n  - ");
+    _throw_transform_err(`NEW invariant violation(s):\n  - ${msg}`, fn, JSON.stringify(root).slice(0, 1500));
+  } else {
+    _log('node shape passes!!');
+  }
 }
 
 // ---------- core ----------
@@ -86,10 +87,12 @@ function walk(n: HsonNode_NEW, path: string, parentTag: string | null, cfg: Cfg,
   // _arr: only _ii children; no bare primitives
   if (n._tag === ARR_TAG) {
     const kids = nodesOnly(n._content);
-    kids.forEach((kid, i) => {
+    for (let i = 0; i < kids.length; i++) {
+      const child = kids[i];
       const childPath = `${path}/_arr/[${i}]`;
-      assert_invariants_NEW(kid, 'assert invariants recurse');
-    });
+      walk(child, childPath, ARR_TAG, cfg, errs); // changed: no re-entry, preserve parentTag
+      if (cfg.throwOnFirst && errs.length) return; // keep short-circuit behavior
+    }
     return;
   }
 

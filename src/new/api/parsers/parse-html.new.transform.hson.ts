@@ -18,7 +18,7 @@ import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types.hs
 import { is_indexed_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
 
 /* debug log */
-let _VERBOSE = true;
+let _VERBOSE = false;
 const _log: (...args: Parameters<typeof console.log>) => void =
     _VERBOSE
         ? (...args) => console.log(
@@ -153,7 +153,7 @@ function convert($el: Element): HsonNode_NEW {
             childNodes.push(NEW_NEW_NODE({ _tag: tag, _content: [child] }));
 
         } else {
-            _log(`fully formed node received; pushing to childNodes\n(${child})`)
+            _log(`fully formed node received; pushing to childNodes\n(${make_string(child)})`)
             /* or it's already a Node: push it directly. */
             childNodes.push(child as HsonNode_NEW);
         }
@@ -218,6 +218,13 @@ function convert($el: Element): HsonNode_NEW {
         /* children of an <_array> should be <_ii> nodes. */
         if (!childNodes.every(node => is_indexed_NEW(node))) _throw_transform_err('_array children are not valid index tags', 'parse_html');
         return NEW_NEW_NODE({ _tag: ARR_TAG, _content: childNodes });
+    } else if (tagLower === II_TAG) {
+        if (childNodes.length !== 1) _throw_transform_err('<_ii> must have exactly one child', 'parse-html');
+        return NEW_NEW_NODE({
+            _tag: II_TAG,
+            _content: [childNodes[0]],
+            _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined
+        });
     } else if (tagLower === ELEM_TAG) {
         /* _elem should not be wrapped but should disappear back into the HTML */
         _throw_transform_err('_elem tag found in html', 'parse-html');
@@ -239,13 +246,6 @@ function convert($el: Element): HsonNode_NEW {
         _log('child nodes tag is: ', childNodes[0]._tag)
         return NEW_NEW_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });
 
-    } else if (tagLower === II_TAG) {
-        if (childNodes.length !== 1) _throw_transform_err('<_ii> must have exactly one child', 'parse-html');
-        return NEW_NEW_NODE({
-            _tag: II_TAG,
-            _content: [childNodes[0]],
-            _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined
-        });
     }
     if (childNodes.length === 0) {
         // empty element: no _elem wrapper within

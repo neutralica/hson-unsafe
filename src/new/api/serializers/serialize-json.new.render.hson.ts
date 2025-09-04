@@ -3,7 +3,7 @@
 import { is_indexed } from "../../../utils/node-guards.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson"
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson"
-import { ROOT_TAG, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../../types-consts/constants.hson";
+import { ROOT_TAG, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG, EVERY_VSN } from "../../../types-consts/constants.hson";
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { HsonNode_NEW, JsonType_NEW, JsonObj_NEW } from "../../types-consts/node.new.types.hson";
 import { is_indexed_NEW } from "../../utils/node-guards.new.utils.hson";
@@ -12,7 +12,7 @@ import { is_indexed_NEW } from "../../utils/node-guards.new.utils.hson";
 
 
 /* debug log */
-let _VERBOSE = true;
+let _VERBOSE = false;
 const STYLE = 'color:lightgreen;font-weight:400;padding:1px 3px;border-radius:4px';
 const _log = _VERBOSE
     ? (...args: unknown[]) =>
@@ -65,6 +65,10 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
         _throw_transform_err(`Invalid node or node tag`, 'serialize_json');
     }
 
+        if ($node._tag.startsWith("_") && !EVERY_VSN.includes($node._tag)) {
+            _throw_transform_err(`unknown VSN-like tag: <${$node._tag}>`, 'parse-html');
+        }
+    
     /* step 1: catch VSNs */
     _log(`NEXT: { ${$node._tag} }`)
 
@@ -133,7 +137,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             const elemItems: JsonType_NEW = [];
             for (const itemNode of ($node._content)) {
                 /* recursively convert each item node in the _elem to its JSON equivalent */
-                _log('recursing: ', itemNode)
+                _log('recursing item node: ', make_string(itemNode))
                 const jsonItem = jsonFromNode(itemNode as HsonNode_NEW);
                 elemItems.push(jsonItem);
                 _log('pushing list item to <_elem >:')
@@ -154,7 +158,9 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             _log(make_string($node._content));
 
             let tempJson: JsonObj_NEW = {};
-            if ($node._content && $node._content.length === 1) {
+            if ($node._content && $node._content.length === 0) {
+                tempJson = { [$node._tag]: '' };
+            } else if ($node._content && $node._content.length === 1) {
                 const recursed = jsonFromNode($node._content[0] as HsonNode_NEW);
                 tempJson = { [$node._tag]: recursed };
             } else if ($node._content && $node._content.length > 1) {
@@ -168,15 +174,18 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             const hasMeta = $node._meta && Object.keys($node._meta).length > 0;
             const finalJson: JsonObj_NEW = tempJson;
 
-            // merge on any attributes
             if (hasAttrs) {
-                Object.assign(finalJson, $node._attrs);
+                (finalJson as any)._attrs = {
+                    ...(finalJson as any)._attrs,
+                    ...($node._attrs as Record<string, unknown>)
+                };
             }
 
-            // attach meta if present
+            // meta stays as-is
             if (hasMeta) {
-                finalJson._meta = $node._meta;
+                (finalJson as any)._meta = $node._meta;
             }
+
 
             return finalJson;
         }

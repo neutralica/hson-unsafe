@@ -13,7 +13,6 @@ import { make_string } from "../../utils/make-string.utils.hson";
 
 
 export function parse_hson(str: string): HsonNode_NEW {
-  console.log('parse hson wrapper')
   const node = parse_hson_NEW(str);
   assert_invariants_NEW(node, 'parse-hson');          // fast structural sanity
   return node;                          // NEW is now the public shape

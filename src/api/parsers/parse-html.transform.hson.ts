@@ -16,7 +16,6 @@ import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson.js";
 /* stable entry: returns OLD; NEW is only used for parity checks */
 
 export function parse_html(html: string): HsonNode_NEW {
-  console.log('parse html wrapper')
   const node = parse_html_NEW(html);
   assert_invariants_NEW(node, 'parse-html');
   return node;

@@ -11,7 +11,7 @@ import { is_Node_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hs
 import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils.hson";
 
 /* debug log */
-const _VERBOSE = true;
+const _VERBOSE = false;
 const boundLog = console.log.bind(console, '%c[hson]', 'color: green; background: lightblue;');
 const _log = _VERBOSE ? boundLog : () => { };
 
@@ -139,9 +139,6 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
 
     /* parse an array starting at ARRAY_OPEN */
 
-    function make_ii(item: HsonNode_NEW, i: number): HsonNode_NEW {
-        return { _tag: II_TAG, _meta: { [_DATA_INDEX]: String(i) }, _content: [item] };
-    }
 
     function readArray(): HsonNode_NEW {
         const arrOpen = _take();

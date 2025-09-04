@@ -15,8 +15,8 @@ import { bucket_diffs } from "../../_refactor/_refactor-utils/bucket-diffs.utils
 
 
 /* stable entry: returns OLD; NEW is only used for parity checks */
-export function tokenize_hson($src: string): HsonNode {
-
+export function tokenize_hson_DO_NOT_USE($src: string): HsonNode {
+    console.error('DO NOT USE THIS TOKENIZER - leaving during the refactor, then removing');
     const oldTokens = tokenize_hson_OLD($src);
     const oldNode = parse_tokens_OLD(oldTokens)
 
