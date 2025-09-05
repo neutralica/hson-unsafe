@@ -15,7 +15,9 @@ import { _snip } from "../../../utils/snip.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
 import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { escape_text_nodes } from "../../utils/escape-text-nodes.new.utils.hson";
 import { is_indexed_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
+import { strip_html_comments } from "../../utils/strip-html-comments.new.utsil.hson";
 
 /* debug log */
 let _VERBOSE = false;
@@ -37,8 +39,11 @@ export function parse_html_NEW($input: string | Element): HsonNode_NEW {
         console.groupEnd();
     }
     if (typeof $input === 'string') {
-        const bools = expand_bools($input);
-        const ents = expand_entities(bools);
+        let s = $input;
+        const stripped= strip_html_comments(s)
+        const bools = expand_bools(stripped);
+        const safe = escape_text_nodes(bools);
+        const ents = expand_entities(safe);
         const self = expand_void_tags(ents);
         const parser = new DOMParser();
 
