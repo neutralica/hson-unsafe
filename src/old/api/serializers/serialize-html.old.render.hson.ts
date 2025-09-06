@@ -165,6 +165,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
  * @throws Error if input node is null or undefined, or if intermediate XML is empty/invalid (throw_transform_err)
  */
 export function serialize_html_OLD($node: HsonNode | Primitive): string {
+  console.error('serialize_html_OLD called--discontinue use of this function; switch to serialize_html_NEW')
   if ($node === undefined) {
     _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', $node);
   }

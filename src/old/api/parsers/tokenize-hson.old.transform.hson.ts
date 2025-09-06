@@ -30,6 +30,7 @@ const $log = _VERBOSE
 let tokenFirst: boolean = true;
 
 export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
+    console.error('tokenize_hson_OLD called--discontinue use of this function; switch to tokenize_hson_NEW')
     const maxDepth = 50;
     $log(`[token_from_hson called with depth=${$depth}]`);
     if (tokenFirst) {

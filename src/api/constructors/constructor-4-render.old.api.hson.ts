@@ -17,9 +17,9 @@ import { HsonNode } from "../../types-consts/node.types.hson.js";
  * @returns {RenderConstructor_4} an object with terminal methods to get the final result.
  */
 
-export function construct_render_4($context: FrameRender): RenderConstructor_4 {
+export function construct_4_OLD_DNU($context: FrameRender): RenderConstructor_4 {
     const { frame, output } = $context;
-
+console.error('constructor is out of date--convert to _NEW constructor 4');
     return {
         /**
          * returns the final output as a string formatted according to Options_3

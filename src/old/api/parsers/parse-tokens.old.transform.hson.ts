@@ -26,6 +26,7 @@ const _log = _VERBOSE
  */
 
 export function parse_tokens_OLD($tokens: AllTokens[]): HsonNode {
+    console.error('parse_tokens_OLD called--discontinue use of this function; switch to parse_tokens_NEW')
     const nodeStack: HsonNode[] = [];
     let finalNode: HsonNode | null = null;
 

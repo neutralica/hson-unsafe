@@ -7,8 +7,8 @@ import { FrameConstructor, FrameRender } from "../../old/types/constructors.old.
 import { serialize_hson } from "../serializers/serialize-hson.render.hson.js";
 import { serialize_html } from "../serializers/serialize-html.render.hson.js";
 import { create_proxy } from "../tree/create-proxy.tree.hson.js";
-import { construct_options_3 } from "./constructor-3-options.api.hson.js";
-import { construct_render_4 } from "./constructor-4-render.api.hson.js";
+import { construct_3_OLD_DNU } from "./constructor-3-options.old.api.hson.js";
+import { construct_4_OLD_DNU } from "./constructor-4-render.old.api.hson.js";
 
 /**
  *  hson.transform / stage 2 (of 4) - select output format
@@ -21,13 +21,13 @@ import { construct_render_4 } from "./constructor-4-render.api.hson.js";
  * @returns {OutputConstructor_2} an object with methods to specify the output format.
  */
 
-export function construct_output_2($frame: FrameConstructor): OutputConstructor_2 {
-    
+export function construct_2_OLD_DNU($frame: FrameConstructor): OutputConstructor_2 {
+    console.error('constructor is out of date--convert to _NEW constructor 2');
     /* wee helper for the final conversion steps */
     function createFinalizer(context: FrameRender) {
         return {
-            ...construct_options_3(context),
-            ...construct_render_4(context)
+            ...construct_3_OLD_DNU(context),
+            ...construct_4_OLD_DNU(context)
         };
     }
 

@@ -6,7 +6,7 @@ import { FrameConstructor } from "../../old/types/constructors.old.types.hson.js
 import { make_string } from "../../utils/make-string.utils.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { parse_html } from "../parsers/parse-html.transform.hson.js";
-import { construct_output_2 } from "./constructor-2-output.api.hson.js";
+import { construct_2_OLD_DNU } from "./constructor-2-output.old.api.hson.js";
 import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 import { parse_hson } from "../parsers/parse-hson.transform.hson.js";
@@ -29,9 +29,10 @@ const $log = _VERBOSE
  * this is the entry point for the fluent data transformation API.
  * * @returns {source_constructor_1} an object with methods to specify the input data.
  */
-export function construct_source_1(
+export function construct_1_OLD_DNU(
   options: { unsafe: boolean } = { unsafe: false }
 ): SourceConstructor_1 {
+  console.error('constructor is out of date--convert to _NEW constructor 1');
   return {
     /**
      * accepts an html string or HTMLElement and converts to hson nodes
@@ -63,7 +64,7 @@ export function construct_source_1(
         console.log(make_string(frame))
         console.groupEnd();
       }
-      return construct_output_2(frame);
+      return construct_2_OLD_DNU(frame);
     },
 
     /**
@@ -77,7 +78,7 @@ export function construct_source_1(
         input: typeof $input === "string" ? $input : JSON.stringify($input),
         node
       };
-      return construct_output_2(frame);
+      return construct_2_OLD_DNU(frame);
     },
 
     /**
@@ -88,7 +89,7 @@ export function construct_source_1(
     fromHSON($input: string): OutputConstructor_2 {
       const node = ensure_OLD(parse_hson($input));
       const frame: FrameConstructor = { input: $input, node };
-      return construct_output_2(frame);
+      return construct_2_OLD_DNU(frame);
     },
 
       /**
@@ -98,7 +99,7 @@ export function construct_source_1(
      */
       fromNode($node: HsonNode): OutputConstructor_2 {
         const frame: FrameConstructor = { input: JSON.stringify($node), node: $node };
-        return construct_output_2(frame);
+        return construct_2_OLD_DNU(frame);
     },
       
 

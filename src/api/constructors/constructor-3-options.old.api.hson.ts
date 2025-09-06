@@ -1,7 +1,7 @@
 
 import { OptionsConstructor_3, FrameOptions, RenderConstructor_4 } from "../../core/types-consts/constructors.core.types.hson.js";
 import { FrameRender } from "../../old/types/constructors.old.types.hson.js";
-import { construct_render_4 } from "./constructor-4-render.api.hson.js";
+import { construct_4_OLD_DNU } from "./constructor-4-render.old.api.hson.js";
 
 
 
@@ -15,8 +15,9 @@ import { construct_render_4 } from "./constructor-4-render.api.hson.js";
  * @param {FrameRender} $render - Tthe render context from stage 2.
  * @returns {OptionsConstructor_3} an object with 3 layers of chained transforms
  */
-export function construct_options_3 ($render: FrameRender): OptionsConstructor_3 {
-    const {frame, output} = $render;
+export function construct_3_OLD_DNU ($render: FrameRender): OptionsConstructor_3 {
+    console.error('constructor is out of date--convert to _NEW constructor 3');
+    const { frame, output } = $render;
     return {
       /**
        * applies a custom set of formatting options.
@@ -28,7 +29,7 @@ export function construct_options_3 ($render: FrameRender): OptionsConstructor_3
               ...frame,
               options: { ...frame.options, ...$opts }
           };
-          return construct_render_4({frame: updatedFrame, output});
+          return construct_4_OLD_DNU({frame: updatedFrame, output});
       },
       /**
        * formats the output on a single line with no breaks.
@@ -36,7 +37,7 @@ export function construct_options_3 ($render: FrameRender): OptionsConstructor_3
        */
       noBreak():RenderConstructor_4 {
           const updatedFrame = { ...frame, options: { ...frame.options, noBreak: true } };
-          return construct_render_4({frame: updatedFrame, output})
+          return construct_4_OLD_DNU({frame: updatedFrame, output})
       },
       /**
        * adds human-readable spacing and indentation to the output.
@@ -44,7 +45,7 @@ export function construct_options_3 ($render: FrameRender): OptionsConstructor_3
        */
       spaced():RenderConstructor_4 {
           const updatedFrame = { ...frame, options: { ...frame.options, spaced: true } };
-          return construct_render_4({ frame: updatedFrame, output });
+          return construct_4_OLD_DNU({ frame: updatedFrame, output });
       },
       /**
        * applies linting rules to the output for canonical formatting.
@@ -52,7 +53,7 @@ export function construct_options_3 ($render: FrameRender): OptionsConstructor_3
        */
       linted(): RenderConstructor_4 {
         const updatedFrame = { ...frame, options: { ...frame.options, linted: true } };
-        return construct_render_4({ frame: updatedFrame, output });
+        return construct_4_OLD_DNU({ frame: updatedFrame, output });
     },
   };
 }

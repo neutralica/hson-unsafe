@@ -15,6 +15,7 @@ const _log = _VERBOSE
     : () => { };
 
 export function serialize_json_OLD($node: HsonNode): string {
+    console.error('serialize_json_OLD called--discontinue use of this function; switch to serialize_json_NEW')
     if (_VERBOSE) {
         console.groupCollapsed('---> serializing json');
         console.log('input node:');

@@ -171,6 +171,7 @@ function hsonFromNode(
  */
 
 export function serialize_hson_OLD($root: HsonNode): string {
+    console.error('serialize_hson_OLD called--discontinue use of this function; switch to serialize_hson_NEW')
     if (_VERBOSE) {
         console.groupCollapsed('---> serializing hson')
         console.log('beginning node:')

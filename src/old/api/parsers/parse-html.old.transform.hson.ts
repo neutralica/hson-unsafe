@@ -22,6 +22,7 @@ const _log: (...args: Parameters<typeof console.log>) => void =
         : () => { };
 
 export function parse_html_OLD($input: string | Element): HsonNode {
+    console.error('parse_html_OLD called--discontinue use of this function; switch to parse_html_NEW')
     let inputElement: Element;
     if (_VERBOSE) {
         console.groupCollapsed('--->  parsing html');
