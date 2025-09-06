@@ -60,9 +60,9 @@ function nodeFromJson(
     /* catch primitive nodes */
 
     if ($parentTag.startsWith("_") && !EVERY_VSN.includes($parentTag)) {
-                _throw_transform_err(`unknown VSN-like tag: <${$parentTag}>`, 'parse-html');
-            }
-        
+        _throw_transform_err(`unknown VSN-like tag: <${$parentTag}>`, 'parse-html');
+    }
+
     if ($parentTag === STR_TAG || $parentTag === VAL_TAG) {
         if (!is_Primitive($srcJson)) {
             _throw_transform_err('values must be string, bool, number, or null', 'parse_json');
@@ -215,8 +215,9 @@ export function parse_json_NEW($input: string): HsonNode_NEW {
     }
 
     let jsonToProcess: JsonType_NEW = parsedJson;
+    // this actually doesn't feel like a step we should take here; it should be within nodeFromJSON probably?
     let finalMeta: HsonMeta_NEW | undefined = undefined;
-    let finalAttrs: HsonMeta_NEW | undefined = undefined;
+    let finalAttrs: HsonAttrs_NEW | undefined = undefined;
     /* check if the top-level parsed JSON is an object whose actual data content
          is nested under a VSN key (typically "_root"),
          and also check for a sibling _meta at this level */
@@ -226,6 +227,7 @@ export function parse_json_NEW($input: string): HsonNode_NEW {
 
         if (jsonProperties.length === 1 && jsonProperties[0] === ROOT_TAG) {
             if ((parsedJson as JsonObj_NEW)._meta) {
+                finalAttrs = (parsedJson as JsonObj_NEW)._attrs;
                 finalMeta = (parsedJson as JsonObj_NEW)._meta;
             }
             jsonToProcess = (parsedJson as JsonObj_NEW)[ROOT_TAG]; /*  "unwrap" it */

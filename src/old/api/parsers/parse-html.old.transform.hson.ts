@@ -8,7 +8,7 @@ import { expand_entities } from "../../../utils/expand-entities.utils.hson";
 import { expand_void_tags } from "../../../utils/expand-self-closing.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
-import { parse_style } from "../../../utils/parse-css.utils.hson";
+import { parse_style_hard_mode } from "../../../utils/parse-css.utils.hson";
 import { _snip } from "../../../utils/snip.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
@@ -107,7 +107,7 @@ function convert($el: Element): HsonNode {
         }
         /* 'style' attribute only treated as an object */
         else if (name === 'style') {
-            attrs.style = parse_style(value);
+            attrs.style = parse_style_hard_mode(value);
         }
         /* all other attributes should be forced to be strings. */
         else {

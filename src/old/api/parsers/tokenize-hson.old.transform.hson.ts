@@ -9,7 +9,7 @@ import { close_tag_lookahead } from "../../../utils/close-tag-lookahead.utils.hs
 import { coerce } from "../../../utils/coerce-string.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { is_Node } from "../../../utils/node-guards.utils.hson";
-import { parse_style } from "../../../utils/parse-css.utils.hson";
+import { parse_style_hard_mode } from "../../../utils/parse-css.utils.hson";
 import { split_top_OLD } from "../../../utils/split-top-level.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 
@@ -307,7 +307,7 @@ export function tokenize_hson_OLD($hson: string, $depth = 0): AllTokens[] {
                     if (key === 'style') {
                         try {
                             /* try to parse style attributes for direct manipulation in JSON */
-                            attrs.style = parse_style(valueString);
+                            attrs.style = parse_style_hard_mode(valueString);
                         } catch (e) {
                             _throw_transform_err(`parse error in tokenize_hson(): failed to JSON.parse style attribute: ${valueString}: ${e}`, 'tokenize-hson', remainder);
                             parseError = true;

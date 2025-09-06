@@ -1,4 +1,4 @@
-import { parse_style } from "../../../../utils/parse-css.utils.hson";
+import { parse_style_hard_mode } from "../../../../utils/parse-css.utils.hson";
 import { _META_DATA_PREFIX } from "../../../types-consts/constants.new.hson";
 import { HsonAttrs_NEW, HsonMeta_NEW } from "../../../types-consts/node.new.types.hson";
 import { RawAttr } from "../../../types-consts/tokens.new.types.hson";
@@ -27,7 +27,7 @@ export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs_NEW; meta: 
 
     // style: parse to object (you already do this)
     if (k === "style") {
-      attrs.style = ra.value ? parse_style(ra.value.text) : {};
+      attrs.style = ra.value ? parse_style_hard_mode(ra.value.text) : {};
       continue;
     }
 

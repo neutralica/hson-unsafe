@@ -8,7 +8,7 @@ import { parse_primitive } from '../../new/utils/parse-primitive.new.utils.hson'
 import { ARR_TAG, ELEM_TAG, OBJ_TAG } from '../../types-consts/constants.hson';
 import { HsonFlags, HsonNode, HsonMeta, NodeContent } from '../../types-consts/node.types.hson';
 import { is_Node } from '../../utils/node-guards.utils.hson';
-import { parse_style } from '../../utils/parse-css.utils.hson';
+import { parse_style_hard_mode } from '../../utils/parse-css.utils.hson';
 import { serialize_style } from '../../utils/serialize-css.utils.hson';
 import { normalize_style } from '../_refactor-utils/compare-normalize.utils.hson';
 import { diff_New } from '../_refactor-utils/diff-new-nodes.new.utils.hson';
@@ -86,7 +86,7 @@ export function to_NEW(nodeOld: HsonNode): HsonNode_NEW {
 
   // 1a) Optional: normalize style string → object for NEW
   if (typeof _attrs.style === "string") {
-    _attrs.style = parse_style(_attrs.style as string);
+    _attrs.style = parse_style_hard_mode(_attrs.style as string);
   }
 
   // 1b) Fold legacy flags into attrs (key:"key")
