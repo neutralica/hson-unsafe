@@ -9,8 +9,7 @@ import { LiveTree } from "../tree/live-tree-class.tree.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 import { parse_hson } from "../parsers/parse-hson.transform.hson.js";
 import { parse_json } from "../parsers/parse-json.transform.hson.js";
-import { ensure_OLD } from "../../_refactor/_refactor-utils/ensure-old.utils.hson.js";
-import { tokenize_hson_NEW } from "../../new/api/parsers/tokenize-hson.new.transform.hson.js";
+import { tree_converter } from "../../_refactor/_refactor-utils/lift-attrs.refactor.hson.js";
 
 /**
  * factory function that builds the entry-point for the liveTree pipeline
@@ -35,7 +34,7 @@ export function construct_tree(
 
     fromHTML($html: string): BranchConstructor {
       const cleanHtml = $options.unsafe ? $html : sanitize_html($html);
-      const rootNode = ensure_OLD(parse_html(cleanHtml));
+      const rootNode = tree_converter(parse_html(cleanHtml));
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,
@@ -43,7 +42,7 @@ export function construct_tree(
     },
 
     fromJSON($json: string | JsonType): BranchConstructor {
-      const rootNode = ensure_OLD(parse_json($json as string));
+      const rootNode = tree_converter(parse_json($json as string));
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,
@@ -53,8 +52,7 @@ export function construct_tree(
 
     fromHSON($hson: string): BranchConstructor {
       // assumes you have tokenize_hson and parse_tokens available
-      const tokens = tokenize_hson_NEW($hson);
-      const rootNode = ensure_OLD(parse_hson($hson));
+      const rootNode = tree_converter(parse_hson($hson));
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,
