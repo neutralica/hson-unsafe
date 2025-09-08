@@ -1,22 +1,20 @@
 // parse-html.new.transform.hson.ts (new)
 
-import { parse_html } from "../../../api/parsers/parse-html.transform.hson";
 import { Primitive } from "../../../core/types-consts/core.types.hson";
-import { is_Primitive, is_not_string } from "../../../core/utils/guards.core.utils.hson";
+import { is_Primitive} from "../../../core/utils/guards.core.utils.hson";
 import { ROOT_TAG, ELEM_TAG, VAL_TAG, STR_TAG, OBJ_TAG, ARR_TAG, II_TAG, _FALSE, VSN_TAGS, EVERY_VSN } from "../../../types-consts/constants.hson";
 import { coerce } from "../../../utils/coerce-string.utils.hson";
 import { expand_bools } from "../../../utils/expand-booleans.utils.hson";
 import { expand_entities } from "../../../utils/expand-entities.utils.hson";
 import { expand_void_tags } from "../../../utils/expand-self-closing.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
-import { is_Node } from "../../../utils/node-guards.utils.hson";
 import { parse_html_attrs } from "../../../utils/parse_html_attrs.utils.hson";
 import { _snip } from "../../../utils/snip.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
-import { HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import {  HsonNode_NEW } from "../../types-consts/node.new.types.hson";
 import { escape_text_nodes } from "../../utils/escape-text-nodes.new.utils.hson";
-import { is_indexed_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
+import { is_indexed_NEW, is_Node_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
 import { strip_html_comments } from "../../utils/strip-html-comments.new.utsil.hson";
 
 /* debug log */
@@ -246,7 +244,7 @@ function convert($el: Element): HsonNode_NEW {
         _log('void node detected; returning empty new node');
         return NEW_NEW_NODE({ _tag: baseTag, _content: [], _attrs: sortedAcc });
     } else if (
-        (childNodes.length === 1 && is_Node(childNodes[0])
+        (childNodes.length === 1 && is_Node_NEW(childNodes[0])
             && (childNodes[0]._tag === OBJ_TAG || childNodes[0]._tag === ARR_TAG))) {
         _log('child nodes tag is: ', childNodes[0]._tag)
         return NEW_NEW_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });

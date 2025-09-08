@@ -1,7 +1,6 @@
 import { Primitive } from '../../../core/types-consts/core.types.hson'
 import { is_Primitive } from '../../../core/utils/guards.core.utils.hson';
 import { ELEM_TAG, EVERY_VSN, STR_TAG } from '../../../types-consts/constants.hson';
-import { BLANK_META } from "../../../old/types/node-constants.old";
 import { build_wire_attrs } from '../../../utils/build-wire-attrs.utils.hson';
 import { escape_html } from '../../../utils/escape-html.utils.hson';
 import { make_string } from '../../../utils/make-string.utils.hson';
@@ -84,7 +83,7 @@ export function serialize_xml(node: HsonNode_NEW | Primitive | undefined): strin
     _throw_transform_err('undefined node received', 'serialize_html', node);
   }
   /* handle the various VSNs */
-  const { _tag: tag, _content: content = [], _meta = BLANK_META } = node;
+  const { _tag: tag, _content: content = [], _meta = {} } = node;
   
   if (tag.startsWith("_") && !EVERY_VSN.includes(tag)) {
       _throw_transform_err(`unknown VSN-like tag: <${tag}>`, 'parse-html');

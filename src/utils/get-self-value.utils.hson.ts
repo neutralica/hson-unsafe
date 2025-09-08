@@ -2,8 +2,8 @@
 
 import { Primitive } from "../core/types-consts/core.types.hson";
 import { FALSE_TYPE, ELEM_OBJ_ARR, _FALSE, STR_TAG, VAL_TAG } from "../types-consts/constants.hson";
-import { HsonNode } from "../types-consts/node.types.hson";
-import { is_Node } from "./node-guards.utils.hson";
+import { HsonNode_NEW } from "../new/types-consts/node.new.types.hson";
+import { is_Node_NEW } from "../new/utils/node-guards.new.utils.hson";
 
 /* debug log */
 const VERBOSE = false;
@@ -19,7 +19,7 @@ const $log = VERBOSE
  * @param $node The HsonNode to inspect
  * @returns The primitive value if the pattern is matched, otherwise _FALSE
  */
-export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
+export function get_self_close_value($node: HsonNode_NEW): Primitive | FALSE_TYPE {
     /*  1. self-closing tags cannot have any attrs or flags */
     $log('  ? checking for Self Value (if applicable) ', $node._tag);
     if (ELEM_OBJ_ARR.includes($node._tag)) {
@@ -35,14 +35,14 @@ export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
     }
 
     /* 2. content must be a single node */
-    if (!$node._content || $node._content.length !== 1 || !is_Node($node._content[0])) {
+    if (!$node._content || $node._content.length !== 1 || !is_Node_NEW($node._content[0])) {
         $log('  > $FALSE - node._content is undefined or >1 or not a Hson node')
         return _FALSE;
     }
 
     const childNode = $node._content[0];
     $log('object is a node; getting content:', childNode)
-    if (!is_Node(childNode) || !is_Node(childNode._content[0]) || childNode._content.length > 1) {
+    if (!is_Node_NEW(childNode) || !is_Node_NEW(childNode._content[0]) || childNode._content.length > 1) {
         $log('  > $FALSE - not self closing: too many child nodes')
         return _FALSE;
     }

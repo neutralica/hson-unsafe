@@ -1,5 +1,5 @@
 import { Primitive } from "../../core/types-consts/core.types.hson";
-import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG } from "../../types-consts/constants.hson";
+import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson";
 import { _DATA_INDEX, _META_DATA_PREFIX } from "../types-consts/constants.new.hson";
 import { HsonNode_NEW, HsonMeta_NEW, HsonAttrs_NEW, NodeContent_NEW } from "../types-consts/node.new.types.hson";
@@ -20,12 +20,13 @@ const _log = _VERBOSE
 
 export function assert_invariants_NEW(root: HsonNode_NEW, fn: string = '[source fn not given]', cfg: Cfg = { throwOnFirst: true }): void {
   const errs: string[] = [];
+  assertNewShapeQuick(root, fn);
   walk(root, "", root._tag, cfg, errs); // was: walk(root, "", null, cfg, errs)
 
   if (errs.length) {
     const msg = errs.slice(0, 12).join("\n  - ");
     _throw_transform_err(`NEW invariant violation(s):\n  - ${msg}`, fn, JSON.stringify(root).slice(0, 1500));
-  } 
+  }
 }
 
 // ---------- core ----------
@@ -132,3 +133,48 @@ function isClusterTag(t: string) { return t === ARR_TAG || t === OBJ_TAG || t ==
 function nodesOnly(c?: NodeContent_NEW) { return (c ?? []).filter(is_Node_NEW) as HsonNode_NEW[]; }
 function seg(t: string) { return t.startsWith("_") ? `/${t}` : `/tag:${t}`; }
 function push(errs: string[], cfg: Cfg, s: string) { errs.push(s); }
+
+function isVSNTag(t: string) {
+  return VSN_TAGS.includes(t as any);
+}
+
+export function assertNewShapeQuick(n: any, where: string): void {
+  const stack: any[] = [n];
+
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node || typeof node !== "object") continue;
+
+    const tag = node._tag as string | undefined;
+    const meta = node._meta as HsonMeta_NEW | undefined;
+    const attrs = node._attrs as HsonAttrs_NEW | undefined;
+
+    // 1) OLD giveaways in _meta
+    if (meta && ("attrs" in meta || "flags" in meta)) {
+      throw new Error(`[NEW-only] old-shaped meta in ${where} at <${tag ?? "?"}>
+  Found _meta.attrs or _meta.flags`);
+    }
+
+    // 2) Only data-_ keys allowed in _meta
+    if (meta) {
+      for (const k of Object.keys(meta)) {
+        if (!k.startsWith("data-_")) {
+          throw new Error(`[NEW-only] illegal meta key "${k}" in ${where} at <${tag}> (only "data-_*" allowed)`);
+        }
+      }
+    }
+
+    // 3) VSNs must not carry _attrs
+    if (tag && isVSNTag(tag) && attrs && Object.keys(attrs).length) {
+      throw new Error(`[NEW-only] VSN <${tag}> carries _attrs in ${where}`);
+    }
+
+    // 4) Recurse nodes-only
+    const content = node._content as unknown[] | undefined;
+    if (Array.isArray(content)) {
+      for (const c of content) {
+        if (c && typeof c === "object" && "_tag" in (c as any)) stack.push(c);
+      }
+    }
+  }
+}

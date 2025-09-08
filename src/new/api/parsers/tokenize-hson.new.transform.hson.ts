@@ -23,7 +23,7 @@ const LONE_OPEN_ANGLE_REGEX = /^\s*<(\s*(\/\/.*)?)?$/;
 const IMPLICIT_OBJECT_START_REGEX = /^\s*<\s*<(\s|$)/; /* ensures second '<' is followed by space or EOL */
 
 
-const _VERBOSE = false;
+const _VERBOSE = true;
 const _log = _VERBOSE
     ? console.log
     : () => { };

@@ -3,6 +3,8 @@
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { ARR_TAG, ELEM_TAG, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../../types-consts/constants.hson";
 import { coerce } from "../../../utils/coerce-string.utils.hson";
+import { make_string } from "../../../utils/make-string.utils.hson";
+import { _snip } from "../../../utils/snip.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { _DATA_INDEX, _META_DATA_PREFIX, CLOSE_KIND, TOKEN_KIND } from "../../types-consts/constants.new.hson";
 import { HsonNode_NEW, NodeContent_NEW } from "../../types-consts/node.new.types.hson";
@@ -11,7 +13,7 @@ import { is_Node_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hs
 import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils.hson";
 
 /* debug log */
-const _VERBOSE = false;
+const _VERBOSE = true;
 const boundLog = console.log.bind(console, '%c[hson]', 'color: green; background: lightblue;');
 const _log = _VERBOSE ? boundLog : () => { };
 
@@ -36,6 +38,7 @@ const make_leaf = (v: Primitive): HsonNode_NEW =>
    this wraps multiple top-level nodes in a _root with elem semantics
 */
 export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode_NEW {
+    _log('parsing tokens: ', _snip(make_string($tokens)));
     const nodes: HsonNode_NEW[] = [];
     const topCloseKinds: CloseKind[] = [];
 

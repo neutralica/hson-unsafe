@@ -2,8 +2,6 @@
 
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { ARR_TAG, ELEM_TAG, EVERY_VSN, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../../types-consts/constants.hson";
-import { make_string } from "../../../utils/make-string.utils.hson";
-import { is_Node } from "../../../utils/node-guards.utils.hson";
 import { _snip } from "../../../utils/snip.utils.hson";
 import { serialize_style } from "../../../utils/serialize-css.utils.hson";
 import { serialize_primitive } from "../../../utils/serialize-primitive.utils.hson";

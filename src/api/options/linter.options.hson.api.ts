@@ -1,11 +1,15 @@
 // linter.options.hson.api.ts
 
-import { HsonNode } from "../../types-consts/node.types.hson";
+import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
+import { is_Node_NEW } from "../../new/utils/node-guards.new.utils.hson";
+import { escape_attrs } from "../../utils/escape_attrs.utils.hson";
+import { serialize_style } from "../../utils/serialize-css.utils.hson";
+
 
 
 
 export function linter(
-    node: HsonNode,
+    node: HsonNode_NEW,
     opts: {
         maxNodeLen?: number;
         maxAttrsFlagsLen?: number;
@@ -39,12 +43,26 @@ export function linter(
     }
 
     /* serialize attrs and flags */
-    const attrs = Object.entries(node._meta.attrs)
-        .map(([k, v]) => `${k}="${v}"`);
-    const flags = node._meta.flags.map(f => f.toString());
+
+    const attrs = Object.entries(node._attrs ?? {})
+        .flatMap(([k, v]) => {
+            // skip nullish/false
+            if (v == null || v === false) return [];
+
+            // style object -> CSS string
+            if (k === "style" && typeof v === "object" && !Array.isArray(v)) {
+                const css = serialize_style(v as Record<string, string>);
+                return css ? [`style="${escape_attrs(css)}"`] : [];
+            }
+
+            // boolean true -> flag (no ="")
+            if (v === true) return [k];
+
+            // everything else -> key="value"
+            return [`${k}="${escape_attrs(String(v))}"`];
+        });
     const oneLine = `<${node._tag}` +
         (attrs.length ? " " + attrs.join(" ") : "") +
-        (flags.length ? " " + flags.join(" ") : "") +
         // this was > or /> but I think that's a holdover. 
         `${node._content.length ? ">" : " >"}`;
 
@@ -58,8 +76,8 @@ export function linter(
 
     if (!node._content.length) {
         const parts = [`<${node._tag}`];
-        if (attrs.length || flags.length) {
-            parts.push(attrs.concat(flags).join(" "));
+        if (attrs.length) {
+            parts.push(attrs.join(" "));
         }
         parts.push(">");
         return parts.join(" ");
@@ -74,7 +92,7 @@ export function linter(
         typeof node._content[0] === "string";
 
     const text = isSingleTextChild ? node._content[0] : null;
-    const inlineCandidate = `<${node._tag}${attrs.length ? " " + attrs.join(" ") : ""}${flags.length ? " " + flags.join(" ") : ""}>${text}</${node._tag}>`;
+    const inlineCandidate = `<${node._tag}${attrs.length ? " " + attrs.join(" ") : ""}>${text}</${node._tag}>`;
 
     if (isSingleTextChild && inlineCandidate.length <= maxNodeLen) {
         return inlineCandidate;
@@ -93,7 +111,7 @@ export function linter(
     lines.push(`<${node._tag}>`);
 
     /* attrs & flags rule */
-    if ((attrs.join(" ") + flags.join(" ")).length > maxAttrsFlagsLen) {
+    if ((attrs.join(" ")).length > maxAttrsFlagsLen) {
         if (attrs.length) {
             /* split attrs */
             attrs.forEach(a => {
@@ -103,24 +121,21 @@ export function linter(
                     lines.push(indent + a);
             });
         }
-        if (flags.length) {
-            flags.forEach(f => lines.push(indent + f));
-        }
-    } else if (attrs.length || flags.length) {
-        lines.push(indent + attrs.concat(flags).join(" "));
+    } else if (attrs.length) {
+        lines.push(indent + attrs.join(" "));
     }
 
     /* children rule */
     node._content.forEach(child => {
         if (typeof child === "string") {
             wrap(child, indent).forEach(l => lines.push(l));
-        } else if (typeof child === "object" && child !== null && "_tag" in child && Array.isArray(child._content)) {
+        } else if (is_Node_NEW(child)) {
             /* likely an HSON_Node (?) */
             const childLines = linter(child, opts).split("\n");
             childLines.forEach(line => lines.push(indent + line));
 
         } else {
-           /* BasicValue — skip or log */
+            /* BasicValue — skip or log */
             lines.push(indent + child);
             return;
         }

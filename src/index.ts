@@ -17,6 +17,4 @@ export { serialize_json } from './api/serializers/serialize-json.render.hson';
 export { serialize_html } from './api/serializers/serialize-html.render.hson';
 export { serialize_hson } from './api/serializers/serialize-hson.render.hson';
 
-export { is_Node } from './utils/node-guards.utils.hson';
 export { is_Node_NEW } from './new/utils/node-guards.new.utils.hson';
-export { ensure_OLD } from './_refactor/_refactor-utils/ensure-old.utils.hson';

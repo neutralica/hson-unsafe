@@ -1,6 +1,5 @@
 // serialize-json.render.hson.ts
 
-import { is_indexed } from "../../../utils/node-guards.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson"
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson"
 import { ROOT_TAG, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG, EVERY_VSN } from "../../../types-consts/constants.hson";

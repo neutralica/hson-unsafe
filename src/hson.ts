@@ -1,6 +1,6 @@
 
-import { construct_source_1_NEW } from "./new/api/constructors/constructor-1-source.new.api.hson.js";
-import { construct_tree_NEW } from "./new/api/livetree/construct-tree.new.api.hson.js";
+import { construct_source_1_NEW } from "./api/constructors/constructor-1-source.new.api.hson.js";
+import { construct_tree_NEW } from "./api/livetree/construct-tree.new.api.hson.js";
 
 (globalThis as any)._test_ON  = () => { (globalThis as any).test_new = true;  location.reload(); };
 (globalThis as any)._test_OFF = () => { (globalThis as any).test_new = false; location.reload(); };
