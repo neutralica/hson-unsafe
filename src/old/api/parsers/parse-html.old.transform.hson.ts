@@ -1,6 +1,7 @@
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Primitive, is_not_string } from "../../../core/utils/guards.core.utils.hson";
-import { ROOT_TAG, NEW_NODE, ELEM_TAG, VAL_TAG, STR_TAG, OBJ_TAG, ARR_TAG, II_TAG, BLANK_META } from "../../../types-consts/constants.hson";
+import { ROOT_TAG, ELEM_TAG, VAL_TAG, STR_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../../types-consts/constants.hson";
+import { NEW_NODE, BLANK_META } from "../../types/node-constants.old";
 import { HsonNode, HsonAttrs } from "../../../types-consts/node.types.hson";
 import { coerce } from "../../../utils/coerce-string.utils.hson";
 import { expand_bools } from "../../../utils/expand-booleans.utils.hson";

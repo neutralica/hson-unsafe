@@ -1,13 +1,14 @@
+import { is_Object, is_Primitive } from "../../core/utils/guards.core.utils.hson";
+import { parse_json_OLD } from "../api/parsers/parse-json.old.transform.hson";
+import { create_live_tree } from "./create-live-tree.old.tree.hson";
+import { get_contentValue, find_child_by_tag, find_index_of_tag, update_content } from "./tree-utils/proxy-helpers.utils.hson";
+import { getSemanticChildren } from "./tree-utils/semantic-child.utils.hson";
+import { strip_VSNs } from "./tree-utils/strip-vsns.utils.hson";
+import { NODE_ELEMENT_MAP, BLANK_META } from "../types/node-constants.old";
+import { STR_TAG, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
+import { HsonNode } from "../../types-consts/node.types.hson";
+import { is_Node } from "../../utils/node-guards.utils.hson";
 
-import { STR_TAG, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG, BLANK_META, NODE_ELEMENT_MAP, VSN_TAGS } from "../../types-consts/constants.hson.js";
-import {  is_Primitive, is_Object } from "../../core/utils/guards.core.utils.hson.js";
-import { find_child_by_tag, find_index_of_tag, get_contentValue, update_content } from "../../utils/tree-utils/proxy-helpers.utils.hson.js";
-import { create_live_tree } from "./create-live-tree.tree.hson.js";
-import { getSemanticChildren } from "../../utils/tree-utils/semantic-child.utils.hson.js";
-import { strip_VSNs } from "../../utils/tree-utils/strip-vsns.utils.hson.js";
-import { parse_json_OLD } from "../../old/api/parsers/parse-json.old.transform.hson.js";
-import { HsonNode } from "../../types-consts/node.types.hson.js";
-import { is_Node } from "../../utils/node-guards.utils.hson.js";
 
 
 /* debug log */
@@ -59,7 +60,6 @@ export function create_proxy(targetNode: HsonNode): any {
                 return targetNode._meta.attrs[propertyKey];
             }
             
-            /* (...flags???) */
 
             /* lookup child nodes with that tag */
             const children = getSemanticChildren(targetNode);

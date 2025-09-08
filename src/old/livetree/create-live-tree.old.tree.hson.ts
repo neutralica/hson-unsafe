@@ -1,5 +1,7 @@
 import { Primitive } from "../../core/types-consts/core.types.hson.js";
-import { STR_TAG, BLANK_META, VSNTag, NODE_ELEMENT_MAP, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson.js";
+import { STR_TAG, VSNTag, VAL_TAG, VSN_TAGS, ROOT_TAG, ELEM_TAG, ARR_TAG } from "../../types-consts/constants.hson.js";
+import { NODE_ELEMENT_MAP } from "../types/node-constants.old.js";
+import { BLANK_META } from "../types/node-constants.old.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 import { is_Node } from "../../utils/node-guards.utils.hson.js";
 import { serialize_style } from "../../utils/serialize-css.utils.hson.js";
@@ -14,7 +16,7 @@ import { serialize_style } from "../../utils/serialize-css.utils.hson.js";
 export function create_live_tree($node: HsonNode | Primitive): Node {
     /* create a text node to display malformed content */
     if (!is_Node($node)) {
-
+        console.error('[create_live_tree_OLD] : HsonNode expected')
         return document.createTextNode(String($node ?? ''));
     }
 
@@ -25,7 +27,7 @@ export function create_live_tree($node: HsonNode | Primitive): Node {
         const textNode = document.createTextNode(String(graft._content?.[0] ?? ''));
         return textNode;
     }
-
+    
     /* or: it's an element node */
     const el = document.createElement(graft._tag);
 

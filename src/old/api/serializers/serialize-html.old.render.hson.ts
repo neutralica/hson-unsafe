@@ -1,6 +1,7 @@
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Primitive } from "../../../core/utils/guards.core.utils.hson";
-import { BLANK_META, ELEM_TAG, STR_TAG } from "../../../types-consts/constants.hson";
+import { ELEM_TAG, STR_TAG } from "../../../types-consts/constants.hson";
+import { BLANK_META } from "../../types/node-constants.old";
 import { HsonNode } from "../../../types-consts/node.types.hson";
 import { escape_html } from "../../../utils/escape-html.utils.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";

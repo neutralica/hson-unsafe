@@ -1,8 +1,8 @@
 // style-manager.utils.hson.ts
 
-import { LiveTree } from "../live-tree-class.tree.hson.js";
-import { NODE_ELEMENT_MAP } from "../../../types-consts/constants.hson.js";
-import { HsonNode } from "../../../types-consts/node.types.hson.js";
+import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants.new.hson";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
+import { LiveTree_NEW } from "../live-tree-class.new.tree.hson";
 
 /**
  * expedites & eases the frequent interactions with the style property
@@ -11,10 +11,10 @@ import { HsonNode } from "../../../types-consts/node.types.hson.js";
  * 
  */
 
-export default class StyleManager {
-    private liveTree: LiveTree;
+export default class StyleManager_NEW {
+    private liveTree: LiveTree_NEW;
 
-    constructor(liveTree: LiveTree) {
+    constructor(liveTree: LiveTree_NEW) {
         this.liveTree = liveTree;
     }
 
@@ -23,20 +23,20 @@ export default class StyleManager {
      * @param propertyName the CSS property (e.g., 'backgroundColor' or 'background-color')
      * @param value the new value 
      */
-    set(propertyName: string, value: string | null): LiveTree {
-        const nodes = this.liveTree.sourceNode() as HsonNode[];
+    set(propertyName: string, value: string | null): LiveTree_NEW {
+        const nodes = this.liveTree.sourceNode() as HsonNode_NEW[];
         for (const node of nodes) {
-            if (!node._meta?.attrs) continue;
+            if (!node._attrs) continue;
 
             /*  ensure the style attribute is an object */
-            if (typeof node._meta.attrs.style !== 'object' || node._meta.attrs.style === null) {
-                node._meta.attrs.style = {};
+            if (typeof node._attrs.style !== 'object' || node._attrs.style === null) {
+                node._attrs.style = {};
             }
 
             // /* Convert propertyName to camelCase for the object key */
             const camelCaseProperty = propertyName.replace(/-(\w)/g, (_, c) => c.toUpperCase());
             
-            const styleObj = node._meta.attrs.style as Record<string, string>;
+            const styleObj = node._attrs.style as Record<string, string>;
 
             if (value === null) {
                 delete styleObj[camelCaseProperty];
@@ -45,7 +45,7 @@ export default class StyleManager {
             }
 
             // Sync with the live DOM element
-            const liveElement = NODE_ELEMENT_MAP.get(node);
+            const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
             if (liveElement) {
                 // It's easier to just re-apply the whole style string
                 liveElement.style.cssText = Object.entries(styleObj)
@@ -62,10 +62,10 @@ export default class StyleManager {
      * @returns The style value, or undefined if not found.
      */
     get(propertyName: string): string | undefined {
-        const node = this.liveTree.sourceNode() as HsonNode;
+        const node = this.liveTree.sourceNode() as HsonNode_NEW;
         if (!node) return undefined;
 
-        const styleObj = node._meta?.attrs?.style;
+        const styleObj = node._attrs?.style;
         if (typeof styleObj === 'object' && styleObj !== null) {
             const camelCaseProperty = propertyName.replace(/-(\w)/g, (_, c) => c.toUpperCase());
             return (styleObj as Record<string, string>)[camelCaseProperty];

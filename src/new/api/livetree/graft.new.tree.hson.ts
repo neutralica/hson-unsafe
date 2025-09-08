@@ -1,15 +1,13 @@
 // graft.tree.hson.ts
 
+import { parse_html } from "../../../api/parsers/parse-html.transform.hson";
+import { sanitize_html } from "../../../utils/sanitize-html.utils.hson";
+import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { unwrap_root_NEW } from "../../utils/unwrap-root.new.utils.hson";
+import { create_live_tree_NEW } from "./create-live-tree.new.tree.hson";
+import { LiveTree_NEW } from "./live-tree-class.new.tree.hson";
 
-import { parse_html } from "../parsers/parse-html.transform.hson.js";
-import { LiveTree } from "./live-tree-class.tree.hson.js";
-import { create_live_tree } from "./create-live-tree.tree.hson.js";
-import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
-import { make_string } from "../../utils/make-string.utils.hson.js";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson.js";
-import { unwrap_root } from "../../utils/unwrap-root.utils.hson.js";
-import { HsonNode } from "../../types-consts/node.types.hson.js";
-import { ensure_OLD } from "../../_refactor/_refactor-utils/ensure-old.utils.hson.js";
 
 /* debug log */
 let _VERBOSE = true;
@@ -28,10 +26,10 @@ const _log = _VERBOSE
  */
 
 /* TODO TASK BUG **wire in sanitize ASAP** */
-export function graft(
+export function graft_NEW(
   $element?: HTMLElement,
   $options: { unsafe: boolean } = { unsafe: false }
-): LiveTree {
+): LiveTree_NEW {
   /* get target element or document.body if no arg */
   // WARN BUG default alert - do we want to default to document.body here? 
   const targetElement = $element;
@@ -42,14 +40,14 @@ export function graft(
   const sourceHTML = targetElement.innerHTML;
   /* parse html into nodes */
   const cleanHTML = $options.unsafe ? sourceHTML : sanitize_html(sourceHTML);
-  const rootNode: HsonNode = ensure_OLD(parse_html(cleanHTML));
+  const rootNode: HsonNode_NEW = parse_html(cleanHTML);
 
   /* recursively render the HsonNode tree back into live DOM elements,
       then populate the `nodeElementMap`, linking the two */
   const newDOMFragment = document.createDocumentFragment();
 
   /* check for  _root/_elem*/
-   const contentNodes = unwrap_root(rootNode);
+   const contentNodes = unwrap_root_NEW(rootNode);
 
     // Enforce graft's specific "single node" rule
     if (contentNodes.length !== 1) {
@@ -60,11 +58,11 @@ export function graft(
     }
     const nodeToRender = contentNodes[0];
 
-  newDOMFragment.appendChild(create_live_tree(nodeToRender));
+  newDOMFragment.appendChild(create_live_tree_NEW(nodeToRender));
   /* replace the DOM element with the new liveTree-controlled model */
   targetElement.innerHTML = "";
   targetElement.appendChild(newDOMFragment);
 
   /* return queryable liveTree */
-  return new LiveTree(nodeToRender);
+  return new LiveTree_NEW(nodeToRender);
 }

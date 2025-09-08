@@ -1,18 +1,6 @@
 // consts.types.ts
 
-import { Primitive } from "../core/types-consts/core.types.hson.js";
 import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "./tokens.types.hson.js";
-import { HsonNode } from "./node.types.hson.js";
-
-/* factory to build a node from incomplete info */
-export const NEW_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
-  _tag: partial._tag ?? '',
-  _content: partial._content ?? [],
-  _meta: {
-    flags: partial._meta?.flags ?? [],
-    attrs: partial._meta?.attrs ?? {},
-  }
-});
 
 /* factory to build a token from incomplete info */
 export const CREATE_TOKEN = (partial: BaseToken): AllTokens => ({
@@ -23,12 +11,6 @@ export const CREATE_TOKEN = (partial: BaseToken): AllTokens => ({
   flags: partial.flags ?? [],
 
 });
-
-/* starting empty _meta value */
-export const BLANK_META = {
-  attrs: {} as Record<string, Primitive>,
-  flags: [] as string[],
-};
 
 /* sentinel value for unsuccess */
 export const _FALSE = '_false' as const;
@@ -105,5 +87,3 @@ export const HSON_FrameΔ = {
   SUBSET: 'subset',
 } as const;
 
-/* liveTree reference map */
-export const NODE_ELEMENT_MAP = new WeakMap<HsonNode, HTMLElement>();

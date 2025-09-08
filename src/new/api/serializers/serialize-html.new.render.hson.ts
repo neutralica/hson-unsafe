@@ -1,6 +1,7 @@
 import { Primitive } from '../../../core/types-consts/core.types.hson'
 import { is_Primitive } from '../../../core/utils/guards.core.utils.hson';
-import { BLANK_META, ELEM_TAG, EVERY_VSN, STR_TAG } from '../../../types-consts/constants.hson';
+import { ELEM_TAG, EVERY_VSN, STR_TAG } from '../../../types-consts/constants.hson';
+import { BLANK_META } from "../../../old/types/node-constants.old";
 import { build_wire_attrs } from '../../../utils/build-wire-attrs.utils.hson';
 import { escape_html } from '../../../utils/escape-html.utils.hson';
 import { make_string } from '../../../utils/make-string.utils.hson';

@@ -10,7 +10,7 @@
  */
 
 import { ensure_OLD } from "../../../_refactor/_refactor-utils/ensure-old.utils.hson";
-import { create_proxy } from "../../../api/tree/create-proxy.tree.hson";
+import { create_proxy } from "../../../old/livetree/create-proxy.tree.hson";
 import { RenderConstructor_4 } from "../../../core/types-consts/constructors.core.types.hson";
 import { JsonType, Primitive } from "../../../core/types-consts/core.types.hson";
 import { RenderΔ } from "../../../types-consts/constants.hson";

@@ -1,13 +1,14 @@
 // parse-selector.utils.hson.ts
 
-import { HsonQuery } from "../../api/tree/live-tree-class.tree.hson";
+import { HsonQuery_NEW } from "../live-tree-class.new.tree.hson";
+
 
 /**
  * parses a simple CSS selector string into an HsonQuery object
  *   currently supports: tag, #id, .class, [attribute], and [attribute="value"]
  */
-export function parseSelector(selector: string): HsonQuery {
-    const query: HsonQuery = {attrs: {}, flags: []};
+export function parseSelector_NEW(selector: string): HsonQuery_NEW {
+    const query: HsonQuery_NEW = { attrs: {} };
 
     /* regular expression matches the parts of a selector */
     const tagRegex = /^[a-zA-Z0-9]+/;
@@ -35,10 +36,8 @@ export function parseSelector(selector: string): HsonQuery {
     /* extract attrs & flags */
     while ((match = attrRegex.exec(selector)) !== null) {
         const [, key, value] = match;
-        if (value !== undefined && value !== key) {
+        if (value !== undefined) {
             query.attrs![key] = value;/* [attr="value"] */
-        } else {
-            query.flags?.push(key); /* [flag="flag"] */
         }
     }
 

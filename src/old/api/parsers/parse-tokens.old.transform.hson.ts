@@ -2,7 +2,8 @@
 
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Primitive, is_not_string } from "../../../core/utils/guards.core.utils.hson";
-import { NEW_NODE, ROOT_TAG, OBJ_TAG, BLANK_META, TokenΔ, ARR_TAG, ELEM_TAG, VSN_TAGS, II_TAG, VSNTag, VAL_TAG, STR_TAG } from "../../../types-consts/constants.hson";
+import { ROOT_TAG, OBJ_TAG, TokenΔ, ARR_TAG, ELEM_TAG, VSN_TAGS, II_TAG, VSNTag, VAL_TAG, STR_TAG } from "../../../types-consts/constants.hson";
+import { NEW_NODE, BLANK_META } from "../../types/node-constants.old";
 import { HsonNode } from "../../../types-consts/node.types.hson";
 import { AllTokens } from "../../../types-consts/tokens.types.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";

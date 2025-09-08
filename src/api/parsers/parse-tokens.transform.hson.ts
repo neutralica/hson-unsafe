@@ -1,7 +1,8 @@
 // parse-tokens.transform.hson.ts
 
 import {  Primitive } from "../../core/types-consts/core.types.hson.js";
-import { NEW_NODE, ROOT_TAG, OBJ_TAG, BLANK_META, TokenΔ, ARR_TAG, ELEM_TAG, II_TAG, VSN_TAGS, VAL_TAG, STR_TAG, VSNTag } from "../../types-consts/constants.hson.js";
+import { ROOT_TAG, OBJ_TAG, TokenΔ, ARR_TAG, ELEM_TAG, II_TAG, VSN_TAGS, VAL_TAG, STR_TAG, VSNTag } from "../../types-consts/constants.hson.js";
+import { NEW_NODE, BLANK_META } from "../../old/types/node-constants.old.js";
 import { AllTokens } from "../../types-consts/tokens.types.hson.js";
 import { is_not_string, is_Primitive } from "../../core/utils/guards.core.utils.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";

@@ -1,14 +1,15 @@
 import { JsonType } from "../../core/types-consts/core.types.hson.js";
-import { _ERROR, _FALSE, BLANK_META } from "../../types-consts/constants.hson.js";
-import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../../types-consts/tree.types.hson.js";
+import { _ERROR, _FALSE } from "../../types-consts/constants.hson.js";
+import { BLANK_META } from "../types/node-constants.old.js";
+import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../types/tree.old.types.hson.js";
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
-import { parse_html } from "../parsers/parse-html.transform.hson.js";
-import { create_live_tree } from "../tree/create-live-tree.tree.hson.js";
-import { graft } from "../tree/graft.tree.hson.js";
-import { LiveTree } from "../tree/live-tree-class.tree.hson.js";
+import { parse_html } from "../../api/parsers/parse-html.transform.hson.js";
+import { create_live_tree } from "./create-live-tree.old.tree.hson.js";
+import { graft } from "./graft.tree.hson.js";
+import { LiveTree } from "./live-tree-class.old.tree.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
-import { parse_hson } from "../parsers/parse-hson.transform.hson.js";
-import { parse_json } from "../parsers/parse-json.transform.hson.js";
+import { parse_hson } from "../../api/parsers/parse-hson.transform.hson.js";
+import { parse_json } from "../../api/parsers/parse-json.transform.hson.js";
 import { tree_converter } from "../../_refactor/_refactor-utils/lift-attrs.refactor.hson.js";
 
 /**
@@ -16,7 +17,7 @@ import { tree_converter } from "../../_refactor/_refactor-utils/lift-attrs.refac
  * @param $options - an object to control behavior, e.g., { unsafe: boolean }
  * @returns an object with methods to define the source of the tree
  */
-export function construct_tree(
+export function construct_tree_OLD(
   $options: { unsafe: boolean } = { unsafe: false }
 ): TreeConstructor_Source {
 

@@ -2,7 +2,7 @@
 
 import { Primitive } from "../../../core/types-consts/core.types.hson.js";
 import { _META_DATA_PREFIX } from "../../../new/types-consts/constants.new.hson.js";
-import { LiveTree } from "../live-tree-class.tree.hson.js";
+import { LiveTree } from "../live-tree-class.old.tree.hson.js";
 
 
 /**

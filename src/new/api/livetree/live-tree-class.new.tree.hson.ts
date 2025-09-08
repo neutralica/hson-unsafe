@@ -1,45 +1,45 @@
 // live-tree-class.tree.hson.ts
 
 
-import { BLANK_META, ELEM_TAG, NEW_NODE, NODE_ELEMENT_MAP, STR_TAG } from "../../types-consts/constants.hson.js";
-import { parseSelector } from "../../utils/tree-utils/parse-selector.utils.hson.js";
-import { create_live_tree } from "./create-live-tree.tree.hson.js";
-import { DatasetManager } from "./tree-methods/dataset-manager.tree.hson.js";
-import StyleManager from "./tree-methods/style-manager.utils.hson.js";
-import { empty } from "./tree-methods/empty.tree.utils.hson.js";
-import { removeChild } from "./tree-methods/remove-child.tree.utils.hson.js";
-import { append } from "./tree-methods/append.tree.hson.js";
-import { getContent } from "./tree-methods/get-content.tree.hson.js";
-import { HsonAttrs, HsonFlags, HsonNode } from "../../types-consts/node.types.hson.js";
-import { is_Node } from "../../utils/node-guards.utils.hson.js";
-import { Primitive } from "../../core/types-consts/core.types.hson.js";
+import { Primitive } from "../../../core/types-consts/core.types.hson";
+import { STR_TAG } from "../../../types-consts/constants.hson";
+import { NEW_NEW_NODE, NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants.new.hson";
+import { HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
+import { append_NEW } from "./tree-methods/append.new.tree.hson";
+import { DatasetManager_NEW } from "./tree-methods/dataset-manager.new.tree.hson";
+import { empty_NEW } from "./tree-methods/empty.tree.new.utils.hson";
+import { getContent_NEW } from "./tree-methods/get-content.new.tree.hson";
+import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils.hson";
+import StyleManager_NEW from "./tree-methods/style-manager.new.utils.hson";
+import { parseSelector_NEW } from "./tree-utils/parse-selector.utils.hson";
 
 /*  defines the shape of the query object for find() and findAll() */
-export interface HsonQuery {
+export interface HsonQuery_NEW {
   tag?: string;
-  attrs?: Partial<HsonAttrs>;
-  flags?: Partial<HsonFlags>
+  attrs?: Partial<HsonAttrs_NEW>;
+  meta?: Partial<HsonMeta_NEW>
   text?: string | RegExp;
 }
 
-export class LiveTree {
-  private selectedNodes: HsonNode[];
+export class LiveTree_NEW {
+  private selectedNodes: HsonNode_NEW[];
 
   // NEW: Lazily instantiated managers for style and dataset
-  private styleManager: StyleManager | null = null;
-  private datasetManager: DatasetManager | null = null;
-  public append = append
-  public empty = empty;
-  public removeChild = removeChild;
-  public getContent = getContent
+  private styleManager: StyleManager_NEW | null = null;
+  private datasetManager: DatasetManager_NEW | null = null;
+  public append = append_NEW
+  public empty = empty_NEW;
+  public removeChild = removeChild_NEW;
+  public getContent = getContent_NEW
 
 
 
-  constructor($nodes: HsonNode | HsonNode[] | LiveTree) {
-    if ($nodes instanceof LiveTree) {
+  constructor($nodes: HsonNode_NEW | HsonNode_NEW[] | LiveTree_NEW) {
+    if ($nodes instanceof LiveTree_NEW) {
       this.selectedNodes = $nodes.selectedNodes;
     } else {
-      this.selectedNodes = Array.isArray($nodes) ? $nodes : [$nodes].filter(is_Node);
+      this.selectedNodes = Array.isArray($nodes) ? $nodes : [$nodes].filter(is_Node_NEW);
     }
   }
 
@@ -49,9 +49,9 @@ export class LiveTree {
    * allows for `tree.style.set('color', 'red')` insted of 
    * passing long strings
    */
-  get style(): StyleManager {
+  get style(): StyleManager_NEW {
     if (!this.styleManager) {
-      this.styleManager = new StyleManager(this);
+      this.styleManager = new StyleManager_NEW(this);
     }
     return this.styleManager;
   }
@@ -60,30 +60,30 @@ export class LiveTree {
    * accesses the dataset manager for the current selection
    * allows for `tree.dataset.set('userId', '123')`instead of whole-string
    */
-  get dataset(): DatasetManager {
+  get dataset(): DatasetManager_NEW {
     if (!this.datasetManager) {
-      this.datasetManager = new DatasetManager(this);
+      this.datasetManager = new DatasetManager_NEW(this);
     }
     return this.datasetManager;
   }
 
-  /*  -vvv- finder methods -vvv- */
+  /*  finder methods  */
 
-  find($query: HsonQuery | string): LiveTree {
-    const queryObject = typeof $query === 'string' ? parseSelector($query) : $query;
+  find($query: HsonQuery_NEW | string): LiveTree_NEW {
+    const queryObject = typeof $query === 'string' ? parseSelector_NEW($query) : $query;
     const foundNode = this.search(this.selectedNodes, queryObject, { findFirst: true });
-    return new LiveTree(foundNode);
+    return new LiveTree_NEW(foundNode);
   }
 
-  findAll($query: HsonQuery | string): LiveTree {
-    const queryObject = typeof $query === 'string' ? parseSelector($query) : $query;
+  findAll($query: HsonQuery_NEW | string): LiveTree_NEW {
+    const queryObject = typeof $query === 'string' ? parseSelector_NEW($query) : $query;
     const foundNodes = this.search(this.selectedNodes, queryObject, { findFirst: false });
-    return new LiveTree(foundNodes);
+    return new LiveTree_NEW(foundNodes);
   }
 
-  at(index: number): LiveTree {
+  at(index: number): LiveTree_NEW {
     const node = this.selectedNodes[index];
-    return new LiveTree(node || []);
+    return new LiveTree_NEW(node || []);
   }
 
   /*  -vvv- action/setter methods -vvv- */
@@ -106,25 +106,25 @@ export class LiveTree {
       }
 
       /*  Sync the live DOM element's .value **property**. */
-      const liveElement = NODE_ELEMENT_MAP.get(node);
+      const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
       if (liveElement && 'value' in liveElement) {
         (liveElement as HTMLInputElement | HTMLTextAreaElement).value = $value;
       }
       /* sync 'value' **attribute**
              (ensures data model consistency for both inputs and textareas) */
-      if (!node._meta) node._meta = BLANK_META;
-      if (!node._meta.attrs) node._meta.attrs = {};
-      node._meta.attrs.value = $value;
+      if (!node._meta) node._meta = {};
+      if (!node._attrs) node._attrs = {};
+      node._attrs.value = $value;
     }
     return this;
   }
 
   setContent($content: string): this {
     for (const node of this.selectedNodes) {
-      const textNode = NEW_NODE({ _tag: STR_TAG, _content: [$content] });
+      const textNode = NEW_NEW_NODE({ _tag: STR_TAG, _content: [$content] });
       node._content = [textNode];
 
-      const liveElement = NODE_ELEMENT_MAP.get(node);
+      const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
       if (liveElement) {
         liveElement.textContent = $content;
       }
@@ -134,22 +134,18 @@ export class LiveTree {
 
   setAttr($name: string, $value: string | boolean | null): this {
     for (const node of this.selectedNodes) {
-      if (!node._meta) node._meta = BLANK_META;
-      if (!node._meta.attrs) node._meta.attrs = {};
-      if (!node._meta.flags) node._meta.flags = [];
-      const liveElement = NODE_ELEMENT_MAP.get(node);
+      if (!node._meta) node._meta = {};
+      if (!node._attrs) node._attrs = {};
+      const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
 
       if ($value === false || $value === null) {
-        delete node._meta.attrs[$name];
-        node._meta.flags = node._meta.flags.filter(f => f !== $name);
+        delete node._attrs[$name];
         liveElement?.removeAttribute($name);
       } else if ($value === true || $value === $name) {
-        delete node._meta.attrs[$name];
-        if (!node._meta.flags.includes($name)) node._meta.flags.push($name);
+        delete node._attrs[$name];
         liveElement?.setAttribute($name, '');
       } else {
-        node._meta.flags = node._meta.flags.filter(f => f !== $name);
-        node._meta.attrs[$name] = $value;
+        node._attrs[$name] = $value;
         liveElement?.setAttribute($name, String($value));
       }
     }
@@ -166,10 +162,10 @@ export class LiveTree {
   remove(): this {
     for (const node of this.selectedNodes) {
       /* Remove from the DOM */
-      const liveElement = NODE_ELEMENT_MAP.get(node);
+      const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
       liveElement?.remove();
       /* this feels fragile */
-      NODE_ELEMENT_MAP.delete(node);
+      NODE_ELEMENT_MAP_NEW.delete(node);
     }
     /*  Clear the current selection  */
     this.selectedNodes = [];
@@ -183,8 +179,7 @@ export class LiveTree {
     if (this.selectedNodes.length === 0) return undefined;
     const node = this.selectedNodes[0];
     if (!node?._meta) return undefined;
-    if (node._meta.flags && node._meta.flags.includes($attr)) return true;
-    if (node._meta.attrs && $attr in node._meta.attrs) return node._meta.attrs[$attr];
+    if (node._attrs && $attr in node._attrs) return node._attrs[$attr];
     return undefined;
   }
 
@@ -192,7 +187,7 @@ export class LiveTree {
     if (this.selectedNodes.length === 0) return '';
     const node = this.selectedNodes[0];
     if (!node) return '';
-    const liveElement = NODE_ELEMENT_MAP.get(node);
+    const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
     return liveElement?.textContent ?? '';
   }
 
@@ -202,13 +197,13 @@ export class LiveTree {
 
   getValue(): string {
     if (this.selectedNodes.length === 0) return '';
-    const liveElement = NODE_ELEMENT_MAP.get(this.selectedNodes[0]);
+    const liveElement = NODE_ELEMENT_MAP_NEW.get(this.selectedNodes[0]);
     return (liveElement as HTMLInputElement | HTMLTextAreaElement)?.value ?? '';
   }
 
   asDomElement(): HTMLElement | null {
     if (this.selectedNodes.length === 0) return null;
-    const element = NODE_ELEMENT_MAP.get(this.selectedNodes[0]);
+    const element = NODE_ELEMENT_MAP_NEW.get(this.selectedNodes[0]);
     return element || null;
   }
 
@@ -216,7 +211,7 @@ export class LiveTree {
    * Returns the raw HsonNode(s) for debugging.
    * @param all - If true, returns the entire array of selected nodes. Otherwise, returns the first.
    */
-  sourceNode(all: boolean = true, index?: number): HsonNode | HsonNode[] | undefined {
+  sourceNode(all: boolean = true, index?: number): HsonNode_NEW | HsonNode_NEW[] | undefined {
     if (this.selectedNodes.length === 0) return undefined;
     return all ? this.selectedNodes : this.selectedNodes[index || 0];
   }
@@ -224,31 +219,30 @@ export class LiveTree {
   /**
    * helper method to perform the recursive search.
    */
-  private search($nodes: HsonNode[], $query: HsonQuery, $options: { findFirst: boolean }): HsonNode[] {
-    const results: HsonNode[] = [];
+  private search($nodes: HsonNode_NEW[], $query: HsonQuery_NEW, $options: { findFirst: boolean }): HsonNode_NEW[] {
+    const results: HsonNode_NEW[] = [];
 
-    const checkNode = (node: HsonNode) => {
+    const checkNode = (node: HsonNode_NEW) => {
       /* check for tag match */
       const tagMatch = !$query.tag || node._tag.toLowerCase() === $query.tag.toLowerCase();
       if (!tagMatch) return false;
 
       /* Check for attribute match */
-      // (...and flag match?!?! 12JUL2025)
       let attrsMatch = true;
       if ($query.attrs) {
         for (const key in $query.attrs) {
-          if (!node._meta.attrs || node._meta.attrs[key] !== $query.attrs[key]) {
+          if (!node._attrs || node._attrs[key] !== $query.attrs[key]) {
             attrsMatch = false;
             break;
           }
         }
       }
-      if (!attrsMatch) return false; // flag flag flag???
+      if (!attrsMatch) return false; 
 
       return true;
     };
 
-    const traverse = (nodesToSearch: HsonNode[]) => {
+    const traverse = (nodesToSearch: HsonNode_NEW[]) => {
       for (const node of nodesToSearch) {
         if ($options.findFirst && results.length > 0) return; /* stop here if we only need one */
 
@@ -258,7 +252,7 @@ export class LiveTree {
 
         /* recurse into children */
         if (node._content && node._content.length > 0) {
-          traverse(node._content.filter(is_Node));
+          traverse(node._content.filter(is_Node_NEW));
         }
       }
     };

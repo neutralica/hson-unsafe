@@ -4,7 +4,7 @@ import { RenderΔ } from "../../types-consts/constants.hson.js";
 import { RenderConstructor_4 } from "../../core/types-consts/constructors.core.types.hson.js";
 import { FrameRender } from "../../old/types/constructors.old.types.hson.js";
 import { make_string } from "../../utils/make-string.utils.hson.js";
-import { create_proxy } from "../tree/create-proxy.tree.hson.js";
+import { create_proxy } from "../../old/livetree/create-proxy.tree.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 
 

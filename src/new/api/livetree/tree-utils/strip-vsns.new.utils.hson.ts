@@ -1,22 +1,22 @@
 // strip-vsns.utils.hson.ts
 
-import { Primitive } from "../../core/types-consts/core.types.hson";
-import { is_Primitive } from "../../core/utils/guards.core.utils.hson";
-import { STR_TAG, VAL_TAG, II_TAG, ROOT_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
-import { HsonNode } from "../../types-consts/node.types.hson";
-import { is_Node } from "../node-guards.utils.hson";
+import { Primitive } from "../../../../core/types-consts/core.types.hson";
+import { is_Primitive } from "../../../../core/utils/guards.core.utils.hson";
+import { II_TAG, ROOT_TAG, STR_TAG, VAL_TAG, VSN_TAGS } from "../../../../types-consts/constants.hson";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
+import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
 
 
 /**
  * recursive function that strips off VSN clutter and returns core data in 
  * its native structure for intuitive traversal and manipulation
  */
-export function strip_VSNs(node: HsonNode | Primitive | undefined): any {
+export function strip_VSNs_NEW(node: HsonNode_NEW | Primitive | undefined): any {
     /*  1. base case: BasicValues and their VSN wrappers resolve to the raw value */
     if (is_Primitive(node)) {
         return node;
     }
-    if (!is_Node(node)) {
+    if (!is_Node_NEW(node)) {
         return undefined;
     }
     switch (node._tag) {
@@ -30,24 +30,19 @@ export function strip_VSNs(node: HsonNode | Primitive | undefined): any {
 
     /* 2. add attributes first as single-key objects (this preserves source order) */
     if (node._meta.attrs) {
-        for (const key in node._meta.attrs) {
-            contentArray.push({ [key]: node._meta.attrs[key] });
+        for (const key in node._attrs) {
+            contentArray.push({ [key]: node._attrs[key] });
         }
     }
-    // 12JUL2025 just noticed flags were absent here too; hopefully this didn't break anything
-    if (node._meta.flags) {
-        for (const key in node._meta.flags) {
-            contentArray.push({ [key]: node._meta.flags[key] });
-        }
-    }
+  
 
     /* 3. process and add children */
-    const container = node._content.find(c => is_Node(c) && VSN_TAGS.includes(c._tag)) as HsonNode | undefined;
+    const container = node._content.find(c => is_Node_NEW(c) && VSN_TAGS.includes(c._tag)) as HsonNode_NEW | undefined;
 
     if (container && container._content.length > 0) {
         for (const child of container._content) {
            /*  unwrapping the _ii for array items is handled by the recursive call */
-            const processedChild = strip_VSNs(child);
+            const processedChild = strip_VSNs_NEW(child);
             if (processedChild !== undefined) {
                 contentArray.push(processedChild);
             }

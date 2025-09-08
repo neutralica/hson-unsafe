@@ -1,6 +1,7 @@
 // parse-json.transform.hson.ts
 
-import { VAL_TAG, STR_TAG, ARR_TAG, OBJ_TAG, NEW_NODE, II_TAG, ELEM_TAG, ROOT_TAG, BLANK_META } from "../../../types-consts/constants.hson";
+import { VAL_TAG, STR_TAG, ARR_TAG, OBJ_TAG, II_TAG, ELEM_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
+import { NEW_NODE, BLANK_META } from "../../types/node-constants.old";
 import {  JsonObj, Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_not_string, is_Primitive, is_Object } from "../../../core/utils/guards.core.utils.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
