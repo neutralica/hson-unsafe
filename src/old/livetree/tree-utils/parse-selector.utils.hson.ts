@@ -7,7 +7,7 @@ import { HsonQuery } from "../live-tree-class.old.tree.hson";
  * parses a simple CSS selector string into an HsonQuery object
  *   currently supports: tag, #id, .class, [attribute], and [attribute="value"]
  */
-export function parseSelector(selector: string): HsonQuery {
+export function parseSelector_OLD(selector: string): HsonQuery {
     const query: HsonQuery = {attrs: {}, flags: []};
 
     /* regular expression matches the parts of a selector */

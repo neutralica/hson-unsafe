@@ -6,7 +6,7 @@ import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.t
 import { FrameConstructor, FrameRender } from "../../old/types/constructors.old.types.hson.js";
 import { serialize_hson } from "../serializers/serialize-hson.render.hson.js";
 import { serialize_html } from "../serializers/serialize-html.render.hson.js";
-import { create_proxy } from "../../old/livetree/create-proxy.tree.hson.js";
+import { create_proxy } from "../../old/livetree/create-proxy.old.tree.hson.js";
 import { construct_3_OLD_DNU } from "./constructor-3-options.old.api.hson.js";
 import { construct_4_OLD_DNU } from "./constructor-4-render.old.api.hson.js";
 

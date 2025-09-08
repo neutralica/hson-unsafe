@@ -8,7 +8,7 @@ import { NEW_NODE, NODE_ELEMENT_MAP } from "../../types/node-constants.old";
 
 
 /*  find the first direct child node with a given tag */
-export function find_child_by_tag(parentNode: HsonNode, tag: string): HsonNode | undefined {
+export function find_child_by_tag_OLD(parentNode: HsonNode, tag: string): HsonNode | undefined {
     const container = parentNode._content.find(
         (c): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag)
     );
@@ -22,7 +22,7 @@ export function find_child_by_tag(parentNode: HsonNode, tag: string): HsonNode |
     );
 }
 
-export function find_index_of_tag(parentNode: HsonNode, tag: string): number {
+export function find_index_of_tag_OLD(parentNode: HsonNode, tag: string): number {
     const container = parentNode._content.find(
         (c): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag)
     );
@@ -36,7 +36,7 @@ export function find_index_of_tag(parentNode: HsonNode, tag: string): number {
 /**
  * update primitive content in both the node and DOM (if live)
  */
-export function update_content(nodeToUpdate: HsonNode, value: Primitive): void {
+export function update_content_OLD(nodeToUpdate: HsonNode, value: Primitive): void {
     const hsonContainer = nodeToUpdate._content.find(
         (c): c is HsonNode => is_Node(c) && c._tag === ELEM_TAG
     );
@@ -80,7 +80,7 @@ export function update_content(nodeToUpdate: HsonNode, value: Primitive): void {
 /*
  * checks if a node is a simple key-value pair (self-closing token)
  */
-export function is_selfClosing($node: HsonNode): boolean {
+export function is_selfClosing_OLD($node: HsonNode): boolean {
     /* self-closing tag cannot have attributes */
     const hasAttrsOrFlags = (!!($node._meta?.attrs && Object.keys($node._meta.attrs).length > 0) || !!($node._meta?.flags && Object.keys($node._meta.flags).length > 0));
     if (hasAttrsOrFlags) {
@@ -107,7 +107,7 @@ export function is_selfClosing($node: HsonNode): boolean {
  * @param {HsonNode} $node - the node suspected of being a BasicValue-carrier
  * @returns {Primitive | undefined} - undefined if the content does not match BasicValue carrying structure
  */
-export function get_contentValue($node: HsonNode): Primitive | undefined {
+export function get_contentValue_OLD($node: HsonNode): Primitive | undefined {
     /* _val or _str nodes can't have attrs or flags */
     if ($node._meta?.attrs && Object.keys($node._meta.attrs).length > 0) {
         return undefined;

@@ -5,7 +5,7 @@ import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../
 import { sanitize_html } from "../../utils/sanitize-html.utils.hson.js";
 import { parse_html } from "../../api/parsers/parse-html.transform.hson.js";
 import { create_live_tree } from "./create-live-tree.old.tree.hson.js";
-import { graft } from "./graft.tree.hson.js";
+import { graft } from "./graft.old.tree.hson.js";
 import { LiveTree } from "./live-tree-class.old.tree.hson.js";
 import { HsonNode } from "../../types-consts/node.types.hson.js";
 import { parse_hson } from "../../api/parsers/parse-hson.transform.hson.js";

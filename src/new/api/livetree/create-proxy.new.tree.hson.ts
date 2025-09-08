@@ -1,7 +1,5 @@
 import { parse_json } from "../../../api/parsers/parse-json.transform.hson";
 import { is_Object, is_Primitive } from "../../../core/utils/guards.core.utils.hson";
-import { create_proxy } from "../../../old/livetree/create-proxy.tree.hson";
-import { get_contentValue } from "../../../old/livetree/tree-utils/proxy-helpers.utils.hson";
 import { STR_TAG, VAL_TAG, VSN_TAGS } from "../../../types-consts/constants.hson";
 import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants.new.hson";
 import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";

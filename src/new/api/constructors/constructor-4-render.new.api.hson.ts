@@ -9,14 +9,13 @@
  * @returns {RenderConstructor_4} an object with terminal methods to get the final result.
  */
 
-import { ensure_OLD } from "../../../_refactor/_refactor-utils/ensure-old.utils.hson";
-import { create_proxy } from "../../../old/livetree/create-proxy.tree.hson";
 import { RenderConstructor_4 } from "../../../core/types-consts/constructors.core.types.hson";
 import { JsonType, Primitive } from "../../../core/types-consts/core.types.hson";
 import { RenderΔ } from "../../../types-consts/constants.hson";
 import { make_string } from "../../../utils/make-string.utils.hson";
 import { FrameRender_NEW } from "../../types-consts/constructors.new.types.hson";
 import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { create_proxy_NEW } from "../livetree/create-proxy.new.tree.hson";
 
 export function construct_render_4_NEW($context: FrameRender_NEW): RenderConstructor_4 {
     const { frame, output } = $context;
@@ -78,7 +77,7 @@ export function construct_render_4_NEW($context: FrameRender_NEW): RenderConstru
         // TODO--this is not correct I don't think; should invoke the newer tree methods
         asBranch(): any {
             // return hson.transform.fromHSON
-            return create_proxy(ensure_OLD(frame.node));
+            return create_proxy_NEW(frame.node);
         }
     };
 }

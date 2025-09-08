@@ -1,12 +1,9 @@
 // to-output.hson.infra.ts
 
-import { ensure_OLD } from "../../../_refactor/_refactor-utils/ensure-old.utils.hson";
 import { serialize_hson } from "../../../api/serializers/serialize-hson.render.hson";
 import { serialize_html } from "../../../api/serializers/serialize-html.render.hson";
 import { serialize_json } from "../../../api/serializers/serialize-json.render.hson";
-import { create_proxy } from "../../../old/livetree/create-proxy.tree.hson";
 import { OutputConstructor_2 } from "../../../core/types-consts/constructors.core.types.hson";
-import { FrameRender } from "../../../old/types/constructors.old.types.hson";
 import { RenderΔ } from "../../../types-consts/constants.hson";
 import { FrameConstructor_NEW, FrameRender_NEW } from "../../types-consts/constructors.new.types.hson";
 import { construct_options_3_NEW } from "./constructor-3-options.new.api.hson";

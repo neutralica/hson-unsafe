@@ -1,5 +1,6 @@
-import { construct_tree_OLD } from "./old/livetree/construct-tree.old.api.hson.js";
+
 import { construct_source_1_NEW } from "./new/api/constructors/constructor-1-source.new.api.hson.js";
+import { construct_tree_NEW } from "./new/api/livetree/construct-tree.new.api.hson.js";
 
 (globalThis as any)._test_ON  = () => { (globalThis as any).test_new = true;  location.reload(); };
 (globalThis as any)._test_OFF = () => { (globalThis as any).test_new = false; location.reload(); };
@@ -26,7 +27,7 @@ export const hson = {
    * sanitizes html by default
    */
   get liveTree() {
-    return construct_tree_OLD({ unsafe: false });
+    return construct_tree_NEW({ unsafe: false });
   },
 
   /**
@@ -44,7 +45,7 @@ export const hson = {
      * accesses the unsafe stateful dom interaction pipeline
      */
     get liveTree() {
-      return construct_tree_OLD({ unsafe: true });
+      return construct_tree_NEW({ unsafe: true });
     }
   },
   

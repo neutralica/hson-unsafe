@@ -1,7 +1,7 @@
 import { is_Object, is_Primitive } from "../../core/utils/guards.core.utils.hson";
 import { parse_json_OLD } from "../api/parsers/parse-json.old.transform.hson";
 import { create_live_tree } from "./create-live-tree.old.tree.hson";
-import { get_contentValue, find_child_by_tag, find_index_of_tag, update_content } from "./tree-utils/proxy-helpers.utils.hson";
+import { get_contentValue_OLD, find_child_by_tag_OLD, find_index_of_tag_OLD, update_content_OLD } from "./tree-utils/proxy-helpers.old.utils.hson";
 import { getSemanticChildren } from "./tree-utils/semantic-child.utils.hson";
 import { strip_VSNs } from "./tree-utils/strip-vsns.utils.hson";
 import { NODE_ELEMENT_MAP, BLANK_META } from "../types/node-constants.old";
@@ -70,7 +70,7 @@ export function create_proxy(targetNode: HsonNode): any {
             );
 
             if (childNode) {
-                const primitive = get_contentValue(childNode);
+                const primitive = get_contentValue_OLD(childNode);
                 return primitive !== null ? primitive : create_proxy(childNode);
             }
 
@@ -88,7 +88,7 @@ export function create_proxy(targetNode: HsonNode): any {
             if (is_Object(value)) {
                 const jsonToParse = JSON.stringify({ [propertyKey]: value });
                 const newTree = parse_json_OLD(jsonToParse);
-                const newNode = find_child_by_tag(newTree, propertyKey);
+                const newNode = find_child_by_tag_OLD(newTree, propertyKey);
 
                 if (!newNode) {
                     console.error(`[proxy.set ERROR] failed to parse new node structure for <${propertyKey}>`);
@@ -98,7 +98,7 @@ export function create_proxy(targetNode: HsonNode): any {
                 const hsonContainer = targetNode._content.find((c): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag));
                 if (!hsonContainer) return false;
 
-                const priorIndex = find_index_of_tag(targetNode, propertyKey);
+                const priorIndex = find_index_of_tag_OLD(targetNode, propertyKey);
                 const priorNode = priorIndex > -1 ? hsonContainer._content[priorIndex] : undefined;
 
                 if (priorIndex > -1) {
@@ -133,9 +133,9 @@ export function create_proxy(targetNode: HsonNode): any {
 
             /* primitive value logic (content or attribute) */
             if (is_Primitive(value)) {
-                const childNodeToUpdate = find_child_by_tag(targetNode, propertyKey);
+                const childNodeToUpdate = find_child_by_tag_OLD(targetNode, propertyKey);
                 if (childNodeToUpdate) {
-                    update_content(childNodeToUpdate, value);
+                    update_content_OLD(childNodeToUpdate, value);
                     $log(`[OK] successfully updated content of child <${propertyKey}> in <${targetNode._tag}>`);
                     return true;
                 } else {

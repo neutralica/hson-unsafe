@@ -1,9 +1,9 @@
 // create-live-tree.new.ts
 
 import { Primitive } from "../../../core/types-consts/core.types.hson";
-import { NODE_ELEMENT_MAP } from "../../../old/types/node-constants.old";
 import { STR_TAG, VAL_TAG } from "../../../types-consts/constants.hson";
 import { serialize_style } from "../../../utils/serialize-css.utils.hson";
+import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants.new.hson";
 import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
 import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
 
@@ -50,7 +50,7 @@ export function create_live_tree_NEW(node: HsonNode_NEW | Primitive): Node {
   const el = document.createElement(n._tag);
 
   // NEW: link node↔element (same map is fine; key is object identity)
-  NODE_ELEMENT_MAP.set(n as any, el);
+  NODE_ELEMENT_MAP_NEW.set(n as any, el);
 
   // NEW: reflect ONLY _attrs
   const a = n._attrs;

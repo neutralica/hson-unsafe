@@ -11,7 +11,7 @@ import { empty } from "./tree-methods/empty.tree.old.utils.hson";
 import { getContent } from "./tree-methods/get-content.old.tree.hson";
 import { removeChild } from "./tree-methods/remove-child.tree.old.utils.hson";
 import StyleManager from "./tree-methods/style-manager.old.utils.hson";
-import { parseSelector } from "./tree-utils/parse-selector.utils.hson";
+import { parseSelector_OLD } from "./tree-utils/parse-selector.utils.hson";
 
 
 /*  defines the shape of the query object for find() and findAll() */
@@ -70,13 +70,13 @@ export class LiveTree {
   /*  finder methods  */
 
   find($query: HsonQuery | string): LiveTree {
-    const queryObject = typeof $query === 'string' ? parseSelector($query) : $query;
+    const queryObject = typeof $query === 'string' ? parseSelector_OLD($query) : $query;
     const foundNode = this.search(this.selectedNodes, queryObject, { findFirst: true });
     return new LiveTree(foundNode);
   }
 
   findAll($query: HsonQuery | string): LiveTree {
-    const queryObject = typeof $query === 'string' ? parseSelector($query) : $query;
+    const queryObject = typeof $query === 'string' ? parseSelector_OLD($query) : $query;
     const foundNodes = this.search(this.selectedNodes, queryObject, { findFirst: false });
     return new LiveTree(foundNodes);
   }
