@@ -47,8 +47,7 @@ export function create_live_tree_NEW(node: HsonNode_NEW | Primitive): Node {
     return frag;
   }
   const el = document.createElement(n._tag);
-  const quid = ensure_quid(n);
-  el.setAttribute(_DATA_QUID, quid); 
+
 
   NODE_ELEMENT_MAP_NEW.set(n, el);
   // NEW: standard element

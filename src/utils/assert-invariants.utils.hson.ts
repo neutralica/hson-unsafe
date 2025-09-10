@@ -5,6 +5,12 @@ import { HsonNode_NEW, HsonMeta_NEW, HsonAttrs_NEW, NodeContent_NEW } from "../t
 import { make_string } from "./make-string.utils.hson";
 import { _throw_transform_err } from "./throw-transform-err.utils.hson";
 
+
+/* 
+   TODO - add 'alreadyAsserted' flag or similar to prevent multiple tree walks 
+   TODO - add 'dev mode' flag to trigger assert_invariants or not
+*/
+
 import { is_Node_NEW } from "./node-guards.new.utils.hson";
 
 type Cfg = { throwOnFirst?: boolean };
