@@ -1,7 +1,8 @@
 // style-manager.utils.hson.ts
 
-import { NODE_ELEMENT_MAP_NEW } from "../../../new/types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../../new/types-consts/node.new.types.hson";
+
+import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants.new.hson";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
 import { LiveTree_NEW } from "../live-tree-class.new.tree.hson";
 
 /**

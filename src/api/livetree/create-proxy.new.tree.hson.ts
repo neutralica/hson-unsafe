@@ -1,11 +1,11 @@
 // create-proxy.new.tree.hson.ts
 
 import { is_Object, is_Primitive } from "../../core/utils/guards.core.utils.hson";
-import { NODE_ELEMENT_MAP_NEW } from "../../new/types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
-import { is_Node_NEW } from "../../new/utils/node-guards.new.utils.hson";
+import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
 import { STR_TAG, VAL_TAG, VSN_TAGS } from "../../types-consts/constants.hson";
-import { parse_json } from "../parsers/parse-json.transform.hson";
+import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants.new.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { parse_json } from "../parsers/parse-json.new.transform.hson";
 import { create_live_tree_NEW } from "./create-live-tree.new.tree.hson";
 import { get_contentValue_NEW, find_child_by_tag_NEW, find_index_of_tag_NEW, update_content_NEW } from "./tree-utils/proxy-helpers.new.utils.hson";
 import { get_semantic_child } from "./tree-utils/semantic-child.utils.hson";
@@ -17,8 +17,8 @@ import { strip_VSNs_NEW } from "./tree-utils/strip-vsns.new.utils.hson";
 /* debug log */
 let VERBOSE = false;
 const $log = VERBOSE
-? console.log
-: () => { };
+    ? console.log
+    : () => { };
 
 const DEBUG_UPDATE_MAP = new WeakMap<HsonNode_NEW, number>();
 /**
@@ -62,7 +62,7 @@ export function create_proxy_NEW(targetNode: HsonNode_NEW): any {
             if (targetNode._attrs && propertyKey in targetNode._attrs) {
                 return targetNode._attrs[propertyKey];
             }
-            
+
 
             /* lookup child nodes with that tag */
             const children = get_semantic_child(targetNode);
@@ -98,7 +98,10 @@ export function create_proxy_NEW(targetNode: HsonNode_NEW): any {
                     return false;
                 }
 
-                const hsonContainer = targetNode._content.find((c): c is HsonNode_NEW => is_Node_NEW(c) && VSN_TAGS.includes(c._tag));
+                const hsonContainer =
+                    (targetNode._content ?? [])
+                        .filter(is_Node_NEW)                  // CHANGED: now HsonNode_NEW[]
+                        .find((n: unknown) => is_Node_NEW(n) && VSN_TAGS.includes(n._tag));
                 if (!hsonContainer) return false;
 
                 const priorIndex = find_index_of_tag_NEW(targetNode, propertyKey);
@@ -116,7 +119,7 @@ export function create_proxy_NEW(targetNode: HsonNode_NEW): any {
                 }
 
                 $log('hson after SET:');
-                if (VERBOSE) console.dir(hsonContainer._content, { depth: 5 }); 
+                if (VERBOSE) console.dir(hsonContainer._content, { depth: 5 });
                 const parentLiveElement = NODE_ELEMENT_MAP_NEW.get(targetNode);
                 if (parentLiveElement) {
                     const newLiveElement = create_live_tree_NEW(newNode);

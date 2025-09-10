@@ -1,8 +1,9 @@
 // remove-child.tree.utils.hson.ts
 
-import { NODE_ELEMENT_MAP_NEW } from "../../../new/types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../../new/types-consts/node.new.types.hson";
-import { is_Node_NEW } from "../../../new/utils/node-guards.new.utils.hson";
+
+import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
+import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants.new.hson";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
 import { LiveTree_NEW, HsonQuery_NEW } from "../live-tree-class.new.tree.hson";
 
 
@@ -19,14 +20,14 @@ export function removeChild_NEW(this: LiveTree_NEW, $query: HsonQuery_NEW): Live
 
     for (const parentNode of selectedNodes) {
         if (!parentNode._content) {
-            continue; 
+            continue;
         }
 
         /*  1. find the direct children to remove from the data model */
         const childrenToRemove = search(parentNode._content.filter(is_Node_NEW), $query, { findFirst: false });
 
         if (childrenToRemove.length === 0) {
-            continue; 
+            continue;
         }
 
         /*  2. sync with the live DOM and cleanup the map */
@@ -37,7 +38,7 @@ export function removeChild_NEW(this: LiveTree_NEW, $query: HsonQuery_NEW): Live
         }
 
         /*  3. update the parent's data model */
-        parentNode._content = parentNode._content.filter(child => !childrenToRemove.includes(child as HsonNode_NEW));
+        parentNode._content = parentNode._content.filter((child: unknown) => !childrenToRemove.includes(child as HsonNode_NEW));
     }
 
     return this;

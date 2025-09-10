@@ -1,12 +1,12 @@
 import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types.hson";
 import { JsonType } from "../../core/types-consts/core.types.hson";
-import { FrameConstructor_NEW, SourceConstructor_1_NEW } from "../../new/types-consts/constructors.new.types.hson";
-import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
 import { make_string } from "../../utils/make-string.utils.hson";
-import { parse_hson } from "../parsers/parse-hson.transform.hson";
-import { parse_html } from "../parsers/parse-html.transform.hson";
-import { parse_json } from "../parsers/parse-json.transform.hson";
+import { parse_html } from "../parsers/parse-html.new.transform.hson";
+import { parse_json } from "../parsers/parse-json.new.transform.hson";
+import { parse_hson } from "../parsers/parse-hson.new.transform.hson";
 import { construct_output_2_NEW } from "./constructor-2-output.new.api.hson";
+import { SourceConstructor_1_NEW, FrameConstructor_NEW } from "../../types-consts/constructors.new.types.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
 
 /* debug log */
 let _VERBOSE = false;

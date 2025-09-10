@@ -1,11 +1,12 @@
 // create-live-tree.new.ts
 
 import { Primitive } from "../../core/types-consts/core.types.hson";
-import { NODE_ELEMENT_MAP_NEW } from "../../new/types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
-import { is_Node_NEW } from "../../new/utils/node-guards.new.utils.hson";
+import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
 import { STR_TAG, VAL_TAG } from "../../types-consts/constants.hson";
 import { serialize_style } from "../../utils/serialize-css.utils.hson";
+import { _DATA_QUID, ensure_quid } from '../../quid/data-quid.quid.hson';
+import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants.new.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
 
 /**
  * render NEW nodes directly to DOm
@@ -45,9 +46,12 @@ export function create_live_tree_NEW(node: HsonNode_NEW | Primitive): Node {
     }
     return frag;
   }
-
-  // NEW: standard element
   const el = document.createElement(n._tag);
+  const quid = ensure_quid(n);
+  el.setAttribute(_DATA_QUID, quid); 
+
+  NODE_ELEMENT_MAP_NEW.set(n, el);
+  // NEW: standard element
 
   // NEW: link node↔element (same map is fine; key is object identity)
   NODE_ELEMENT_MAP_NEW.set(n as any, el);
@@ -83,7 +87,7 @@ export function create_live_tree_NEW(node: HsonNode_NEW | Primitive): Node {
   // NEW: children — either a single VSN wrapper or direct content
   const kids = n._content ?? [];
   if (kids.length === 1 && is_Node_NEW(kids[0]) &&
-      (kids[0]._tag === "_obj" || kids[0]._tag === "_elem" || kids[0]._tag === "_arr")) {
+    (kids[0]._tag === "_obj" || kids[0]._tag === "_elem" || kids[0]._tag === "_arr")) {
     // unwrap the container
     const container = kids[0];
     if (container._tag === "_arr") {

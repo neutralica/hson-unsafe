@@ -1,7 +1,8 @@
 // parse_html_attrs.utils.hson.ts
 
-import { _DATA_INDEX, _DATA_QUID } from "../new/types-consts/constants.new.hson";
-import { HsonAttrs_NEW, HsonMeta_NEW } from "../new/types-consts/node.new.types.hson";
+
+import { _DATA_INDEX, _DATA_QUID } from "../types-consts/constants.new.hson";
+import { HsonAttrs_NEW, HsonMeta_NEW } from "../types-consts/node.new.types.hson";
 import { parse_style_hard_mode } from "./parse-css.utils.hson";
 
 

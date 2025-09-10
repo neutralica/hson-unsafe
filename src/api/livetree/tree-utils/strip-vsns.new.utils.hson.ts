@@ -2,9 +2,9 @@
 
 import { Primitive } from "../../../core/types-consts/core.types.hson";
 import { is_Primitive } from "../../../core/utils/guards.core.utils.hson";
-import { HsonNode_NEW } from "../../../new/types-consts/node.new.types.hson";
-import { is_Node_NEW } from "../../../new/utils/node-guards.new.utils.hson";
+import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
 import { STR_TAG, VAL_TAG, VSN_TAGS, II_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
 
 
 /**
@@ -34,14 +34,14 @@ export function strip_VSNs_NEW(node: HsonNode_NEW | Primitive | undefined): any 
             contentArray.push({ [key]: node._attrs[key] });
         }
     }
-  
+
 
     /* 3. process and add children */
-    const container = node._content.find(c => is_Node_NEW(c) && VSN_TAGS.includes(c._tag)) as HsonNode_NEW | undefined;
+    const container = node._content.find((c: unknown) => is_Node_NEW(c) && VSN_TAGS.includes(c._tag)) as HsonNode_NEW | undefined;
 
     if (container && container._content.length > 0) {
         for (const child of container._content) {
-           /*  unwrapping the _ii for array items is handled by the recursive call */
+            /*  unwrapping the _ii for array items is handled by the recursive call */
             const processedChild = strip_VSNs_NEW(child);
             if (processedChild !== undefined) {
                 contentArray.push(processedChild);

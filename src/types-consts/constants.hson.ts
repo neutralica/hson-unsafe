@@ -1,16 +1,7 @@
 // consts.types.ts
 
-import { CloseToken, OpenToken, SelfToken, AllTokens, BaseToken } from "./tokens.types.hson.js";
+import { BaseToken_NEW } from "./tokens.new.types.hson";
 
-/* factory to build a token from incomplete info */
-export const CREATE_TOKEN = (partial: BaseToken): AllTokens => ({
-  type: partial.type,
-  tag: partial.tag,
-  content: partial.content,
-  attrs: partial.attrs ?? {},
-  flags: partial.flags ?? [],
-
-});
 
 /* sentinel value for unsuccess */
 export const _FALSE = '_false' as const;
@@ -50,29 +41,6 @@ export const ELEM_OBJ = [ELEM_TAG, OBJ_TAG];
 
 export type ElemObjType = typeof ELEM_TAG | typeof OBJ_TAG;
 export type ElemObjArrType = typeof ELEM_OBJ_ARR;;
-
-/* token types */
-export const TokenΔ = {
-  OPEN: 'open',
-  CLOSE: 'close',
-  SELF: 'self',
-  ARRAY_OPEN: 'array-open',
-  ARRAY_CONTENTS: 'array-contents',
-  ARRAY_CLOSE: 'array-close',
-  ELEM_OPEN: 'elem-open',
-  ELEM_CONTENTS: 'elem-contents',
-  ELEM_CLOSE: 'elem-close',
-  OBJ_OPEN: 'object-open',
-  OBJ_CONTENTS: 'object-contents',
-  OBJ_CLOSE: 'object-close',
-  STR_CONTENTS: '_str',
-  VAL_CONTENTS: '_val',
-} as const;
-
-export const OBJ_OPEN = { type: TokenΔ.OBJ_OPEN } as BaseToken;
-export const OBJ_CLOSE = { type: TokenΔ.OBJ_CLOSE } as BaseToken;
-export const HSON_CLOSE = { type: TokenΔ.CLOSE } as CloseToken;
-
 
 /* render constructor targets */
 export const $HSON = 'hson' as const;

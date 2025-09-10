@@ -1,9 +1,9 @@
 
 import { RenderConstructor_4 } from "../../core/types-consts/constructors.core.types.hson";
 import { JsonType, Primitive } from "../../core/types-consts/core.types.hson";
-import { FrameRender_NEW } from "../../new/types-consts/constructors.new.types.hson";
-import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
 import { RenderΔ } from "../../types-consts/constants.hson";
+import { FrameRender_NEW } from "../../types-consts/constructors.new.types.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
 import { make_string } from "../../utils/make-string.utils.hson";
 import { create_proxy_NEW } from "../livetree/create-proxy.new.tree.hson";
 

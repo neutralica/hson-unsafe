@@ -1,7 +1,7 @@
 // linter.options.hson.api.ts
 
-import { HsonNode_NEW } from "../../new/types-consts/node.new.types.hson";
-import { is_Node_NEW } from "../../new/utils/node-guards.new.utils.hson";
+import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
+import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
 import { escape_attrs } from "../../utils/escape_attrs.utils.hson";
 import { serialize_style } from "../../utils/serialize-css.utils.hson";
 
@@ -131,7 +131,7 @@ export function linter(
             wrap(child, indent).forEach(l => lines.push(l));
         } else if (is_Node_NEW(child)) {
             /* likely an HSON_Node (?) */
-            const childLines = linter(child, opts).split("\n");
+            const childLines = linter(child as HsonNode_NEW, opts).split("\n");
             childLines.forEach(line => lines.push(indent + line));
 
         } else {

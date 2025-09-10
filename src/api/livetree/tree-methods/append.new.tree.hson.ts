@@ -1,10 +1,11 @@
 // append.tree.hson.ts
 
-import { NEW_NEW_NODE, NODE_ELEMENT_MAP_NEW } from "../../../new/types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../../new/types-consts/node.new.types.hson";
-import { is_Node_NEW } from "../../../new/utils/node-guards.new.utils.hson";
-import { unwrap_root_NEW } from "../../../new/utils/unwrap-root.new.utils.hson";
+
+import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
+import { unwrap_root_NEW } from "../../../utils/unwrap-root.new.utils.hson";
 import { STR_TAG, ELEM_TAG } from "../../../types-consts/constants.hson";
+import { NEW_NEW_NODE, NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants.new.hson";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils.hson";
 import { create_live_tree_NEW } from "../create-live-tree.new.tree.hson";
 import { LiveTree_NEW } from "../live-tree-class.new.tree.hson";
