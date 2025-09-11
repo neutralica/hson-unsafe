@@ -1,5 +1,6 @@
 import { LiveTree_NEW } from "../api/livetree/live-tree-class.new.tree.hson";
 import { JsonType } from "../core/types-consts/core.types.hson";
+import { HsonAttrs_NEW, HsonMeta_NEW } from "./node.new.types.hson";
 
 
 
@@ -31,4 +32,12 @@ export interface TreeConstructor_Source_NEW {
 /* for targeting the existing DOM (not a LiveTree) and replcaing with graft() */
   queryDom(selector: string): GraftConstructor_NEW;
   queryBody(): GraftConstructor_NEW;
+}
+/*  defines the shape of the query object for find() and findAll() */
+
+export interface HsonQuery_NEW {
+  tag?: string;
+  attrs?: Partial<HsonAttrs_NEW>;
+  meta?: Partial<HsonMeta_NEW>;
+  text?: string | RegExp;
 }

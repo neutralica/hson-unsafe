@@ -1,6 +1,6 @@
 // parse-selector.utils.hson.ts
 
-import { HsonQuery_NEW } from "../../../types-consts/tree.types.hson";
+import { HsonQuery_NEW } from "../../../types-consts/tree.new.types.hson";
 
 
 /**

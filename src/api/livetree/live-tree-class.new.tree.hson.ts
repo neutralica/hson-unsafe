@@ -13,7 +13,7 @@ import { getContent_NEW } from "./tree-methods/get-content.new.tree.hson";
 import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils.hson";
 import StyleManager_NEW from "./tree-methods/style-manager.new.utils.hson";
 import { parseSelector_NEW } from "./tree-utils/parse-selector.utils.hson";
-import { HsonQuery_NEW } from "../../types-consts/tree.types.hson";
+import { HsonQuery_NEW } from "../../types-consts/tree.new.types.hson";
 
 
 type NodeRef = {

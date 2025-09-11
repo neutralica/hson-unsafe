@@ -4,7 +4,9 @@ export * from './hson';
 
 export { Primitive, BasicValue } from './core/types-consts/core.types.hson';
 
-// export type { LiveTree_NEW, HsonQuery_NEW, } from './new/api/livetree/live-tree-class.new.tree.hson';
+export { LiveTree_NEW } from './api/livetree/live-tree-class.new.tree.hson'
+export { HsonQuery_NEW } from './types-consts/tree.new.types.hson';
+export { HsonNode_NEW } from './types-consts/node.new.types.hson';
 
 
 export { parse_json } from './api/parsers/parse-json.new.transform.hson';

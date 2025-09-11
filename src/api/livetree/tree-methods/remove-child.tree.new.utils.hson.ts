@@ -5,7 +5,7 @@ import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
 import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants.new.hson";
 import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
 import { LiveTree_NEW } from "../live-tree-class.new.tree.hson";
-import { HsonQuery_NEW } from "../../../types-consts/tree.types.hson";
+import { HsonQuery_NEW } from "../../../types-consts/tree.new.types.hson";
 
 
 /**
