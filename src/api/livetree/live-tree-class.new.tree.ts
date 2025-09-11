@@ -1,19 +1,18 @@
 // live-tree-class.tree.hson.ts
 
-import { Primitive } from "../../core/types-consts/core.types.hson";
-import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
-import { _DATA_QUID, ensure_quid, get_node_by_quid } from "../../quid/data-quid.quid.hson";
-import { STR_TAG } from "../../types-consts/constants.hson";
-import { NODE_ELEMENT_MAP_NEW, NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
-import { append_NEW } from "./tree-methods/append.new.tree.hson";
-import { DatasetManager_NEW } from "./tree-methods/dataset-manager.new.tree.hson";
-import { empty_NEW } from "./tree-methods/empty.tree.new.utils.hson";
-import { getContent_NEW } from "./tree-methods/get-content.new.tree.hson";
-import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils.hson";
-import StyleManager_NEW from "./tree-methods/style-manager.new.utils.hson";
-import { parseSelector_NEW } from "./tree-utils/parse-selector.utils.hson";
-import { HsonQuery_NEW } from "../../types-consts/tree.new.types.hson";
+import { HsonNode_NEW, is_Node_NEW, HsonQuery_NEW, Primitive } from "../..";
+import { STR_TAG } from "../../types-consts/constants";
+import { NEW_NEW_NODE } from "../../types-consts/factories";
+import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants";
+import { _DATA_QUID } from "../../types-consts/constants";
+import { append_NEW } from "./tree-methods/append.new.tree";
+import { DatasetManager_NEW } from "./tree-methods/dataset-manager.new.tree";
+import { empty_NEW } from "./tree-methods/empty.tree.new.utils";
+import { getContent_NEW } from "./tree-methods/get-content.new.tree";
+import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils";
+import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
+import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
+import {ensure_quid, get_node_by_quid} from '../../quid/data-quid.quid'
 
 
 type NodeRef = {

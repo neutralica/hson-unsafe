@@ -1,9 +1,9 @@
-// emit-tag-open.hson.utils.ts
+// emit-tag-open.utils.ts
 
 
-import { HsonNode_NEW } from "../types-consts/node.new.types.hson";
-import { build_wire_attrs } from "./build-wire-attrs.utils.hson";
-import { escape_attrs } from "./escape_attrs.utils.hson";
+import { HsonNode_NEW } from "../types-consts/node.new.types";
+import { build_wire_attrs } from "./build-wire-attrs.utils";
+import { escape_attrs } from "./escape_attrs.utils";
 
 function emit_tag_open(n: HsonNode_NEW): string {
   const tag = n._tag;                 // you still unwrap _elem elsewhere

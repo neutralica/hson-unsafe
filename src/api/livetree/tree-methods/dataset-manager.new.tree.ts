@@ -1,7 +1,7 @@
-// src/utils/style-manager.utils.hson.ts
+// src/utils/style-manager.utils.ts
 
 import { Primitive } from "../../..";
-import { LiveTree_NEW } from "../live-tree-class.new.tree.hson";
+import { LiveTree_NEW } from "../live-tree-class.new.tree";
 
 
 

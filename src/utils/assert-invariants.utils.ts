@@ -1,9 +1,9 @@
-import { Primitive } from "../core/types-consts/core.types.hson";
-import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG, VSN_TAGS } from "../types-consts/constants.hson";
-import { _META_DATA_PREFIX, _DATA_INDEX } from "../types-consts/constants.new.hson";
-import { HsonNode_NEW, HsonMeta_NEW, HsonAttrs_NEW, NodeContent_NEW } from "../types-consts/node.new.types.hson";
-import { make_string } from "./make-string.utils.hson";
-import { _throw_transform_err } from "./throw-transform-err.utils.hson";
+import { Primitive } from "../core/types-consts/core.types";
+import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG, VSN_TAGS } from "../types-consts/constants";
+import { _META_DATA_PREFIX, _DATA_INDEX } from "../types-consts/constants";
+import { HsonNode_NEW, HsonMeta_NEW, HsonAttrs_NEW, NodeContent_NEW } from "../types-consts/node.new.types";
+import { make_string } from "./make-string.utils";
+import { _throw_transform_err } from "./throw-transform-err.utils";
 
 
 /* 
@@ -11,7 +11,7 @@ import { _throw_transform_err } from "./throw-transform-err.utils.hson";
    TODO - add 'dev mode' flag to trigger assert_invariants or not
 */
 
-import { is_Node_NEW } from "./node-guards.new.utils.hson";
+import { is_Node_NEW } from "./node-guards.new.utils";
 
 type Cfg = { throwOnFirst?: boolean };
 const _VERBOSE = true;

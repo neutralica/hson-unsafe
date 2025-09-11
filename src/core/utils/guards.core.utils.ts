@@ -1,6 +1,8 @@
 // is-helpers.hson.util.ts
 
-import { BasicValue, JsonType,  JsonObj,  Primitive } from "../types-consts/core.types.hson.js";
+import { Primitive, BasicValue } from "../..";
+import { JsonObj, JsonType } from "../types-consts/core.types";
+
 
 /* identifies JSON objects */
 export function is_Object(x: any): x is JsonObj {

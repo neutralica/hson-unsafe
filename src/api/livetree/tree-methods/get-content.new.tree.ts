@@ -1,10 +1,10 @@
-// get-content.tree.hson.ts
+// get-content.tree.ts
 
 
-import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
-import { ELEM_TAG } from "../../../types-consts/constants.hson";
-import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
-import { LiveTree_NEW } from "../live-tree-class.new.tree.hson";
+import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
+import { ELEM_TAG } from "../../../types-consts/constants";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types";
+import { LiveTree_NEW } from "../live-tree-class.new.tree";
 
 
 

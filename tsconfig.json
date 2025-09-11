@@ -20,11 +20,7 @@
     },
     "include": [
         "src/index.ts",
-        "src/new/**/*", // NEW pipeline
-        "src/api/**/*", // wrappers that now call NEW
-        "src/utils/**/*", // shared utils used by NEW
-        "src/types-consts/**/*", // shared type/value consts used by NEW
-        "src/core/**/*"
+        "src/**/*"
     ],
     "exclude": ["dist", "node_modules", "src/old/**/*", "src/_refactor/**/*"]
 }

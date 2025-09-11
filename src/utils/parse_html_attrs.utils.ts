@@ -1,9 +1,9 @@
-// parse_html_attrs.utils.hson.ts
+// parse_html_attrs.utils.ts
 
 
-import { _DATA_INDEX, _DATA_QUID } from "../types-consts/constants.new.hson";
-import { HsonAttrs_NEW, HsonMeta_NEW } from "../types-consts/node.new.types.hson";
-import { parse_style_hard_mode } from "./parse-css.utils.hson";
+import { _DATA_INDEX, _DATA_QUID } from "../types-consts/constants";
+import { HsonAttrs_NEW, HsonMeta_NEW } from "../types-consts/node.new.types";
+import { parse_style_hard_mode } from "./parse-css.utils";
 
 
 /* NEW: collect attrs + meta from an Element */

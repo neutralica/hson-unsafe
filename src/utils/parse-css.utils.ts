@@ -1,7 +1,7 @@
-// parse-css.utils.hson.ts
+// parse-css.utils.ts
 
-import { kebab_to_camel } from "./kebab-to-camel.util.hson";
-import { _throw_transform_err } from "./throw-transform-err.utils.hson";
+import { kebab_to_camel } from "./kebab-to-camel.util";
+import { _throw_transform_err } from "./throw-transform-err.utils";
 
 /* debug log */
 let _VERBOSE = true;
@@ -63,7 +63,7 @@ export function parse_style_basic($text: string): string | Record<string, string
 
     return sortStyleObj;
   } catch (e) {
-    _throw_transform_err('[HSON WARN parse-css.util.hson.ts -- error parsing CSS style string] ', 'parse_css_attrs', $text);
+    _throw_transform_err('[HSON WARN parse-css.util.ts -- error parsing CSS style string] ', 'parse_css_attrs', $text);
   }
 }
 

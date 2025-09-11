@@ -1,6 +1,6 @@
-import { LiveTree_NEW } from "../api/livetree/live-tree-class.new.tree.hson";
-import { JsonType } from "../core/types-consts/core.types.hson";
-import { HsonAttrs_NEW, HsonMeta_NEW } from "./node.new.types.hson";
+import { LiveTree_NEW } from "../api/livetree/live-tree-class.new.tree";
+import { JsonType } from "../core/types-consts/core.types";
+import { HsonAttrs_NEW, HsonMeta_NEW } from "./node.new.types";
 
 
 

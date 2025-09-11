@@ -1,12 +1,13 @@
 // tokenize-hson.old.hson.ts
 
-import { CLOSE_KIND, ARR_SYMBOL, NEW_ARR_OPEN_TOKEN, NEW_ARR_CLOSE_TOKEN, NEW_TEXT_TOKEN, NEW_END_TOKEN, NEW_OPEN_TOKEN, TOKEN_KIND } from "../../types-consts/constants.new.hson";
-import { Position, CloseKind, Tokens_NEW, RawAttr } from "../../types-consts/tokens.new.types.hson";
-import { make_string } from "../../utils/make-string.utils.hson";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson";
-import { lex_text_piece } from "./hson-helpers/lex-text-piece.utils.hson";
-import { slice_balanced_arr } from "./hson-helpers/slice-balance.new.utils.hson";
-import { split_top_level_NEW } from "./hson-helpers/split-top-2.utils.hson";
+import { CLOSE_KIND, ARR_SYMBOL, NEW_ARR_OPEN_TOKEN, NEW_ARR_CLOSE_TOKEN, NEW_TEXT_TOKEN, NEW_END_TOKEN, NEW_OPEN_TOKEN, TOKEN_KIND } from "../../types-consts/factories";
+import { Position, CloseKind, Tokens_NEW, RawAttr } from "../../types-consts/tokens.new.types";
+import { make_string } from "../../utils/make-string.utils";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
+import { lex_text_piece } from "./hson-helpers/lex-text-piece.utils";
+import { slice_balanced_arr } from "./hson-helpers/slice-balance.new.utils";
+import { split_top_level_NEW } from "./hson-helpers/split-top-2.utils";
+
 
 /* position tracker */
 const _pos = (lineno: number, colno: number, posix: number): Position => ({ line: lineno, col: colno, index: posix });

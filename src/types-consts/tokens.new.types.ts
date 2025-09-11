@@ -1,6 +1,7 @@
-// tokens.new.types.hson.ts
+// tokens.new.types.ts
 
-import { TOKEN_KIND } from "./constants.new.hson";
+import { TOKEN_KIND } from "./factories";
+
 
 
 /* Position is lightweight; expand later if end positions needed */

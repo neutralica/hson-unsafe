@@ -1,12 +1,8 @@
 // consts.types.ts
 
 
-import { HsonNode_NEW } from "./node.new.types.hson";
-import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen_NEW, TokenEnd_NEW, TokenArrayOpen_NEW, TokenArrayClose_NEW, TokenText_NEW } from "./tokens.new.types.hson";
-
-export const _META_DATA_PREFIX = 'data-_';
-export const _DATA_INDEX = 'data-_index';
-export const _DATA_QUID = 'data-_quid';
+import { HsonNode_NEW } from "./node.new.types";
+import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen_NEW, TokenEnd_NEW, TokenArrayOpen_NEW, TokenArrayClose_NEW, TokenText_NEW } from "./tokens.new.types";
 
 export const NEW_NEW_NODE = (partial: Partial<HsonNode_NEW> = {}): HsonNode_NEW => ({
   _tag: partial._tag ?? '', 
@@ -61,5 +57,4 @@ export const NEW_ARR_CLOSE_TOKEN = (variant: ArraySymbol, pos: Position): TokenA
 export const NEW_TEXT_TOKEN = (raw: string, quoted: boolean | undefined, pos: Position): TokenText_NEW =>
   (quoted ? { kind: TOKEN_KIND.TEXT, raw, quoted: true, pos } : { kind: TOKEN_KIND.TEXT, raw, pos });
 
-export const NODE_ELEMENT_MAP_NEW = new WeakMap<HsonNode_NEW, HTMLElement>();
 

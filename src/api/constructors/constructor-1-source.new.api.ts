@@ -1,12 +1,9 @@
-import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types.hson";
-import { JsonType } from "../../core/types-consts/core.types.hson";
-import { make_string } from "../../utils/make-string.utils.hson";
-import { parse_html } from "../parsers/parse-html.new.transform.hson";
-import { parse_json } from "../parsers/parse-json.new.transform.hson";
-import { parse_hson } from "../parsers/parse-hson.new.transform.hson";
-import { construct_output_2_NEW } from "./constructor-2-output.new.api.hson";
-import { SourceConstructor_1_NEW, FrameConstructor_NEW } from "../../types-consts/constructors.new.types.hson";
-import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { parse_html, parse_json, parse_hson, HsonNode_NEW } from "../..";
+import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types";
+import { JsonType } from "../../core/types-consts/core.types";
+import { SourceConstructor_1_NEW, FrameConstructor_NEW } from "../../types-consts/constructors.new.types";
+import { make_string } from "../../utils/make-string.utils";
+import { construct_output_2_NEW } from "./constructor-2-output.new.api";
 
 /* debug log */
 let _VERBOSE = false;

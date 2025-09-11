@@ -1,7 +1,8 @@
 // constructors.types.hson.ts
 
-import { RenderΔ, HSON_FrameΔ} from "../../types-consts/constants.hson.js";
-import { HsonNode_NEW } from "../../types-consts/node.new.types.hson.js";
+import { HsonNode_NEW } from "../..";
+import { RenderΔ, HSON_FrameΔ } from "../../types-consts/constants";
+
 
 export type ProxyBackdoor = { _withNodes: HsonNode_NEW; [key: string]: any; };
 

@@ -1,7 +1,7 @@
-// close-tag-lookahead.hson.util.ts
+// close-tag-lookahead.util.ts
 
-import { ELEM_OBJ_ARR, ELEM_TAG, ElemObjType, OBJ_TAG } from "../types-consts/constants.hson.js";
-import { _throw_transform_err } from "./throw-transform-err.utils.hson.js";
+import { ELEM_OBJ_ARR, ELEM_TAG, ElemObjType, OBJ_TAG } from "../types-consts/constants.js";
+import { _throw_transform_err } from "./throw-transform-err.utils.js";
 
 
 const VERBOSE = false;

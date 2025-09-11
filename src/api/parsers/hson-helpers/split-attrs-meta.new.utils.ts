@@ -1,10 +1,8 @@
+import { _META_DATA_PREFIX } from "../../../types-consts/constants";
+import { HsonAttrs_NEW, HsonMeta_NEW } from "../../../types-consts/node.new.types";
+import { RawAttr } from "../../../types-consts/tokens.new.types";
+import { parse_style_hard_mode } from "../../../utils/parse-css.utils";
 
-
-
-import { _META_DATA_PREFIX } from "../../../types-consts/constants.new.hson";
-import { HsonAttrs_NEW, HsonMeta_NEW } from "../../../types-consts/node.new.types.hson";
-import { RawAttr } from "../../../types-consts/tokens.new.types.hson";
-import { parse_style_hard_mode } from "../../../utils/parse-css.utils.hson";
 
 /* split raw attrs into _attrs and _meta
    - flags become key:"key"

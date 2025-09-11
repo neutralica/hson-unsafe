@@ -1,15 +1,15 @@
-import { Primitive } from '../../core/types-consts/core.types.hson'
-import { is_Primitive } from '../../core/utils/guards.core.utils.hson';
-import { ELEM_TAG, EVERY_VSN, STR_TAG } from '../../types-consts/constants.hson';
-import { build_wire_attrs } from '../../utils/build-wire-attrs.utils.hson';
-import { escape_html } from '../../utils/escape-html.utils.hson';
-import { make_string } from '../../utils/make-string.utils.hson';
-import { _snip } from '../../utils/snip.utils.hson';
-import { _throw_transform_err } from '../../utils/throw-transform-err.utils.hson';
-import { is_Node_NEW } from '../../utils/node-guards.new.utils.hson';
-import { assert_invariants_NEW } from '../../utils/assert-invariants.utils.hson';
-import { clone_node } from '../../utils/clone-node.utils.hson';
-import { HsonNode_NEW } from '../../types-consts/node.new.types.hson';
+import { Primitive } from '../../core/types-consts/core.types'
+import { is_Primitive } from '../../core/utils/guards.core.utils';
+import { ELEM_TAG, EVERY_VSN, STR_TAG } from '../../types-consts/constants';
+import { build_wire_attrs } from '../../utils/build-wire-attrs.utils';
+import { escape_html } from '../../utils/escape-html.utils';
+import { make_string } from '../../utils/make-string.utils';
+import { _snip } from '../../utils/snip.utils';
+import { _throw_transform_err } from '../../utils/throw-transform-err.utils';
+import { is_Node_NEW } from '../../utils/node-guards.new.utils';
+import { assert_invariants_NEW } from '../../utils/assert-invariants.utils';
+import { clone_node } from '../../utils/clone-node.utils';
+import { HsonNode_NEW } from '../../types-consts/node.new.types';
 
 const _VERBOSE = false;
 const STYLE = 'color:fuschia;font-weight:400;padding:1px 3px;border-radius:4px';

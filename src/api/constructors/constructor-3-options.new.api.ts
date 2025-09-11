@@ -1,6 +1,6 @@
-import { OptionsConstructor_3, FrameOptions, RenderConstructor_4 } from "../../core/types-consts/constructors.core.types.hson";
-import { FrameRender_NEW } from "../../types-consts/constructors.new.types.hson";
-import { construct_render_4_NEW } from "./constructor-4-render.new.api.hson";
+import { OptionsConstructor_3, FrameOptions, RenderConstructor_4 } from "../../core/types-consts/constructors.core.types";
+import { FrameRender_NEW } from "../../types-consts/constructors.new.types";
+import { construct_render_4_NEW } from "./constructor-4-render.new.api";
 
 /**
  * stage 3 (optional): applying output options.

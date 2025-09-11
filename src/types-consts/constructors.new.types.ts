@@ -1,7 +1,7 @@
 
-import { RenderFormats, FrameMode, FrameOptions, OutputConstructor_2 } from "../core/types-consts/constructors.core.types.hson";
-import { JsonType } from "../core/types-consts/core.types.hson";
-import { HsonNode_NEW } from "./node.new.types.hson";
+import { RenderFormats, FrameMode, FrameOptions, OutputConstructor_2 } from "../core/types-consts/constructors.core.types";
+import { JsonType } from "../core/types-consts/core.types";
+import { HsonNode_NEW } from "./node.new.types";
 
 export type FrameRender_NEW = { frame: FrameConstructor_NEW, output: RenderFormats };
 

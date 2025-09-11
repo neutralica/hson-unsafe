@@ -1,10 +1,10 @@
-// is-helpers.hson.util.ts
+// is-helpers.util.ts
 
-import { II_TAG, STR_TAG, VAL_TAG } from "../types-consts/constants.hson";
-import { BasicValue } from "../core/types-consts/core.types.hson";
-import { is_Primitive } from "../core/utils/guards.core.utils.hson"
-import { _DATA_INDEX } from "../types-consts/constants.new.hson";
-import { HsonNode_NEW, JsonType_NEW } from "../types-consts/node.new.types.hson";
+import { II_TAG, STR_TAG, VAL_TAG } from "../types-consts/constants";
+import { BasicValue } from "../core/types-consts/core.types";
+import { is_Primitive } from "../core/utils/guards.core.utils"
+import { _DATA_INDEX } from "../types-consts/constants";
+import { HsonNode_NEW, JsonType_NEW } from "../types-consts/node.new.types";
 
 /* identifies HsonNode (new structure) */
 export function is_Node_NEW(bit: unknown): bit is HsonNode_NEW {

@@ -1,22 +1,21 @@
 // parse-html.new.transform.hson.ts (new)
 
-import { Primitive } from "../../core/types-consts/core.types.hson";
-import { is_Primitive } from "../../core/utils/guards.core.utils.hson";
-import { ROOT_TAG, ELEM_TAG, VAL_TAG, STR_TAG, OBJ_TAG, ARR_TAG, II_TAG, _FALSE, VSN_TAGS, EVERY_VSN } from "../../types-consts/constants.hson";
-import { coerce } from "../../utils/coerce-string.utils.hson";
-import { expand_flags } from "../../utils/expand-flags.utils.hson";
-import { expand_entities } from "../../utils/expand-entities.utils.hson";
-import { expand_void_tags } from "../../utils/expand-self-closing.utils.hson";
-import { make_string } from "../../utils/make-string.utils.hson";
-import { parse_html_attrs } from "../../utils/parse_html_attrs.utils.hson";
-import { _snip } from "../../utils/snip.utils.hson";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson";
-import { assert_invariants_NEW } from "../../utils/assert-invariants.utils.hson";
-import { escape_text_nodes } from "../../utils/escape-text-nodes.new.utils.hson";
-import { is_indexed_NEW, is_Node_NEW, is_string_NEW } from "../../utils/node-guards.new.utils.hson";
-import { strip_html_comments } from "../../utils/strip-html-comments.new.utsil.hson";
-import { NEW_NEW_NODE } from "../../types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { HsonNode_NEW, Primitive, is_Node_NEW } from "../..";
+import { is_Primitive } from "../../core/utils/guards.core.utils";
+import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
+import { NEW_NEW_NODE } from "../../types-consts/factories";
+import { assert_invariants_NEW } from "../../utils/assert-invariants.utils";
+import { coerce } from "../../utils/coerce-string.utils";
+import { escape_text_nodes } from "../../utils/escape-text-nodes.new.utils";
+import { expand_entities } from "../../utils/expand-entities.utils";
+import { expand_flags } from "../../utils/expand-flags.utils";
+import { expand_void_tags } from "../../utils/expand-self-closing.utils";
+import { make_string } from "../../utils/make-string.utils";
+import { is_string_NEW, is_indexed_NEW } from "../../utils/node-guards.new.utils";
+import { parse_html_attrs } from "../../utils/parse_html_attrs.utils";
+import { _snip } from "../../utils/snip.utils";
+import { strip_html_comments } from "../../utils/strip-html-comments.new.utils";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 
 /* debug log */
 let _VERBOSE = false;

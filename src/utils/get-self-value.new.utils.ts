@@ -1,9 +1,9 @@
-// get-self-value.utils.hson.ts
+// get-self-value.utils.ts
 
-import { Primitive } from "../core/types-consts/core.types.hson";
-import { _FALSE, ELEM_OBJ_ARR, FALSE_TYPE, STR_TAG, VAL_TAG } from "../types-consts/constants.hson";
-import { HsonNode_NEW } from "../types-consts/node.new.types.hson";
-import { is_Node_NEW } from "./node-guards.new.utils.hson";
+import { Primitive } from "../core/types-consts/core.types";
+import { _FALSE, ELEM_OBJ_ARR, FALSE_TYPE, STR_TAG, VAL_TAG } from "../types-consts/constants";
+import { HsonNode_NEW } from "../types-consts/node.new.types";
+import { is_Node_NEW } from "./node-guards.new.utils";
 
 /* debug log */
 const VERBOSE = false;

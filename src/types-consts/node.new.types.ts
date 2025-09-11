@@ -1,8 +1,8 @@
 // base.hson.types.ts
 
 
-import { Primitive } from "../core/types-consts/core.types.hson";
-import { _DATA_INDEX, _DATA_QUID } from "./constants.new.hson";
+import { Primitive } from "../core/types-consts/core.types";
+import { _DATA_INDEX, _DATA_QUID } from "./constants";
 
 
 export type JsonType_NEW =

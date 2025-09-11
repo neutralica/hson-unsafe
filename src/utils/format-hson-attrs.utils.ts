@@ -1,8 +1,8 @@
-// format-hson.attrs.utils.hson.ts
+// format-hson.attrs.utils.ts
 
-import { Primitive } from "../core/types-consts/core.types.hson.js";
-import { HsonAttrs_NEW } from "../types-consts/node.new.types.hson.js";
-import { serialize_style } from "./serialize-css.utils.hson.js";
+import { Primitive } from "../core/types-consts/core.types.js";
+import { HsonAttrs_NEW } from "../types-consts/node.new.types.js";
+import { serialize_style } from "./serialize-css.utils.js";
 
 /**
  * serializes an attrs object into a single string of hson attributes. 

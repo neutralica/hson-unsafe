@@ -1,11 +1,10 @@
-
-import { RenderConstructor_4 } from "../../core/types-consts/constructors.core.types.hson";
-import { JsonType, Primitive } from "../../core/types-consts/core.types.hson";
-import { RenderΔ } from "../../types-consts/constants.hson";
-import { FrameRender_NEW } from "../../types-consts/constructors.new.types.hson";
-import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
-import { make_string } from "../../utils/make-string.utils.hson";
-import { create_proxy_NEW } from "../livetree/create-proxy.new.tree.hson";
+import { HsonNode_NEW, Primitive } from "../..";
+import { RenderConstructor_4 } from "../../core/types-consts/constructors.core.types";
+import { JsonType } from "../../core/types-consts/core.types";
+import { RenderΔ } from "../../types-consts/constants";
+import { FrameRender_NEW } from "../../types-consts/constructors.new.types";
+import { make_string } from "../../utils/make-string.utils";
+import { create_proxy_NEW } from "../livetree/create-proxy.new.tree";
 
 
 /**

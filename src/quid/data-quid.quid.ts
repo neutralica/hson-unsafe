@@ -1,9 +1,7 @@
-// data-quid.quid.hson.ts
+// data-quid.quid.ts
 
-
-import { ARR_TAG, ELEM_TAG, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG, VSNTag } from "../types-consts/constants.hson";
-import { _DATA_QUID, NODE_ELEMENT_MAP_NEW } from "../types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../types-consts/node.new.types.hson";
+import { HsonNode_NEW } from '../types-consts/node.new.types';
+import { _DATA_QUID, ARR_TAG, ELEM_TAG, II_TAG, NODE_ELEMENT_MAP_NEW, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from '../types-consts/constants';
 
 // Use type-only imports and .js specifiers to play nice with verbatimModuleSyntax
 

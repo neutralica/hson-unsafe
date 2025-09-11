@@ -1,10 +1,10 @@
-// strip-vsns.utils.hson.ts
+// strip-vsns.utils.ts
 
-import { Primitive } from "../../../core/types-consts/core.types.hson";
-import { is_Primitive } from "../../../core/utils/guards.core.utils.hson";
-import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
-import { STR_TAG, VAL_TAG, VSN_TAGS, II_TAG, ROOT_TAG } from "../../../types-consts/constants.hson";
-import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
+import { Primitive } from "../../../core/types-consts/core.types";
+import { is_Primitive } from "../../../core/utils/guards.core.utils";
+import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
+import { STR_TAG, VAL_TAG, VSN_TAGS, II_TAG, ROOT_TAG } from "../../../types-consts/constants";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types";
 
 
 /**

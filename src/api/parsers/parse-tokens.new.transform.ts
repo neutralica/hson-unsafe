@@ -1,16 +1,17 @@
 // parse-tokens.transform.hson.ts
 
-import { Primitive } from "../../core/types-consts/core.types.hson";
-import { is_string_NEW, is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
-import { STR_TAG, VAL_TAG, ARR_TAG, OBJ_TAG, ELEM_TAG, ROOT_TAG, II_TAG } from "../../types-consts/constants.hson";
-import { TOKEN_KIND, CLOSE_KIND, _DATA_INDEX } from "../../types-consts/constants.new.hson";
-import { HsonNode_NEW, NodeContent_NEW } from "../../types-consts/node.new.types.hson";
-import { Tokens_NEW, CloseKind, TokenKind, TokenEnd_NEW, TokenText_NEW, TokenOpen_NEW, TokenArrayOpen_NEW, TokenArrayClose_NEW } from "../../types-consts/tokens.new.types.hson";
-import { coerce } from "../../utils/coerce-string.utils.hson";
-import { make_string } from "../../utils/make-string.utils.hson";
-import { _snip } from "../../utils/snip.utils.hson";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson";
-import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils.hson";
+import { Primitive, HsonNode_NEW, is_Node_NEW } from "../..";
+import { STR_TAG, VAL_TAG, ARR_TAG, OBJ_TAG, ELEM_TAG, ROOT_TAG, II_TAG } from "../../types-consts/constants";
+import { TOKEN_KIND, CLOSE_KIND } from "../../types-consts/factories";
+import { _DATA_INDEX } from "../../types-consts/constants";
+import { NodeContent_NEW } from "../../types-consts/node.new.types";
+import { Tokens_NEW, CloseKind, TokenOpen_NEW, TokenEnd_NEW, TokenArrayOpen_NEW, TokenArrayClose_NEW, TokenKind, TokenText_NEW } from "../../types-consts/tokens.new.types";
+import { coerce } from "../../utils/coerce-string.utils";
+import { make_string } from "../../utils/make-string.utils";
+import { is_string_NEW } from "../../utils/node-guards.new.utils";
+import { _snip } from "../../utils/snip.utils";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
+import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils";
 
 
 /* debug log */

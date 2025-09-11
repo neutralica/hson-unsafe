@@ -1,17 +1,17 @@
-// --- serialize-hson.hson.render.ts ---
+// --- serialize-hson.render.ts ---
 
-import { Primitive } from "../../core/types-consts/core.types.hson";
-import { ARR_TAG, ELEM_TAG, EVERY_VSN, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants.hson";
-import { _snip } from "../../utils/snip.utils.hson";
-import { serialize_style } from "../../utils/serialize-css.utils.hson";
-import { serialize_primitive } from "../../utils/serialize-primitive.utils.hson";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils.hson";
-import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
-import { assert_invariants_NEW } from "../../utils/assert-invariants.utils.hson";
-import { _META_DATA_PREFIX } from "../../types-consts/constants.new.hson";
-import { HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { Primitive } from "../../core/types-consts/core.types";
+import { ARR_TAG, ELEM_TAG, EVERY_VSN, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
+import { _snip } from "../../utils/snip.utils";
+import { serialize_style } from "../../utils/serialize-css.utils";
+import { serialize_primitive } from "../../utils/serialize-primitive.utils";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
+import { is_Node_NEW } from "../../utils/node-guards.new.utils";
+import { assert_invariants_NEW } from "../../utils/assert-invariants.utils";
+import { _META_DATA_PREFIX } from "../../types-consts/constants";
+import { HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types";
 
-// --- serialize-hson.hson.render.ts ---
+// --- serialize-hson.render.ts ---
 //
 // CHANGES vs OLD:
 // • Uses NEW node model: _attrs + _meta('data-_'*) instead of old meta.attrs/flags.

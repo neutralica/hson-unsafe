@@ -1,10 +1,10 @@
-// proxy-helpers.tree.hson.ts
+// proxy-helpers.tree.ts
 
-import { Primitive } from "../../../core/types-consts/core.types.hson";
-import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
-import { VSN_TAGS, ELEM_TAG, STR_TAG, VAL_TAG } from "../../../types-consts/constants.hson";
-import { NEW_NEW_NODE, NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
+import { Primitive } from "../../../core/types-consts/core.types";
+import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
+import { VSN_TAGS, ELEM_TAG, STR_TAG, VAL_TAG, NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types";
+import { NEW_NEW_NODE } from "../../../types-consts/factories";
 
 
 

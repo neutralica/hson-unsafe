@@ -1,10 +1,8 @@
 // linter.options.hson.api.ts
 
-import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
-import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
-import { escape_attrs } from "../../utils/escape_attrs.utils.hson";
-import { serialize_style } from "../../utils/serialize-css.utils.hson";
-
+import { HsonNode_NEW, is_Node_NEW } from "../..";
+import { escape_attrs } from "../../utils/escape_attrs.utils";
+import { serialize_style } from "../../utils/serialize-css.utils";
 
 
 

@@ -1,11 +1,11 @@
-// empty.tree.utils.hson.ts
+// empty.tree.utils.ts
 
 
 
-import { is_Node_NEW } from "../../../utils/node-guards.new.utils.hson";
-import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../../types-consts/node.new.types.hson";
-import { LiveTree_NEW } from "../live-tree-class.new.tree.hson";
+import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
+import { HsonNode_NEW } from "../../../types-consts/node.new.types";
+import { LiveTree_NEW } from "../live-tree-class.new.tree";
+import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants";
 
 export function empty_NEW(this: LiveTree_NEW): LiveTree_NEW {
     const selectedNodes = (this as any).selectedNodes as HsonNode_NEW[];

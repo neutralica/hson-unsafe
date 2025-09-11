@@ -1,12 +1,9 @@
 // create-live-tree.new.ts
 
-import { Primitive } from "../../core/types-consts/core.types.hson";
-import { is_Node_NEW } from "../../utils/node-guards.new.utils.hson";
-import { STR_TAG, VAL_TAG } from "../../types-consts/constants.hson";
-import { serialize_style } from "../../utils/serialize-css.utils.hson";
-import { _DATA_QUID, ensure_quid } from '../../quid/data-quid.quid.hson';
-import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants.new.hson";
-import { HsonNode_NEW } from "../../types-consts/node.new.types.hson";
+import { HsonNode_NEW, Primitive, is_Node_NEW } from "../..";
+import { STR_TAG, VAL_TAG } from "../../types-consts/constants";
+import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants";
+import { serialize_style } from "../../utils/serialize-css.utils";
 
 /**
  * render NEW nodes directly to DOm
