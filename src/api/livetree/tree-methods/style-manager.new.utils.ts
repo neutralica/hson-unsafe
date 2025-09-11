@@ -1,9 +1,9 @@
 // style-manager.utils.ts
 
 
-import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants";
-import { HsonNode_NEW } from "../../../types-consts/node.new.types";
-import { LiveTree_NEW } from "../live-tree-class.new.tree";
+import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
+import { HsonNode } from "../../../types-consts/node.new.types";
+import { LiveTree } from "../live-tree-class.new.tree";
 
 /**
  * expedites & eases the frequent interactions with the style property
@@ -13,9 +13,9 @@ import { LiveTree_NEW } from "../live-tree-class.new.tree";
  */
 
 export default class StyleManager_NEW {
-    private liveTree: LiveTree_NEW;
+    private liveTree: LiveTree;
 
-    constructor(liveTree: LiveTree_NEW) {
+    constructor(liveTree: LiveTree) {
         this.liveTree = liveTree;
     }
 
@@ -24,8 +24,8 @@ export default class StyleManager_NEW {
      * @param propertyName the CSS property (e.g., 'backgroundColor' or 'background-color')
      * @param value the new value 
      */
-    set(propertyName: string, value: string | null): LiveTree_NEW {
-        const nodes = this.liveTree.sourceNode() as HsonNode_NEW[];
+    set(propertyName: string, value: string | null): LiveTree {
+        const nodes = this.liveTree.sourceNode() as HsonNode[];
         for (const node of nodes) {
             if (!node._attrs) continue;
 
@@ -46,7 +46,7 @@ export default class StyleManager_NEW {
             }
 
             // Sync with the live DOM element
-            const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
+            const liveElement = NODE_ELEMENT_MAP.get(node);
             if (liveElement) {
                 // It's easier to just re-apply the whole style string
                 liveElement.style.cssText = Object.entries(styleObj)
@@ -63,7 +63,7 @@ export default class StyleManager_NEW {
      * @returns The style value, or undefined if not found.
      */
     get(propertyName: string): string | undefined {
-        const node = this.liveTree.sourceNode() as HsonNode_NEW;
+        const node = this.liveTree.sourceNode() as HsonNode;
         if (!node) return undefined;
 
         const styleObj = node._attrs?.style;

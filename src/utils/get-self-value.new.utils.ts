@@ -2,7 +2,7 @@
 
 import { Primitive } from "../core/types-consts/core.types";
 import { _FALSE, ELEM_OBJ_ARR, FALSE_TYPE, STR_TAG, VAL_TAG } from "../types-consts/constants";
-import { HsonNode_NEW } from "../types-consts/node.new.types";
+import { HsonNode } from "../types-consts/node.new.types";
 import { is_Node_NEW } from "./node-guards.new.utils";
 
 /* debug log */
@@ -22,7 +22,7 @@ function isPrimitive(v: unknown): v is Primitive {
  * @param $node The HsonNode to inspect
  * @returns The primitive value if the pattern is matched, otherwise _FALSE
  */
-export function get_self_close_value($node: HsonNode_NEW): Primitive | FALSE_TYPE {
+export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
     /*  1. self-closing tags cannot be VSN containers */
     $log("  ? checking for Self Value (if applicable) ", $node._tag);
     if (ELEM_OBJ_ARR.includes($node._tag)) {

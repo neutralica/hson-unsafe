@@ -1,10 +1,10 @@
 // constructors.types.hson.ts
 
-import { HsonNode_NEW } from "../..";
+import {  HsonNode } from "../..";
 import { RenderΔ, HSON_FrameΔ } from "../../types-consts/constants";
 
 
-export type ProxyBackdoor = { _withNodes: HsonNode_NEW; [key: string]: any; };
+export type ProxyBackdoor = { _withNodes: HsonNode; [key: string]: any; };
 
 export type RenderFormats = (typeof RenderΔ)[keyof typeof RenderΔ];
 

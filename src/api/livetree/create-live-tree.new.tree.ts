@@ -1,21 +1,21 @@
 // create-live-tree.new.ts
 
-import { HsonNode_NEW, Primitive, is_Node_NEW } from "../..";
+import { HsonNode, Primitive, is_Node_NEW } from "../..";
 import { STR_TAG, VAL_TAG } from "../../types-consts/constants";
-import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants";
+import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { serialize_style } from "../../utils/serialize-css.utils";
 
 /**
  * render NEW nodes directly to DOm
  * VSNs (_root/_obj/_arr/_elem) are virtual and never become DOM elements
  */
-export function create_live_tree_NEW(node: HsonNode_NEW | Primitive): Node {
+export function create_live_tree_NEW(node: HsonNode | Primitive): Node {
   // NEW: if not a NEW node, render as text
   if (!is_Node_NEW(node)) {
     return document.createTextNode(String(node ?? ""));
   }
 
-  const n = node as HsonNode_NEW;
+  const n = node as HsonNode;
 
   // NEW: primitive wrappers → single text node
   if (n._tag === STR_TAG || n._tag === VAL_TAG) {
@@ -46,11 +46,11 @@ export function create_live_tree_NEW(node: HsonNode_NEW | Primitive): Node {
   const el = document.createElement(n._tag);
 
 
-  NODE_ELEMENT_MAP_NEW.set(n, el);
+  NODE_ELEMENT_MAP.set(n, el);
   // NEW: standard element
 
   // NEW: link node↔element (same map is fine; key is object identity)
-  NODE_ELEMENT_MAP_NEW.set(n as any, el);
+  NODE_ELEMENT_MAP.set(n as any, el);
 
   // NEW: reflect ONLY _attrs
   const a = n._attrs;

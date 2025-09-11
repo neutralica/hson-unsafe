@@ -1,5 +1,5 @@
 import { _META_DATA_PREFIX } from "../../../types-consts/constants";
-import { HsonAttrs_NEW, HsonMeta_NEW } from "../../../types-consts/node.new.types";
+import { HsonAttrs, HsonMeta } from "../../../types-consts/node.new.types";
 import { RawAttr } from "../../../types-consts/tokens.new.types";
 import { parse_style_hard_mode } from "../../../utils/parse-css.utils";
 
@@ -9,9 +9,9 @@ import { parse_style_hard_mode } from "../../../utils/parse-css.utils";
    - style parses to an object (kebab keys)
    - meta wires data-_index, data-_quid (for now)
 */
-export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs_NEW; meta: HsonMeta_NEW } {
-  const attrs: HsonAttrs_NEW = {};
-  const meta:  HsonMeta_NEW  = {};
+export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs; meta: HsonMeta } {
+  const attrs: HsonAttrs = {};
+  const meta:  HsonMeta  = {};
 
   for (const ra of raw) {
     const k = ra.name;

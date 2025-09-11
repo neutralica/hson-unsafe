@@ -1,7 +1,7 @@
 // make-string.utils.ts
 
 import { is_Node_NEW } from "./node-guards.new.utils";
-import { HsonNode_NEW, HsonAttrs_NEW, HsonMeta_NEW } from "../types-consts/node.new.types";
+import { HsonNode, HsonAttrs, HsonMeta } from "../types-consts/node.new.types";
 
 /** Pretty-print any value with stable, node-friendly key order. */
 export function make_string_pretty(value: unknown, indent = 2): string {
@@ -22,7 +22,7 @@ function canon(v: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
     seen.add(v as object);
 
     // HSON node? Use node ordering.
-    if (is_Node_NEW(v)) return orderNode(v as HsonNode_NEW, seen);
+    if (is_Node_NEW(v)) return orderNode(v as HsonNode, seen);
 
     // Generic object: sort keys alphabetically (stable output)
     return orderPlainObject(v as Record<string, unknown>, seen);
@@ -32,7 +32,7 @@ function canon(v: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
   return v;
 }
 
-function orderNode(n: HsonNode_NEW, seen: WeakSet<object>) {
+function orderNode(n: HsonNode, seen: WeakSet<object>) {
   const out: any = {};
 
   // 1) canonical node-key order
@@ -56,7 +56,7 @@ function orderNode(n: HsonNode_NEW, seen: WeakSet<object>) {
   return out;
 }
 
-function orderAttrs(a: HsonAttrs_NEW) {
+function orderAttrs(a: HsonAttrs) {
   const out: any = {};
   for (const k of Object.keys(a).sort()) {
     const v = (a as any)[k];
@@ -75,7 +75,7 @@ function orderStyleObject(s: Record<string, unknown>) {
   return out;
 }
 
-function orderMeta(m: HsonMeta_NEW) {
+function orderMeta(m: HsonMeta) {
   const out: any = {};
   // If you want certain meta keys first, prioritize them here:
   const priority = ["data-_quid", "data-_index"];

@@ -1,7 +1,7 @@
 // format-hson.attrs.utils.ts
 
 import { Primitive } from "../core/types-consts/core.types.js";
-import { HsonAttrs_NEW } from "../types-consts/node.new.types.js";
+import { HsonAttrs } from "../types-consts/node.new.types.js";
 import { serialize_style } from "./serialize-css.utils.js";
 
 /**
@@ -16,7 +16,7 @@ import { serialize_style } from "./serialize-css.utils.js";
  * @returns {string} a single string of all formatted hson attributes, ready for injection into a tag
  */
 
-export function format_hson_attrs(attrs: HsonAttrs_NEW): string {
+export function format_hson_attrs(attrs: HsonAttrs): string {
   const attrsFormatted = Object.entries(attrs)
     .map(([key, value]) => {
 

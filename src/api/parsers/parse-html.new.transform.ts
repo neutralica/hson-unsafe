@@ -1,6 +1,6 @@
 // parse-html.new.transform.hson.ts (new)
 
-import { HsonNode_NEW, Primitive, is_Node_NEW } from "../..";
+import {  HsonNode, Primitive, is_Node_NEW } from "../..";
 import { is_Primitive } from "../../core/utils/guards.core.utils";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
 import { NEW_NEW_NODE } from "../../types-consts/factories";
@@ -28,7 +28,7 @@ const _log: (...args: Parameters<typeof console.log>) => void =
 
 
 
-export function parse_html($input: string | Element): HsonNode_NEW {
+export function parse_html($input: string | Element): HsonNode {
     let inputElement: Element;
 
     if (typeof $input === 'string') {
@@ -76,7 +76,7 @@ export function parse_html($input: string | Element): HsonNode_NEW {
 
 // --- recursive conversion function ---
 
-function convert($el: Element): HsonNode_NEW {
+function convert($el: Element): HsonNode {
     if (!($el instanceof Element)) {
         _throw_transform_err('input to convert function is not Element', '[(parse-html): convert()]', $el)
 
@@ -120,7 +120,7 @@ function convert($el: Element): HsonNode_NEW {
 
     /* process all other tags */
     _log('standard tag - processing child nodes:');
-    const childNodes: HsonNode_NEW[] = [];
+    const childNodes: HsonNode[] = [];
     const children = elementToNode($el.childNodes);
     _log(make_string(children));
 
@@ -134,7 +134,7 @@ function convert($el: Element): HsonNode_NEW {
         } else {
             _log(`fully formed node received; pushing to childNodes\n(${make_string(child)})`)
             /* or it's already a Node: push it directly. */
-            childNodes.push(child as HsonNode_NEW);
+            childNodes.push(child as HsonNode);
         }
     }
 
@@ -165,7 +165,7 @@ function convert($el: Element): HsonNode_NEW {
             }
         } else {
             // child is a node; allow _val or _str produced earlier, else error
-            const n = only as HsonNode_NEW;
+            const n = only as HsonNode;
 
             if (n._tag === VAL_TAG) {
                 // unwrap one level: must be exactly one primitive child
@@ -252,11 +252,11 @@ function convert($el: Element): HsonNode_NEW {
  * parses child DOM nodes and returns an array of HsonNodes.
  *  - recursively calls `convert` for element children and creates VSNs for BasicValue children. 
  * @param {NodeListOf<ChildNode>} $els - the nodes in question
- * @returns {(HsonNode_NEW | Primitive)[]} - either a finished Node or a primitive value
+ * @returns {(HsonNode | Primitive)[]} - either a finished Node or a primitive value
  */
 
-function elementToNode($els: NodeListOf<ChildNode>): (HsonNode_NEW | Primitive)[] {
-    const children: (HsonNode_NEW | Primitive)[] = [];
+function elementToNode($els: NodeListOf<ChildNode>): (HsonNode | Primitive)[] {
+    const children: (HsonNode | Primitive)[] = [];
     for (const kid of Array.from($els)) {
         if (kid.nodeType === Node.ELEMENT_NODE) {
             // keep ELEMENTs as nodes; <_val> will be handled inside convert(...)

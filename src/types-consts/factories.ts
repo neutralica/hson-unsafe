@@ -1,10 +1,10 @@
 // consts.types.ts
 
 
-import { HsonNode_NEW } from "./node.new.types";
+import { HsonNode } from "./node.new.types";
 import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen_NEW, TokenEnd_NEW, TokenArrayOpen_NEW, TokenArrayClose_NEW, TokenText_NEW } from "./tokens.new.types";
 
-export const NEW_NEW_NODE = (partial: Partial<HsonNode_NEW> = {}): HsonNode_NEW => ({
+export const NEW_NEW_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
   _tag: partial._tag ?? '', 
   _content: partial._content ?? [],
   _attrs: partial._attrs ?? {},

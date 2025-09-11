@@ -1,14 +1,14 @@
 // parse-selector.utils.ts
 
-import { HsonQuery_NEW } from "../../../types-consts/tree.new.types";
+import { HsonQuery } from "../../../types-consts/tree.new.types";
 
 
 /**
  * parses a simple CSS selector string into an HsonQuery object
  *   currently supports: tag, #id, .class, [attribute], and [attribute="value"]
  */
-export function parseSelector_NEW(selector: string): HsonQuery_NEW {
-    const query: HsonQuery_NEW = { attrs: {} };
+export function parseSelector_NEW(selector: string): HsonQuery {
+    const query: HsonQuery = { attrs: {} };
 
     /* regular expression matches the parts of a selector */
     const tagRegex = /^[a-zA-Z0-9]+/;

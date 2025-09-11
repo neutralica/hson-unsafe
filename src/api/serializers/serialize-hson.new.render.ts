@@ -9,7 +9,7 @@ import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { is_Node_NEW } from "../../utils/node-guards.new.utils";
 import { assert_invariants_NEW } from "../../utils/assert-invariants.utils";
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
-import { HsonAttrs_NEW, HsonMeta_NEW, HsonNode_NEW } from "../../types-consts/node.new.types";
+import { HsonAttrs, HsonMeta, HsonNode } from "../../types-consts/node.new.types";
 
 // --- serialize-hson.render.ts ---
 //
@@ -57,14 +57,14 @@ function cycleGuard() {
 
 
 /* attrs considered empty if absent or has no own keys (style:"" counts as present) */
-function isEmptyAttrs(attrs?: HsonAttrs_NEW): boolean {
+function isEmptyAttrs(attrs?: HsonAttrs): boolean {
     if (!attrs) return true;
     for (const _k in attrs) return false;
     return true;
 }
 
 /*  meta must only contain data-_* keys and string values */
-function assertAndReturnMeta(meta?: HsonMeta_NEW): Record<string, string> {
+function assertAndReturnMeta(meta?: HsonMeta): Record<string, string> {
     _log('assert & return _meta')
     if (!meta) return {};
     const out: Record<string, string> = {};
@@ -82,7 +82,7 @@ function assertAndReturnMeta(meta?: HsonMeta_NEW): Record<string, string> {
 }
 
 /* durable: stringify NEW attrs (incl. style object and flags as bare tokens) */
-function formatAttrsNEW(attrs: HsonAttrs_NEW | undefined): string {
+function formatAttrsNEW(attrs: HsonAttrs | undefined): string {
     if (!attrs) return "";
     const entries = Object.entries(attrs);
     if (!entries.length) return "";
@@ -112,7 +112,7 @@ function formatAttrsNEW(attrs: HsonAttrs_NEW | undefined): string {
 }
 
 /* merge user _attrs and meta(data-_) into a single on-wire attrs string */
-function buildAttrString(attrs: HsonAttrs_NEW | undefined, meta: HsonMeta_NEW | undefined): string {
+function buildAttrString(attrs: HsonAttrs | undefined, meta: HsonMeta | undefined): string {
     _log('building attrs string');
     const user = formatAttrsNEW(attrs);
     const sys = (() => {
@@ -125,7 +125,7 @@ function buildAttrString(attrs: HsonAttrs_NEW | undefined, meta: HsonMeta_NEW | 
 }
 
 /* quoted text vs raw primitive one-liner probe (NEW shape only) */
-function getSelfCloseValueNEW(node: HsonNode_NEW): Primitive | null {
+function getSelfCloseValueNEW(node: HsonNode): Primitive | null {
     _log('getting value for self-closing Node (_NEW type)');
     // must not carry attrs or meta
     if (!isEmptyAttrs(node._attrs)) return null;
@@ -135,7 +135,7 @@ function getSelfCloseValueNEW(node: HsonNode_NEW): Primitive | null {
     if (!node._content || node._content.length !== 1 || !is_Node_NEW(node._content[0])) {
         return null;
     }
-    const only = node._content[0] as HsonNode_NEW;
+    const only = node._content[0] as HsonNode;
     if (!only._content || only._content.length !== 1) return null;
 
     const prim = only._content[0];
@@ -156,7 +156,7 @@ type ParentCluster = typeof OBJ_TAG | typeof ELEM_TAG;
 /* recursively serialize a NEW node into HSON wire */
 
 function emitNode(
-    node: HsonNode_NEW,
+    node: HsonNode,
     depth: number,
     parentCluster: ParentCluster | undefined,
     guard: ReturnType<typeof cycleGuard>
@@ -200,7 +200,7 @@ function emitNode(
             if (!c || typeof c !== "object" || !("_tag" in (c as any))) {
                 _throw_transform_err("serialize-hson: _ii must contain exactly one child node", 'serialize_hson_NEW.emitNode()');
             }
-            return emitNode(c as HsonNode_NEW, depth, parentCluster, guard);  // <-- same depth
+            return emitNode(c as HsonNode, depth, parentCluster, guard);  // <-- same depth
         }
 
         /* 3) _arr cluster → « … » */
@@ -211,7 +211,7 @@ function emitNode(
             const inner = items
                 .map((child: unknown) =>
                     (typeof child === "object" && child && "_tag" in (child as any))
-                        ? emitNode(child as HsonNode_NEW, depth + 1, undefined, guard)  // child cluster context will be set below
+                        ? emitNode(child as HsonNode, depth + 1, undefined, guard)  // child cluster context will be set below
                         : pad + String(child) // tolerant; normalized NEW shouldn’t have bare primitives
                 )
                 .join(",\n");
@@ -226,7 +226,7 @@ function emitNode(
             }
             const kids = (node._content ?? []).filter(
                 (k: unknown) => typeof k === "object" && k && "_tag" in (k as any)
-            ) as HsonNode_NEW[];
+            ) as HsonNode[];
 
             const cluster: ParentCluster = node._tag;
             return kids.map(k => emitNode(k, depth, cluster, guard)).join("\n");
@@ -237,7 +237,7 @@ function emitNode(
             _log('_root tag encountered!');
             const kids = (node._content ?? []).filter(
                 (k: unknown) => typeof k === "object" && k && "_tag" in (k as any)
-            ) as HsonNode_NEW[];
+            ) as HsonNode[];
             if (kids.length !== 1) throw new Error("serialize-hson: _root must have exactly one cluster child");
 
             const cluster = kids[0];
@@ -262,7 +262,7 @@ function emitNode(
             return !!(o && Object.keys(o).length);
         }
 
-        function inlineShape(n: HsonNode_NEW):
+        function inlineShape(n: HsonNode):
             | { kind: 'void' }
             | { kind: 'text'; value: Primitive }
             | null {
@@ -278,14 +278,14 @@ function emitNode(
 
             // exactly one child: could be _str/_val OR an _elem wrapper
             if (c.length === 1 && typeof c[0] === "object" && c[0] && "_tag" in c[0]) {
-                let child = c[0] as HsonNode_NEW;
+                let child = c[0] as HsonNode;
 
                 // unwrap a single _elem wrapper (HTML-origin nodes often look like: tag -> _elem -> _str/_val)
                 if (child._tag === ELEM_TAG) {
                     const ec = child._content ?? [];
                     if (ec.length === 0) return { kind: 'void' }; // <tag><_elem /></tag> -> treat as void
                     if (ec.length === 1 && typeof ec[0] === "object" && ec[0] && "_tag" in ec[0]) {
-                        child = ec[0] as HsonNode_NEW;
+                        child = ec[0] as HsonNode;
                     } else {
                         return null;
                     }
@@ -333,7 +333,7 @@ function emitNode(
 
         const children = (node._content ?? []).filter(
             (k: unknown) => is_Node_NEW
-        ) as HsonNode_NEW[];
+        ) as HsonNode[];
 
         if (!children.length) {
             _log('void node; closing');
@@ -360,7 +360,7 @@ function emitNode(
 }
 
 /* public API (NEW) */
-export function serialize_hson(root: HsonNode_NEW): string {
+export function serialize_hson(root: HsonNode): string {
     if (!is_Node_NEW(root)) {
         _throw_transform_err("serialize-hson: root must be a HsonNode_NEW", 'serialize-hson');
     }

@@ -1,9 +1,9 @@
-import { parse_html, parse_json, parse_hson, HsonNode_NEW } from "../..";
+import { parse_html, parse_json, parse_hson, HsonNode} from "../..";
 import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types";
 import { JsonType } from "../../core/types-consts/core.types";
-import { SourceConstructor_1_NEW, FrameConstructor_NEW } from "../../types-consts/constructors.new.types";
+import { SourceConstructor_1, FrameConstructor } from "../../types-consts/constructors.new.types";
 import { make_string } from "../../utils/make-string.utils";
-import { construct_output_2_NEW } from "./constructor-2-output.new.api";
+import { construct_output_2 } from "./constructor-2-output.new.api";
 
 /* debug log */
 let _VERBOSE = false;
@@ -21,9 +21,9 @@ const $log = _VERBOSE
  * this is the entry point for the fluent data transformation API.
  * * @returns {source_constructor_1} an object with methods to specify the input data.
  */
-export function construct_source_1_NEW(
+export function construct_source_1(
   options: { unsafe: boolean } = { unsafe: false }
-): SourceConstructor_1_NEW {
+): SourceConstructor_1 {
   return {
     /**
      * accepts an html string or HTMLElement and converts to hson nodes
@@ -49,13 +49,13 @@ export function construct_source_1_NEW(
       // }
 
       const node = parse_html(content);
-      const frame: FrameConstructor_NEW = { input: content, node, meta };
+      const frame: FrameConstructor = { input: content, node, meta };
       if (_VERBOSE) {
         console.groupCollapsed('frame')
         console.log(make_string(frame))
         console.groupEnd();
       }
-      return construct_output_2_NEW(frame);
+      return construct_output_2(frame);
     },
 
     /**
@@ -65,11 +65,11 @@ export function construct_source_1_NEW(
      */
     fromJSON($input: string | JsonType): OutputConstructor_2 {
       const node = parse_json($input as string);
-      const frame: FrameConstructor_NEW = {
+      const frame: FrameConstructor = {
         input: typeof $input === "string" ? $input : JSON.stringify($input),
         node
       };
-      return construct_output_2_NEW(frame);
+      return construct_output_2(frame);
     },
 
     /**
@@ -79,8 +79,8 @@ export function construct_source_1_NEW(
      */
     fromHSON($input: string): OutputConstructor_2 {
       const node = parse_hson($input);
-      const frame: FrameConstructor_NEW = { input: $input, node };
-      return construct_output_2_NEW(frame);
+      const frame: FrameConstructor = { input: $input, node };
+      return construct_output_2(frame);
     },
 
     /**
@@ -88,9 +88,9 @@ export function construct_source_1_NEW(
    * @param {HsonNode_NEW} $node the hson node structure.
    * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
    */
-    fromNode($node: HsonNode_NEW): OutputConstructor_2 {
-      const frame: FrameConstructor_NEW = { input: JSON.stringify($node), node: $node };
-      return construct_output_2_NEW(frame);
+    fromNode($node: HsonNode): OutputConstructor_2 {
+      const frame: FrameConstructor = { input: JSON.stringify($node), node: $node };
+      return construct_output_2(frame);
     },
 
 

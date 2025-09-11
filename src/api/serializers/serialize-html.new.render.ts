@@ -9,7 +9,7 @@ import { _throw_transform_err } from '../../utils/throw-transform-err.utils';
 import { is_Node_NEW } from '../../utils/node-guards.new.utils';
 import { assert_invariants_NEW } from '../../utils/assert-invariants.utils';
 import { clone_node } from '../../utils/clone-node.utils';
-import { HsonNode_NEW } from '../../types-consts/node.new.types';
+import { HsonNode } from '../../types-consts/node.new.types';
 
 const _VERBOSE = false;
 const STYLE = 'color:fuschia;font-weight:400;padding:1px 3px;border-radius:4px';
@@ -75,7 +75,7 @@ function primitive_to_string(p: Primitive): string {
  * @param node the node or primitive to serialize
  * @returns an XML string fragment representing the node, or an empty string for null/undefined input
  */
-export function serialize_xml(node: HsonNode_NEW | Primitive | undefined): string {
+export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   /* catch BasicValues */
   _log(`node to XML: processing ${make_string(node)}`)
 
@@ -123,7 +123,7 @@ export function serialize_xml(node: HsonNode_NEW | Primitive | undefined): strin
 
   /* build attributes from _NEW model (_attrs) + meta mapping */
   /* NOTE: XML stage prints key="value" even for flags; HTML stage trims later */
-  const attrs = build_wire_attrs(node as HsonNode_NEW);
+  const attrs = build_wire_attrs(node as HsonNode);
   for (const key of Object.keys(attrs).sort()) {
     const v = attrs[key];
     openLine += ` ${key}="${escape_attr(v)}"`;
@@ -160,12 +160,12 @@ export function serialize_xml(node: HsonNode_NEW | Primitive | undefined): strin
  * @returns An HTML string fragment representing the node.
  * @throws Error if input node is null or undefined, or if intermediate XML is empty/invalid (throw_transform_err)
  */
-export function serialize_html($node: HsonNode_NEW | Primitive): string {
+export function serialize_html($node: HsonNode | Primitive): string {
   const clone = clone_node($node);
   if (!is_Node_NEW(clone)) {
     _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', make_string($node));
   }
-  assert_invariants_NEW(clone as HsonNode_NEW);
+  assert_invariants_NEW(clone as HsonNode);
 
   if (_VERBOSE) {
     console.groupCollapsed('---> serializing to html')

@@ -1,13 +1,13 @@
 
 import { RenderFormats, FrameMode, FrameOptions, OutputConstructor_2 } from "../core/types-consts/constructors.core.types";
 import { JsonType } from "../core/types-consts/core.types";
-import { HsonNode_NEW } from "./node.new.types";
+import { HsonNode } from "./node.new.types";
 
-export type FrameRender_NEW = { frame: FrameConstructor_NEW, output: RenderFormats };
+export type FrameRender = { frame: FrameConstructor, output: RenderFormats };
 
-export interface FrameConstructor_NEW {
+export interface FrameConstructor {
     input: string | Element;
-    node: HsonNode_NEW;
+    node: HsonNode;
     hson?: string;
     html?: string;
     json?: JsonType | string;
@@ -17,11 +17,11 @@ export interface FrameConstructor_NEW {
 };
 
  
-export interface SourceConstructor_1_NEW {
+export interface SourceConstructor_1 {
     fromHSON(input: string): OutputConstructor_2;
     fromJSON(input: string | JsonType): OutputConstructor_2;
     fromHTML(input: string | HTMLElement): OutputConstructor_2;
-    fromNode(input: HsonNode_NEW): OutputConstructor_2;
+    fromNode(input: HsonNode): OutputConstructor_2;
     queryDOM(selector: string): OutputConstructor_2;
     queryBody(): OutputConstructor_2;
 }

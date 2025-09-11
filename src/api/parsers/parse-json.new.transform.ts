@@ -1,11 +1,11 @@
 // parse-json.transform.hson.ts
 
-import { HsonNode_NEW, Primitive } from "../..";
+import {  HsonNode, Primitive } from "../..";
 import { is_Primitive, is_Object } from "../../core/utils/guards.core.utils";
 import { VAL_TAG, STR_TAG, ARR_TAG, OBJ_TAG, EVERY_VSN, II_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants";
 import { NEW_NEW_NODE } from "../../types-consts/factories";
 import { _DATA_INDEX, _META_DATA_PREFIX } from "../../types-consts/constants";
-import { JsonType_NEW, HsonMeta_NEW, JsonObj_NEW, HsonAttrs_NEW } from "../../types-consts/node.new.types";
+import { JsonType, HsonMeta, JsonObj, HsonAttrs } from "../../types-consts/node.new.types";
 import { assert_invariants_NEW } from "../../utils/assert-invariants.utils";
 import { is_not_string_NEW } from "../../utils/node-guards.new.utils";
 import { _snip } from "../../utils/snip.utils";
@@ -23,7 +23,7 @@ const _log: (...args: Parameters<typeof console.log>) => void =
         : () => { };
 
 
-function getTag($value: JsonType_NEW): string {
+function getTag($value: JsonType): string {
     if (is_not_string_NEW($value)) return VAL_TAG;
     if (is_Primitive($value)) {
         return STR_TAG;
@@ -49,15 +49,15 @@ function getTag($value: JsonType_NEW): string {
  * 
  * (the items of a json array will be contained within an '_array' vsn, which behaves differently)
  *
- * @param {string | JsonType_NEW} $srcJson - the json data to parse, either as a raw string or a pre-parsed javascript object/array.
+ * @param {string | JsonType} $srcJson - the json data to parse, either as a raw string or a pre-parsed javascript object/array.
  * @param {string} $parentTag - the parent tag, usually necessary for determining which VSN to create 
- * @returns {HsonNode_NEW} the root hsonnode of the resulting data structure.
+ * @returns {HsonNode} the root hsonnode of the resulting data structure.
  */
 
 function nodeFromJson(
-    $srcJson: JsonType_NEW,
+    $srcJson: JsonType,
     $parentTag: string
-): { node: HsonNode_NEW } {
+): { node: HsonNode } {
     /* catch primitive nodes */
 
     if ($parentTag.startsWith("_") && !EVERY_VSN.includes($parentTag)) {
@@ -86,12 +86,12 @@ function nodeFromJson(
 
     /*  arrays -> _array VSN */
     if ($parentTag === ARR_TAG) {
-        const array = $srcJson as JsonType_NEW[];
-        const items: HsonNode_NEW[] = array.map((val, ix) => {
+        const array = $srcJson as JsonType[];
+        const items: HsonNode[] = array.map((val, ix) => {
             const itemStructuralTag = getTag(val);
             const itemConversion = nodeFromJson(val, itemStructuralTag);
 
-            let dataIx: HsonMeta_NEW = { [_DATA_INDEX]: String(ix) };
+            let dataIx: HsonMeta = { [_DATA_INDEX]: String(ix) };
 
             return NEW_NEW_NODE({
                 _tag: II_TAG, /* <_ii> wrapper */
@@ -109,9 +109,9 @@ function nodeFromJson(
 
     /* catch objects */
     if ($parentTag === OBJ_TAG) {
-        const jsonObj = $srcJson as JsonObj_NEW;
-        let objMeta: HsonMeta_NEW = jsonObj._meta || {};
-        let objAttrs: HsonAttrs_NEW = jsonObj._attrs || {};
+        const jsonObj = $srcJson as JsonObj;
+        let objMeta: HsonMeta = jsonObj._meta || {};
+        let objAttrs: HsonAttrs = jsonObj._attrs || {};
 
         const jsonKeys = Object.keys(jsonObj).filter(k => k !== '_meta');
 
@@ -120,10 +120,10 @@ function nodeFromJson(
             if (jsonKeys.length > 1) console.error('content of parent of _elem tag is too long (_elem has siblings!)')
             const listContent = jsonObj[ELEM_TAG];
             if (Array.isArray(listContent)) {
-                const contentNodes: HsonNode_NEW[] = listContent.map(item => {
-                    const recursedItem = nodeFromJson(item as JsonType_NEW, getTag(item as JsonType_NEW));
+                const contentNodes: HsonNode[] = listContent.map(item => {
+                    const recursedItem = nodeFromJson(item as JsonType, getTag(item as JsonType));
                     if (recursedItem.node._tag === OBJ_TAG && recursedItem.node._content.length === 1) {
-                        const singleProperty = recursedItem.node._content[0] as HsonNode_NEW;
+                        const singleProperty = recursedItem.node._content[0] as HsonNode;
                         singleProperty._meta = singleProperty._meta || {};
                         singleProperty._attrs = singleProperty._attrs || {};
                         return singleProperty;
@@ -146,8 +146,8 @@ function nodeFromJson(
             const jsonKeys = Object.keys(rest); // no _attrs/_meta here
 
             // 2) build properties from non-reserved keys only
-            const propertyNodes: HsonNode_NEW[] = jsonKeys.map(key => {
-                const propertyValues = rest[key] as JsonType_NEW;
+            const propertyNodes: HsonNode[] = jsonKeys.map(key => {
+                const propertyValues = rest[key] as JsonType;
 
                 // void property → empty content; DO NOT attach objAttrs/objMeta here
                 if (propertyValues === "") {
@@ -191,8 +191,8 @@ function nodeFromJson(
 }
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
-export function parse_json($input: string | JsonType_NEW): HsonNode_NEW {
-    let parsed: JsonType_NEW;
+export function parse_json($input: string | JsonType): HsonNode {
+    let parsed: JsonType;
     try {
         parsed = typeof $input === "string" ? JSON.parse($input) : $input;
     } catch (e) {
@@ -200,17 +200,17 @@ export function parse_json($input: string | JsonType_NEW): HsonNode_NEW {
     }
 
     // Optional unwrap of {_root: ... , _meta?: {...}}.
-    let jsonToProcess: JsonType_NEW = parsed;
-    let rootMeta: HsonMeta_NEW | undefined;
+    let jsonToProcess: JsonType = parsed;
+    let rootMeta: HsonMeta | undefined;
 
     if (is_Object(parsed)) {
-        const obj = parsed as JsonObj_NEW;
+        const obj = parsed as JsonObj;
         const keys = Object.keys(obj).filter(k => k !== "_meta");
         if (keys.length === 1 && keys[0] === ROOT_TAG) {
-            jsonToProcess = obj[ROOT_TAG] as JsonType_NEW;
+            jsonToProcess = obj[ROOT_TAG] as JsonType;
             // keep meta but only data-_*
             if (obj._meta && is_Object(obj._meta)) {
-                const filtered: HsonMeta_NEW = {};
+                const filtered: HsonMeta = {};
                 for (const [k, v] of Object.entries(obj._meta)) {
                     if (k.startsWith(_META_DATA_PREFIX)) (filtered as any)[k] = v;
                 }

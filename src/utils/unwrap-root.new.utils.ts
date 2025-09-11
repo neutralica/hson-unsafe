@@ -1,7 +1,7 @@
 // unwrap-root.utils.ts
 
 import { ROOT_TAG, ELEM_TAG } from "../types-consts/constants";
-import { HsonNode_NEW } from "../types-consts/node.new.types";
+import { HsonNode } from "../types-consts/node.new.types";
 import { is_Node_NEW } from "./node-guards.new.utils";
 
 
@@ -10,7 +10,7 @@ import { is_Node_NEW } from "./node-guards.new.utils";
  * @param $content the HsonNode or array of HsonNodes to unwrap
  * @returns a clean array of the actual content nodes sans _root or _elem
  */
-export function unwrap_root_NEW($content: HsonNode_NEW | HsonNode_NEW[]): HsonNode_NEW[] {
+export function unwrap_root_NEW($content: HsonNode | HsonNode[]): HsonNode[] {
     const nodes = Array.isArray($content) ? $content : [$content];
     
     /* use flatMap to handle nodes that might expand into multiple children */

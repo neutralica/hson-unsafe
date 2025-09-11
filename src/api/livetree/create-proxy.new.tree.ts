@@ -1,9 +1,9 @@
 // create-proxy.new.tree.hson.ts
 
-import { HsonNode_NEW, is_Node_NEW, parse_json } from "../..";
+import { HsonNode, is_Node_NEW, parse_json } from "../..";
 import { is_Object, is_Primitive } from "../../core/utils/guards.core.utils";
 import { STR_TAG, VAL_TAG, VSN_TAGS } from "../../types-consts/constants";
-import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants";
+import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { create_live_tree_NEW } from "./create-live-tree.new.tree";
 import { get_contentValue_NEW, find_child_by_tag_NEW, find_index_of_tag_NEW, update_content_NEW } from "./tree-utils/proxy-helpers.new.utils";
 import { get_semantic_child } from "./tree-utils/semantic-child.utils";
@@ -18,7 +18,7 @@ const $log = VERBOSE
     ? console.log
     : () => { };
 
-const DEBUG_UPDATE_MAP = new WeakMap<HsonNode_NEW, number>();
+const DEBUG_UPDATE_MAP = new WeakMap<HsonNode, number>();
 /**
  * factory function that creates a live, interactive proxy for an hsonnode tree.
  *
@@ -27,7 +27,7 @@ const DEBUG_UPDATE_MAP = new WeakMap<HsonNode_NEW, number>();
  * property access to provide an intuitive, dot-notation api for querying and
  * manipulating the data structure, which in turn triggers live dom updates.
  *
- * @param {HsonNode_NEW} targetNode - the root hsonnode of the data structure to make interactive.
+ * @param {HsonNode} targetNode - the root hsonnode of the data structure to make interactive.
  * @returns {hson_proxy} a new proxy object providing a stateful interface to the data.
  * @example
  * const data = hson.liveTree(myDomElement);
@@ -36,8 +36,8 @@ const DEBUG_UPDATE_MAP = new WeakMap<HsonNode_NEW, number>();
  */
 
 /* TODO create HsonProxy type */
-export function create_proxy_NEW(targetNode: HsonNode_NEW): any {
-    const handler: ProxyHandler<HsonNode_NEW> = {
+export function create_proxy_NEW(targetNode: HsonNode): any {
+    const handler: ProxyHandler<HsonNode> = {
         /**
          * GET 
          * query handler
@@ -67,7 +67,7 @@ export function create_proxy_NEW(targetNode: HsonNode_NEW): any {
 
             /* find direct child with a matching tag */
             const childNode = children.find(
-                (c): c is HsonNode_NEW => is_Node_NEW(c) && c._tag === propertyKey
+                (c): c is HsonNode => is_Node_NEW(c) && c._tag === propertyKey
             );
 
             if (childNode) {
@@ -118,11 +118,11 @@ export function create_proxy_NEW(targetNode: HsonNode_NEW): any {
 
                 $log('hson after SET:');
                 if (VERBOSE) console.dir(hsonContainer._content, { depth: 5 });
-                const parentLiveElement = NODE_ELEMENT_MAP_NEW.get(targetNode);
+                const parentLiveElement = NODE_ELEMENT_MAP.get(targetNode);
                 if (parentLiveElement) {
                     const newLiveElement = create_live_tree_NEW(newNode);
                     if (is_Node_NEW(priorNode)) {
-                        const oldLiveElement = NODE_ELEMENT_MAP_NEW.get(priorNode);
+                        const oldLiveElement = NODE_ELEMENT_MAP.get(priorNode);
                         if (oldLiveElement) {
                             oldLiveElement.replaceWith(newLiveElement);
                         }
@@ -148,7 +148,7 @@ export function create_proxy_NEW(targetNode: HsonNode_NEW): any {
 
                     targetNode._attrs[propertyKey] = String(value);
 
-                    const liveElement = NODE_ELEMENT_MAP_NEW.get(targetNode);
+                    const liveElement = NODE_ELEMENT_MAP.get(targetNode);
                     if (liveElement) {
                         liveElement.setAttribute(propertyKey, String(value));
                     }

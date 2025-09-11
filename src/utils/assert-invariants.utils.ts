@@ -1,7 +1,7 @@
 import { Primitive } from "../core/types-consts/core.types";
 import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG, VSN_TAGS } from "../types-consts/constants";
 import { _META_DATA_PREFIX, _DATA_INDEX } from "../types-consts/constants";
-import { HsonNode_NEW, HsonMeta_NEW, HsonAttrs_NEW, NodeContent_NEW } from "../types-consts/node.new.types";
+import { HsonNode, HsonMeta, HsonAttrs, NodeContent } from "../types-consts/node.new.types";
 import { make_string } from "./make-string.utils";
 import { _throw_transform_err } from "./throw-transform-err.utils";
 
@@ -26,7 +26,7 @@ const _log = _VERBOSE
     )
   : () => { };
 
-export function assert_invariants_NEW(root: HsonNode_NEW, fn: string = '[source fn not given]', cfg: Cfg = { throwOnFirst: true }): void {
+export function assert_invariants_NEW(root: HsonNode, fn: string = '[source fn not given]', cfg: Cfg = { throwOnFirst: true }): void {
   const errs: string[] = [];
   assertNewShapeQuick(root, fn);
   walk(root, "", root._tag, cfg, errs); // was: walk(root, "", null, cfg, errs)
@@ -39,12 +39,12 @@ export function assert_invariants_NEW(root: HsonNode_NEW, fn: string = '[source 
 
 // ---------- core ----------
 
-function walk(n: HsonNode_NEW, path: string, parentTag: string | null, cfg: Cfg, errs: string[]): void {
+function walk(n: HsonNode, path: string, parentTag: string | null, cfg: Cfg, errs: string[]): void {
   const here = path + seg(n._tag);
 
   // meta keys: only data-_*
   if (n._meta) {
-    for (const k of Object.keys(n._meta as HsonMeta_NEW)) {
+    for (const k of Object.keys(n._meta as HsonMeta)) {
       if (!k.startsWith(_META_DATA_PREFIX)) {
         push(errs, cfg, `${here}@meta:${k}: illegal meta key (only "${_META_DATA_PREFIX}*" allowed)`); if (cfg.throwOnFirst) return;
       }
@@ -52,7 +52,7 @@ function walk(n: HsonNode_NEW, path: string, parentTag: string | null, cfg: Cfg,
   }
 
   // VSNs never carry _attrs
-  if (isVSN(n._tag) && n._attrs && Object.keys(n._attrs as HsonAttrs_NEW).length) {
+  if (isVSN(n._tag) && n._attrs && Object.keys(n._attrs as HsonAttrs).length) {
     push(errs, cfg, `${here}: VSN "${n._tag}" must not have _attrs`); if (cfg.throwOnFirst) return;
   }
 
@@ -127,7 +127,7 @@ function walk(n: HsonNode_NEW, path: string, parentTag: string | null, cfg: Cfg,
   const kids = n._content ?? [];
   for (let i = 0; i < kids.length; i++) {
     const k = kids[i];
-    if (is_Node_NEW(k)) walk(k as HsonNode_NEW, here, n._tag, cfg, errs);
+    if (is_Node_NEW(k)) walk(k as HsonNode, here, n._tag, cfg, errs);
     else push(errs, cfg, `${here}/[${i}]: primitive outside _str/_val`);
     if (cfg.throwOnFirst && errs.length) return;
   }
@@ -138,7 +138,7 @@ function isVSN(t: string) {
   return t === STR_TAG || t === VAL_TAG || t === ARR_TAG || t === OBJ_TAG || t === ELEM_TAG || t === ROOT_TAG || t === II_TAG;
 }
 function isClusterTag(t: string) { return t === ARR_TAG || t === OBJ_TAG || t === ELEM_TAG; }
-function nodesOnly(c?: NodeContent_NEW) { return (c ?? []).filter(is_Node_NEW) as HsonNode_NEW[]; }
+function nodesOnly(c?: NodeContent) { return (c ?? []).filter(is_Node_NEW) as HsonNode[]; }
 function seg(t: string) { return t.startsWith("_") ? `/${t}` : `/tag:${t}`; }
 function push(errs: string[], cfg: Cfg, s: string) { errs.push(s); }
 
@@ -154,8 +154,8 @@ export function assertNewShapeQuick(n: any, where: string): void {
     if (!node || typeof node !== "object") continue;
 
     const tag = node._tag as string | undefined;
-    const meta = node._meta as HsonMeta_NEW | undefined;
-    const attrs = node._attrs as HsonAttrs_NEW | undefined;
+    const meta = node._meta as HsonMeta | undefined;
+    const attrs = node._attrs as HsonAttrs | undefined;
 
     // 1) OLD giveaways in _meta
     if (meta && ("attrs" in meta || "flags" in meta)) {

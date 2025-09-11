@@ -2,10 +2,10 @@
 
 
 import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
-import { HsonNode_NEW } from "../../../types-consts/node.new.types";
-import { LiveTree_NEW } from "../live-tree-class.new.tree";
-import { HsonQuery_NEW } from "../../../types-consts/tree.new.types";
-import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants";
+import { HsonNode } from "../../../types-consts/node.new.types";
+import { LiveTree } from "../live-tree-class.new.tree";
+import { HsonQuery } from "../../../types-consts/tree.new.types";
+import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 
 
 /**
@@ -14,9 +14,9 @@ import { NODE_ELEMENT_MAP_NEW } from "../../../types-consts/constants";
  * @param $query HsonQuery object identifying children to remove
  * @returns {LiveTree} the current LiveTree instance, allowing for chaining
  */
-export function removeChild_NEW(this: LiveTree_NEW, $query: HsonQuery_NEW): LiveTree_NEW {
-    const selectedNodes = (this as any).selectedNodes as HsonNode_NEW[];
-    const search = (this as any).search as (nodes: HsonNode_NEW[], query: HsonQuery_NEW, options: { findFirst: boolean }) => HsonNode_NEW[];
+export function removeChild_NEW(this: LiveTree, $query: HsonQuery): LiveTree {
+    const selectedNodes = (this as any).selectedNodes as HsonNode[];
+    const search = (this as any).search as (nodes: HsonNode[], query: HsonQuery, options: { findFirst: boolean }) => HsonNode[];
 
 
     for (const parentNode of selectedNodes) {
@@ -33,13 +33,13 @@ export function removeChild_NEW(this: LiveTree_NEW, $query: HsonQuery_NEW): Live
 
         /*  2. sync with the live DOM and cleanup the map */
         for (const childNode of childrenToRemove) {
-            const liveElement = NODE_ELEMENT_MAP_NEW.get(childNode);
+            const liveElement = NODE_ELEMENT_MAP.get(childNode);
             liveElement?.remove(); // Remove from DOM
-            NODE_ELEMENT_MAP_NEW.delete(childNode); // Clean up map
+            NODE_ELEMENT_MAP.delete(childNode); // Clean up map
         }
 
         /*  3. update the parent's data model */
-        parentNode._content = parentNode._content.filter((child: unknown) => !childrenToRemove.includes(child as HsonNode_NEW));
+        parentNode._content = parentNode._content.filter((child: unknown) => !childrenToRemove.includes(child as HsonNode));
     }
 
     return this;

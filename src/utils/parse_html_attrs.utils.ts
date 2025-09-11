@@ -2,17 +2,17 @@
 
 
 import { _DATA_INDEX, _DATA_QUID } from "../types-consts/constants";
-import { HsonAttrs_NEW, HsonMeta_NEW } from "../types-consts/node.new.types";
+import { HsonAttrs, HsonMeta } from "../types-consts/node.new.types";
 import { parse_style_hard_mode } from "./parse-css.utils";
 
 
 /* NEW: collect attrs + meta from an Element */
 export function parse_html_attrs($el: Element): {
-  attrs: HsonAttrs_NEW;
-  meta?: HsonMeta_NEW;
+  attrs: HsonAttrs;
+  meta?: HsonMeta;
 } {
-  const attrs: HsonAttrs_NEW = {};
-  let meta: HsonMeta_NEW | undefined;
+  const attrs: HsonAttrs = {};
+  let meta: HsonMeta | undefined;
 
   // walk all DOM attributes verbatim
   for (const a of Array.from($el.attributes)) {

@@ -1,8 +1,8 @@
-import { HsonNode_NEW, Primitive } from "../..";
+import { HsonNode, Primitive } from "../..";
 import { RenderConstructor_4 } from "../../core/types-consts/constructors.core.types";
 import { JsonType } from "../../core/types-consts/core.types";
 import { RenderΔ } from "../../types-consts/constants";
-import { FrameRender_NEW } from "../../types-consts/constructors.new.types";
+import { FrameRender } from "../../types-consts/constructors.new.types";
 import { make_string } from "../../utils/make-string.utils";
 import { create_proxy_NEW } from "../livetree/create-proxy.new.tree";
 
@@ -14,7 +14,7 @@ import { create_proxy_NEW } from "../livetree/create-proxy.new.tree";
  * @param {FrameRender} $context - the fully configured render context.
  * @returns {RenderConstructor_4} an object with terminal methods to get the final result.
  */
-export function construct_render_4_NEW($context: FrameRender_NEW): RenderConstructor_4 {
+export function construct_render_4($context: FrameRender): RenderConstructor_4 {
     const { frame, output } = $context;
 
     return {
@@ -43,9 +43,9 @@ export function construct_render_4_NEW($context: FrameRender_NEW): RenderConstru
         /**
          * returns the "valueful" json data or hson node data (mainly for inspection.debugging) 
          * useful for direct data manipulation in js without the need for an extra parsing step.
-         * @returns {JsonType | HsonNode_NEW | Primitive} a js object, array, or primitive, or the hson node tree.
+         * @returns {JsonType | HsonNode | Primitive} a js object, array, or primitive, or the hson node tree.
         */
-        parse(): JsonType | HsonNode_NEW | Primitive {
+        parse(): JsonType | HsonNode | Primitive {
             switch (output) {
                 case RenderΔ.JSON:
                     if (frame.json)

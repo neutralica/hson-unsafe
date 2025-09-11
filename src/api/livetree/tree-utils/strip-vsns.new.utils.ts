@@ -4,14 +4,14 @@ import { Primitive } from "../../../core/types-consts/core.types";
 import { is_Primitive } from "../../../core/utils/guards.core.utils";
 import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
 import { STR_TAG, VAL_TAG, VSN_TAGS, II_TAG, ROOT_TAG } from "../../../types-consts/constants";
-import { HsonNode_NEW } from "../../../types-consts/node.new.types";
+import { HsonNode } from "../../../types-consts/node.new.types";
 
 
 /**
  * recursive function that strips off VSN clutter and returns core data in 
  * its native structure for intuitive traversal and manipulation
  */
-export function strip_VSNs_NEW(node: HsonNode_NEW | Primitive | undefined): any {
+export function strip_VSNs_NEW(node: HsonNode | Primitive | undefined): any {
     /*  1. base case: BasicValues and their VSN wrappers resolve to the raw value */
     if (is_Primitive(node)) {
         return node;
@@ -37,7 +37,7 @@ export function strip_VSNs_NEW(node: HsonNode_NEW | Primitive | undefined): any 
 
 
     /* 3. process and add children */
-    const container = node._content.find((c: unknown) => is_Node_NEW(c) && VSN_TAGS.includes(c._tag)) as HsonNode_NEW | undefined;
+    const container = node._content.find((c: unknown) => is_Node_NEW(c) && VSN_TAGS.includes(c._tag)) as HsonNode | undefined;
 
     if (container && container._content.length > 0) {
         for (const child of container._content) {

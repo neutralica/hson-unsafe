@@ -1,11 +1,11 @@
 
 
 import { _META_DATA_PREFIX } from "../types-consts/constants";
-import { HsonNode_NEW } from "../types-consts/node.new.types";
+import { HsonNode } from "../types-consts/node.new.types";
 import { serialize_style } from "./serialize-css.utils";
 
 /* build wire attrs: user _attrs + selected _meta → data-_... */
-export function build_wire_attrs(n: HsonNode_NEW): Record<string, string> {
+export function build_wire_attrs(n: HsonNode): Record<string, string> {
   const out: Record<string, string> = {};
 
   // 1) user attrs (primitives only; style handled elsewhere if you have it)

@@ -1,12 +1,12 @@
 // live-tree-class.tree.hson.ts
 
-import { HsonNode_NEW, is_Node_NEW, HsonQuery_NEW, Primitive } from "../..";
+import { HsonNode, is_Node_NEW, HsonQuery, Primitive } from "../..";
 import { STR_TAG } from "../../types-consts/constants";
 import { NEW_NEW_NODE } from "../../types-consts/factories";
-import { NODE_ELEMENT_MAP_NEW } from "../../types-consts/constants";
+import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { _DATA_QUID } from "../../types-consts/constants";
 import { append_NEW } from "./tree-methods/append.new.tree";
-import { DatasetManager_NEW } from "./tree-methods/dataset-manager.new.tree";
+import { DatasetManager } from "./tree-methods/dataset-manager.new.tree";
 import { empty_NEW } from "./tree-methods/empty.tree.new.utils";
 import { getContent_NEW } from "./tree-methods/get-content.new.tree";
 import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils";
@@ -17,14 +17,14 @@ import {ensure_quid, get_node_by_quid} from '../../quid/data-quid.quid'
 
 type NodeRef = {
   q: string;
-  resolveNode(): HsonNode_NEW | undefined;
+  resolveNode(): HsonNode | undefined;
   resolveEl(): HTMLElement | null;
 };
 
-function makeRef(n: HsonNode_NEW): NodeRef {
+function makeRef(n: HsonNode): NodeRef {
   const q = ensure_quid(n); // no persist
   // stamp only if already mounted
-  const el0 = NODE_ELEMENT_MAP_NEW.get(n);
+  const el0 = NODE_ELEMENT_MAP.get(n);
   if (el0) el0.setAttribute(_DATA_QUID, q);
 
   return {
@@ -32,18 +32,18 @@ function makeRef(n: HsonNode_NEW): NodeRef {
     resolveNode: () => get_node_by_quid(q),
     resolveEl: () => {
       const node = get_node_by_quid(q);
-      const el = node ? NODE_ELEMENT_MAP_NEW.get(node) : null;
+      const el = node ? NODE_ELEMENT_MAP.get(node) : null;
       return el ?? (document.querySelector(`[${_DATA_QUID}="${q}"]`) as HTMLElement | null);
     },
   };
 }
 
-export class LiveTree_NEW {
+export class LiveTree {
   private selected: NodeRef[] = [];
 
   // nodes view (read-only)
-  private get selectedNodes(): HsonNode_NEW[] {
-    const out: HsonNode_NEW[] = [];
+  private get selectedNodes(): HsonNode[] {
+    const out: HsonNode[] = [];
     for (const r of this.selected) {
       const n = r.resolveNode();
       if (n) out.push(n);
@@ -52,11 +52,11 @@ export class LiveTree_NEW {
   }
   // (unchanged) managers…
   private styleManager: StyleManager_NEW | null = null;
-  private datasetManager: DatasetManager_NEW | null = null;
+  private datasetManager: DatasetManager | null = null;
 
   
-  private setSelected(input?: HsonNode_NEW | HsonNode_NEW[] | LiveTree_NEW) {
-    if (input instanceof LiveTree_NEW) {
+  private setSelected(input?: HsonNode | HsonNode[] | LiveTree) {
+    if (input instanceof LiveTree) {
       this.selected = input.selected.slice(); // copy refs
     } else if (Array.isArray(input)) {
       this.selected = input.filter(is_Node_NEW).map(makeRef);
@@ -67,38 +67,38 @@ export class LiveTree_NEW {
     }
   }
   // CHANGED: helper to temporarily run legacy logic that expects nodes
-  private withNodes<T>(fn: (nodes: HsonNode_NEW[]) => T): T {
+  private withNodes<T>(fn: (nodes: HsonNode[]) => T): T {
     return fn(this.selectedNodes);
   }
   public append = append_NEW
   public empty = empty_NEW;
   public removeChild = removeChild_NEW;
   public getContent = getContent_NEW;
-  public getSelectedNodes(): HsonNode_NEW[] {
+  public getSelectedNodes(): HsonNode[] {
     return this.selectedNodes;  // not a field; calls the getter above
   }
 
   // CHANGED: constructor converts inputs → refs
-  constructor($nodes?: HsonNode_NEW | HsonNode_NEW[] | LiveTree_NEW) {
+  constructor($nodes?: HsonNode | HsonNode[] | LiveTree) {
     this.setSelected($nodes);
   }
 
   // finder methods (convert results → refs)
-  find(q: HsonQuery_NEW | string): LiveTree_NEW {
+  find(q: HsonQuery | string): LiveTree {
     const query = typeof q === 'string' ? parseSelector_NEW(q) : q;
     const found = this.search(this.selectedNodes, query, { findFirst: true });
-    return new LiveTree_NEW(found);
+    return new LiveTree(found);
   }
 
-  findAll(q: HsonQuery_NEW | string): LiveTree_NEW {
+  findAll(q: HsonQuery | string): LiveTree {
     const query = typeof q === 'string' ? parseSelector_NEW(q) : q;
     const found = this.search(this.selectedNodes, query, { findFirst: false });
-    return new LiveTree_NEW(found);
+    return new LiveTree(found);
   }
 
-  at(index: number): LiveTree_NEW {
+  at(index: number): LiveTree {
     const n = this.selectedNodes[index];
-    return new LiveTree_NEW(n ? [n] : undefined);
+    return new LiveTree(n ? [n] : undefined);
   }
 
   // === legacy mutators/readers: wrap for now ===
@@ -109,7 +109,7 @@ export class LiveTree_NEW {
       for (const node of nodes) {
         if (!node._meta) node._meta = {};
         if (!node._attrs) node._attrs = {};
-        const el = NODE_ELEMENT_MAP_NEW.get(node) ?? document.querySelector(`[data-_quid="${ensure_quid(node)}"]`);
+        const el = NODE_ELEMENT_MAP.get(node) ?? document.querySelector(`[data-_quid="${ensure_quid(node)}"]`);
         if ($value === false || $value === null) {
           delete node._attrs[$name];
           (el as HTMLElement | null)?.removeAttribute($name);
@@ -132,7 +132,7 @@ export class LiveTree_NEW {
       el?.remove();
       const n = r.resolveNode();
       if (n) {
-        NODE_ELEMENT_MAP_NEW.delete(n);
+        NODE_ELEMENT_MAP.delete(n);
         // policy: drop mapping entirely on remove (or keep for undo)
         // drop_quid(n); // if you want to invalidate the handle
       }
@@ -161,7 +161,7 @@ export class LiveTree_NEW {
       }
 
       /*  Sync the live DOM element's .value **property**. */
-      const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
+      const liveElement = NODE_ELEMENT_MAP.get(node);
       if (liveElement && 'value' in liveElement) {
         (liveElement as HTMLInputElement | HTMLTextAreaElement).value = $value;
       }
@@ -179,7 +179,7 @@ export class LiveTree_NEW {
       const textNode = NEW_NEW_NODE({ _tag: STR_TAG, _content: [$content] });
       node._content = [textNode];
 
-      const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
+      const liveElement = NODE_ELEMENT_MAP.get(node);
       if (liveElement) {
         liveElement.textContent = $content;
       }
@@ -207,7 +207,7 @@ export class LiveTree_NEW {
     if (this.selectedNodes.length === 0) return '';
     const node = this.selectedNodes[0];
     if (!node) return '';
-    const liveElement = NODE_ELEMENT_MAP_NEW.get(node);
+    const liveElement = NODE_ELEMENT_MAP.get(node);
     return liveElement?.textContent ?? '';
   }
 
@@ -217,7 +217,7 @@ export class LiveTree_NEW {
 
   getValue(): string {
     if (this.selectedNodes.length === 0) return '';
-    const liveElement = NODE_ELEMENT_MAP_NEW.get(this.selectedNodes[0]);
+    const liveElement = NODE_ELEMENT_MAP.get(this.selectedNodes[0]);
     return (liveElement as HTMLInputElement | HTMLTextAreaElement)?.value ?? '';
   }
 
@@ -225,8 +225,8 @@ export class LiveTree_NEW {
    * Returns the raw HsonNode(s) for debugging.
    * @param all - If true, returns the entire array of selected nodes. Otherwise, returns the first.
    */
-  public getElementFor(node: HsonNode_NEW): HTMLElement | null {
-    return NODE_ELEMENT_MAP_NEW.get(node)
+  public getElementFor(node: HsonNode): HTMLElement | null {
+    return NODE_ELEMENT_MAP.get(node)
       ?? (() => {
         const q = ensure_quid(node); // in-memory only
         return document.querySelector(`[data-_quid="${q}"]`) as HTMLElement | null;
@@ -238,7 +238,7 @@ export class LiveTree_NEW {
     return n ? this.getElementFor(n) : null;
   }
 
-  sourceNode(all = true, index?: number): HsonNode_NEW | HsonNode_NEW[] | undefined {
+  sourceNode(all = true, index?: number): HsonNode | HsonNode[] | undefined {
     const arr = this.selectedNodes;
     if (arr.length === 0) return undefined;
     return all ? arr : arr[index ?? 0];
@@ -247,10 +247,10 @@ export class LiveTree_NEW {
   /**
    * helper method to perform the recursive search.
    */
-  private search($nodes: HsonNode_NEW[], $query: HsonQuery_NEW, $options: { findFirst: boolean }): HsonNode_NEW[] {
-    const results: HsonNode_NEW[] = [];
+  private search($nodes: HsonNode[], $query: HsonQuery, $options: { findFirst: boolean }): HsonNode[] {
+    const results: HsonNode[] = [];
 
-    const matchAttrs = (node: HsonNode_NEW): boolean => {
+    const matchAttrs = (node: HsonNode): boolean => {
       if (!$query.attrs) return true;
       const na = node._attrs ?? {};
       for (const [k, qv] of Object.entries($query.attrs)) {
@@ -275,7 +275,7 @@ export class LiveTree_NEW {
     const isRegExp = (v: unknown): v is RegExp =>
       Object.prototype.toString.call(v) === '[object RegExp]';
 
-    const matchMeta = (node: HsonNode_NEW): boolean => {
+    const matchMeta = (node: HsonNode): boolean => {
       if (!$query.meta) return true;
       const nm = node._meta ?? {};
       const qMeta = $query.meta as Record<string, unknown>;
@@ -290,9 +290,9 @@ export class LiveTree_NEW {
       }
       return true;
     };
-    const nodeText = (n: HsonNode_NEW): string => {
+    const nodeText = (n: HsonNode): string => {
       // Prefer live text if present; fall back to model (_str children)
-      const el = NODE_ELEMENT_MAP_NEW.get(n);
+      const el = NODE_ELEMENT_MAP.get(n);
       if (el) return el.textContent ?? '';
       const kids = (n._content ?? []).filter(is_Node_NEW);
       for (const k of kids) {
@@ -303,19 +303,19 @@ export class LiveTree_NEW {
       return '';
     };
 
-    const matchText = (node: HsonNode_NEW): boolean => {
+    const matchText = (node: HsonNode): boolean => {
       const q = $query.text;
       if (!q) return true;
       const t = nodeText(node);
       return typeof q === 'string' ? t.includes(q) : q.test(t);
     };
 
-    const checkNode = (node: HsonNode_NEW): boolean => {
+    const checkNode = (node: HsonNode): boolean => {
       const tagOK = !$query.tag || node._tag.toLowerCase() === $query.tag.toLowerCase();
       return tagOK && matchAttrs(node) && matchMeta(node) && matchText(node);
     };
 
-    const traverse = (nodesToSearch: HsonNode_NEW[]) => {
+    const traverse = (nodesToSearch: HsonNode[]) => {
       for (const node of nodesToSearch) {
         if ($options.findFirst && results.length) return;
         if (checkNode(node)) results.push(node);
@@ -335,7 +335,7 @@ export class LiveTree_NEW {
       // ensure in-memory quid (no persistence)
       const q = ensure_quid(n /* default persist:false */);
       // if this node is mounted, stamp DOM attribute for stable lookup
-      const el = NODE_ELEMENT_MAP_NEW.get(n);
+      const el = NODE_ELEMENT_MAP.get(n);
       if (el) el.setAttribute(_DATA_QUID, q);
     }
   }
@@ -344,7 +344,7 @@ export class LiveTree_NEW {
   // use when detaching/removing from DOM to avoid orphan attributes
   private unmap_quid(): void {
     for (const n of this.selectedNodes) {
-      const el = NODE_ELEMENT_MAP_NEW.get(n);
+      const el = NODE_ELEMENT_MAP.get(n);
       if (el) el.removeAttribute(_DATA_QUID);
     }
   }

@@ -1,6 +1,6 @@
 // consts.types.ts
 
-import { HsonNode_NEW } from "./node.new.types";
+import { HsonNode } from "./node.new.types";
 import { BaseToken_NEW } from "./tokens.new.types";
 
 
@@ -58,5 +58,5 @@ export const HSON_FrameΔ = {
 export const _META_DATA_PREFIX = 'data-_';
 export const _DATA_INDEX = 'data-_index';
 export const _DATA_QUID = 'data-_quid';
-export const NODE_ELEMENT_MAP_NEW = new WeakMap<HsonNode_NEW, HTMLElement>();
+export const NODE_ELEMENT_MAP = new WeakMap<HsonNode, HTMLElement>();
 

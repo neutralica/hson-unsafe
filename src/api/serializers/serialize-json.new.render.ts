@@ -4,7 +4,7 @@ import { Primitive } from "../../core/types-consts/core.types";
 import { assert_invariants_NEW } from "../../utils/assert-invariants.utils";
 import { is_indexed_NEW } from "../../utils/node-guards.new.utils";
 import { ROOT_TAG, EVERY_VSN, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../types-consts/constants";
-import { JsonType_NEW, JsonObj_NEW, HsonNode_NEW } from "../../types-consts/node.new.types";
+import { JsonType, JsonObj, HsonNode } from "../../types-consts/node.new.types";
 import { clone_node } from "../../utils/clone-node.utils";
 import { make_string } from "../../utils/make-string.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
@@ -22,7 +22,7 @@ const _log = _VERBOSE
         )
     : () => { };
 
-export function serialize_json($node: HsonNode_NEW): string {
+export function serialize_json($node: HsonNode): string {
     const clone = clone_node($node)
     assert_invariants_NEW(clone)
     if (_VERBOSE) {
@@ -59,7 +59,7 @@ export function serialize_json($node: HsonNode_NEW): string {
  * @returns {JsonType} the resulting javascript object, array, or primitive value
  */
 
-function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
+function jsonFromNode($node: HsonNode): JsonType {
 
     if (!$node || (typeof $node._tag !== 'string')) {
         console.warn('warning! node is type: ', typeof $node);
@@ -79,18 +79,18 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
                 _throw_transform_err('malformed _root node -  must have exactly one child', 'serialize_json');
             }
             // The recursive call now expects the child to be in the NEW format.
-            return jsonFromNode($node._content[0] as HsonNode_NEW);
+            return jsonFromNode($node._content[0] as HsonNode);
         }
 
         case ARR_TAG: {
             _log(`  <_array> tag reached: creating JSON array`);
             _log(make_string($node));
-            let array: JsonType_NEW[] = [];
+            let array: JsonType[] = [];
             if ($node._content) {
                 /*  content of _array node must be _ii nodes */
-                for (const iiNode of $node._content as HsonNode_NEW[]) {
+                for (const iiNode of $node._content as HsonNode[]) {
                     if (is_indexed_NEW(iiNode)) {
-                        array.push(jsonFromNode(iiNode._content[0] as HsonNode_NEW));
+                        array.push(jsonFromNode(iiNode._content[0] as HsonNode));
                     } else {
                         _throw_transform_err(`malformed _ii node in _array`, 'serialize-json');
                     }
@@ -100,24 +100,24 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
         }
 
         case OBJ_TAG: {
-            const jsonObj: JsonObj_NEW = {};
+            const jsonObj: JsonObj = {};
             if ($node._content && $node._content.length === 1) {
-                const only = $node._content[0] as HsonNode_NEW;
+                const only = $node._content[0] as HsonNode;
                 // unwrap primitive/array/object/elem wrappers produced by the parser
                 if (only._tag === STR_TAG || only._tag === VAL_TAG || only._tag === ARR_TAG || only._tag === OBJ_TAG || only._tag === ELEM_TAG) {
                     return jsonFromNode(only); // <- avoids calling with a primitive later
                 }
             }
             if ($node._content) {
-                for (const propNode of $node._content as HsonNode_NEW[]) {
+                for (const propNode of $node._content as HsonNode[]) {
                     const key = propNode._tag;
-                    let value: JsonType_NEW = {};
+                    let value: JsonType = {};
                     if (propNode._content && propNode._content.length > 0) {
                         const child = propNode._content[0];
                         // CHANGED: assign directly; do NOT Object.assign into {}
-                        value = jsonFromNode(child as HsonNode_NEW);
+                        value = jsonFromNode(child as HsonNode);
                     }
-                    jsonObj[key] = value as JsonType_NEW;
+                    jsonObj[key] = value as JsonType;
                 }
             }
             return jsonObj;
@@ -135,11 +135,11 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             /* _elem tags are native to HTML and will be carried through the JSON as-is; the only 
                 exceptional handling is the contents of _elem tags are not rewrapped in an _obj */
             _log('[recurseJSON] processing _elem VSN');
-            const elemItems: JsonType_NEW = [];
+            const elemItems: JsonType = [];
             for (const itemNode of ($node._content)) {
                 /* recursively convert each item node in the _elem to its JSON equivalent */
                 _log('recursing item node: ', make_string(itemNode))
-                const jsonItem = jsonFromNode(itemNode as HsonNode_NEW);
+                const jsonItem = jsonFromNode(itemNode as HsonNode);
                 elemItems.push(jsonItem);
                 _log('pushing list item to <_elem >:')
                 _log(jsonItem)
@@ -151,18 +151,18 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             if (!$node._content || $node._content.length !== 1) {
                 _throw_transform_err('misconfigured _ii node', 'serialize_json');
             }
-            return jsonFromNode($node._content[0] as HsonNode_NEW);
+            return jsonFromNode($node._content[0] as HsonNode);
         }
 
         default: { /* "standard" tag (e.g. "foo", "kingdom", "html", "p", "span") */
             _log(`  standardTag <${$node._tag}> processing its value/content.`);
             _log(make_string($node._content));
 
-            let tempJson: JsonObj_NEW = {};
+            let tempJson: JsonObj = {};
             if ($node._content && $node._content.length === 0) {
                 tempJson = { [$node._tag]: '' };
             } else if ($node._content && $node._content.length === 1) {
-                const recursed = jsonFromNode($node._content[0] as HsonNode_NEW);
+                const recursed = jsonFromNode($node._content[0] as HsonNode);
                 tempJson = { [$node._tag]: recursed };
             } else if ($node._content && $node._content.length > 1) {
                 /*  This implies a cluster of values if a standard tag has multiple content VSNs
@@ -173,7 +173,7 @@ function jsonFromNode($node: HsonNode_NEW): JsonType_NEW {
             /* handle _meta */
             const hasAttrs = $node._attrs && Object.keys($node._attrs).length > 0;
             const hasMeta = $node._meta && Object.keys($node._meta).length > 0;
-            const finalJson: JsonObj_NEW = tempJson;
+            const finalJson: JsonObj = tempJson;
 
             if (hasAttrs) {
                 (finalJson as any)._attrs = {

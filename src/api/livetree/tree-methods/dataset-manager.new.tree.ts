@@ -1,7 +1,7 @@
 // src/utils/style-manager.utils.ts
 
 import { Primitive } from "../../..";
-import { LiveTree_NEW } from "../live-tree-class.new.tree";
+import { LiveTree } from "../live-tree-class.new.tree";
 
 
 
@@ -9,10 +9,10 @@ import { LiveTree_NEW } from "../live-tree-class.new.tree";
  * expedites interaction and manipulation of the .dataset property 
  * data attributes can be set one-by-one or (TODO) in an object
  */
-export class DatasetManager_NEW {
-    private liveTree: LiveTree_NEW;
+export class DatasetManager {
+    private liveTree: LiveTree;
 
-    constructor(liveTree: LiveTree_NEW) {
+    constructor(liveTree: LiveTree) {
         this.liveTree = liveTree;
     }
 
@@ -23,7 +23,7 @@ export class DatasetManager_NEW {
      * 
      * *** note - this is not a typo for _META_DATA_PREFIX - do not change *** 
      */
-    set(key: string, value: string | null): LiveTree_NEW {
+    set(key: string, value: string | null): LiveTree {
         const dataAttrName = `data-${key}`;
         this.liveTree.setAttr(dataAttrName, value);
         return this.liveTree;

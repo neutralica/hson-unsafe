@@ -1,4 +1,4 @@
-import { construct_source_1_NEW } from "./api/constructors/constructor-1-source.new.api";
+import { construct_source_1 } from "./api/constructors/constructor-1-source.new.api";
 import { construct_tree_NEW } from "./api/livetree/construct-tree.new.api";
 
 
@@ -18,7 +18,7 @@ export const hson = {
    * sanitizes html by default
    */
   get transform() {
-    return construct_source_1_NEW({ unsafe: false });
+    return construct_source_1({ unsafe: false });
   },
 
   /**
@@ -39,7 +39,7 @@ export const hson = {
      * accesses the unsafe stateless data transformation pipeline
      */
     get transform() {
-      return construct_source_1_NEW({ unsafe: true });
+      return construct_source_1({ unsafe: true });
     },
     /**
      * accesses the unsafe stateful dom interaction pipeline

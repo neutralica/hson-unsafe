@@ -1,6 +1,6 @@
 // graft.tree.hson.ts
 
-import { LiveTree_NEW, HsonNode_NEW, parse_html } from "../..";
+import { LiveTree, HsonNode, parse_html } from "../..";
 import { sanitize_html } from "../../utils/sanitize-html.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { unwrap_root_NEW } from "../../utils/unwrap-root.new.utils";
@@ -27,7 +27,7 @@ const _log = _VERBOSE
 export function graft_NEW(
   $element?: HTMLElement,
   $options: { unsafe: boolean } = { unsafe: false }
-): LiveTree_NEW {
+): LiveTree {
   /* get target element or document.body if no arg */
   // WARN BUG default alert - do we want to default to document.body here? 
   const targetElement = $element;
@@ -38,7 +38,7 @@ export function graft_NEW(
   const sourceHTML = targetElement.innerHTML;
   /* parse html into nodes */
   const cleanHTML = $options.unsafe ? sourceHTML : sanitize_html(sourceHTML);
-  const rootNode: HsonNode_NEW = parse_html(cleanHTML);
+  const rootNode: HsonNode = parse_html(cleanHTML);
 
   /* recursively render the HsonNode tree back into live DOM elements,
       then populate the `nodeElementMap`, linking the two */
@@ -62,5 +62,5 @@ export function graft_NEW(
   targetElement.appendChild(newDOMFragment);
 
   /* return queryable liveTree */
-  return new LiveTree_NEW(nodeToRender);
+  return new LiveTree(nodeToRender);
 }
