@@ -226,15 +226,7 @@ function convert($el: Element): HsonNode {
         return NEW_NEW_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });
 
     }
-    if (childNodes.length === 0) {
-        // empty element: no _elem wrapper within
-        return NEW_NEW_NODE({
-            _tag: baseTag,
-            _attrs: sortedAcc,
-            _meta: metaAcc,
-            _content: []
-        });
-    }
+    
 
     return NEW_NEW_NODE({
         _tag: baseTag,

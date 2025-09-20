@@ -12,7 +12,7 @@ import { getContent_NEW } from "./tree-methods/get-content.new.tree";
 import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils";
 import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
 import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
-import {ensure_quid, get_node_by_quid} from '../../quid/data-quid.quid'
+import { ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 
 
 type NodeRef = {
@@ -40,6 +40,9 @@ function makeRef(n: HsonNode): NodeRef {
 
 export class LiveTree {
   private selected: NodeRef[] = [];
+  // (unchanged) managers…
+  private styleManager: StyleManager_NEW | null = null;
+  private datasetManager: DatasetManager | null = null;
 
   // nodes view (read-only)
   private get selectedNodes(): HsonNode[] {
@@ -50,11 +53,8 @@ export class LiveTree {
     }
     return out;
   }
-  // (unchanged) managers…
-  private styleManager: StyleManager_NEW | null = null;
-  private datasetManager: DatasetManager | null = null;
 
-  
+
   private setSelected(input?: HsonNode | HsonNode[] | LiveTree) {
     if (input instanceof LiveTree) {
       this.selected = input.selected.slice(); // copy refs
@@ -204,11 +204,24 @@ export class LiveTree {
   }
 
   getFirstText(): string {
-    if (this.selectedNodes.length === 0) return '';
-    const node = this.selectedNodes[0];
-    if (!node) return '';
-    const liveElement = NODE_ELEMENT_MAP.get(node);
-    return liveElement?.textContent ?? '';
+    console.log('get first text!')
+    const n = this.selectedNodes[0];
+    console.log('n:')
+    if (!n) return '';
+    console.log(n);
+    const el = NODE_ELEMENT_MAP.get(n);
+    console.log('el?');
+    console.log(el);
+    if (el) return el.textContent ?? '';          // <-- grabs the full text
+    // Fallback to model if not mounted
+    const kids = (n._content ?? []).filter(is_Node_NEW);
+    for (const k of kids) {
+      console.log('kids');
+      if (k._tag === STR_TAG && typeof k._content?.[0] === 'string') {
+        return k._content[0] as string;
+      }
+    }
+    return '';
   }
 
   count(): number {

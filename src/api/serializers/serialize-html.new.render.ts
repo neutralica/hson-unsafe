@@ -167,12 +167,7 @@ export function serialize_html($node: HsonNode | Primitive): string {
   }
   assert_invariants_NEW(clone as HsonNode);
 
-  if (_VERBOSE) {
-    console.groupCollapsed('---> serializing to html')
-    console.log('input node: ')
-    console.log(make_string(clone))
-    console.groupEnd();
-  }
+
   const xmlString = serialize_xml(clone);
 
   /*  flag trimmer transforms `key="key"` -> `key` for html boolean attributes

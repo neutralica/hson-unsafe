@@ -181,7 +181,7 @@ export function assertNewShapeQuick(n: any, where: string): void {
     const content = node._content as unknown[] | undefined;
     if (Array.isArray(content)) {
       for (const c of content) {
-        if (c && typeof c === "object" && "_tag" in (c as any)) stack.push(c);
+        if (is_Node_NEW(c)) stack.push(c);
       }
     }
   }

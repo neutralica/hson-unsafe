@@ -10,6 +10,7 @@ import { create_live_tree_NEW } from "../create-live-tree.new.tree";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { NEW_NEW_NODE } from "../../../types-consts/factories";
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
+import { make_string } from "../../../utils/make-string.utils";
 
 
 /**
@@ -33,7 +34,7 @@ export function append_NEW(this: LiveTree, $content: Partial<HsonNode> | string 
         // Use the same utility for a single node. It will return a clean array.
         nodesToAppend = unwrap_root_NEW($content);
     } else {
-        _throw_transform_err('[ERR] invalid content provided', 'append');
+        _throw_transform_err('[ERR] invalid content provided', 'append', make_string($content));
     }
 
     for (const targetNode of selectedNodes) {

@@ -62,3 +62,5 @@ liveMap.render(rootValue, schema?) -> LiveTree_NEW (returns a LiveTree handle to
 liveMap.attach(model, rootEl, schema?) (dashboard; subscribes to model)
 liveMap.control(model, rootEl, schema?) (control panel; two-way binding)
 Bottom line: liveMap is straightforward as a snapshot, manageable as a dashboard, and moderately complex as a full control panel. It should be simpler than liveTree’s DOM sync because you control the generated markup and the widgets. Your existing QUID, maps, coercion, and array/index machinery give you most of the skeleton already.
+
+*** +: setAttrs() (multiple attribute setter - pass an object and all attrs are applied)

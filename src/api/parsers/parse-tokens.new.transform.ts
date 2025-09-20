@@ -15,7 +15,7 @@ import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils";
 
 
 /* debug log */
-const _VERBOSE = true;
+const _VERBOSE = false;
 const boundLog = console.log.bind(console, '%c[hson]', 'color: green; background: lightblue;');
 const _log = _VERBOSE ? boundLog : () => { };
 
@@ -198,6 +198,7 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode {
 
         return { _tag: ARR_TAG, _meta: {}, _content: items };
     }
+  
     function chooseRootCluster($nodes: HsonNode[], $kinds: CloseKind[]): typeof OBJ_TAG | typeof ELEM_TAG {
         /* if any non-tag leaf (TEXT→_str/_val or _array) at top, prefer element semantics */
         const hasLeaf = $nodes.some(n => n._tag === STR_TAG || n._tag === VAL_TAG || n._tag === ARR_TAG);
@@ -238,9 +239,9 @@ export function parse_tokens_NEW($tokens: Tokens_NEW[]): HsonNode {
         const root = nodes[0];
         const kids = (root._content ?? []).filter(is_Node_NEW);
 
-        // Already correct?
-        if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ELEM_TAG)) {
-            return root; // OK
+
+        if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ARR_TAG || kids[0]._tag === ELEM_TAG)) {
+            return root; 
         }
 
         // Decide cluster: prefer the recorded closer for <_root …> if you captured it,
