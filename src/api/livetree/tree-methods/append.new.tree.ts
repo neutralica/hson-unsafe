@@ -1,14 +1,14 @@
 // append.tree.ts
 
 
-import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
-import { unwrap_root_NEW } from "../../../utils/unwrap-root.new.utils";
+import { is_Node } from "../../../utils/node-guards.new.utils";
+import { unwrap_root_elem } from "../../../utils/unwrap-root.new.utils";
 import { STR_TAG, ELEM_TAG } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils";
 import { create_live_tree_NEW } from "../create-live-tree.new.tree";
 import { LiveTree } from "../live-tree-class.new.tree";
-import { NEW_NEW_NODE } from "../../../types-consts/factories";
+import { CREATE_NODE } from "../../../types-consts/factories";
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { make_string } from "../../../utils/make-string.utils";
 
@@ -25,14 +25,14 @@ export function append_NEW(this: LiveTree, $content: Partial<HsonNode> | string 
     
     let nodesToAppend: HsonNode[];
     if (typeof $content === 'string') {
-        nodesToAppend = [NEW_NEW_NODE({ _tag: STR_TAG, _content: [$content] })];
+        nodesToAppend = [CREATE_NODE({ _tag: STR_TAG, _content: [$content] })];
     } else if ($content instanceof LiveTree) {
         const sourceNodes = $content.sourceNode(true) as HsonNode[];
         // Use the new utility. It correctly handles the array and returns a flat array.
-        nodesToAppend = unwrap_root_NEW(sourceNodes);
-    } else if (is_Node_NEW($content)) {
+        nodesToAppend = unwrap_root_elem(sourceNodes);
+    } else if (is_Node($content)) {
         // Use the same utility for a single node. It will return a clean array.
-        nodesToAppend = unwrap_root_NEW($content);
+        nodesToAppend = unwrap_root_elem($content);
     } else {
         _throw_transform_err('[ERR] invalid content provided', 'append', make_string($content));
     }
@@ -43,10 +43,10 @@ export function append_NEW(this: LiveTree, $content: Partial<HsonNode> | string 
         /* find or create the _elem VSN wrapper for child nodes */
         let containerNode: HsonNode;
         const firstChild = targetNode._content[0];
-        if (is_Node_NEW(firstChild) && firstChild._tag === ELEM_TAG) {
+        if (is_Node(firstChild) && firstChild._tag === ELEM_TAG) {
             containerNode = firstChild;
         } else {
-            containerNode = NEW_NEW_NODE({ _tag: ELEM_TAG, _content: [...targetNode._content] });
+            containerNode = CREATE_NODE({ _tag: ELEM_TAG, _content: [...targetNode._content] });
             targetNode._content = [containerNode];
         }
 

@@ -2,7 +2,7 @@
 
 import { Primitive } from "../../../core/types-consts/core.types";
 import { is_Primitive } from "../../../core/utils/guards.core.utils";
-import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-guards.new.utils";
 import { STR_TAG, VAL_TAG, VSN_TAGS, II_TAG, ROOT_TAG } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
 
@@ -16,7 +16,7 @@ export function strip_VSNs_NEW(node: HsonNode | Primitive | undefined): any {
     if (is_Primitive(node)) {
         return node;
     }
-    if (!is_Node_NEW(node)) {
+    if (!is_Node(node)) {
         return undefined;
     }
     switch (node._tag) {
@@ -37,7 +37,7 @@ export function strip_VSNs_NEW(node: HsonNode | Primitive | undefined): any {
 
 
     /* 3. process and add children */
-    const container = node._content.find((c: unknown) => is_Node_NEW(c) && VSN_TAGS.includes(c._tag)) as HsonNode | undefined;
+    const container = node._content.find((c: unknown) => is_Node(c) && VSN_TAGS.includes(c._tag)) as HsonNode | undefined;
 
     if (container && container._content.length > 0) {
         for (const child of container._content) {

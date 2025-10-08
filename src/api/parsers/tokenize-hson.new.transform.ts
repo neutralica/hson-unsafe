@@ -1,7 +1,7 @@
 // tokenize-hson.old.hson.ts
 
-import { CLOSE_KIND, ARR_SYMBOL, NEW_ARR_OPEN_TOKEN, NEW_ARR_CLOSE_TOKEN, NEW_TEXT_TOKEN, NEW_END_TOKEN, NEW_OPEN_TOKEN, TOKEN_KIND } from "../../types-consts/factories";
-import { Position, CloseKind, Tokens_NEW, RawAttr } from "../../types-consts/tokens.new.types";
+import { CLOSE_KIND, ARR_SYMBOL, CREATE_ARR_OPEN_TOKEN, CREATE_ARR_CLOSE_TOKEN, CREATE_EMPTY_OBJ_TOKEN, CREATE_END_TOKEN, CREATE_OPEN_TOKEN, TOKEN_KIND, CREATE_TEXT_TOKEN } from "../../types-consts/factories";
+import { Position, CloseKind, Tokens, RawAttr } from "../../types-consts/tokens.new.types";
 import { make_string } from "../../utils/make-string.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { lex_text_piece } from "./hson-helpers/lex-text-piece.utils";
@@ -18,19 +18,19 @@ type ContextStackItem =
     | { type: 'CLUSTER'; close?: CloseKind; implicit?: boolean } /* replaces the old _obj/_elem sentinels */
     | { type: 'IMPLICIT_OBJECT' };
 
-const LONE_OPEN_ANGLE_REGEX = /^\s*<(\s*(\/\/.*)?)?$/;
+const LONE_OPEN_ANGLE_REGEX = /^<\s*$/;
+
 /* Regex for an implicit object starting on a line, e.g., "< <prop val>>" or "< <" */
 const IMPLICIT_OBJECT_START_REGEX = /^\s*<\s*<(\s|$)/; /* ensures second '<' is followed by space or EOL */
 
 
 const _VERBOSE = false;
-const _log = _VERBOSE
-    ? console.log
-    : () => { };
-    
+const boundLog = console.log.bind(console, '%c[hson tokenizer]', 'color: maroon; background: lightblue;');
+const _log = _VERBOSE ? boundLog : () => { };;
+
 let tokenFirst: boolean = true;
 
-export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
+export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens[] {
 
     const maxDepth = 50;
     _log(`[token_from_hson called with depth=${$depth}]`);
@@ -47,7 +47,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
         _throw_transform_err(`stopping potentially infinite loop (depth >= ${maxDepth})`, 'tokenize_hson');
     }
 
-    const finalTokens: Tokens_NEW[] = [];
+    const finalTokens: Tokens[] = [];
     const contextStack: ContextStackItem[] = [];
     const splitLines = $hson.split(/\r\n|\r|\n/);
     let ix = 0;
@@ -190,8 +190,8 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             const p = _pos(currentIx + 1, col, _offset + col - 1);
 
             _log(`[quick]: empty array detected (${arrayOpener})`);
-            finalTokens.push(NEW_ARR_OPEN_TOKEN(arrayOpener, p));
-            finalTokens.push(NEW_ARR_CLOSE_TOKEN(arrayOpener, p));
+            finalTokens.push(CREATE_ARR_OPEN_TOKEN(arrayOpener, p));
+            finalTokens.push(CREATE_ARR_CLOSE_TOKEN(arrayOpener, p));
 
             _bump_line(currentLine);
             continue;
@@ -221,7 +221,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             const pOpen = _pos(currentIx + 1, colInLine, _offset + colInLine - 1);
             const pClose = _pos(currentIx + 1 + linesConsumed, 1, _offset + consumedText.length);
 
-            finalTokens.push(NEW_ARR_OPEN_TOKEN(closerSymbol, pOpen));
+            finalTokens.push(CREATE_ARR_OPEN_TOKEN(closerSymbol, pOpen));
 
             /* split the array body by top-level commas (quote/array/header aware) */
             const items = split_top_level_NEW(body, ',');
@@ -236,13 +236,13 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                     // NEW: quote-aware, without endIx
                     const piece = ensureQuotedLiteral(item, 'array');
                     finalTokens.push(
-                        NEW_TEXT_TOKEN(piece.text, piece.quoted ? true : undefined, pOpen)
+                        CREATE_TEXT_TOKEN(piece.text, piece.quoted ? true : undefined, pOpen)
                     );
                 }
             }
 
 
-            finalTokens.push(NEW_ARR_CLOSE_TOKEN(closerSymbol, pClose));
+            finalTokens.push(CREATE_ARR_CLOSE_TOKEN(closerSymbol, pClose));
 
             /* advance main loop to the line containing the closer */
             _bump_array(linesConsumed + 1);
@@ -269,7 +269,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                 // pop cluster and optionally emit END
                 const popped = contextStack.pop() as Extract<ContextStackItem, { type: 'CLUSTER' }>;
                 if (!popped.implicit) {
-                    finalTokens.push(NEW_END_TOKEN(close, pos));   // only for real OPENs
+                    finalTokens.push(CREATE_END_TOKEN(close, pos));   // only for real OPENs
                 } else {
                     _log(`[step e] suppress END for implicit cluster at L${currentIx + 1}`);
                 }
@@ -285,11 +285,21 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             }
         }
 
+
         /* step F: open tags */
-
-
-
         if (trimLine.startsWith('<')) {
+            // f.0 exact empty-object token "<>"
+            if (/^<>\s*$/.test(trimLine)) {
+                const lineNo = currentIx + 1;
+                const leadCol = currentLine.search(/\S|$/) + 1;   // first non-space col on this line
+                const colOpen = leadCol;                           // '<' sits here
+                const posOpen = _pos(lineNo, colOpen, _offset + colOpen - 1);
+
+                finalTokens.push(CREATE_EMPTY_OBJ_TOKEN('<>', /*quoted*/ false, posOpen));
+                _bump_line(currentLine);
+                continue;
+            }
+
 
             /* f.1 implicit object opener "< <...": accept preamble, no tokens, structure only */
             if (IMPLICIT_OBJECT_START_REGEX.test(trimLine)) {
@@ -359,7 +369,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
             }
 
             /* emit open */
-            finalTokens.push(NEW_OPEN_TOKEN(tag, rawAttrs, posOpen));
+            finalTokens.push(CREATE_OPEN_TOKEN(tag, rawAttrs, posOpen));
 
             /* inline tail (if any) */
             if (tailRaw) {
@@ -378,7 +388,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                     // NEW: quote-aware, without endIx
                     const piece = ensureQuotedLiteral(lit, 'step f');
                     finalTokens.push(
-                        NEW_TEXT_TOKEN(piece.text, piece.quoted ? true : undefined, posOpen)
+                        CREATE_TEXT_TOKEN(piece.text, piece.quoted ? true : undefined, posOpen)
                     );
                 }
             }
@@ -389,7 +399,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                 const colCloserAbs = leadCol + (trimLine.length - closerLen);
                 const posClose = _pos(lineNo, colCloserAbs, _offset + colCloserAbs - 1);
                 const closeKind = (closerLex === '/>') ? CLOSE_KIND.elem : CLOSE_KIND.obj;
-                finalTokens.push(NEW_END_TOKEN(closeKind, posClose));
+                finalTokens.push(CREATE_END_TOKEN(closeKind, posClose));
                 _bump_line(currentLine);
                 continue;
             } else {
@@ -415,7 +425,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                 const p = _pos(ix + 1, lead + 1, _offset + lead);
                 /* IMPORTANT: pass the raw text as-is; let the parser's coerce() handle it. */
                 /* set quoted = undefined so the parser uses coerce for both quoted and unquoted here. */
-                finalTokens.push(NEW_TEXT_TOKEN(body, undefined, p));
+                finalTokens.push(CREATE_TEXT_TOKEN(body, undefined, p));
                 _bump_line(currentLine);
                 continue;
             }
@@ -465,13 +475,16 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens_NEW[] {
                 case TOKEN_KIND.TEXT:
                     console.log(`TEXT "${t.raw}" @ L${t.pos.line}:C${t.pos.col}`);
                     break;
+                case TOKEN_KIND.EMPTY_OBJ:
+                    console.log(`EMPTY_OBJ "${t}" @ L${t.pos.line}:C${t.pos.col}`);
+                    break;
             }
         }
         console.groupEnd();
     }
 
     /* return new tokens; no _root wrapping here — parser will handle it */
-    return finalTokens as Tokens_NEW[];
+    return finalTokens as Tokens[];
 }
 
 

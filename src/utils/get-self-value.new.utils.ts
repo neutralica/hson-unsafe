@@ -3,7 +3,7 @@
 import { Primitive } from "../core/types-consts/core.types";
 import { _FALSE, ELEM_OBJ_ARR, FALSE_TYPE, STR_TAG, VAL_TAG } from "../types-consts/constants";
 import { HsonNode } from "../types-consts/node.new.types";
-import { is_Node_NEW } from "./node-guards.new.utils";
+import { is_Node } from "./node-guards.new.utils";
 
 /* debug log */
 const VERBOSE = false;
@@ -52,7 +52,7 @@ export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
     $log("object is a node; getting content:", childNode);
 
     // 4) CHANGED: ensure first child is a node before touching ._content
-    if (!is_Node_NEW(childNode)) {
+    if (!is_Node(childNode)) {
         $log("  > $FALSE - first child is not a node");
         return _FALSE;
     }
@@ -67,7 +67,7 @@ export function get_self_close_value($node: HsonNode): Primitive | FALSE_TYPE {
     const grandChildNode = childContent[0];
 
     // 6) CHANGED: grandchild must be a node wrapper (_str/_val)
-    if (!is_Node_NEW(grandChildNode)) {
+    if (!is_Node(grandChildNode)) {
         $log("  > $FALSE - grandchild is not a node");
         return _FALSE;
     }

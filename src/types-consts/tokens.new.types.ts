@@ -15,7 +15,7 @@ export type RawAttr = {
 };
 
 
-export interface BaseToken_NEW {
+export interface BaseToken {
   /** Discriminator */
   kind: TokenKind;
   /** Tag name or JSON key */
@@ -36,39 +36,46 @@ export type CloseKind = 'obj' | 'elem';
 
 export type ArraySymbol = 'guillemet' | 'bracket';
 
-export type TokenOpen_NEW = {
+export type TokenOpen = {
   kind: typeof TOKEN_KIND.OPEN; /* was: 'TAG_OPEN' */
   tag: string;
   rawAttrs: RawAttr[];
   pos: Position;
 };
 
-export type TokenEnd_NEW = {
+export type TokenEnd = {
   kind: typeof TOKEN_KIND.CLOSE;  /* was: 'TAG_END' */
   close: CloseKind;               /* was: 'obj' | 'elem' */
   pos: Position;
 };
 
-export type TokenArrayOpen_NEW = {
+export type TokenArrayOpen = {
   kind: typeof TOKEN_KIND.ARR_OPEN;
   symbol: ArraySymbol;          /* was: 'guillemet' | 'bracket' */
   pos: Position;
 };
 
-export type TokenArrayClose_NEW = {
+export type TokenArrayClose = {
   kind: typeof TOKEN_KIND.ARR_CLOSE;
   symbol: ArraySymbol;
   pos: Position;
 };
 
-export type TokenText_NEW = {
+export type TokenText = {
   kind: typeof TOKEN_KIND.TEXT;
   raw: string;
   quoted?: boolean;
   pos: Position;
 };
 
-export type Tokens_NEW =
-  | TokenOpen_NEW | TokenEnd_NEW
-  | TokenArrayOpen_NEW | TokenArrayClose_NEW
-  | TokenText_NEW;
+export type TokenEmptyObj = {
+  kind: typeof TOKEN_KIND.EMPTY_OBJ;
+  raw: string;
+  quoted?: boolean;
+  pos: Position;
+};
+
+export type Tokens =
+  | TokenOpen | TokenEnd
+  | TokenArrayOpen | TokenArrayClose
+  | TokenText | TokenEmptyObj;

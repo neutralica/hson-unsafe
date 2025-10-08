@@ -3,7 +3,7 @@
 import { LiveTree, HsonNode, parse_html } from "../..";
 import { sanitize_html } from "../../utils/sanitize-html.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
-import { unwrap_root_NEW } from "../../utils/unwrap-root.new.utils";
+import { unwrap_root_elem } from "../../utils/unwrap-root.new.utils";
 import { create_live_tree_NEW } from "./create-live-tree.new.tree";
 
 
@@ -45,7 +45,7 @@ export function graft_NEW(
   const newDOMFragment = document.createDocumentFragment();
 
   /* check for  _root/_elem*/
-   const contentNodes = unwrap_root_NEW(rootNode);
+   const contentNodes = unwrap_root_elem(rootNode);
 
     // Enforce graft's specific "single node" rule
     if (contentNodes.length !== 1) {

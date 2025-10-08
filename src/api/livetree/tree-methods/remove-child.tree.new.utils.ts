@@ -1,7 +1,7 @@
 // remove-child.tree.utils.ts
 
 
-import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-guards.new.utils";
 import { HsonNode } from "../../../types-consts/node.new.types";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { HsonQuery } from "../../../types-consts/tree.new.types";
@@ -25,7 +25,7 @@ export function removeChild_NEW(this: LiveTree, $query: HsonQuery): LiveTree {
         }
 
         /*  1. find the direct children to remove from the data model */
-        const childrenToRemove = search(parentNode._content.filter(is_Node_NEW), $query, { findFirst: false });
+        const childrenToRemove = search(parentNode._content.filter(is_Node), $query, { findFirst: false });
 
         if (childrenToRemove.length === 0) {
             continue;

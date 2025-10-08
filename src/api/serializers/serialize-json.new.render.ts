@@ -1,13 +1,14 @@
 // serialize-json.render.ts
 
 import { Primitive } from "../../core/types-consts/core.types";
-import { assert_invariants_NEW } from "../../utils/assert-invariants.utils";
+import { assert_invariants } from "../../utils/assert-invariants.utils";
 import { is_indexed_NEW } from "../../utils/node-guards.new.utils";
 import { ROOT_TAG, EVERY_VSN, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../types-consts/constants";
 import { JsonType, JsonObj, HsonNode } from "../../types-consts/node.new.types";
 import { clone_node } from "../../utils/clone-node.utils";
 import { make_string } from "../../utils/make-string.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
+import { error } from "console";
 
 
 /* debug log */
@@ -24,7 +25,7 @@ const _log = _VERBOSE
 
 export function serialize_json($node: HsonNode): string {
     const clone = clone_node($node)
-    assert_invariants_NEW(clone)
+    assert_invariants(clone, 'serialize json')
     if (_VERBOSE) {
         console.groupCollapsed('---> serializing json');
         console.log('input node:');
@@ -76,6 +77,7 @@ function jsonFromNode($node: HsonNode): JsonType {
     switch ($node._tag) {
         case ROOT_TAG: {
             if (!$node._content || $node._content.length !== 1) {
+               console.error(make_string($node))
                 _throw_transform_err('malformed _root node -  must have exactly one child', 'serialize_json');
             }
             // The recursive call now expects the child to be in the NEW format.

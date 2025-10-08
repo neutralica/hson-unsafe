@@ -6,8 +6,8 @@ import { escape_html } from '../../utils/escape-html.utils';
 import { make_string } from '../../utils/make-string.utils';
 import { _snip } from '../../utils/snip.utils';
 import { _throw_transform_err } from '../../utils/throw-transform-err.utils';
-import { is_Node_NEW } from '../../utils/node-guards.new.utils';
-import { assert_invariants_NEW } from '../../utils/assert-invariants.utils';
+import { is_Node } from '../../utils/node-guards.new.utils';
+import { assert_invariants } from '../../utils/assert-invariants.utils';
 import { clone_node } from '../../utils/clone-node.utils';
 import { HsonNode } from '../../types-consts/node.new.types';
 
@@ -41,6 +41,31 @@ function stringify_style(obj: Record<string, string>): string {
     .join("; ");
 }
 
+
+function hasRenderableKids(node: HsonNode): boolean {
+  const kids = node._content;
+  if (!Array.isArray(kids) || kids.length === 0) return false;
+
+  for (const k of kids) {
+    // narrow away null and primitives early
+    if (k == null) continue;
+    if (typeof k !== 'object') continue;
+
+    // now TS knows k is HsonNode
+    if (k._tag === '_comment' || k._tag === '_sentinel') continue;
+
+    // handle text nodes specially
+    if (k._tag === '_text') {
+      const text = (k as any)._text;
+      if (typeof text === 'string' && text.trim() === '') continue;
+    }
+
+    // any surviving case means renderable
+    return true;
+  }
+
+  return false;
+}
 
 /**
  * Converts a Primitive value (or null/undefined) to its XML string representation.
@@ -130,7 +155,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   }
 
   /* check for void elements after adding attributes/flags */
-  if (content.length === 0) {
+  if (hasRenderableKids(node)) {
     openLine += ' />\n'; // self-close void elements
     return openLine;
   }
@@ -162,10 +187,10 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
  */
 export function serialize_html($node: HsonNode | Primitive): string {
   const clone = clone_node($node);
-  if (!is_Node_NEW(clone)) {
+  if (!is_Node(clone)) {
     _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', make_string($node));
   }
-  assert_invariants_NEW(clone as HsonNode);
+  assert_invariants(clone, 'serialize html');
 
 
   const xmlString = serialize_xml(clone);

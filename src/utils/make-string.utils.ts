@@ -1,6 +1,6 @@
 // make-string.utils.ts
 
-import { is_Node_NEW } from "./node-guards.new.utils";
+import { is_Node } from "./node-guards.new.utils";
 import { HsonNode, HsonAttrs, HsonMeta } from "../types-consts/node.new.types";
 
 /** Pretty-print any value with stable, node-friendly key order. */
@@ -22,7 +22,7 @@ function canon(v: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
     seen.add(v as object);
 
     // HSON node? Use node ordering.
-    if (is_Node_NEW(v)) return orderNode(v as HsonNode, seen);
+    if (is_Node(v)) return orderNode(v as HsonNode, seen);
 
     // Generic object: sort keys alphabetically (stable output)
     return orderPlainObject(v as Record<string, unknown>, seen);

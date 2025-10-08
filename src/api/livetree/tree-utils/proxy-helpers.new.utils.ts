@@ -1,17 +1,17 @@
 // proxy-helpers.tree.ts
 
 import { Primitive } from "../../../core/types-consts/core.types";
-import { is_Node_NEW } from "../../../utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-guards.new.utils";
 import { VSN_TAGS, ELEM_TAG, STR_TAG, VAL_TAG, NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
-import { NEW_NEW_NODE } from "../../../types-consts/factories";
+import { CREATE_NODE } from "../../../types-consts/factories";
 
 
 
 /*  find the first direct child node with a given tag */
 export function find_child_by_tag_NEW(parentNode: HsonNode, tag: string): HsonNode | undefined {
     const container = parentNode._content.find(
-        (c: unknown): c is HsonNode => is_Node_NEW(c) && VSN_TAGS.includes(c._tag)
+        (c: unknown): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag)
     );
 
     if (!container) {
@@ -19,18 +19,18 @@ export function find_child_by_tag_NEW(parentNode: HsonNode, tag: string): HsonNo
     }
 
     return container._content.find(
-        (child: unknown): child is HsonNode => is_Node_NEW(child) && child._tag === tag
+        (child: unknown): child is HsonNode => is_Node(child) && child._tag === tag
     );
 }
 
 export function find_index_of_tag_NEW(parentNode: HsonNode, tag: string): number {
     const container = parentNode._content.find(
-        (c: unknown): c is HsonNode => is_Node_NEW(c) && VSN_TAGS.includes(c._tag)
+        (c: unknown): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag)
     );
     if (!container) return -1;
 
     return container._content.findIndex(
-        (child: unknown) => is_Node_NEW(child) && child._tag === tag
+        (child: unknown) => is_Node(child) && child._tag === tag
     );
 }
 
@@ -39,12 +39,12 @@ export function find_index_of_tag_NEW(parentNode: HsonNode, tag: string): number
  */
 export function update_content_NEW(nodeToUpdate: HsonNode, value: Primitive): void {
     const hsonContainer = nodeToUpdate._content.find(
-        (c: unknown): c is HsonNode => is_Node_NEW(c) && c._tag === ELEM_TAG
+        (c: unknown): c is HsonNode => is_Node(c) && c._tag === ELEM_TAG
     );
     if (!hsonContainer) return; 
 
     let hsonTextNode = hsonContainer._content.find(
-        (c: unknown): c is HsonNode => is_Node_NEW(c) && c._tag === STR_TAG
+        (c: unknown): c is HsonNode => is_Node(c) && c._tag === STR_TAG
     );
 
     /* step 1: update hson model (always) */
@@ -53,7 +53,7 @@ export function update_content_NEW(nodeToUpdate: HsonNode, value: Primitive): vo
         hsonTextNode._content[0] = value;
     } else {
         /* no text node exists; create one and prepend it */
-        hsonTextNode = NEW_NEW_NODE({_tag: STR_TAG, _content: [value]});
+        hsonTextNode = CREATE_NODE({_tag: STR_TAG, _content: [value]});
         hsonContainer._content.unshift(hsonTextNode as HsonNode);
     }
 
@@ -90,7 +90,7 @@ export function is_selfClosing_NEW($node: HsonNode): boolean {
 
     /* find the _elem container for its children. */
     const container = $node._content.find(
-        (c: unknown): c is HsonNode => is_Node_NEW(c) && c._tag === ELEM_TAG
+        (c: unknown): c is HsonNode => is_Node(c) && c._tag === ELEM_TAG
     );
     
     /* the container must exist and have exactly one child */
@@ -100,7 +100,7 @@ export function is_selfClosing_NEW($node: HsonNode): boolean {
 
     /* the single child must be a STRING_TAG or PRIM_TAG */
     const singleChild = container._content[0];
-    return is_Node_NEW(singleChild) && (singleChild._tag === STR_TAG || singleChild._tag === VAL_TAG)
+    return is_Node(singleChild) && (singleChild._tag === STR_TAG || singleChild._tag === VAL_TAG)
 }
 
 /**
@@ -114,7 +114,7 @@ export function get_contentValue_NEW($node: HsonNode): Primitive | undefined {
         return undefined;
     }
     
-    const container = $node._content.find((c: unknown): c is HsonNode => is_Node_NEW(c) && VSN_TAGS.includes(c._tag));
+    const container = $node._content.find((c: unknown): c is HsonNode => is_Node(c) && VSN_TAGS.includes(c._tag));
     
     /* the content is either in container._content or is in the direct child._content*/
     const contentSource = container ? container._content : $node._content;
@@ -122,7 +122,7 @@ export function get_contentValue_NEW($node: HsonNode): Primitive | undefined {
     /* if there is exactly one child, and it's a BasicValue-carrying node, return its value */
     if (contentSource.length === 1) {
         const singleChild = contentSource[0];
-        if (is_Node_NEW(singleChild) && (singleChild._tag === STR_TAG || singleChild._tag === VAL_TAG)) {
+        if (is_Node(singleChild) && (singleChild._tag === STR_TAG || singleChild._tag === VAL_TAG)) {
             return singleChild._content[0] as Primitive;
         }
     }

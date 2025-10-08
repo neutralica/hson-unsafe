@@ -6,8 +6,8 @@ import { _snip } from "../../utils/snip.utils";
 import { serialize_style } from "../../utils/serialize-css.utils";
 import { serialize_primitive } from "../../utils/serialize-primitive.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
-import { is_Node_NEW } from "../../utils/node-guards.new.utils";
-import { assert_invariants_NEW } from "../../utils/assert-invariants.utils";
+import { is_Node } from "../../utils/node-guards.new.utils";
+import { assert_invariants } from "../../utils/assert-invariants.utils";
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
 import { HsonAttrs, HsonMeta, HsonNode } from "../../types-consts/node.new.types";
 
@@ -132,7 +132,7 @@ function getSelfCloseValueNEW(node: HsonNode): Primitive | null {
     if (node._meta && Object.keys(node._meta).length) return null;
 
     // must have exactly one child which is a node
-    if (!node._content || node._content.length !== 1 || !is_Node_NEW(node._content[0])) {
+    if (!node._content || node._content.length !== 1 || !is_Node(node._content[0])) {
         return null;
     }
     const only = node._content[0] as HsonNode;
@@ -151,7 +151,8 @@ function getSelfCloseValueNEW(node: HsonNode): Primitive | null {
 /* -------------------------------------------------------------------------- */
 
 
-type ParentCluster = typeof OBJ_TAG | typeof ELEM_TAG;
+type ParentCluster = typeof OBJ_TAG | typeof ELEM_TAG | typeof ARR_TAG;
+
 
 /* recursively serialize a NEW node into HSON wire */
 
@@ -197,10 +198,10 @@ function emitNode(
         if (node._tag === II_TAG) {
             _log('index node detected');
             const c = node._content?.[0];
-            if (!c || typeof c !== "object" || !("_tag" in (c as any))) {
+            if (!is_Node(c)) {
                 _throw_transform_err("serialize-hson: _ii must contain exactly one child node", 'serialize_hson_NEW.emitNode()');
             }
-            return emitNode(c as HsonNode, depth, parentCluster, guard);  // <-- same depth
+            return emitNode(c, depth, parentCluster, guard);  // <-- same depth
         }
 
         /* 3) _arr cluster → « … » */
@@ -224,10 +225,34 @@ function emitNode(
             if (node._attrs && Object.keys(node._attrs).length) {
                 _throw_transform_err(`serialize-hson: ${node._tag} may not carry _attrs`, 'serialize_hson_NEW.emitNode()');
             }
-            const kids = (node._content ?? []).filter(
-                (k: unknown) => typeof k === "object" && k && "_tag" in (k as any)
-            ) as HsonNode[];
 
+            // CHANGED: stop pruning
+            const kids = (node._content ?? []) as HsonNode[];
+
+            if (node._tag === OBJ_TAG && kids.length === 0) {
+                return `${pad}<>`;
+            }
+            if (node._tag === OBJ_TAG) {
+                return kids.map(prop => {
+                    // narrow
+                    if (!prop || typeof prop !== "object" || !("_tag" in prop)) {
+                        _throw_transform_err("serialize-hson: non-node in _obj._content", "emitNode");
+                    }
+                    const key = prop._tag as string;
+                    const inner = (Array.isArray(prop._content) ? prop._content[0] : null) as HsonNode | null;
+                    if (!inner) return `${pad}<${key} />`;
+
+                    // Dive through wrapper _obj if present
+                    const rendered =
+                        inner._tag === OBJ_TAG
+                            ? (inner._content as HsonNode[])
+                                .map(grand => emitNode(grand, depth + 1, cluster, guard))
+                                .join("\n")
+                            : emitNode(inner, depth + 1, cluster, guard);
+
+                    return `${pad}<${key}\n${rendered}\n${pad}>`;
+                }).join("\n");
+            }
             const cluster: ParentCluster = node._tag;
             return kids.map(k => emitNode(k, depth, cluster, guard)).join("\n");
         }
@@ -235,27 +260,39 @@ function emitNode(
         /* 5) _root: keep on wire (current policy); choose closer by melted child */
         if (node._tag === ROOT_TAG) {
             _log('_root tag encountered!');
-            const kids = (node._content ?? []).filter(
-                (k: unknown) => typeof k === "object" && k && "_tag" in (k as any)
-            ) as HsonNode[];
-            if (kids.length !== 1) throw new Error("serialize-hson: _root must have exactly one cluster child");
-
-            const cluster = kids[0];
-            if (!(cluster._tag === OBJ_TAG || cluster._tag === ELEM_TAG || cluster._tag === ARR_TAG)) {
-                _throw_transform_err("serialize-hson: _root child must be _obj | _elem | _arr", 'serialize_hson_NEW');
-            }
+            const kids = (node._content ?? []) as HsonNode[];
 
             const attrsStr = buildAttrString(node._attrs, node._meta);
-            const closer = cluster._tag === ELEM_TAG ? "/>" : ">";
-            const nextParent: ParentCluster = (cluster._tag === ARR_TAG) ? OBJ_TAG : cluster._tag;
-            const inner = emitNode(cluster, depth + 1, nextParent, guard);
-            return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}${closer}`;
+
+            if (kids.length === 0) {
+                return `${pad}<${node._tag}${attrsStr}\n${pad}<>\n${pad}>`;
+            }
+
+            if (kids.length > 1) {
+                _throw_transform_err("_root must have exactly one cluster child", "serialize_hson_NEW");
+            }
+
+            const cluster = kids[0]!;
+            if (!(cluster._tag === OBJ_TAG || cluster._tag === ELEM_TAG || cluster._tag === ARR_TAG)) {
+                _throw_transform_err("_root child must be _obj | _elem | _arr", "serialize_hson_NEW");
+            }
+
+            // your normalized policy (unchanged logic, just no filtering)
+            const normalized = cluster;
+
+            // Parent semantics: ARR stays OBJ for its children; ELEM stays ELEM.
+            const nextParent: ParentCluster =
+                normalized._tag === ARR_TAG ? OBJ_TAG
+                    : normalized._tag === ELEM_TAG ? ELEM_TAG
+                        : OBJ_TAG;
+
+            const inner = emitNode(normalized, depth + 1, nextParent, guard);
+            return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}>`;
         }
 
+
+
         /* 6) Standard tag element */
-
-        // neu
-
         const INLINE_VSNS = new Set<string>([STR_TAG, VAL_TAG]);
 
         function hasOwnProps(o: object | undefined | null): boolean {
@@ -309,51 +346,83 @@ function emitNode(
             return typeof p === 'string' ? JSON.stringify(p) : String(p);
         }
 
-        // ---- use it right before your multiline path ----
-        const shape = inlineShape(node);
-        if (shape) {
-            // IMPORTANT: return early so you don’t fall through to your multiline branch
-            return shape.kind === 'void'
-                ? `${pad}<${node._tag} />`
-                : `${pad}<${node._tag} ${emit_primitive_as_hson(shape.value)} />`;
-        }
-
-
         _log('building attrs string for standard tag');
         const attrsStr = buildAttrString(node._attrs, node._meta);
+
+        const shape = inlineShape(node);
+        if (shape) {
+            if (parentCluster === OBJ_TAG) {
+                // JSON-mode: block with primitive inside
+                if (shape.kind === 'void') {
+                    return `${pad}<${node._tag}${attrsStr}\n${pad}  <>\n${pad}>`;
+                } else {
+                    return `${pad}<${node._tag}${attrsStr}\n${pad}  ${emit_primitive_as_hson(shape.value)}\n${pad}>`;
+                }
+            }
+            // HTML-mode: allow one-liner
+            return shape.kind === 'void'
+                ? `${pad}<${node._tag}${attrsStr} />`
+                : `${pad}<${node._tag}${attrsStr} ${emit_primitive_as_hson(shape.value)} />`;
+        }
 
         // One-liner primitive value (no attrs/meta; single _str/_val child)
         const selfVal = getSelfCloseValueNEW(node);
         if (selfVal !== null) {
-
-            const val = serialize_primitive(selfVal);
-            const closer = parentCluster === ELEM_TAG ? "/>" : ">";
-            return `${pad}<${node._tag}${attrsStr} ${val} ${closer}`;
+            if (parentCluster === OBJ_TAG) {
+                // block in JSON-mode
+                return `${pad}<${node._tag}${attrsStr}\n${pad}  ${serialize_primitive(selfVal)}\n${pad}>`;
+            }
+            // element semantics ok to self-close
+            return `${pad}<${node._tag}${attrsStr} ${serialize_primitive(selfVal)} />`;
         }
 
-        const children = (node._content ?? []).filter(
-            (k: unknown) => is_Node_NEW
-        ) as HsonNode[];
+        const children = (node._content ?? []) as HsonNode[];
+
 
         if (!children.length) {
-            _log('void node; closing');
-            const closer = parentCluster === ELEM_TAG ? "/>" : ">";
-            return `${pad}<${node._tag}${attrsStr} ${closer}`;
+            if (parentCluster === OBJ_TAG) {
+                // empty property in object semantics → explicit empty object cluster
+                return `${pad}<${node._tag}${attrsStr}\n${pad}  <>\n${pad}>`;
+            } else {
+                // element semantics may self-close
+                return `${pad}<${node._tag}${attrsStr} />`;
+            }
         }
 
-        // Melt single structural child if present
-        _log('unwrapping cluster VSN and getting closer')
-        if (children.length === 1 && (children[0]._tag === OBJ_TAG || children[0]._tag === ELEM_TAG || children[0]._tag === ARR_TAG)) {
-            const melted = children[0];
-            const hostCloser = melted._tag === ELEM_TAG ? "/>" : ">";
-            const nextParent: ParentCluster = melted._tag === ARR_TAG ? OBJ_TAG : melted._tag as ParentCluster;
-            const inner = emitNode(melted, depth + 1, nextParent, guard);
-            return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}${hostCloser}`;
-        }
+        // _log('unwrapping cluster VSN and getting closer')
+        // if (children.length === 1 && (children[0]._tag === OBJ_TAG || children[0]._tag === ELEM_TAG || children[0]._tag === ARR_TAG)) {
+        //     const melted = children[0];
+        //     const hostCloser = melted._tag === ELEM_TAG ? "/>" : ">";
+        //     const nextParent: ParentCluster = melted._tag === ARR_TAG ? OBJ_TAG : melted._tag as ParentCluster;
+        //     const inner = emitNode(melted, depth + 1, nextParent, guard);
+        //     return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}${hostCloser}`;
+        // }
 
         // Fallback: element semantics (ordered)
-        const inner = children.map(ch => emitNode(ch, depth + 1, ELEM_TAG, guard)).join("\n");
-        return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}/>`;
+        const hasRenderableKids =
+            children && children.some(k =>
+                k && (
+                    k._tag === "_str" || k._tag === "_val" ||
+                    (typeof k._tag === "string" && !k._tag.startsWith("_")) // plain HTML tag node
+                )
+            );
+
+        const closer = hasRenderableKids ? ">" : "/>";
+
+        if (!hasRenderableKids) {
+            return `${pad}<${node._tag}${attrsStr} />`;
+        }
+        const inner = children
+            .map(ch => emitNode(
+                ch,
+                depth + 1,
+                // propagate cluster correctly; arrays live under _obj semantics
+                ch._tag === ARR_TAG ? OBJ_TAG : parentCluster,
+                guard
+            ))
+            .join("\n");
+
+        return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}${closer}`;
     } finally {
         guard.leave(node);
     }
@@ -361,10 +430,10 @@ function emitNode(
 
 /* public API (NEW) */
 export function serialize_hson(root: HsonNode): string {
-    if (!is_Node_NEW(root)) {
+    if (!is_Node(root)) {
         _throw_transform_err("serialize-hson: root must be a HsonNode_NEW", 'serialize-hson');
     }
-    assert_invariants_NEW(root);
+    assert_invariants(root, 'serialize_hson');
     const guard = cycleGuard();
     const out = emitNode(root, 0, undefined, guard);
     return out.trim();

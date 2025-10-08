@@ -2,7 +2,7 @@
 
 import { HsonNode, is_Node_NEW, HsonQuery, Primitive } from "../..";
 import { STR_TAG } from "../../types-consts/constants";
-import { NEW_NEW_NODE } from "../../types-consts/factories";
+import { CREATE_NODE } from "../../types-consts/factories";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { _DATA_QUID } from "../../types-consts/constants";
 import { append_NEW } from "./tree-methods/append.new.tree";
@@ -176,7 +176,7 @@ export class LiveTree {
 
   setContent($content: string): this {
     for (const node of this.selectedNodes) {
-      const textNode = NEW_NEW_NODE({ _tag: STR_TAG, _content: [$content] });
+      const textNode = CREATE_NODE({ _tag: STR_TAG, _content: [$content] });
       node._content = [textNode];
 
       const liveElement = NODE_ELEMENT_MAP.get(node);

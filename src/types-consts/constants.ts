@@ -1,7 +1,7 @@
 // consts.types.ts
 
 import { HsonNode } from "./node.new.types";
-import { BaseToken_NEW } from "./tokens.new.types";
+import { BaseToken } from "./tokens.new.types";
 
 
 /* sentinel value for unsuccess */

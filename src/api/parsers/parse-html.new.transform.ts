@@ -3,8 +3,8 @@
 import {  HsonNode, Primitive, is_Node_NEW } from "../..";
 import { is_Primitive } from "../../core/utils/guards.core.utils";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
-import { NEW_NEW_NODE } from "../../types-consts/factories";
-import { assert_invariants_NEW } from "../../utils/assert-invariants.utils";
+import { CREATE_NODE } from "../../types-consts/factories";
+import { assert_invariants } from "../../utils/assert-invariants.utils";
 import { coerce } from "../../utils/coerce-string.utils";
 import { escape_text_nodes } from "../../utils/escape-text-nodes.new.utils";
 import { expand_entities } from "../../utils/expand-entities.utils";
@@ -60,17 +60,17 @@ export function parse_html($input: string | Element): HsonNode {
     const final =
         actualContentRootNode._tag === ROOT_TAG
             ? actualContentRootNode
-            : NEW_NEW_NODE({
+            : CREATE_NODE({
                 _tag: ROOT_TAG,
                 _content: [
-                    NEW_NEW_NODE({
+                    CREATE_NODE({
                         _tag: ELEM_TAG,
                         _content: [actualContentRootNode],
                     }),
                 ],
             });
 
-    assert_invariants_NEW(final, "parse-html");
+    assert_invariants(final, "parse-html");
     return final;
 }
 
@@ -94,16 +94,16 @@ function convert($el: Element): HsonNode {
         _log('tagLower is style or script')
         const text_content = $el.textContent?.trim();
         if (text_content) {
-            const special_content = [NEW_NEW_NODE({
+            const special_content = [CREATE_NODE({
                 _tag: STR_TAG,
                 _content: [text_content],
             })]
-            const wrapper = NEW_NEW_NODE({
+            const wrapper = CREATE_NODE({
                 _tag: ELEM_TAG,
                 _content: special_content,
             });
 
-            return NEW_NEW_NODE({
+            return CREATE_NODE({
                 _tag: baseTag,
                 _content: [wrapper],
                 _attrs: sortedAcc,
@@ -129,7 +129,7 @@ function convert($el: Element): HsonNode {
         if (is_Primitive(child)) {
             _log(`Primitive child found: ${child}\n creating string or BasicValue node`)
             const tag = is_string_NEW(child) ? STR_TAG : VAL_TAG;
-            childNodes.push(NEW_NEW_NODE({ _tag: tag, _content: [child] }));
+            childNodes.push(CREATE_NODE({ _tag: tag, _content: [child] }));
 
         } else {
             _log(`fully formed node received; pushing to childNodes\n(${make_string(child)})`)
@@ -188,18 +188,18 @@ function convert($el: Element): HsonNode {
         }
 
         // return canonical _val node
-        return NEW_NEW_NODE({ _tag: VAL_TAG, _content: [prim] });
+        return CREATE_NODE({ _tag: VAL_TAG, _content: [prim] });
     } else if (tagLower === OBJ_TAG) {
         /*  "children" of <_obj> are the object's properties (as nodes) */
-        return NEW_NEW_NODE({ _tag: OBJ_TAG, _content: childNodes });
+        return CREATE_NODE({ _tag: OBJ_TAG, _content: childNodes });
     } else if (tagLower === ARR_TAG) {
         _log('array detected; returning in _array wrapper')
         /* children of an <_array> should be <_ii> nodes. */
         if (!childNodes.every(node => is_indexed_NEW(node))) _throw_transform_err('_array children are not valid index tags', 'parse_html');
-        return NEW_NEW_NODE({ _tag: ARR_TAG, _content: childNodes });
+        return CREATE_NODE({ _tag: ARR_TAG, _content: childNodes });
     } else if (tagLower === II_TAG) {
         if (childNodes.length !== 1) _throw_transform_err('<_ii> must have exactly one child', 'parse-html');
-        return NEW_NEW_NODE({
+        return CREATE_NODE({
             _tag: II_TAG,
             _content: [childNodes[0]],
             _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined
@@ -218,21 +218,24 @@ function convert($el: Element): HsonNode {
         /* tag is empty/void (e.g., <p></p> or <extinctGroups></extinctGroups>)
              its HsonNode's content should be [] so simply return `content:[]` */
         _log('void node detected; returning empty new node');
-        return NEW_NEW_NODE({ _tag: baseTag, _content: [], _attrs: sortedAcc });
-    } else if (
-        (childNodes.length === 1 && is_Node_NEW(childNodes[0])
-            && (childNodes[0]._tag === OBJ_TAG || childNodes[0]._tag === ARR_TAG))) {
-        _log('child nodes tag is: ', childNodes[0]._tag)
-        return NEW_NEW_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });
-
+        return CREATE_NODE({ _tag: baseTag, _content: [], _attrs: sortedAcc });
     }
     
+    // 07OCT2025 -- this may be causing problems BUG DEV
+    // else if (
+    //     (childNodes.length === 1 && is_Node_NEW(childNodes[0])
+    //         && (childNodes[0]._tag === OBJ_TAG || childNodes[0]._tag === ARR_TAG))) {
+    //     _log('child nodes tag is: ', childNodes[0]._tag)
+    //     return CREATE_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });
 
-    return NEW_NEW_NODE({
+    // }
+    
+
+    return CREATE_NODE({
         _tag: baseTag,
         _attrs: sortedAcc,
         _meta: metaAcc,
-        _content: [NEW_NEW_NODE({ _tag: ELEM_TAG, _content: childNodes })]
+        _content: [CREATE_NODE({ _tag: ELEM_TAG, _content: childNodes })]
     });
 
 

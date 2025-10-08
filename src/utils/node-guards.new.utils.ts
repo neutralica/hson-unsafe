@@ -7,7 +7,7 @@ import { _DATA_INDEX } from "../types-consts/constants";
 import { HsonNode, JsonType } from "../types-consts/node.new.types";
 
 /* identifies HsonNode (new structure) */
-export function is_Node_NEW(bit: unknown): bit is HsonNode {
+export function is_Node(bit: unknown): bit is HsonNode {
   if (!bit || typeof bit !== "object") return false;
 
   // minimal structural check first (enables narrowing)
@@ -23,12 +23,6 @@ export function is_Node_NEW(bit: unknown): bit is HsonNode {
   }
 
   return true;
-}
-
-export function is_not_string_NEW(txt: JsonType): txt is BasicValue {
-  return (typeof txt === 'number' ||
-    txt === null ||
-    typeof txt === 'boolean')
 }
 
 
