@@ -163,10 +163,11 @@ function emitNode(
     guard: ReturnType<typeof cycleGuard>
 ): string {
     _log('entering emitNode()');
+    console.warn("emitNode entry", node._tag, "cluster:", parentCluster);
     guard.enter(node);
     try {
         const pad = "  ".repeat(depth);
-
+        
         if (node._tag.startsWith("_") && !EVERY_VSN.includes(node._tag)) {
             _throw_transform_err(`unknown VSN-like tag: <${node._tag}>`, 'parse-html');
         }
@@ -232,6 +233,7 @@ function emitNode(
             if (node._tag === OBJ_TAG && kids.length === 0) {
                 return `${pad}<>`;
             }
+            const cluster: ParentCluster = node._tag;
             if (node._tag === OBJ_TAG) {
                 return kids.map(prop => {
                     // narrow
@@ -253,10 +255,9 @@ function emitNode(
                     return `${pad}<${key}\n${rendered}\n${pad}>`;
                 }).join("\n");
             }
-            const cluster: ParentCluster = node._tag;
             return kids.map(k => emitNode(k, depth, cluster, guard)).join("\n");
         }
-
+        
         /* 5) _root: keep on wire (current policy); choose closer by melted child */
         if (node._tag === ROOT_TAG) {
             _log('_root tag encountered!');
@@ -412,6 +413,7 @@ function emitNode(
         if (!hasRenderableKids) {
             return `${pad}<${node._tag}${attrsStr} />`;
         }
+        console.warn("emitNode cluster output", node._tag, children.length);
         const inner = children
             .map(ch => emitNode(
                 ch,
