@@ -19,7 +19,7 @@ function canon(v: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
   if (v && typeof v === "object") {
     // Avoid cycles just in case (shouldn’t happen for your nodes, but safe)
     if (seen.has(v as object)) return "[[Circular]]";
-    seen.add(v as object);
+    if (v !== null && (typeof v === 'object' || typeof v === 'function')) { seen.add(v as object) };
 
     // HSON node? Use node ordering.
     if (is_Node(v)) return orderNode(v as HsonNode, seen);
