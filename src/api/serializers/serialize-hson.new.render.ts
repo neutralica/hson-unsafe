@@ -163,11 +163,10 @@ function emitNode(
     guard: ReturnType<typeof cycleGuard>
 ): string {
     _log('entering emitNode()');
-    console.warn("emitNode entry", node._tag, "cluster:", parentCluster);
     guard.enter(node);
     try {
         const pad = "  ".repeat(depth);
-        
+
         if (node._tag.startsWith("_") && !EVERY_VSN.includes(node._tag)) {
             _throw_transform_err(`unknown VSN-like tag: <${node._tag}>`, 'parse-html');
         }
@@ -220,6 +219,39 @@ function emitNode(
             return `${pad}«\n${inner}\n${pad}»`;
         }
 
+        /* 5) _root: keep on wire (current policy); choose closer by melted child */
+        if (node._tag === ROOT_TAG) {
+            _log('_root tag encountered!');
+            const kids = (node._content ?? []) as HsonNode[];
+
+            const attrsStr = buildAttrString(node._attrs, node._meta);
+
+            if (kids.length === 0) {
+                return `${pad}<${node._tag}${attrsStr}\n${pad}<>\n${pad}>`;
+            }
+
+            if (kids.length > 1) {
+                _throw_transform_err("_root must have exactly one cluster child", "serialize_hson_NEW");
+            }
+
+            const cluster = kids[0]!;
+            if (!(cluster._tag === OBJ_TAG || cluster._tag === ELEM_TAG || cluster._tag === ARR_TAG)) {
+                _throw_transform_err("_root child must be _obj | _elem | _arr", "serialize_hson_NEW");
+            }
+
+            // your normalized policy (unchanged logic, just no filtering)
+            const normalized = cluster;
+
+            // Parent semantics: ARR stays OBJ for its children; ELEM stays ELEM.
+            const nextParent: ParentCluster =
+                normalized._tag === ARR_TAG ? OBJ_TAG
+                    : normalized._tag === ELEM_TAG ? ELEM_TAG
+                        : OBJ_TAG;
+
+            const inner = emitNode(normalized, depth + 1, nextParent, guard);
+            return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}>`;
+        }
+
         /* 4) _obj / _elem clusters: melt; never emit their tags */
         if (node._tag === OBJ_TAG || node._tag === ELEM_TAG) {
             _log('cluster node detected: ', node._tag);
@@ -257,40 +289,6 @@ function emitNode(
             }
             return kids.map(k => emitNode(k, depth, cluster, guard)).join("\n");
         }
-        
-        /* 5) _root: keep on wire (current policy); choose closer by melted child */
-        if (node._tag === ROOT_TAG) {
-            _log('_root tag encountered!');
-            const kids = (node._content ?? []) as HsonNode[];
-
-            const attrsStr = buildAttrString(node._attrs, node._meta);
-
-            if (kids.length === 0) {
-                return `${pad}<${node._tag}${attrsStr}\n${pad}<>\n${pad}>`;
-            }
-
-            if (kids.length > 1) {
-                _throw_transform_err("_root must have exactly one cluster child", "serialize_hson_NEW");
-            }
-
-            const cluster = kids[0]!;
-            if (!(cluster._tag === OBJ_TAG || cluster._tag === ELEM_TAG || cluster._tag === ARR_TAG)) {
-                _throw_transform_err("_root child must be _obj | _elem | _arr", "serialize_hson_NEW");
-            }
-
-            // your normalized policy (unchanged logic, just no filtering)
-            const normalized = cluster;
-
-            // Parent semantics: ARR stays OBJ for its children; ELEM stays ELEM.
-            const nextParent: ParentCluster =
-                normalized._tag === ARR_TAG ? OBJ_TAG
-                    : normalized._tag === ELEM_TAG ? ELEM_TAG
-                        : OBJ_TAG;
-
-            const inner = emitNode(normalized, depth + 1, nextParent, guard);
-            return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}>`;
-        }
-
 
 
         /* 6) Standard tag element */
@@ -389,42 +387,24 @@ function emitNode(
                 return `${pad}<${node._tag}${attrsStr} />`;
             }
         }
-
-        // _log('unwrapping cluster VSN and getting closer')
-        // if (children.length === 1 && (children[0]._tag === OBJ_TAG || children[0]._tag === ELEM_TAG || children[0]._tag === ARR_TAG)) {
-        //     const melted = children[0];
-        //     const hostCloser = melted._tag === ELEM_TAG ? "/>" : ">";
-        //     const nextParent: ParentCluster = melted._tag === ARR_TAG ? OBJ_TAG : melted._tag as ParentCluster;
-        //     const inner = emitNode(melted, depth + 1, nextParent, guard);
-        //     return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}${hostCloser}`;
-        // }
-
-        // Fallback: element semantics (ordered)
-        const hasRenderableKids =
-            children && children.some(k =>
-                k && (
-                    k._tag === "_str" || k._tag === "_val" ||
-                    (typeof k._tag === "string" && !k._tag.startsWith("_")) // plain HTML tag node
-                )
-            );
-
-        const closer = hasRenderableKids ? ">" : "/>";
-
-        if (!hasRenderableKids) {
-            return `${pad}<${node._tag}${attrsStr} />`;
-        }
-        console.warn("emitNode cluster output", node._tag, children.length);
         const inner = children
             .map(ch => emitNode(
                 ch,
                 depth + 1,
-                // propagate cluster correctly; arrays live under _obj semantics
+                // arrays live under _obj semantics when printed
                 ch._tag === ARR_TAG ? OBJ_TAG : parentCluster,
                 guard
             ))
+            .filter(s => /\S/.test(s)) // CHANGED: drop pure-whitespace emissions
             .join("\n");
 
-        return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}${closer}`;
+        // CHANGED: self-close only if nothing actually rendered
+        if (inner.length === 0) {
+            return `${pad}<${node._tag}${attrsStr} />`;
+        }
+
+        // CHANGED: non-empty → normal open/close with '>' (HSON “object close” line)
+        return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}>`;
     } finally {
         guard.leave(node);
     }

@@ -42,31 +42,6 @@ function stringify_style(obj: Record<string, string>): string {
 }
 
 
-function hasRenderableKids(node: HsonNode): boolean {
-  const kids = node._content;
-  if (!Array.isArray(kids) || kids.length === 0) return false;
-
-  for (const k of kids) {
-    // narrow away null and primitives early
-    if (k == null) continue;
-    if (typeof k !== 'object') continue;
-
-    // now TS knows k is HsonNode
-    if (k._tag === '_comment' || k._tag === '_sentinel') continue;
-
-    // handle text nodes specially
-    if (k._tag === '_text') {
-      const text = (k as any)._text;
-      if (typeof text === 'string' && text.trim() === '') continue;
-    }
-
-    // any surviving case means renderable
-    return true;
-  }
-
-  return false;
-}
-
 /**
  * Converts a Primitive value (or null/undefined) to its XML string representation.
  * Escapes strings, returns other primitives as strings.
@@ -118,7 +93,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   }
   switch (tag) {
     case ELEM_TAG: { /* flatten _elem; process children directly */
-      _log('list tag found; flattening')
+      _log('elem tag found; flattening')
       return content.map((child) => serialize_xml(child)).join('\n');
     }
     /* the other special case is strings, which is our default assumption for html.
@@ -141,38 +116,29 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   /* handle standard tags or non-exceptional VSNs* 
       (*ie, _obj is serialized into HTML as-is; the only special treatment it 
       gets is its contents are not  wrapped in _elem if an _obj is found*/
-
-  let openLine = `<${tag}`;
+  // after: build the open head but don't close yet
+  let openHead = `<${tag}`;
   _log(`open TAG: ${tag}`);
-  /* get attributes from _meta.attrs */
 
-  /* build attributes from _NEW model (_attrs) + meta mapping */
-  /* NOTE: XML stage prints key="value" even for flags; HTML stage trims later */
+  // attributes (unchanged)
   const attrs = build_wire_attrs(node as HsonNode);
   for (const key of Object.keys(attrs).sort()) {
     const v = attrs[key];
-    openLine += ` ${key}="${escape_attr(v)}"`;
+    openHead += ` ${key}="${escape_attr(v)}"`;
   }
 
-  /* check for void elements after adding attributes/flags */
-  if (hasRenderableKids(node)) {
-    openLine += ' />\n'; // self-close void elements
-    return openLine;
+  // NEW: render children first, then decide closer
+  const inner = (content ?? [])
+    .map(child => serialize_xml(child))  // no filtering; _str/_val handled by serialize_xml
+    .join("");
+
+  // self-close if nothing rendered (after trim)
+  if (inner.trim().length === 0) {
+    return `${openHead} />\n`;  // space before '/>' is intentional
   }
 
-  /* close tag */
-  openLine += '>\n';
-
-  const innerContent = content
-    /* filter out whitespace-only string children */
-    .filter((child) => typeof child !== 'string' || /\S/.test(child))
-    /* recursively serialize */
-    .map((child) => serialize_xml(child))
-    .join('');
-
-  const lineClose = `</${tag}>\n`;
-
-  return openLine + innerContent + lineClose;
+  // otherwise, paired tag
+  return `${openHead}>\n${inner}\n</${tag}>\n`;
 }
 
 

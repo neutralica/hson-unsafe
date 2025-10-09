@@ -151,13 +151,6 @@ function nodeFromJson(
 
                         // NOTE: Only _attrs is allowed as a leading underscore key here
                         const tagKeys = Object.keys(elObj).filter(k => !k.startsWith('_'));
-                        if (tagKeys.length !== 1) {
-                            return _throw_transform_err(
-                                `element object at _elem[${i}] must have exactly one tag key`,
-                                "parse_json",
-                                make_string(elObj)
-                            );
-                        }
 
                         const tagName = tagKeys[0];
                         const rawChildren = elObj[tagName] as JsonType;

@@ -249,7 +249,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens[] {
             continue;
         }
 
-        /* step E */
+        /* step E  handle closers */
         const closerMatch = currentLine.match(/^\s*(\/?>)\s*(?:\/\/.*)?$/);
         if (closerMatch) {
             const closerLex = closerMatch[1];
