@@ -125,26 +125,44 @@ function buildAttrString(attrs: HsonAttrs | undefined, meta: HsonMeta | undefine
 }
 
 /* quoted text vs raw primitive one-liner probe (NEW shape only) */
-function getSelfCloseValueNEW(node: HsonNode): Primitive | null {
+function getSelfCloseValueNEW(node: HsonNode): Primitive | undefined {
     _log('getting value for self-closing Node (_NEW type)');
+
     // must not carry attrs or meta
-    if (!isEmptyAttrs(node._attrs)) return null;
-    if (node._meta && Object.keys(node._meta).length) return null;
+    if (!isEmptyAttrs(node._attrs)) return undefined;
+    if (node._meta && Object.keys(node._meta).length) return undefined;
 
     // must have exactly one child which is a node
     if (!node._content || node._content.length !== 1 || !is_Node(node._content[0])) {
-        return null;
+        return undefined;
     }
-    const only = node._content[0] as HsonNode;
-    if (!only._content || only._content.length !== 1) return null;
 
-    const prim = only._content[0];
-    if (only._tag === STR_TAG && typeof prim === "string") return prim;
-    if (only._tag === VAL_TAG && (typeof prim === "number" || typeof prim === "boolean" || prim === null)) {
-        return prim;
+    // unwrap at most one level of _obj to reach the scalar leaf
+    let child = node._content[0] as HsonNode;
+
+    if (child._tag === OBJ_TAG) {
+        const objKids = child._content as HsonNode[] | undefined;
+        if (!objKids || objKids.length !== 1 || !is_Node(objKids[0])) return undefined;
+        child = objKids[0] as HsonNode;
     }
-    return null;
+
+    // leaf must have exactly one primitive payload
+    if (!child._content || child._content.length !== 1) return undefined;
+    const prim = child._content[0] as unknown;
+
+    if (child._tag === STR_TAG) {
+        return (typeof prim === "string") ? (prim as string) : undefined;
+    }
+
+    if (child._tag === VAL_TAG) {
+        return (typeof prim === "number" || typeof prim === "boolean" || prim === null)
+            ? (prim as Primitive)
+            : undefined;
+    }
+
+    return undefined;
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* core serializer                                                      */
@@ -311,11 +329,11 @@ function emitNode(
         function inlineShape(n: HsonNode):
             | { kind: 'void' }
             | { kind: 'text'; value: Primitive }
-            | null {
+            | undefined {
 
             // must have no attrs/meta payload (empty objects are OK)
-            if (hasOwnProps(n._attrs)) return null;
-            if (hasOwnProps(n._meta)) return null;
+            if (hasOwnProps(n._attrs)) return undefined;
+            if (hasOwnProps(n._meta)) return undefined;
 
             const c = n._content ?? [];
 
@@ -333,21 +351,21 @@ function emitNode(
                     if (ec.length === 1 && typeof ec[0] === "object" && ec[0] && "_tag" in ec[0]) {
                         child = ec[0] as HsonNode;
                     } else {
-                        return null;
+                        return undefined;
                     }
                 }
 
                 // now check primitive wrappers
                 if (INLINE_VSNS.has(child._tag)) {
                     const v = child._content?.[0];
-                    if (v === undefined) return null;
+                    if (v === undefined) return undefined;
                     // keep strings single-line only
-                    if (typeof v === "string" && v.includes("\n")) return null;
+                    if (typeof v === "string" && v.includes("\n")) return undefined;
                     return { kind: 'text', value: v as Primitive };
                 }
             }
 
-            return null;
+            return undefined;
         }
 
         // primitive -> HSON literal (same logic you already have)
@@ -359,7 +377,7 @@ function emitNode(
         const attrsStr = buildAttrString(node._attrs, node._meta);
 
         const shape = inlineShape(node);
-        if (shape) {
+        if (shape !== undefined) {
             if (parentCluster === OBJ_TAG) {
                 // JSON-mode: block with primitive inside
                 if (shape.kind === 'void') {
@@ -376,10 +394,10 @@ function emitNode(
 
         // One-liner primitive value (no attrs/meta; single _str/_val child)
         const selfVal = getSelfCloseValueNEW(node);
-        if (selfVal !== null) {
+        if (selfVal !== undefined) {
             if (parentCluster === OBJ_TAG) {
                 // block in JSON-mode
-                return `${pad}<${node._tag}${attrsStr}\n${pad}  ${serialize_primitive(selfVal)}\n${pad}>`;
+                return `${pad}<${node._tag}${attrsStr}  ${serialize_primitive(selfVal)}>`;
             }
             // element semantics ok to self-close
             return `${pad}<${node._tag}${attrsStr} ${serialize_primitive(selfVal)} />`;

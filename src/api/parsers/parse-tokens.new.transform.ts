@@ -93,12 +93,17 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
 
         let sawClose: TokenEnd | null = null;
         const kids: HsonNode[] = [];
+        let sawEmptyObjShorthand = false; // <-- NEW
 
         // --- gather children
         while (ix < N) {
             const t = _peek(); if (!t) break;
 
-            if (t.kind === TOKEN_KIND.EMPTY_OBJ) { _take(); continue; }
+            if (t.kind === TOKEN_KIND.EMPTY_OBJ) {
+                _take();
+                sawEmptyObjShorthand = true;      // <-- NEW: remember "<>"
+                continue;
+            }
             if (t.kind === TOKEN_KIND.CLOSE) { sawClose = _take() as TokenEnd; break; }
 
             if (t.kind === TOKEN_KIND.TEXT) {
@@ -119,15 +124,18 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
 
         // ---------- <_root>: choose cluster by its own closer; never mix modes ----------
         if (open.tag === ROOT_TAG) {
+            // NEW: explicit "<>" under root => single empty _obj cluster
+            if (sawEmptyObjShorthand) {
+                node._content = [{ _tag: OBJ_TAG, _meta: {}, _content: [] }];
+                if ($isTopLevel) topCloseKinds.push(closeKind);
+                return { node, closeKind };
+            }
+
             if (kids.length === 1 && kids[0]._tag === ARR_TAG) {
                 node._content = kids as NodeContent; // passthrough array cluster
             } else if (kids.length > 0) {
-                const clusterTag = (closeKind === CLOSE_KIND.elem) ? ELEM_TAG : OBJ_TAG; // CHANGED
-                node._content = [{
-                    _tag: clusterTag,
-                    _meta: {},
-                    _content: kids as NodeContent
-                }]; // CHANGED
+                const clusterTag = (closeKind === CLOSE_KIND.elem) ? ELEM_TAG : OBJ_TAG;
+                node._content = [{ _tag: clusterTag, _meta: {}, _content: kids as NodeContent }];
             } else {
                 node._content = [];
             }
@@ -208,6 +216,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             let childNode: HsonNode;
 
             if (t.kind === TOKEN_KIND.EMPTY_OBJ) {
+
                 _take();
                 // CHANGED: build an empty object *item*
                 childNode = CREATE_NODE({ _tag: OBJ_TAG, _meta: {}, _content: [] });

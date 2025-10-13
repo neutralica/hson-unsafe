@@ -11,26 +11,27 @@ export function make_string_pretty(value: unknown, indent = 2): string {
 /** Backward-compatible alias if you already use make_string everywhere */
 export const make_string = make_string_pretty;
 
-// ---- internals ----
+export function isRef(x: unknown): x is object {
+  return x !== null && (typeof x === 'object' || typeof x === 'function');
+}
 
+// ---- internals ----
 function canon(v: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
+  // Arrays: walk, but don't add array itself (optional)
   if (Array.isArray(v)) return v.map(x => canon(x, seen));
 
-  if (v && typeof v === "object") {
-    // Avoid cycles just in case (shouldn’t happen for your nodes, but safe)
-    if (seen.has(v as object)) return "[[Circular]]";
-    if (v !== null && (typeof v === 'object' || typeof v === 'function')) { seen.add(v as object) };
+  if (isRef(v)) {                         // CHANGED: use isRef
+    if (seen.has(v)) return "[[Circular]]";
+    seen.add(v);                          // safe: v is an object/function
 
-    // HSON node? Use node ordering.
     if (is_Node(v)) return orderNode(v as HsonNode, seen);
-
-    // Generic object: sort keys alphabetically (stable output)
     return orderPlainObject(v as Record<string, unknown>, seen);
   }
 
-  // Primitive
+  // Primitive stays primitive (true/false/"", etc.)
   return v;
 }
+
 
 function orderNode(n: HsonNode, seen: WeakSet<object>) {
   const out: any = {};
