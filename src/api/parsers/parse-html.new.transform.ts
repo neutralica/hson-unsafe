@@ -1,6 +1,6 @@
 // parse-html.new.transform.hson.ts (new)
 
-import {  HsonNode, Primitive, is_Node_NEW } from "../..";
+import { HsonNode, Primitive, is_Node_NEW } from "../..";
 import { is_Primitive } from "../../core/utils/guards.core.utils";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
@@ -57,18 +57,7 @@ export function parse_html($input: string | Element): HsonNode {
         inputElement = $input;
     }
     const actualContentRootNode = convert(inputElement);
-    const final =
-        actualContentRootNode._tag === ROOT_TAG
-            ? actualContentRootNode
-            : CREATE_NODE({
-                _tag: ROOT_TAG,
-                _content: [
-                    CREATE_NODE({
-                        _tag: ELEM_TAG,
-                        _content: [actualContentRootNode],
-                    }),
-                ],
-            });
+    const final = wrap_as_root(actualContentRootNode);
 
     assert_invariants(final, "parse-html");
     return final;
@@ -78,169 +67,149 @@ export function parse_html($input: string | Element): HsonNode {
 
 function convert($el: Element): HsonNode {
     if (!($el instanceof Element)) {
-        _throw_transform_err('input to convert function is not Element', '[(parse-html): convert()]', $el)
-
+        _throw_transform_err('input to convert function is not Element', '[(parse-html): convert()]', $el);
     }
+
     const baseTag = $el.tagName;
     const tagLower = baseTag.toLowerCase();
     const { attrs: sortedAcc, meta: metaAcc } = parse_html_attrs($el);
+
     if (tagLower === STR_TAG) {
-        _throw_transform_err("literal <_str> is not allowed in input HTML", "parse-html");
+        _throw_transform_err('literal <_str> is not allowed in input HTML', 'parse-html');
     }
-
-    /* tags that the HTML spec defines as "raw text elements": */
-    const specialExceptions = ['style', 'script'];
-    if (specialExceptions.includes(tagLower)) {
-        _log('tagLower is style or script')
-        const text_content = $el.textContent?.trim();
-        if (text_content) {
-            const special_content = [CREATE_NODE({
-                _tag: STR_TAG,
-                _content: [text_content],
-            })]
-            const wrapper = CREATE_NODE({
-                _tag: ELEM_TAG,
-                _content: special_content,
-            });
-
-            return CREATE_NODE({
-                _tag: baseTag,
-                _content: [wrapper],
-                _attrs: sortedAcc,
-                _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined
-
-            });
-        }
-
-    }
-    if (tagLower.startsWith("_") && !EVERY_VSN.includes(tagLower)) {
+    if (tagLower.startsWith('_') && !EVERY_VSN.includes(tagLower)) {
         _throw_transform_err(`unknown VSN-like tag: <${tagLower}>`, 'parse-html');
     }
-    /*  proceed with general handling: */
 
-    /* process all other tags */
+    // Raw text elements: treat their textContent as a single string node
+    const specialExceptions = ['style', 'script'];
+    if (specialExceptions.includes(tagLower)) {
+        const text_content = $el.textContent?.trim();
+        if (text_content) {
+            const str = CREATE_NODE({ _tag: STR_TAG, _content: [text_content] });
+            return CREATE_NODE({
+                _tag: baseTag,
+                _attrs: sortedAcc,
+                _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined,
+                // CHANGED: no inner _elem — children go directly
+                _content: [str],
+            });
+        }
+    }
+
+    // Build children (DOM → HSON)
     _log('standard tag - processing child nodes:');
     const childNodes: HsonNode[] = [];
     const children = elementToNode($el.childNodes);
     _log(make_string(children));
 
     for (const child of children) {
-        /* primitive values are wrapped in a string or value tag */
         if (is_Primitive(child)) {
-            _log(`Primitive child found: ${child}\n creating string or BasicValue node`)
             const tag = is_string_NEW(child) ? STR_TAG : VAL_TAG;
             childNodes.push(CREATE_NODE({ _tag: tag, _content: [child] }));
-
         } else {
-            _log(`fully formed node received; pushing to childNodes\n(${make_string(child)})`)
-            /* or it's already a Node: push it directly. */
             childNodes.push(child as HsonNode);
         }
     }
 
-    /**  ---> determine the final Node structure based on tag <--- 
-     * if the current HTML tag ITSELF IS a VSN container tag (e.g., <_obj>, <_array>, <_elem>)
-     *  then its child nodes are its direct content 
-     **/
-
     _log(`determining final node structure per tag ${tagLower}`);
 
-    if (tagLower === VAL_TAG.toLowerCase()) {
-        // guard: exactly one child
+    // ---------- VSN tags in HTML ----------
+
+    if (tagLower === VAL_TAG) {
+        // CHANGED: minimal, canonical <_val> handling (coerce strings → non-string primitive)
         if (childNodes.length !== 1) {
-            _throw_transform_err("<_val> must contain exactly one value", "parse-html");
+            _throw_transform_err('<_val> must contain exactly one value', 'parse-html');
         }
 
-        const only = children[0]; // note: use *children* (pre-wrapped) not childNodes
+        const only = children[0] as unknown; // pre-wrapped atom from elementToNode
 
-        let prim: Primitive;
+        const coerceNonString = (s: string): Primitive => {
+            const v = coerce(s); // use your canonical coerce
+            return v as Primitive;
+        };
+
+        let prim: Primitive | undefined;
 
         if (is_Primitive(only)) {
-            // strings inside <_val> are coerced; non-strings pass through
-            prim = typeof only === "string" ? coerce(only) : (only as Primitive);
-
-            // if coercion stayed string, that's invalid for _val
-            if (typeof prim === "string") {
-                _throw_transform_err("<_val> cannot contain a plain string", "parse-html");
-            }
-        } else {
-            // child is a node; allow _val or _str produced earlier, else error
+            prim = (typeof only === 'string') ? coerceNonString(only) : (only as Primitive);
+        } else if (only && typeof only === 'object' && '_tag' in (only as any)) {
             const n = only as HsonNode;
-
-            if (n._tag === VAL_TAG) {
-                // unwrap one level: must be exactly one primitive child
-                const c = n._content?.[0];
-                if (!is_Primitive(c)) {
-                    _throw_transform_err("<_val> payload is not primitive", "parse-html");
-                }
-                prim = c as Primitive;
-            } else if (n._tag === STR_TAG) {
-                // came in as _str "1" → coerce to number/bool/null
-                const s = n._content?.[0];
-                const v = coerce(typeof s === "string" ? s : String(s));
-                if (typeof v === "string") {
-                    _throw_transform_err("<_val> cannot contain a plain string", "parse-html");
-                }
-                prim = v as Primitive;
-            } else {
-                _throw_transform_err("<_val> must contain a primitive (_val/_str/primitive)", "parse-html");
+            if (n._tag !== VAL_TAG && n._tag !== STR_TAG) {
+                _throw_transform_err('<_val> must contain a primitive or _str/_val', 'parse-html');
             }
+            const c = n._content?.[0];
+            if (c === undefined) _throw_transform_err('<_val> payload is empty', 'parse-html');
+            prim = (typeof c === 'string') ? coerceNonString(c) : (c as Primitive);
+        } else {
+            _throw_transform_err('<_val> payload is not an atom', 'parse-html');
         }
 
-        // return canonical _val node
-        return CREATE_NODE({ _tag: VAL_TAG, _content: [prim] });
-    } else if (tagLower === OBJ_TAG) {
-        /*  "children" of <_obj> are the object's properties (as nodes) */
+        if (typeof prim === 'string') {
+            _throw_transform_err('<_val> cannot contain a string after coercion', 'parse-html', prim);
+        }
+
+        return CREATE_NODE({ _tag: VAL_TAG, _content: [prim as Primitive] });
+    }
+
+    if (tagLower === OBJ_TAG) {
+        // Children are property nodes (already produced under this element)
         return CREATE_NODE({ _tag: OBJ_TAG, _content: childNodes });
-    } else if (tagLower === ARR_TAG) {
-        _log('array detected; returning in _array wrapper')
-        /* children of an <_array> should be <_ii> nodes. */
-        if (!childNodes.every(node => is_indexed_NEW(node))) _throw_transform_err('_array children are not valid index tags', 'parse_html');
+    }
+
+    if (tagLower === ARR_TAG) {
+        _log('array detected; returning in _array wrapper');
+        if (!childNodes.every(node => is_indexed_NEW(node))) {
+            _throw_transform_err('_array children are not valid index tags', 'parse-html');
+        }
         return CREATE_NODE({ _tag: ARR_TAG, _content: childNodes });
-    } else if (tagLower === II_TAG) {
-        if (childNodes.length !== 1) _throw_transform_err('<_ii> must have exactly one child', 'parse-html');
+    }
+
+    if (tagLower === II_TAG) {
+        if (childNodes.length !== 1) {
+            _throw_transform_err('<_ii> must have exactly one child', 'parse-html');
+        }
         return CREATE_NODE({
             _tag: II_TAG,
             _content: [childNodes[0]],
-            _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined
+            _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined,
         });
-    } else if (tagLower === ELEM_TAG) {
-        /* _elem should not be wrapped but should disappear back into the HTML */
+    }
+
+    if (tagLower === ELEM_TAG) {
         _throw_transform_err('_elem tag found in html', 'parse-html');
     }
 
-    /*  ---> default: "standard tag" (e.g., "div", "p", "kingdom", "_root") <--- */
-
-    /* its HsonNode._content must be an array containing a single VSN
-         or an empty array if it had no content */
-
+    // ---------- Default: normal HTML element ----------
     if (childNodes.length === 0) {
-        /* tag is empty/void (e.g., <p></p> or <extinctGroups></extinctGroups>)
-             its HsonNode's content should be [] so simply return `content:[]` */
         _log('void node detected; returning empty new node');
         return CREATE_NODE({ _tag: baseTag, _content: [], _attrs: sortedAcc });
     }
-    
-    // 07OCT2025 -- this may be causing problems BUG DEV
-    // else if (
-    //     (childNodes.length === 1 && is_Node_NEW(childNodes[0])
-    //         && (childNodes[0]._tag === OBJ_TAG || childNodes[0]._tag === ARR_TAG))) {
-    //     _log('child nodes tag is: ', childNodes[0]._tag)
-    //     return CREATE_NODE({ _tag: baseTag, _content: [childNodes[0]], _attrs: sortedAcc });
 
-    // }
-    
-
+    // CHANGED: wrap children into a single <_elem> child
     return CREATE_NODE({
         _tag: baseTag,
         _attrs: sortedAcc,
-        _meta: metaAcc,
-        _content: [CREATE_NODE({ _tag: ELEM_TAG, _content: childNodes })]
+        _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined,
+        _content: [
+            CREATE_NODE({
+                _tag: ELEM_TAG,
+                _content: childNodes,
+            }),
+        ],
     });
+}
 
-
-    console.error($el)
-    _throw_transform_err('end of parser function reached; tag does not match any case', 'parse_html');
+// Wrap the result at _root correctly (no blanket _elem around clusters)
+function wrap_as_root(node: HsonNode): HsonNode {
+    if (node._tag === ROOT_TAG) return node; // already rooted
+    if (node._tag === OBJ_TAG || node._tag === ARR_TAG || node._tag === ELEM_TAG) {
+        return CREATE_NODE({ _tag: ROOT_TAG, _content: [node] });
+    }
+    return CREATE_NODE({
+        _tag: ROOT_TAG,
+        _content: [CREATE_NODE({ _tag: ELEM_TAG, _content: [node] })],
+    });
 }
 
 /** 

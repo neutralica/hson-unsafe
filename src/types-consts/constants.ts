@@ -36,7 +36,7 @@ export const EVERY_VSN: string[] = [
 
 export type VSNTag = typeof VSN_TAGS[number];
 
-
+export const SCALAR_NODES = [STR_TAG, VAL_TAG] as string[];
 export const ELEM_OBJ_ARR = [ELEM_TAG, ARR_TAG, OBJ_TAG] as string[];
 export const ELEM_OBJ = [ELEM_TAG, OBJ_TAG];
 

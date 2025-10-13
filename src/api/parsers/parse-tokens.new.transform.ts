@@ -26,6 +26,8 @@ const make_leaf = (v: Primitive): HsonNode =>
     : { _tag: VAL_TAG, _meta: {}, _content: [v] });
 
 
+
+
 /**
  * assembles a flat array of hson tokens into a hierarchical hsonnode tree.
  *
@@ -41,7 +43,6 @@ const make_leaf = (v: Primitive): HsonNode =>
    this wraps multiple top-level nodes in a _root with elem semantics
 */
 export function parse_tokens($tokens: Tokens[]): HsonNode {
-    _log('parsing tokens: ', make_string($tokens));
     const nodes: HsonNode[] = [];
     const topCloseKinds: CloseKind[] = [];
 
@@ -74,40 +75,35 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         if (!isTokenOpen(t)) {
             _throw_transform_err(`expected OPEN, got ${t?.kind ?? 'eof'}`, 'parse_tokens_new');
         }
+        const open = t as TokenOpen;
 
-        const open = t;
-        if (!open || open.kind !== TOKEN_KIND.OPEN) {
-            _throw_transform_err(`expected OPEN, got ${open?.kind ?? 'eof'}`, 'parse_tokens_new');
-        }
         const { attrs, meta } = split_attrs_meta(open.rawAttrs);
         const node: HsonNode = { _tag: open.tag, _meta: meta, _content: [] };
 
         // VSNs carry no _attrs
-        const isVSN = open.tag === STR_TAG || open.tag === VAL_TAG
-            || open.tag === ARR_TAG || open.tag === OBJ_TAG
-            || open.tag === ELEM_TAG || open.tag === ROOT_TAG
-            || open.tag === II_TAG;
+        const isVSN =
+            open.tag === STR_TAG || open.tag === VAL_TAG ||
+            open.tag === ARR_TAG || open.tag === OBJ_TAG ||
+            open.tag === ELEM_TAG || open.tag === ROOT_TAG ||
+            open.tag === II_TAG;
 
         if (!isVSN && Object.keys(attrs).length) {
             node._attrs = attrs;
         }
+
         let sawClose: TokenEnd | null = null;
-        const kids: HsonNode[] = []; // CHANGED: keep only nodes, not primitives
+        const kids: HsonNode[] = [];
 
         while (ix < N) {
             const t = _peek(); if (!t) break;
 
-            if (t.kind === TOKEN_KIND.EMPTY_OBJ) {
-                _take();
-                // nodes.push(NEW_NEW_NODE({ _tag: OBJ_TAG, _meta: {}, _content: [] }));
-                continue;
-            }
+            if (t.kind === TOKEN_KIND.EMPTY_OBJ) { _take(); continue; }
             if (t.kind === TOKEN_KIND.CLOSE) { sawClose = _take() as TokenEnd; break; }
 
             if (t.kind === TOKEN_KIND.TEXT) {
                 const tt = _take() as TokenText;
                 const prim = tt.quoted ? tt.raw : coerce(tt.raw);
-                kids.push(make_leaf(prim));                  // CHANGED: push _str/_val leaf
+                kids.push(make_leaf(prim));
                 continue;
             }
 
@@ -119,28 +115,79 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
 
         if (!sawClose) _throw_transform_err(`missing CLOSE for <${open.tag}>`, 'parse_tokens_NEW');
 
-        const hasKids = kids.length > 0;
-        if (open.tag === ROOT_TAG) {
-            const hasKids = kids.length > 0;
+        const closeKind = sawClose.close;
 
-            // keep direct array under _root
-            if (kids.length === 1 && (kids[0] as HsonNode)._tag === ARR_TAG) {
+        // ---------- Special case: <_root> ----------
+        if (open.tag === ROOT_TAG) {
+            // keep kids gathered as-is
+            if (kids.length === 1 && kids[0]._tag === ARR_TAG) {
+                // pass through array cluster unchanged
                 node._content = kids as NodeContent;
-            } else if (hasKids) {
-                // CHANGED: always object semantics under _root for non-array roots
-                node._content = [{
-                    _tag: OBJ_TAG,
-                    _meta: {},
-                    _content: kids as NodeContent,
-                }];
+            } else if (kids.length > 0) {
+                // CHANGED: choose cluster by the root’s own closer
+                const clusterTag = (closeKind === CLOSE_KIND.elem) ? ELEM_TAG : OBJ_TAG; // <-- CHANGED
+                node._content = [{ _tag: clusterTag, _meta: {}, _content: kids as NodeContent }]; // <-- CHANGED
             } else {
                 node._content = [];
             }
+            // (optional) if you still want the stack:
+            if ($isTopLevel) topCloseKinds.push(closeKind);
+            return { node, closeKind };
         }
 
-        if ($isTopLevel) topCloseKinds.push(sawClose.close);
-        return { node, closeKind: sawClose.close };
+        // ---------- VSN passthroughs ----------
+        if (open.tag === OBJ_TAG || open.tag === ARR_TAG || open.tag === ELEM_TAG) {
+            node._content = kids as NodeContent;
+            if ($isTopLevel) topCloseKinds.push(closeKind);
+            return { node, closeKind };
+        }
+
+        if (open.tag === STR_TAG || open.tag === VAL_TAG || open.tag === II_TAG) {
+            // These should already have been produced as leaves/structured nodes by the inner logic;
+            // we still attach whatever we gathered (defensive), but normally these won’t be parsed via readTag.
+            node._content = kids as NodeContent;
+            if ($isTopLevel) topCloseKinds.push(closeKind);
+            return { node, closeKind };
+        }
+
+        // ---------- Normal tag: decide semantics by closeKind ----------
+        if (closeKind === CLOSE_KIND.obj) {
+            // PROPERTY semantics (JSON-mode)
+            if (kids.length === 0) {
+                node._content = [{ _tag: OBJ_TAG, _meta: {}, _content: [] }];
+            } else if (kids.length === 1) {
+                const only = kids[0];
+                if (only._tag === OBJ_TAG || only._tag === ARR_TAG) {
+                    // already structured
+                    node._content = [only];
+                } else {
+                    // scalar or a single element → inner _obj
+                    node._content = [{ _tag: OBJ_TAG, _meta: {}, _content: [only] }];
+                }
+            } else {
+                // ELEMENT semantics
+                // CHANGED: ensure a single _elem wrapper around element children (idempotent)
+                if (kids.length === 1 && kids[0]._tag === ELEM_TAG) {
+                    // already clustered — passthrough
+                    node._content = kids as NodeContent; // CHANGED: no-op when already _elem
+                } else {
+                    node._content = [{
+                        _tag: ELEM_TAG,
+                        _meta: {},
+                        _content: kids as NodeContent,
+                    }]; // CHANGED: wrap scalars/tags uniformly
+                }
+            }
+        } else {
+            // ELEMENT semantics
+            node._content = kids as NodeContent;
+        }
+
+        if ($isTopLevel) topCloseKinds.push(closeKind);
+        return { node, closeKind };
     }
+
+
 
     /* parse an array starting at ARRAY_OPEN */
 
@@ -201,40 +248,20 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             const tt = _take() as TokenText;
             const prim = tt.quoted ? tt.raw : coerce(tt.raw);
             nodes.push(
-                typeof prim === 'string'
-                    ? { _tag: STR_TAG, _meta: {}, _content: [prim] }
-                    : { _tag: VAL_TAG, _meta: {}, _content: [prim] }
+                make_leaf(prim)
             );
             continue;
         }
         _throw_transform_err(`unexpected top-level token ${t.kind}`, 'parse_tokens_new');
     }
     if (nodes.length === 1 && nodes[0]._tag === ROOT_TAG) {
-        const root = nodes[0];
-        const kids = (root._content ?? []) as HsonNode[];
-
-        // already clustered → passthrough
-        if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ARR_TAG || kids[0]._tag === ELEM_TAG)) {
-            return root;
-        }
-
-        // prefer the actual closer we recorded for <_root …>
-        const rootCloser: CloseKind | null = topCloseKinds.length ? topCloseKinds[topCloseKinds.length - 1] : null;
-
-        if (kids.length === 0) {
-            // empty explicit root = empty object cluster
-            root._content = [CREATE_NODE({ _tag: OBJ_TAG, _meta: {}, _content: [] })];
-        } else {
-            const clusterTag = (rootCloser === CLOSE_KIND.obj) ? OBJ_TAG : ELEM_TAG;
-            root._content = [CREATE_NODE({ _tag: clusterTag, _meta: {}, _content: kids })];
-        }
-        return root;
+        return nodes[0]; // <-- CHANGED
     }
 
     /* implicit-root fallback (no explicit <_root>) */
     {
         const kids = nodes;
-
+        console.warn('kids');
         // if already a single cluster, keep as-is
         if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ARR_TAG || kids[0]._tag === ELEM_TAG)) {
             return CREATE_NODE({
@@ -255,7 +282,6 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         const allProps = kids.every(n => typeof n._tag === 'string' && !n._tag.startsWith('_'));
         const unique = allProps && (new Set(kids.map(n => n._tag))).size === kids.length;
         const clusterTag = unique ? OBJ_TAG : ELEM_TAG;
-
         return CREATE_NODE({
             _tag: ROOT_TAG, _meta: {},
             _content: [CREATE_NODE({ _tag: clusterTag, _meta: {}, _content: kids })],

@@ -1,7 +1,7 @@
 // --- serialize-hson.render.ts ---
 
 import { Primitive } from "../../core/types-consts/core.types";
-import { ARR_TAG, ELEM_TAG, EVERY_VSN, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
+import { ARR_TAG, ELEM_OBJ_ARR, ELEM_TAG, EVERY_VSN, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { _snip } from "../../utils/snip.utils";
 import { serialize_style } from "../../utils/serialize-css.utils";
 import { serialize_primitive } from "../../utils/serialize-primitive.utils";
@@ -10,6 +10,7 @@ import { is_Node } from "../../utils/node-guards.new.utils";
 import { assert_invariants } from "../../utils/assert-invariants.utils";
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
 import { HsonAttrs, HsonMeta, HsonNode } from "../../types-consts/node.new.types";
+import { make_string } from "../../utils/make-string.utils";
 
 // --- serialize-hson.render.ts ---
 //
@@ -54,7 +55,6 @@ function cycleGuard() {
         }
     };
 }
-
 
 /* attrs considered empty if absent or has no own keys (style:"" counts as present) */
 function isEmptyAttrs(attrs?: HsonAttrs): boolean {
@@ -221,35 +221,48 @@ function emitNode(
 
         /* 5) _root: keep on wire (current policy); choose closer by melted child */
         if (node._tag === ROOT_TAG) {
-            _log('_root tag encountered!');
+            // _root never carries attrs/meta in wire form; if present that’s a higher-level invariant error,
+            // but the serializer should ignore them (do NOT emit them).
             const kids = (node._content ?? []) as HsonNode[];
 
-            const attrsStr = buildAttrString(node._attrs, node._meta);
-
+            // 1) Empty explicit <_root> → empty object cluster shorthand
             if (kids.length === 0) {
-                return `${pad}<${node._tag}${attrsStr}\n${pad}<>\n${pad}>`;
+                // Prefer the canonical empty-obj under root:
+                // <_root
+                //   <>
+                // >
+                return `<${ROOT_TAG}\n${pad}<>\n>`;
             }
 
-            if (kids.length > 1) {
-                _throw_transform_err("_root must have exactly one cluster child", "serialize_hson_NEW");
+            // 2) Must have exactly one cluster child
+            if (kids.length !== 1) {
+                _throw_transform_err('_root must have exactly one cluster child', 'serialize_hson_NEW', make_string(kids));
+            }
+            const cluster = kids[0];
+
+            if (!ELEM_OBJ_ARR.includes(cluster._tag)) {
+                _throw_transform_err('_root child must be _obj | _elem | _arr', 'serialize_hson_NEW', make_string(cluster));
             }
 
-            const cluster = kids[0]!;
-            if (!(cluster._tag === OBJ_TAG || cluster._tag === ELEM_TAG || cluster._tag === ARR_TAG)) {
-                _throw_transform_err("_root child must be _obj | _elem | _arr", "serialize_hson_NEW");
-            }
+            // 3) Do NOT normalize/wrap here. Propagate the child cluster as-is.
+            //    We also DO NOT convert ARR→OBJ anymore. Whatever cluster is present, we emit it raw.
+            const inner = emitNode(
+                cluster /* unchanged */,
+                depth + 1,
+                cluster._tag as ParentCluster /* parentCluster = child */,
+                guard
+            );
 
-            // your normalized policy (unchanged logic, just no filtering)
-            const normalized = cluster;
+            // --- CHANGED: choose _root closer based on the melted child kind
+            // _elem → '/>'  ;  _obj/_arr → '>'
+            const rootCloser = (cluster._tag === ELEM_TAG) ? '/>' : '>';
 
-            // Parent semantics: ARR stays OBJ for its children; ELEM stays ELEM.
-            const nextParent: ParentCluster =
-                normalized._tag === ARR_TAG ? OBJ_TAG
-                    : normalized._tag === ELEM_TAG ? ELEM_TAG
-                        : OBJ_TAG;
-
-            const inner = emitNode(normalized, depth + 1, nextParent, guard);
-            return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}>`;
+            // Keep the same newline formatting: closer on its own line, left-aligned (no pad),
+            // to match previous emissions and your examples.
+            // Before:
+            //   return `<${ROOT_TAG}\n${pad}${inner}\n>`;
+            // After:
+            return `<${ROOT_TAG}\n${pad}${inner}\n${rootCloser}`;
         }
 
         /* 4) _obj / _elem clusters: melt; never emit their tags */
@@ -269,7 +282,7 @@ function emitNode(
             if (node._tag === OBJ_TAG) {
                 return kids.map(prop => {
                     // narrow
-                    if (!prop || typeof prop !== "object" || !("_tag" in prop)) {
+                    if (!is_Node(prop)) {
                         _throw_transform_err("serialize-hson: non-node in _obj._content", "emitNode");
                     }
                     const key = prop._tag as string;

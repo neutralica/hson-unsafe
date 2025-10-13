@@ -1,7 +1,7 @@
 // parse-json.transform.hson.ts
 
 import { HsonNode, Primitive } from "../..";
-import { is_Primitive, is_Object, is_not_string } from "../../core/utils/guards.core.utils";
+import { is_Primitive, is_Object, is_not_string, is_string } from "../../core/utils/guards.core.utils";
 import { VAL_TAG, STR_TAG, ARR_TAG, OBJ_TAG, EVERY_VSN, II_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
 import { _DATA_INDEX, _META_DATA_PREFIX } from "../../types-consts/constants";
@@ -10,6 +10,7 @@ import { assert_invariants } from "../../utils/assert-invariants.utils";
 import { _snip } from "../../utils/snip.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { make_string } from "../../utils/make-string.utils";
+import { is_string_NEW } from "../../utils/node-guards.new.utils";
 
 
 
@@ -38,9 +39,34 @@ function getTag($value: JsonType): string {
         return VAL_TAG;                                   // _val (num|bool|null)
     }
 
-    _throw_transform_err('invalid value provided', 'getTag', $value);
+    _throw_transform_err('invalid value provided', 'getTag', '???');
 }
 
+
+
+const FORBIDDEN_JSON_VSN = new Set([
+    '_obj', '_arr', '_ii', '_str', '_val',
+]); // _attrs is HTML-source only
+
+function firstNonUnderscoreKey(obj: Record<string, unknown>): string | undefined {
+    return Object.keys(obj).find(k => !k.startsWith('_'));
+}
+
+function nonUnderscoreKeys(obj: Record<string, unknown>): string[] {
+    return Object.keys(obj).filter(k => !k.startsWith('_'));
+}
+
+function assertNoForbiddenVSNKeysInJSON(obj: Record<string, unknown>, where: string) {
+    for (const k of Object.keys(obj)) {
+        if (FORBIDDEN_JSON_VSN.has(k)) {
+            _throw_transform_err(
+                `JSON input must not contain "${k}" (reserved for HSON/HTML)`,
+                'parse_json',
+                `${where}\n${make_string(obj)}`
+            );
+        }
+    }
+}
 
 /**
  * recursively parses a json string or a javascript object into the
@@ -56,178 +82,159 @@ function getTag($value: JsonType): string {
  * @param {string} $parentTag - the parent tag, usually necessary for determining which VSN to create 
  * @returns {HsonNode} the root hsonnode of the resulting data structure.
  */
-
-function nodeFromJson(
+export function nodeFromJson(
     $srcJson: JsonType,
     $parentTag: string
 ): { node: HsonNode } {
-    /* catch primitive nodes */
 
-    if ($parentTag.startsWith("_") && !EVERY_VSN.includes($parentTag)) {
-        _throw_transform_err(`unknown VSN-like tag: <${$parentTag}>`, 'parse-html', make_string($srcJson));
-    }
-
+    // ---- 0) Primitive branch (strings → _str, others → _val) ----
     if ($parentTag === STR_TAG || $parentTag === VAL_TAG) {
         if (!is_Primitive($srcJson)) {
-            _throw_transform_err('values must be string, bool, number, or null', 'parse_json');
+            _throw_transform_err('primitive expected (string|number|boolean|null)', 'parse_json', make_string($srcJson));
         }
-        if (is_not_string($srcJson)) {
-            return {
-                node: CREATE_NODE({
-                    _tag: VAL_TAG,
-                    _content: [$srcJson as Primitive],
-                }),
-            };
-        } else {
-            const node = CREATE_NODE({
-                _tag: STR_TAG,
-                _content: [$srcJson as Primitive],
-            });
-            return { node };
+        if (typeof $srcJson === 'string') {
+            return { node: CREATE_NODE({ _tag: STR_TAG, _content: [$srcJson] }) };
         }
+        return { node: CREATE_NODE({ _tag: VAL_TAG, _content: [$srcJson as Primitive] }) };
     }
 
-    /*  arrays -> _array VSN */
+    // ---- 1) Array branch (_arr → _ii[data-_index]) ----
     if ($parentTag === ARR_TAG) {
-        const array = $srcJson as JsonType[];
-        const items: HsonNode[] = array.map((val, ix) => {
-            const itemStructuralTag = getTag(val);
-            const itemConversion = nodeFromJson(val, itemStructuralTag);
-
-            let dataIx: HsonMeta = { [_DATA_INDEX]: String(ix) };
-
+        if (!Array.isArray($srcJson)) {
+            _throw_transform_err('array expected for ARR_TAG parent', 'parse_json', make_string($srcJson));
+        }
+        const items = ($srcJson as JsonType[]).map((val, ix) => {
+            const childTag = getTag(val);
+            const child = nodeFromJson(val, childTag).node;
             return CREATE_NODE({
-                _tag: II_TAG, /* <_ii> wrapper */
-                _content: [itemConversion.node], /* the item itself */
-                _meta: dataIx
+                _tag: II_TAG,
+                _meta: { 'data-_index': String(ix) },
+                _content: [child]
             });
         });
-        return {
-            node: CREATE_NODE({
-                _tag: ARR_TAG,
-                _content: items,
-            }),
-        };
+        return { node: CREATE_NODE({ _tag: ARR_TAG, _content: items }) };
     }
 
-    /* catch objects */
+    // ---- 2) Object branch (three mutually exclusive shapes) ----
     if ($parentTag === OBJ_TAG) {
-        const RESERVED = new Set(["_attrs", "_meta", "_elem", "_obj", "_arr", "_ii", "_root", "_str", "_val"]);
+        if (!$srcJson || typeof $srcJson !== 'object' || Array.isArray($srcJson)) {
+            _throw_transform_err('object expected for OBJ_TAG parent', 'parse_json', make_string($srcJson));
+        }
+        const obj = $srcJson as Record<string, unknown>;
 
-        if ($srcJson && typeof $srcJson === "object" && !Array.isArray($srcJson)) {
-            const obj: Record<string, unknown> = $srcJson as Record<string, unknown>;
+        // A) HARD-CODED ROOT: { _root: <cluster-or-primitive> } (exclusive)
+        if (Object.prototype.hasOwnProperty.call(obj, ROOT_TAG)) {
+            // No other non-underscore siblings allowed
+            const nonUS = nonUnderscoreKeys(obj);
+            if (!(nonUS.length === 0 || (nonUS.length === 1 && nonUS[0] === ROOT_TAG))) {
+                _throw_transform_err('"_root" object must not have non-underscore siblings', 'parse_json', make_string(obj));
+            }
+            // Parse the root payload
+            const rootPayload = obj[ROOT_TAG] as JsonType;
+            if (rootPayload === undefined) {
+                // Empty _root (allowed) → no children
+                return { node: CREATE_NODE({ _tag: ROOT_TAG, _content: [] }) };
+            }
+            const childTag = getTag(rootPayload);
+            const child = nodeFromJson(rootPayload, childTag).node;
 
-            // ─────────────────────────────────────────────────────────────
-            // NEW: handle the (legal) element-cluster object: { _elem: [ { _attrs?, <tag>: <children> } ] }
-            //      NOTE: _elem *inside* a generic _obj property is illegal, but this object *is itself* the cluster.
-            // ─────────────────────────────────────────────────────────────
-            // ─────────────────────────────────────────────────────────────
-            // HANDLE ELEMENT-CLUSTER OBJECT: { _elem: [ ...items ] }
-            // ─────────────────────────────────────────────────────────────
-            if (Array.isArray((obj as any)._elem)) {
-                // CHANGED: accept 0..n (no "exactly one" rule here)
-                const items = (obj as any)._elem as Array<unknown>;
+            // Enforce: _root child must be a cluster (_obj|_arr|_elem). If scalar, coerce to _elem wrapper.
+            const isScalar = (child._tag === STR_TAG || child._tag === VAL_TAG);
+            const clusterChild = isScalar
+                ? CREATE_NODE({ _tag: ELEM_TAG, _content: [child] })
+                : child;
 
-                const children: HsonNode[] = [];
+            return { node: CREATE_NODE({ _tag: ROOT_TAG, _content: [clusterChild] }) };
+        }
 
-                for (let i = 0; i < items.length; i++) {
-                    const it = items[i];
+        // B) ELEMENT HANDLING { _elem: [...] } 
+        if (Object.prototype.hasOwnProperty.call(obj, ELEM_TAG)) {
 
-                    // CHANGED: strings -> _str
-                    if (typeof it === 'string') {
-                        children.push(CREATE_NODE({ _tag: STR_TAG, _content: [it] }));
-                        continue;
-                    }
-
-                    // CHANGED: boolean|number|null -> _val
-                    if (it === null || typeof it === 'boolean' || typeof it === 'number') {
-                        children.push(CREATE_NODE({ _tag: VAL_TAG, _content: [it as Primitive] }));
-                        continue;
-                    }
-
-                    // Objects: must be an element-object with exactly one non-underscore key (the tag)
-                    if (it && typeof it === 'object' && !Array.isArray(it)) {
-                        const elObj = it as Record<string, unknown>;
-
-                        // NOTE: Only _attrs is allowed as a leading underscore key here
-                        const tagKeys = Object.keys(elObj).filter(k => !k.startsWith('_'));
-
-                        const tagName = tagKeys[0];
-                        const rawChildren = elObj[tagName] as JsonType;
-
-                        // _attrs is optional; VSNs never carry _attrs
-                        const elemAttrs: HsonAttrs | undefined =
-                            elObj._attrs && typeof elObj._attrs === "object" && !Array.isArray(elObj._attrs)
-                                ? (elObj._attrs as HsonAttrs)
-                                : undefined;
-
-                        // CHANGED: build element children WITHOUT boxing scalars in _obj (that rule is for generic _obj props)
-                        let tagKids: HsonNode[] = [];
-                        if (rawChildren != null) {
-                            if (typeof rawChildren === 'string') {
-                                if (rawChildren.length > 0) tagKids.push(CREATE_NODE({ _tag: STR_TAG, _content: [rawChildren] }));
-                            } else if (Array.isArray(rawChildren) || is_Object(rawChildren)) {
-                                tagKids.push(nodeFromJson(rawChildren, getTag(rawChildren)).node);
-                            } else {
-                                tagKids.push(CREATE_NODE({ _tag: VAL_TAG, _content: [rawChildren as Primitive] }));
-                            }
-                        }
-
-                        // assemble the HTML tag node
-                        children.push(CREATE_NODE({
-                            _tag: tagName,
-                            _attrs: elemAttrs,
-                            _content: tagKids
-                        }));
-                        continue;
-                    }
-
-                    // Anything else is illegal under _elem
-                    return _throw_transform_err(
-                        `invalid item at _elem[${i}] (must be string|number|boolean|null or element-object)`,
-                        "parse_json",
-                        make_string(it)
-                    );
-                }
-
-                // RETURN: _elem VSN containing 0..n children (tags/_str/_val)
-                return { node: CREATE_NODE({ _tag: ELEM_TAG, _content: children }) };
+            const list = obj[ELEM_TAG];
+            if (!Array.isArray(list)) {
+                _throw_transform_err('"_elem" must contain an array', 'parse_json', make_string(list));
             }
 
-            const objAttrs: HsonAttrs | undefined =
-                (obj._attrs && typeof obj._attrs === "object" && !Array.isArray(obj._attrs))
-                    ? (obj._attrs as HsonAttrs)
-                    : undefined;
+            // _attrs is HTML-source only: disallow in JSON element-objects
+            const children: HsonNode[] = (list as JsonType[]).map((val, ix) => {
+                // string → _str, number|boolean|null → _val
+                if (is_string(val)) { return CREATE_NODE({ _tag: STR_TAG, _content: [val] }); }
+                if (is_Primitive(val)) {
+                    return CREATE_NODE({ _tag: VAL_TAG, _content: [val as Primitive] });
+                }
 
-            const objMeta: HsonMeta = dataOnlyMeta((obj as any)._meta);
+                if (val && typeof val === 'object' && !Array.isArray(val)) {
+                    const elObj = val as Record<string, unknown>;
 
-            const nonReservedKeys = Object.keys(obj).filter(k => !RESERVED.has(k));
+                    // Forbid raw HSON/HTML-only keys in JSON element-objects
+                    assertNoForbiddenVSNKeysInJSON(elObj, `"_elem"[${ix}]`);
 
-            // ─────────────────────────────────────────────────────────────
-            // GENERIC OBJECT → _obj VSN with property nodes
-            // ─────────────────────────────────────────────────────────────
-            const propertyNodes: HsonNode[] = nonReservedKeys.map((key) => {
-                const raw: JsonType = obj[key] as JsonType;
-                const built = nodeFromJson(raw, getTag(raw)).node;
+                    // Exactly one non-underscore tag key required
+                    const tagKeys = nonUnderscoreKeys(elObj);
+                    if (tagKeys.length !== 1) {
+                        _throw_transform_err('element-object must have exactly one tag key', 'parse_json', make_string(elObj));
+                    }
 
-                // keep your “always-wrap scalars under _obj” rule for generic object properties
-                const child: HsonNode =
-                    (built._tag === STR_TAG || built._tag === VAL_TAG)
-                        ? CREATE_NODE({ _tag: OBJ_TAG, _content: [built] })
-                        : built;
+                    const tagName = tagKeys[0];
+                    const rawChildren = elObj[tagName] as JsonType;
 
-                return CREATE_NODE({ _tag: key, _content: [child] });
+                    // Build the tag’s children (0..1 child node). Scalars and clusters both allowed.
+                    let tagKids: HsonNode[] = [];
+                    if (rawChildren !== undefined) {
+                        const kidTag = getTag(rawChildren);
+                        const kidNode = nodeFromJson(rawChildren, kidTag).node;
+                        tagKids = [kidNode];
+                    }
+
+                    // Assemble the element node (no _attrs in JSON)
+                    return CREATE_NODE({ _tag: tagName, _content: tagKids });
+                }
+
+                _throw_transform_err(
+                    `invalid item in [${ix}] (must be string|number|boolean|null or element-object)`,
+                    'parse_json',
+                    make_string(val)
+                );
             });
 
-            return {
-                node: CREATE_NODE({ _tag: OBJ_TAG, _content: propertyNodes }),
-            };
+            return { node: CREATE_NODE({ _tag: ELEM_TAG, _content: children }) };
         }
+
+        // C) GENERIC OBJECT HANDLING → _obj
+        assertNoForbiddenVSNKeysInJSON(obj, '[generic object check, parseJSON]');
+        const propKeys = Object.keys(obj);
+
+        const propertyNodes: HsonNode[] = propKeys.map((key) => {
+            const raw = obj[key] as JsonType;
+
+            // Treat explicit empty-string as a void property node (no child)
+            if (raw === '') {
+                return CREATE_NODE({ _tag: key, _content: [] });
+            }
+
+            const childTag = getTag(raw);
+            const built = nodeFromJson(raw, childTag).node;
+
+            // Scalar children get wrapped once in an _obj cluster
+            const child =
+                (built._tag === STR_TAG || built._tag === VAL_TAG)
+                    ? CREATE_NODE({ _tag: OBJ_TAG, _content: [built] })
+                    : built;
+
+            return CREATE_NODE({ _tag: key, _content: [child] });
+        });
+
+        return { node: CREATE_NODE({ _tag: OBJ_TAG, _content: propertyNodes }) };
     }
 
-    /* error fallback */
-    _throw_transform_err("recurse_json_for_node: unhandled tag:", "parse_json", make_string($srcJson));
+    // ---- 3) Fallback guard (parentTag/value mismatch) ----
+    _throw_transform_err(
+        `unhandled branch: parentTag=${$parentTag}`,
+        'parse_json',
+        make_string($srcJson)
+    );
 }
+
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
 export function parse_json($input: string | JsonType): HsonNode {
@@ -267,5 +274,6 @@ export function parse_json($input: string | JsonType): HsonNode {
         _content: [node],
     });
     assert_invariants(root, 'root');
+    
     return root;
 }

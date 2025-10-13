@@ -457,6 +457,7 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens[] {
 
     /* debug print — neutral summary, not the old make_string */
     if (_VERBOSE) {
+    console.warn('hey!')
         console.groupCollapsed('returning tokens (summary)');
         for (const t of finalTokens) {
             switch (t.kind) {

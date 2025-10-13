@@ -42,192 +42,134 @@ function stringify_style(obj: Record<string, string>): string {
 }
 
 
-/**
- * Converts a Primitive value (or null/undefined) to its XML string representation.
- * Escapes strings, returns other primitives as strings.
- * Handles null/undefined by returning an empty string.
- * @param value The primitive value, or null, or undefined. // <-- Updated comment
- * @returns String representation for XML, or empty string for null/undefined.
- */
-function primitive_to_string(p: Primitive): string {
-  _log(`primitive to XML string: received:  ${p}`)
-  /* catch strings */
-  if (typeof p === 'string') {
-    /* must be escape before rendering HTML string:
-        use JSON.stringify to add the quotes, then escape the result 
-          i.e.:  "1" -> "\"1\"" -> "&quot;1&quot;" */
-    return escape_html(JSON.parse(JSON.stringify(p)));
-  }
-  /* fallback must be non-string Primitive:
-        string it and escape it thusly: */
+// DROP-IN: serialize_xml + serialize_html (2.0) — with fixes
+// - _str melts to bare text
+// - _val is literal (<_val>…</_val>)
+// - _elem flattens; _root melts its single cluster
+// - _obj property loop is total; no silent self-closing when a child exists
+// - self-close only when computed inner === ""
+// - consistent primitive escaping via primitive_to_xml
+// Assumes these exist in your module scope:
+//   - is_Primitive, is_Node, build_wire_attrs, escape_html, escape_attr,
+//     clone_node, assert_invariants, _throw_transform_err, make_string
+//   - constants: STR_TAG, VAL_TAG, ROOT_TAG, OBJ_TAG, ARR_TAG, II_TAG, ELEM_TAG, EVERY_VSN
+// ---------------------------------------------------------------------------
+
+function primitive_to_xml(p: Primitive): string {
+  // same semantics you had; strings escape as text, others stringify+escape
+  if (typeof p === 'string') return escape_html(p);
   return escape_html(String(p));
 }
 
-/**
- * serializes a Node structure into an XML-safe string fragment
- * - flattens ROOT_TAG and ELEM_TAG nodes
- * - unwraps NON_INDEX_TAG nodes
- * - renders TEXT_NODE_TAG content directly (escaped)
- * - renders other tags (including _array, _ii, _obj) literally as XML elements
- * - handles attributes and flags
- * - correctly formats void elements
- *
- * @param node the node or primitive to serialize
- * @returns an XML string fragment representing the node, or an empty string for null/undefined input
- */
 export function serialize_xml(node: HsonNode | Primitive | undefined): string {
-  /* catch BasicValues */
-  _log(`node to XML: processing ${make_string(node)}`)
-
-  if (is_Primitive(node)) {
-    return primitive_to_string(node);
-  }
+  if (is_Primitive(node)) return primitive_to_xml(node);
   if (node === undefined) {
     _throw_transform_err('undefined node received', 'serialize_html', node);
   }
-  /* handle the various VSNs */
-  const { _tag: tag, _content: content = [], _meta = {} } = node;
 
-  if (tag.startsWith("_") && !EVERY_VSN.includes(tag)) {
-    _throw_transform_err(`unknown VSN-like tag: <${tag}>`, 'parse-html');
+  const { _tag: tag, _content: content = [] } = node;
+
+  // CHANGED(label): correct origin label for error
+  if (tag.startsWith('_') && !EVERY_VSN.includes(tag)) {
+    _throw_transform_err(`unknown VSN-like tag: <${tag}>`, 'serialize_html');
   }
+
   switch (tag) {
-    case ELEM_TAG: { // already present; keep it
-      return content.map((child) => serialize_xml(child)).join('\n');
-    }
-
-    case ROOT_TAG: {
-      // _root must have exactly one cluster child: _elem | _obj | _arr
-      const kids = content as HsonNode[];
-      if (kids.length !== 1) {
-        _throw_transform_err("_root must have exactly one child", "serialize_html");
-      }
-      // Melt the child cluster — do NOT emit <_root> in HTML
-      return serialize_xml(kids[0] as HsonNode);
-    }
-
-    case OBJ_TAG: {
-      // Melt object cluster: each property node becomes an HTML element
-      const props = (content as HsonNode[]) ?? [];
-      const out: string[] = [];
-
-      for (const prop of props) {
-        if (!prop || typeof prop !== "object") continue;
-        const key = prop._tag;              // the element name
-        const child = (prop._content ?? [])[0] as HsonNode | undefined;
-
-        // Render the child's payload:
-        // - if the child is an _obj that wraps a scalar, render that scalar
-        // - otherwise serialize the child normally
-        let inner = "";
-
-        if (child) {
-          if (child._tag === OBJ_TAG) {
-            // look at the wrapped payload
-            const g = (child._content ?? [])[0] as HsonNode | Primitive | undefined;
-
-            // CHANGE: accept both nodes and primitives, and tolerate tag constant drift
-            if (g && typeof g === "object") {
-              // node payload
-              if (g._tag === STR_TAG) {
-                // unchanged: render the string bare
-                inner = serialize_xml(g);
-              } else if (g._tag === VAL_TAG) {
-                // CHANGE: render primitive value *directly*, not <_val>…</_val>, to HTML-friendly text
-                const pv = (g._content?.[0] as Primitive);
-                inner = primitive_to_string(pv);
-              } else {
-                // CHANGE: fallback — serialize the inner node rather than going empty
-                inner = serialize_xml(g);
-              }
-            } else if (g != null && typeof g !== "object") {
-              // CHANGE: primitive directly inside the wrapper
-              inner = primitive_to_string(g as Primitive);
-            } else {
-              // CHANGE: wrapper exists but empty/unknown — serialize wrapper to avoid data loss
-              inner = serialize_xml(child);
-            }
-          } else {
-            // unchanged path
-            inner = serialize_xml(child);
-          }
-        }
-      }
-      return out.join("\n");
-    }
+    // CHANGED: _str always melts to bare text
     case STR_TAG: {
       if (!content || content.length !== 1 || typeof content[0] !== 'string') {
         _throw_transform_err('<_str> must contain exactly one string', 'serialize_html');
       }
-      return `${escape_html(content[0] as string)}`;
+      return escape_html(content[0] as string);
     }
 
+    // CHANGED: keep <_val> literal for round-trip typing
     case VAL_TAG: {
       if (!content || content.length !== 1) {
         _throw_transform_err('<_val> must contain exactly one value', 'serialize_html');
       }
-      const v = content[0] as Primitive; // boolean | number | string | null
+      const v = content[0] as Primitive;
       return `<${VAL_TAG}>${escape_html(String(v))}</${VAL_TAG}>`;
     }
+
+    // flatten element cluster
+    case ELEM_TAG: {
+      return (content as (HsonNode | Primitive)[]).map(ch => serialize_xml(ch as any)).join('\n');
+    }
+
+    // melt _root (must have exactly one cluster child)
+    case ROOT_TAG: {
+      const kids = content as HsonNode[];
+      if (kids.length !== 1) {
+        _throw_transform_err('_root must have exactly one child', 'serialize_html');
+      }
+      return serialize_xml(kids[0]);
+    }
+
+    // object cluster → each property becomes an HTML element
+    case OBJ_TAG: {
+      const props = (content as HsonNode[]) ?? [];
+      const inner = props.map(serialize_xml).join('\n');
+      return `<${OBJ_TAG}>\n${inner}\n</${OBJ_TAG}>`;
+    }
+
+  }
+  // --------------- default path: literal tags (incl. _arr/_ii and normal HTML) ---------------
+
+  let openAttrs = `<${tag}`;
+  const attrs = build_wire_attrs(node);
+  for (const k of Object.keys(attrs).sort()) {
+    openAttrs += ` ${k}="${escape_attr(attrs[k])}"`;
   }
 
-
-  /* handle standard tags or non-exceptional VSNs* 
-      (*ie, _obj is serialized into HTML as-is; the only special treatment it 
-      gets is its contents are not  wrapped in _elem if an _obj is found*/
-  // after: build the open head but don't close yet
-  // default path for normal/void-ish HTML tags AND other literal underscored tags you didn’t special-case
-  let openLine = `<${tag}`;
-  const attrs = build_wire_attrs(node as HsonNode);
-  for (const key of Object.keys(attrs).sort()) {
-    openLine += ` ${key}="${escape_attr(attrs[key])}"`;
-  }
+  // Build inner first, then decide SC/OC
 
   const kids = (content as (HsonNode | Primitive)[]) ?? [];
-  const hasNodeChild = kids.some(k => is_Node);
-  const hasPrimChild = kids.some(k => is_Primitive);
+  // SCOSL decision must be structural, not string-based.
+//   if (kids.length === 0) {
+//   // Explicit open/close keeps XML valid and avoids data-loss ambiguity
+//   return `${openAttrs}></${tag}>`;
+// }
 
-  if (!hasNodeChild && !hasPrimChild) {
-    return `${openLine} />`;               // truly empty
-  }
+  // Render children
+  const inner = kids.map(ch => {
+    if (is_Node(ch)) {
+      return serialize_xml(ch as HsonNode);
+    }
+    return primitive_to_xml(ch as Primitive);
+  }).join('');
 
-  const inner = kids.map(ch =>
-    (typeof ch === 'object')
-      ? serialize_xml(ch as HsonNode)
-      : escape_html(String(ch as Primitive))
-  ).join('');
+  // Optional guard: child(ren) rendered to whitespace → flag it
+  // if (inner.trim().length === 0) {
+  //   _throw_transform_err(
+  //     'non-empty children rendered empty; renderer bug',
+  //     'serialize_html',
+  //     make_string({ tag, kids })
+  //   );
+  // }
 
-  return `${openLine}>${inner}</${tag}>`;
+  return `${openAttrs}>${inner}</${tag}>`;
 }
 
-
-/**
- *  -- converts a node to an HTML string
- * generates an intermediate XML string using node_to_xml then applies
- * minimal HTML-specific transformations (like boolean attributes)
- *
- * @param $node The Node or Primitive to serialize.
- * @returns An HTML string fragment representing the node.
- * @throws Error if input node is null or undefined, or if intermediate XML is empty/invalid (throw_transform_err)
- */
 export function serialize_html($node: HsonNode | Primitive): string {
+
   const clone = clone_node($node);
   if (!is_Node(clone)) {
-    _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize-html', make_string($node));
+    _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize_html', make_string($node));
   }
-  assert_invariants(clone, 'serialize html');
 
+  // keep your tree assertions; they’ll throw loudly if structure is off
+  assert_invariants(clone, 'serialize_html');
 
   const xmlString = serialize_xml(clone);
 
-  /*  flag trimmer transforms `key="key"` -> `key` for html boolean attributes
-          this regex finds attributes name="value" where value is the same as the name
-         (uses word boundary \b) */
+  // HTML boolean attrs: key="key" → key
   const htmlString = xmlString.replace(/\b([^\s=]+)="\1"/g, '$1');
-  if (_VERBOSE) {
-    console.groupCollapsed("returning htmlString");
-    console.log(htmlString);
-    console.groupEnd();
+
+  // CHANGED(tripwire): never let literal <_str> leak into output
+  if (/<\s*_str\b/.test(htmlString)) {
+    _throw_transform_err('literal <_str> leaked into HTML output', 'serialize_html', htmlString.slice(0, 400));
   }
-  return htmlString;
+  return `<${ROOT_TAG}>\n${htmlString}\n</${ROOT_TAG}>`;
+
 }
