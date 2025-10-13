@@ -181,12 +181,35 @@ function convert($el: Element): HsonNode {
     }
 
     // ---------- Default: normal HTML element ----------
+
     if (childNodes.length === 0) {
-        _log('void node detected; returning empty new node');
-        return CREATE_NODE({ _tag: baseTag, _content: [], _attrs: sortedAcc });
+        // Void element, stay in element mode with empty cluster
+        return CREATE_NODE({
+            _tag: baseTag,
+            _attrs: sortedAcc,
+            _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined,
+            _content: [
+                CREATE_NODE({ _tag: ELEM_TAG, _meta: {}, _content: [] })
+            ]
+        });
     }
 
-    // CHANGED: wrap children into a single <_elem> child
+    if (childNodes.length === 1) {
+        const only = childNodes[0];
+
+        // Pass through explicit clusters untouched (no mixing, no extra box)
+        if (only._tag === OBJ_TAG || only._tag === ARR_TAG || only._tag === ELEM_TAG) {
+            return CREATE_NODE({
+                _tag: baseTag,
+                _attrs: sortedAcc,
+                _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined,
+                _content: [only]
+            });
+        }
+    }
+
+    // Otherwise, we have multiple non-cluster children (text/elements):
+    // wrap once in _elem (pure element mode).
     return CREATE_NODE({
         _tag: baseTag,
         _attrs: sortedAcc,
@@ -194,9 +217,10 @@ function convert($el: Element): HsonNode {
         _content: [
             CREATE_NODE({
                 _tag: ELEM_TAG,
-                _content: childNodes,
-            }),
-        ],
+                _meta: {},
+                _content: childNodes
+            })
+        ]
     });
 }
 
@@ -218,21 +242,40 @@ function wrap_as_root(node: HsonNode): HsonNode {
  * @param {NodeListOf<ChildNode>} $els - the nodes in question
  * @returns {(HsonNode | Primitive)[]} - either a finished Node or a primitive value
  */
-
 function elementToNode($els: NodeListOf<ChildNode>): (HsonNode | Primitive)[] {
     const children: (HsonNode | Primitive)[] = [];
+
     for (const kid of Array.from($els)) {
         if (kid.nodeType === Node.ELEMENT_NODE) {
-            // keep ELEMENTs as nodes; <_val> will be handled inside convert(...)
             children.push(convert(kid as Element));
-        } else if (kid.nodeType === Node.TEXT_NODE) {
-            const text = kid.textContent;
-            // NOTE: this path intentionally returns *strings only* (no coerce here)
-            if (text && text.trim()) children.push(text.trim());
-        } else if (kid.nodeType === Node.COMMENT_NODE) {
-            // ignore comments in model parity
-            continue; // ← optional but helpful
+            continue;
         }
+
+        if (kid.nodeType === Node.TEXT_NODE) {
+            const raw = kid.textContent ?? "";
+            const trimmed = raw.trim();
+
+            // handle the empty-string sentinel *after* trimming
+            if (trimmed === '""') {
+                children.push(
+                            CREATE_NODE({
+                                _tag: STR_TAG,
+                                _meta: {},
+                                _content: [""], // <-- the actual empty string
+                            }),
+                );
+                continue;
+            }
+
+            // ignore layout-only whitespace; otherwise pass string through
+            if (trimmed.length > 0) {
+                children.push(trimmed); // (or coerce(trimmed) if that’s your policy)
+            }
+
+            continue;
+        }
+
     }
+
     return children;
 }

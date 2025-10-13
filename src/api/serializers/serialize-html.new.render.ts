@@ -80,7 +80,15 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
       if (!content || content.length !== 1 || typeof content[0] !== 'string') {
         _throw_transform_err('<_str> must contain exactly one string', 'serialize_html');
       }
-      return escape_html(content[0] as string);
+      const s = content[0] as string;
+
+      // Special case: empty string must be visible in HTML
+      if (s === '') {
+        return '""'; // two quotes; will be decoded by HTML parser back to _str([""])
+      }
+
+      // Non-empty strings remain melted as plain text
+      return escape_html(s);
     }
 
     // CHANGED: keep <_val> literal for round-trip typing
@@ -126,10 +134,10 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
 
   const kids = (content as (HsonNode | Primitive)[]) ?? [];
   // SCOSL decision must be structural, not string-based.
-//   if (kids.length === 0) {
-//   // Explicit open/close keeps XML valid and avoids data-loss ambiguity
-//   return `${openAttrs}></${tag}>`;
-// }
+  //   if (kids.length === 0) {
+  //   // Explicit open/close keeps XML valid and avoids data-loss ambiguity
+  //   return `${openAttrs}></${tag}>`;
+  // }
 
   // Render children
   const inner = kids.map(ch => {

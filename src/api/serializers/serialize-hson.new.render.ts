@@ -253,15 +253,12 @@ function emitNode(
                 guard
             );
 
-            // --- CHANGED: choose _root closer based on the melted child kind
+            // --- CHANGED: choose _root closer based on the child kind
             // _elem → '/>'  ;  _obj/_arr → '>'
             const rootCloser = (cluster._tag === ELEM_TAG) ? '/>' : '>';
 
             // Keep the same newline formatting: closer on its own line, left-aligned (no pad),
             // to match previous emissions and your examples.
-            // Before:
-            //   return `<${ROOT_TAG}\n${pad}${inner}\n>`;
-            // After:
             return `<${ROOT_TAG}\n${pad}${inner}\n${rootCloser}`;
         }
 

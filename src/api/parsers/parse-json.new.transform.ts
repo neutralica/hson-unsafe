@@ -89,13 +89,30 @@ export function nodeFromJson(
 
     // ---- 0) Primitive branch (strings → _str, others → _val) ----
     if ($parentTag === STR_TAG || $parentTag === VAL_TAG) {
-        if (!is_Primitive($srcJson)) {
-            _throw_transform_err('primitive expected (string|number|boolean|null)', 'parse_json', make_string($srcJson));
+        // CHANGED: preserve empty-string as a real scalar (_str([""]))
+        if ($parentTag === STR_TAG) {
+            if (!is_string($srcJson)) {
+                _throw_transform_err(`expected string for ${STR_TAG}, got ${typeof $srcJson}`, 'nodeFromJson.primitive');
+            }
+            return {
+                node: CREATE_NODE({
+                    _tag: STR_TAG,
+                    _meta: {},
+                    _content: [$srcJson] // "" included
+                })
+            };
+        } else { // VAL_TAG
+            if (!is_Primitive($srcJson)) {
+                _throw_transform_err(`expected number|boolean|null for ${VAL_TAG}, got ${typeof $srcJson}`, 'nodeFromJson.primitive');
+            }
+            return {
+                node: CREATE_NODE({
+                    _tag: VAL_TAG,
+                    _meta: {},
+                    _content: [$srcJson] // null/number/boolean
+                })
+            };
         }
-        if (typeof $srcJson === 'string') {
-            return { node: CREATE_NODE({ _tag: STR_TAG, _content: [$srcJson] }) };
-        }
-        return { node: CREATE_NODE({ _tag: VAL_TAG, _content: [$srcJson as Primitive] }) };
     }
 
     // ---- 1) Array branch (_arr → _ii[data-_index]) ----
@@ -207,32 +224,61 @@ export function nodeFromJson(
         const propertyNodes: HsonNode[] = propKeys.map((key) => {
             const raw = obj[key] as JsonType;
 
-            // Treat explicit empty-string as a void property node (no child)
-            if (raw === '') {
-                return CREATE_NODE({ _tag: key, _content: [] });
+            // CHANGED: build a child node for the property value WITHOUT collapsing "".
+            let child: HsonNode;
+
+            if (typeof raw === 'string') {
+                // strings (including "") → _str(["..."])
+                child = CREATE_NODE({
+                    _tag: STR_TAG,
+                    _meta: {},
+                    _content: [raw] // "" preserved
+                });
+            } else if (
+                typeof raw === 'number' ||
+                typeof raw === 'boolean' ||
+                raw === null
+            ) {
+                // numbers/booleans/null → _val([...])
+                child = CREATE_NODE({
+                    _tag: VAL_TAG,
+                    _meta: {},
+                    _content: [raw]
+                });
+            } else if (Array.isArray(raw)) {
+                // arrays recurse under _arr
+                child = nodeFromJson(raw, ARR_TAG).node;
+            } else if (raw && typeof raw === 'object') {
+                // objects recurse under _obj
+                child = nodeFromJson(raw, OBJ_TAG).node;
+            } else {
+                _throw_transform_err(`unsupported JSON value for key "${key}"`, 'nodeFromJson.object.value');
             }
 
-            const childTag = getTag(raw);
-            const built = nodeFromJson(raw, childTag).node;
+            // CHANGED: JSON-mode property ⇒ inner _obj wrapper unless the child is already a cluster
+            const payload =
+                (child._tag === OBJ_TAG || child._tag === ARR_TAG)
+                    ? [child]                                    // passthrough single cluster
+                    : [CREATE_NODE({ _tag: OBJ_TAG, _meta: {}, _content: [child] })]; // wrap leaf in _obj
 
-            // Scalar children get wrapped once in an _obj cluster
-            const child =
-                (built._tag === STR_TAG || built._tag === VAL_TAG)
-                    ? CREATE_NODE({ _tag: OBJ_TAG, _content: [built] })
-                    : built;
-
-            return CREATE_NODE({ _tag: key, _content: [child] });
+            return CREATE_NODE({
+                _tag: key,
+                _meta: {},
+                _content: payload
+            });
         });
 
-        return { node: CREATE_NODE({ _tag: OBJ_TAG, _content: propertyNodes }) };
+        return {
+            node: CREATE_NODE({
+                _tag: OBJ_TAG,
+                _meta: {},
+                _content: propertyNodes
+            })
+        };
     }
 
-    // ---- 3) Fallback guard (parentTag/value mismatch) ----
-    _throw_transform_err(
-        `unhandled branch: parentTag=${$parentTag}`,
-        'parse_json',
-        make_string($srcJson)
-    );
+    // ---- Fallback (should be unreachable if callers set parentTag correctly) ----
+    _throw_transform_err(`unhandled parentTag ${$parentTag}`, 'nodeFromJson.dispatch');
 }
 
 
@@ -274,6 +320,6 @@ export function parse_json($input: string | JsonType): HsonNode {
         _content: [node],
     });
     assert_invariants(root, 'root');
-    
+
     return root;
 }

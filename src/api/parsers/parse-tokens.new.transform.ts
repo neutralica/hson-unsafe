@@ -69,13 +69,13 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
     function isTokenOpen(t: Tokens | null | undefined): t is TokenOpen {
         return !!t && t.kind === TOKEN_KIND.OPEN;
     }
-    /* parse a tag starting at TAG_OPEN */
     function readTag($isTopLevel = false): { node: HsonNode; closeKind: CloseKind } {
-        const t = _take();
-        if (!isTokenOpen(t)) {
-            _throw_transform_err(`expected OPEN, got ${t?.kind ?? 'eof'}`, 'parse_tokens_new');
+        // NOTE: _take() returning any is sketchy; narrow immediately.
+        const tok = _take();
+        if (!isTokenOpen(tok)) {
+            _throw_transform_err(`expected OPEN, got ${tok?.kind ?? 'eof'}`, 'parse_tokens_new');
         }
-        const open = t as TokenOpen;
+        const open = tok as TokenOpen;
 
         const { attrs, meta } = split_attrs_meta(open.rawAttrs);
         const node: HsonNode = { _tag: open.tag, _meta: meta, _content: [] };
@@ -94,6 +94,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         let sawClose: TokenEnd | null = null;
         const kids: HsonNode[] = [];
 
+        // --- gather children
         while (ix < N) {
             const t = _peek(); if (!t) break;
 
@@ -114,28 +115,27 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         }
 
         if (!sawClose) _throw_transform_err(`missing CLOSE for <${open.tag}>`, 'parse_tokens_NEW');
-
         const closeKind = sawClose.close;
 
-        // ---------- Special case: <_root> ----------
+        // ---------- <_root>: choose cluster by its own closer; never mix modes ----------
         if (open.tag === ROOT_TAG) {
-            // keep kids gathered as-is
             if (kids.length === 1 && kids[0]._tag === ARR_TAG) {
-                // pass through array cluster unchanged
-                node._content = kids as NodeContent;
+                node._content = kids as NodeContent; // passthrough array cluster
             } else if (kids.length > 0) {
-                // CHANGED: choose cluster by the root’s own closer
-                const clusterTag = (closeKind === CLOSE_KIND.elem) ? ELEM_TAG : OBJ_TAG; // <-- CHANGED
-                node._content = [{ _tag: clusterTag, _meta: {}, _content: kids as NodeContent }]; // <-- CHANGED
+                const clusterTag = (closeKind === CLOSE_KIND.elem) ? ELEM_TAG : OBJ_TAG; // CHANGED
+                node._content = [{
+                    _tag: clusterTag,
+                    _meta: {},
+                    _content: kids as NodeContent
+                }]; // CHANGED
             } else {
                 node._content = [];
             }
-            // (optional) if you still want the stack:
             if ($isTopLevel) topCloseKinds.push(closeKind);
             return { node, closeKind };
         }
 
-        // ---------- VSN passthroughs ----------
+        // ---------- VSN passthroughs (unchanged) ----------
         if (open.tag === OBJ_TAG || open.tag === ARR_TAG || open.tag === ELEM_TAG) {
             node._content = kids as NodeContent;
             if ($isTopLevel) topCloseKinds.push(closeKind);
@@ -143,44 +143,46 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         }
 
         if (open.tag === STR_TAG || open.tag === VAL_TAG || open.tag === II_TAG) {
-            // These should already have been produced as leaves/structured nodes by the inner logic;
-            // we still attach whatever we gathered (defensive), but normally these won’t be parsed via readTag.
             node._content = kids as NodeContent;
             if ($isTopLevel) topCloseKinds.push(closeKind);
             return { node, closeKind };
         }
 
-        // ---------- Normal tag: decide semantics by closeKind ----------
+        // ---------- Normal tag: SINGLE-MODE shaping (no _elem/_obj mixing) ----------
         if (closeKind === CLOSE_KIND.obj) {
-            // PROPERTY semantics (JSON-mode)
-            if (kids.length === 0) {
-                node._content = [{ _tag: OBJ_TAG, _meta: {}, _content: [] }];
-            } else if (kids.length === 1) {
-                const only = kids[0];
-                if (only._tag === OBJ_TAG || only._tag === ARR_TAG) {
-                    // already structured
-                    node._content = [only];
-                } else {
-                    // scalar or a single element → inner _obj
-                    node._content = [{ _tag: OBJ_TAG, _meta: {}, _content: [only] }];
-                }
+            // OBJECT semantics: ensure exactly one inner _obj OR pass through a single _arr/_obj
+            if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ARR_TAG)) {
+                node._content = [kids[0]]; // passthrough a single cluster
             } else {
-                // ELEMENT semantics
-                // CHANGED: ensure a single _elem wrapper around element children (idempotent)
-                if (kids.length === 1 && kids[0]._tag === ELEM_TAG) {
-                    // already clustered — passthrough
-                    node._content = kids as NodeContent; // CHANGED: no-op when already _elem
-                } else {
-                    node._content = [{
-                        _tag: ELEM_TAG,
-                        _meta: {},
-                        _content: kids as NodeContent,
-                    }]; // CHANGED: wrap scalars/tags uniformly
-                }
+                node._content = [{
+                    _tag: OBJ_TAG,
+                    _meta: {},
+                    _content: kids as NodeContent
+                }];
+            }
+
+            // Guardrail: object mode must yield a single _obj/_arr
+            const c = node._content as HsonNode[];
+            if (!(c.length === 1 && (c[0]._tag === OBJ_TAG || c[0]._tag === ARR_TAG))) {
+                _throw_transform_err("object semantics must yield a single _obj/_arr child", "parse_tokens.object");
             }
         } else {
-            // ELEMENT semantics
-            node._content = kids as NodeContent;
+            // ELEMENT semantics: ensure exactly one inner _elem (idempotent)
+            if (kids.length === 1 && kids[0]._tag === ELEM_TAG) {
+                node._content = kids as NodeContent; // already clustered
+            } else {
+                node._content = [{
+                    _tag: ELEM_TAG,
+                    _meta: {},
+                    _content: kids as NodeContent
+                }];
+            }
+
+            // Guardrail: element mode must yield a single _elem
+            const c = node._content as HsonNode[];
+            if (!(c.length === 1 && c[0]._tag === ELEM_TAG)) {
+                _throw_transform_err("element semantics must yield a single _elem child", "parse_tokens.element");
+            }
         }
 
         if ($isTopLevel) topCloseKinds.push(closeKind);
