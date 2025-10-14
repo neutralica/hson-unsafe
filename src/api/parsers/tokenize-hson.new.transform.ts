@@ -1,5 +1,6 @@
 // tokenize-hson.old.hson.ts
 
+import { OBJ_TAG } from "../../types-consts/constants";
 import { CLOSE_KIND, ARR_SYMBOL, CREATE_ARR_OPEN_TOKEN, CREATE_ARR_CLOSE_TOKEN, CREATE_EMPTY_OBJ_TOKEN, CREATE_END_TOKEN, CREATE_OPEN_TOKEN, TOKEN_KIND, CREATE_TEXT_TOKEN } from "../../types-consts/factories";
 import { Position, CloseKind, Tokens, RawAttr } from "../../types-consts/tokens.new.types";
 import { make_string } from "../../utils/make-string.utils";
@@ -174,10 +175,20 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens[] {
 
         /* Step B */
         /* check for '<' implicit object trigger */
+        /* Step B: lone '<' implicit object trigger */
         if (LONE_OPEN_ANGLE_REGEX.test(currentLine)) {
             _log(`[tokenize_hson depth=${$depth} L=${currentIx + 1}] lone '<' detected`);
-            contextStack.push({ type: 'IMPLICIT_OBJECT' });      /* keep marker if you need it */
-            contextStack.push({ type: 'CLUSTER', close: CLOSE_KIND.obj, implicit: true }); /* structural intent */
+
+            // Keep your markers (helps with validation/indent tracking)
+            contextStack.push({ type: 'IMPLICIT_OBJECT' });
+            contextStack.push({ type: 'CLUSTER', close: CLOSE_KIND.obj, implicit: true });
+
+            // NEW: emit a real OPEN for a synthetic _obj
+            const lineNo = currentIx + 1;
+            const leadCol = currentLine.search(/\S|$/) + 1;
+            const posOpen = _pos(lineNo, leadCol, _offset + leadCol - 1);
+            finalTokens.push(CREATE_OPEN_TOKEN(OBJ_TAG, /*rawAttrs*/[], posOpen));     // NEW
+
             _bump_line(currentLine);
             continue;
         }
@@ -258,22 +269,32 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens[] {
                 const col = currentLine.indexOf(closerLex) + 1;
                 const pos = _pos(currentIx + 1, col, _offset + col - 1);
 
-                const top = contextStack[contextStack.length - 1];
-                if (!top || top.type !== 'CLUSTER') {
-                    _throw_transform_err(`[step e] closer '${closerLex}' but stack top is ${make_string(top)}`, 'tokenize-hson');
-                }
-                if (top.close && top.close !== close) {
-                    _throw_transform_err(`[step e] mismatched closer '${closerLex}' for cluster '${top.close}'`, 'tokenize-hson');
-                }
+                // const top = contextStack[contextStack.length - 1];
+                // if (!top || top.type !== 'CLUSTER') {
+                //     _throw_transform_err(`[step e] closer '${closerLex}' but stack top is ${make_string(top)}`, 'tokenize-hson');
+                // }
+                // if (top.close && top.close !== close) {
+                //     _throw_transform_err(`[step e] mismatched closer '${closerLex}' for cluster '${top.close}'`, 'tokenize-hson');
+                // }
 
                 // pop cluster and optionally emit END
                 const popped = contextStack.pop() as Extract<ContextStackItem, { type: 'CLUSTER' }>;
-                if (!popped.implicit) {
-                    finalTokens.push(CREATE_END_TOKEN(close, pos));   // only for real OPENs
+                const isObjClose = (close === CLOSE_KIND.obj);
+
+                // Always emit CLOSE for normal clusters,
+                // and ALSO emit it when this is the implicit per-item object box.
+                if (!popped.implicit || isObjClose) {
+                    finalTokens.push(CREATE_END_TOKEN(close, pos));
                 } else {
-                    _log(`[step e] suppress END for implicit cluster at L${currentIx + 1}`);
+                    _log(`[step e] suppress END for implicit non-object cluster at L${currentIx + 1}`);
                 }
 
+                // If you keep an IMPLICIT_OBJECT marker, pop it when we close the obj box.
+                const top = contextStack[contextStack.length - 1];
+                if (isObjClose && top && (top as any).type === 'IMPLICIT_OBJECT') {
+                    contextStack.pop();
+                }
+                
                 // clean up implicit marker if present
                 const maybeImplicit = contextStack[contextStack.length - 1];
                 if (maybeImplicit && maybeImplicit.type === 'IMPLICIT_OBJECT' && close === CLOSE_KIND.obj) {
@@ -457,8 +478,8 @@ export function tokenize_hson_NEW($hson: string, $depth = 0): Tokens[] {
 
     /* debug print — neutral summary, not the old make_string */
     if (_VERBOSE) {
-        logTokens();
     }
+    logTokens();
 
     function logTokens(): void {
         console.groupCollapsed('returning tokens (summary)');
