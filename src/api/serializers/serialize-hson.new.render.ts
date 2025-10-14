@@ -221,21 +221,47 @@ function emitNode(
             }
             return emitNode(c, depth, parentCluster, guard);  // <-- same depth
         }
-
         /* 3) _arr cluster → « … » */
         if (node._tag === ARR_TAG) {
-            _log('array node detected');
-            const items = node._content ?? [];
+            const items = (node._content ?? []) as HsonNode[];
             if (!items.length) return `${pad}«»`;
-            const inner = items
-                .map((child: unknown) =>
-                    (typeof child === "object" && child && "_tag" in (child as any))
-                        ? emitNode(child as HsonNode, depth + 1, undefined, guard)  // child cluster context will be set below
-                        : pad + String(child) // tolerant; normalized NEW shouldn’t have bare primitives
-                )
-                .join(",\n");
+
+            const subpad = pad + "  ";
+
+            const inner = items.map((it) => {
+                if (!is_Node(it)) {
+                    _throw_transform_err('serialize-hson: non-node item in _arr', 'emitNode');
+                }
+
+                // Unwrap leaked _ii (shouldn’t be on wire)
+                let item = it;
+                if (item._tag === II_TAG) {
+                    const c = item._content?.[0];
+                    if (!is_Node(c)) {
+                        _throw_transform_err('serialize-hson: _ii must contain exactly one child node', 'emitNode');
+                    }
+                    item = c as HsonNode;
+                }
+
+                if (item._tag === OBJ_TAG) {
+                    const props = (item._content ?? []) as HsonNode[];
+                    if (props.length === 0) {
+                        // Empty object item: shorthand
+                        return `${subpad}<>`;
+                    }
+                    // Non-empty object item: explicit object-cluster wrapper
+                    const body = props.map(p => emitNode(p, depth + 2, OBJ_TAG, guard)).join("\n");
+                    return `${subpad}<\n${body}\n${subpad}>`;
+                }
+
+                // Non-object items (arrays/elements/scalars): emit as-is
+                return emitNode(item, depth + 1, undefined, guard);
+            }).join(",\n");
+
             return `${pad}«\n${inner}\n${pad}»`;
         }
+
+
 
         /* 5) _root: keep on wire (current policy); choose closer by melted child */
         if (node._tag === ROOT_TAG) {
