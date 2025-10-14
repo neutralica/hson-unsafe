@@ -287,7 +287,6 @@ function emitNode(
                 _throw_transform_err(`serialize-hson: ${node._tag} may not carry _attrs`, 'serialize_hson_NEW.emitNode()');
             }
 
-            // CHANGED: stop pruning
             const kids = (node._content ?? []) as HsonNode[];
 
             if (node._tag === OBJ_TAG && kids.length === 0) {
@@ -405,7 +404,6 @@ function emitNode(
 
         const children = (node._content ?? []) as HsonNode[];
 
-
         if (!children.length) {
             if (parentCluster === OBJ_TAG) {
                 // empty property in object semantics → explicit empty object cluster
@@ -415,6 +413,18 @@ function emitNode(
                 return `${pad}<${node._tag}${attrsStr} />`;
             }
         }
+
+        // Decide closer by *single* child cluster (elem → '/>', obj/arr → '>').
+        // If the shape isn’t a single cluster, prefer element closer to avoid obj-mode drift.
+        let closer = '/>';
+        if (
+            children.length === 1 &&
+            is_Node(children[0]) &&
+            (children[0]._tag === OBJ_TAG || children[0]._tag === ARR_TAG || children[0]._tag === ELEM_TAG)
+        ) {
+            closer = (children[0]._tag === ELEM_TAG) ? '/>' : '>';
+        }
+
         const inner = children
             .map(ch => emitNode(
                 ch,
@@ -423,16 +433,16 @@ function emitNode(
                 ch._tag === ARR_TAG ? OBJ_TAG : parentCluster,
                 guard
             ))
-            .filter(s => /\S/.test(s)) // CHANGED: drop pure-whitespace emissions
+            .filter(s => /\S/.test(s)) // drop pure-whitespace emissions
             .join("\n");
 
-        // CHANGED: self-close only if nothing actually rendered
+        // If nothing actually rendered, self-close regardless of computed closer.
         if (inner.length === 0) {
             return `${pad}<${node._tag}${attrsStr} />`;
         }
 
-        // CHANGED: non-empty → normal open/close with '>' (HSON “object close” line)
-        return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}>`;
+        // Use the computed closer.
+        return `${pad}<${node._tag}${attrsStr}\n${inner}\n${pad}${closer}`;
     } finally {
         guard.leave(node);
     }
