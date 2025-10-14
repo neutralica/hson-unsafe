@@ -9,7 +9,7 @@
  * @returns {string} - an array of strings, trimmed, representing the top-level segments
 */
 
-export function split_top_OLD($str: string, $separator: string): string[] {
+export function split_top_level($str: string, $separator: string): string[] {
     if (!$str) return [];
     const results: string[] = [];
     let buffer = '';

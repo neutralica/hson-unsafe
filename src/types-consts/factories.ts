@@ -2,7 +2,7 @@
 
 
 import { HsonNode } from "./node.new.types";
-import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen, TokenEnd, TokenArrayOpen, TokenArrayClose, TokenText, TokenEmptyObj } from "./tokens.new.types";
+import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen, TokenEnd, TokenArrayOpen, TokenArrayClose, TokenText, TokenEmptyObj, TOKEN_KIND } from "./tokens.new.types";
 
 export const CREATE_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
   _tag: partial._tag ?? '', 
@@ -10,28 +10,6 @@ export const CREATE_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
   _attrs: partial._attrs ?? {},
   _meta:  partial._meta ?? {},
 });
-
-export const TOKEN_KIND = {
-  OPEN: 'OPEN',
-  CLOSE: 'CLOSE',
-  ARR_OPEN: 'ARR_OPEN',
-  ARR_CLOSE: 'ARR_CLOSE',
-  TEXT: 'TEXT',
-  EMPTY_OBJ: 'EMPTY_OBJ',
-} as const;
-
-
-// added
-export const ARR_SYMBOL = {
-  guillemet: 'guillemet',
-  bracket: 'bracket',
-} satisfies Record<ArraySymbol, ArraySymbol>;
-
-// added
-export const CLOSE_KIND = {
-  obj: 'obj',
-  elem: 'elem',
-} satisfies Record<CloseKind, CloseKind>;
 
 // Tiny factories (so your tokenizer never constructs shapes inline)
 export const CREATE_OPEN_TOKEN = (tag: string, rawAttrs: RawAttr[], pos: Position): TokenOpen =>

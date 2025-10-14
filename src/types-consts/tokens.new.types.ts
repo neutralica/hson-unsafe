@@ -1,7 +1,5 @@
 // tokens.new.types.ts
 
-import { TOKEN_KIND } from "./factories";
-
 
 
 /* Position is lightweight; expand later if end positions needed */
@@ -79,3 +77,24 @@ export type Tokens =
   | TokenOpen | TokenEnd
   | TokenArrayOpen | TokenArrayClose
   | TokenText | TokenEmptyObj;
+export const TOKEN_KIND = {
+  OPEN: 'OPEN',
+  CLOSE: 'CLOSE',
+  ARR_OPEN: 'ARR_OPEN',
+  ARR_CLOSE: 'ARR_CLOSE',
+  TEXT: 'TEXT',
+  EMPTY_OBJ: 'EMPTY_OBJ',
+} as const;
+// added
+
+
+export const ARR_SYMBOL = {
+  guillemet: 'guillemet',
+  bracket: 'bracket',
+} satisfies Record<ArraySymbol, ArraySymbol>;
+// added
+
+export const CLOSE_KIND = {
+  obj: 'obj',
+  elem: 'elem',
+} satisfies Record<CloseKind, CloseKind>;

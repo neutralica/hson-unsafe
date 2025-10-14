@@ -166,36 +166,47 @@ export function nodeFromJson(
 
         // B) ELEMENT HANDLING { _elem: [...] } 
         if (Object.prototype.hasOwnProperty.call(obj, ELEM_TAG)) {
-
             const list = obj[ELEM_TAG];
             if (!Array.isArray(list)) {
                 _throw_transform_err('"_elem" must contain an array', 'parse_json', make_string(list));
             }
 
-            // _attrs is HTML-source only: disallow in JSON element-objects
             const children: HsonNode[] = (list as JsonType[]).map((val, ix) => {
                 // string → _str, number|boolean|null → _val
-                if (is_string(val)) { return CREATE_NODE({ _tag: STR_TAG, _content: [val] }); }
+                if (is_string(val)) {
+                    return CREATE_NODE({ _tag: STR_TAG, _meta: {}, _content: [val] });
+                }
                 if (is_Primitive(val)) {
-                    return CREATE_NODE({ _tag: VAL_TAG, _content: [val as Primitive] });
+                    return CREATE_NODE({ _tag: VAL_TAG, _meta: {}, _content: [val as Primitive] });
                 }
 
+                // object → element-object (allow _attrs/_meta; preserve them)
                 if (val && typeof val === 'object' && !Array.isArray(val)) {
                     const elObj = val as Record<string, unknown>;
 
-                    // Forbid raw HSON/HTML-only keys in JSON element-objects
+                    // Keep your existing guard against raw VSN misuse, but STOP forbidding _attrs/_meta.
                     assertNoForbiddenVSNKeysInJSON(elObj, `"_elem"[${ix}]`);
 
-                    // Exactly one non-underscore tag key required
+                    // Exactly one non-underscore tag key required (you already enforce this)
                     const tagKeys = nonUnderscoreKeys(elObj);
                     if (tagKeys.length !== 1) {
                         _throw_transform_err('element-object must have exactly one tag key', 'parse_json', make_string(elObj));
                     }
 
                     const tagName = tagKeys[0];
-                    const rawChildren = elObj[tagName] as JsonType;
 
-                    // Build the tag’s children (0..1 child node). Scalars and clusters both allowed.
+                    // --- NEW: hoist attributes/meta if present; do NOT drop them
+                    const maybeAttrs = elObj['_attrs'];
+                    const maybeMeta = elObj['_meta'];
+                    const hoistedAttrs = (maybeAttrs && typeof maybeAttrs === 'object' && !Array.isArray(maybeAttrs))
+                        ? (maybeAttrs as HsonAttrs)
+                        : undefined;
+                    const hoistedMeta = (maybeMeta && typeof maybeMeta === 'object' && !Array.isArray(maybeMeta))
+                        ? (maybeMeta as HsonMeta)
+                        : undefined;
+
+                    // Build the tag’s child (0..1) from the tag payload (scalar or cluster)
+                    const rawChildren = elObj[tagName] as JsonType;
                     let tagKids: HsonNode[] = [];
                     if (rawChildren !== undefined) {
                         const kidTag = getTag(rawChildren);
@@ -203,18 +214,22 @@ export function nodeFromJson(
                         tagKids = [kidNode];
                     }
 
-                    // Assemble the element node (no _attrs in JSON)
-                    return CREATE_NODE({ _tag: tagName, _content: tagKids });
+                    const elemNode: HsonNode = { _tag: tagName, _meta: {}, _content: tagKids };
+                    if (hoistedAttrs && Object.keys(hoistedAttrs).length) elemNode._attrs = hoistedAttrs;  // ← preserve
+                    if (hoistedMeta && Object.keys(hoistedMeta).length) elemNode._meta = { ...elemNode._meta, ...hoistedMeta };
+
+                    return elemNode;
                 }
 
                 _throw_transform_err(
-                    `invalid item in [${ix}] (must be string|number|boolean|null or element-object)`,
+                    `invalid item in "_elem"[${ix}] (must be string|number|boolean/null or element-object)`,
                     'parse_json',
                     make_string(val)
                 );
             });
 
-            return { node: CREATE_NODE({ _tag: ELEM_TAG, _content: children }) };
+            return { node: CREATE_NODE({ _tag: ELEM_TAG, _meta: {}, _content: children }) };
+
         }
 
         // C) GENERIC OBJECT HANDLING → _obj

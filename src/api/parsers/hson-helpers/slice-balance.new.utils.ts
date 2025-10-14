@@ -1,11 +1,9 @@
-// balancers.new.hson.ts
+// slice-balance.new.utils.ts
 
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils";
 
-
-
 /**
- * scan_balanced_flat:
+ * slice_balanced_arr:
  *  - works on a single string (can pass a joined multi-line slice)
  *  - tracks quotes and backslash escapes
  *  - tracks nested opener/closer
