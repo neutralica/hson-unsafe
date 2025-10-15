@@ -47,18 +47,8 @@ export function scan_quoted_block(
     while (j < cur.length) {
       const ch = cur[j];
 
-      // Handle escapes (only backslash-escape; we don't interpret \n, etc.)
-      if (escaped) {
-        raw += ch;
-        escaped = false;
-        j++;
-        continue;
-      }
-      if (ch === '\\') {
-        escaped = true;
-        j++;
-        continue;
-      }
+      if (escaped) { raw += '\\' + ch; escaped = false; j++; continue; }
+      if (ch === '\\') { escaped = true; j++; continue; }
 
       // Found unescaped closer → finish
       if (ch === delim) {

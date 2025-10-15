@@ -65,7 +65,31 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         }
         return tok;
     }
+    function decode_json_string_literal(inner: string): string {
+        inner = inner.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => {
+            try { return String.fromCharCode(parseInt(hex, 16)); }
+            catch { return '\\u' + hex; } // keep as-is on failure
+        });
 
+        // Common escapes
+        inner = inner.replace(/\\([nrtbf\\"'/\\])/g, (_, c) => {
+            switch (c) {
+                case 'n': return '\n';
+                case 'r': return '\r';
+                case 't': return '\t';
+                case 'b': return '\b';
+                case 'f': return '\f';
+                case '"': return '"';
+                case "'": return "'";
+                case '\\': return '\\';
+                case '/': return '/';
+                default: return '\\' + c; // defensive; shouldn't hit
+            }
+        });
+
+        // Leave any other backslash sequences untouched (e.g. \x, \k) to avoid over-decoding
+        return inner;
+    }
     // (Optional) keep a type guard too; it’s fine and helps in places without overloads
     function isTokenOpen(t: Tokens | null | undefined): t is TokenOpen {
         return !!t && t.kind === TOKEN_KIND.OPEN;
@@ -109,10 +133,11 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
 
             if (t.kind === TOKEN_KIND.TEXT) {
                 const tt = _take() as TokenText;
-                const prim = tt.quoted ? tt.raw : coerce(tt.raw);
+                const prim = tt.quoted ? decode_json_string_literal(tt.raw) : coerce(tt.raw);
                 kids.push(make_leaf(prim));
                 continue;
             }
+
 
             if (t.kind === TOKEN_KIND.ARR_OPEN) { kids.push(readArray()); continue; }
             if (t.kind === TOKEN_KIND.OPEN) { kids.push(readTag(false).node); continue; }
@@ -133,10 +158,10 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             }
 
             if (kids.length === 1 && kids[0]._tag === ARR_TAG) {
-                node._content = kids as NodeContent; // passthrough array cluster
+                node._content = kids; // passthrough array cluster
             } else if (kids.length > 0) {
                 const clusterTag = (closeKind === CLOSE_KIND.elem) ? ELEM_TAG : OBJ_TAG;
-                node._content = [{ _tag: clusterTag, _meta: {}, _content: kids as NodeContent }];
+                node._content = [{ _tag: clusterTag, _meta: {}, _content: kids }];
             } else {
                 node._content = [];
             }
@@ -221,10 +246,13 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
                 _take();
                 // CHANGED: build an empty object *item*
                 childNode = CREATE_NODE({ _tag: OBJ_TAG, _meta: {}, _content: [] });
+
             } else if (t.kind === TOKEN_KIND.TEXT) {
+                // FIX: keep primitives inside the array (do NOT push to outer "nodes")
                 const tt = _take() as TokenText;
-                const prim = tt.quoted ? tt.raw : coerce(tt.raw);
-                childNode = make_leaf(prim);
+                const prim = tt.quoted ? decode_json_string_literal(tt.raw) : coerce(tt.raw);
+                childNode = make_leaf(prim); // ← was: nodes.push(...); continue;
+
             } else if (t.kind === TOKEN_KIND.OPEN) {
                 childNode = readTag(false).node;
             } else if (t.kind === TOKEN_KIND.ARR_OPEN) {
@@ -257,11 +285,10 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         if (t.kind === TOKEN_KIND.OPEN) { nodes.push(readTag(true).node); continue; }
         if (t.kind === TOKEN_KIND.ARR_OPEN) { nodes.push(readArray()); continue; }
         if (t.kind === TOKEN_KIND.TEXT) {
+            // top-level TEXT is allowed (outside arrays) → becomes a leaf
             const tt = _take() as TokenText;
-            const prim = tt.quoted ? tt.raw : coerce(tt.raw);
-            nodes.push(
-                make_leaf(prim)
-            );
+            const prim = tt.quoted ? decode_json_string_literal(tt.raw) : coerce(tt.raw);
+            nodes.push(make_leaf(prim));
             continue;
         }
         _throw_transform_err(`unexpected top-level token ${t.kind}`, 'parse_tokens_new');
