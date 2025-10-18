@@ -14,7 +14,7 @@ import { graft_NEW } from "./graft.new.tree";
  * @param $options - an object to control behavior, e.g., { unsafe: boolean }
  * @returns an object with methods to define the source of the tree
  */
-export function construct_tree_NEW(
+export function construct_tree(
   $options: { unsafe: boolean } = { unsafe: false }
 ): TreeConstructor_Source {
 
