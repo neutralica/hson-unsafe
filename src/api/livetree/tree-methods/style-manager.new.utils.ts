@@ -24,37 +24,21 @@ export default class StyleManager_NEW {
      * @param propertyName the CSS property (e.g., 'backgroundColor' or 'background-color')
      * @param value the new value 
      */
+
     set(propertyName: string, value: string | null): LiveTree {
-        const nodes = this.liveTree.sourceNode() as HsonNode[];
-        for (const node of nodes) {
-            if (!node._attrs) continue;
+        // normalize prop: backgroundColor → background-color
+        const name = propertyName.includes('-')
+            ? propertyName
+            : propertyName.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 
-            /*  ensure the style attribute is an object */
-            if (typeof node._attrs.style !== 'object' || node._attrs.style === null) {
-                node._attrs.style = {};
-            }
+        // safest: act on the first element in the current selection
+        const el = this.liveTree.asDomElement();
+        if (!el) return this.liveTree;
 
-            // /* Convert propertyName to camelCase for the object key */
-            const camelCaseProperty = propertyName.replace(/-(\w)/g, (_, c) => c.toUpperCase());
-            
-            const styleObj = node._attrs.style as Record<string, string>;
+        if (value === null) el.style.removeProperty(name);
+        else el.style.setProperty(name, value);
 
-            if (value === null) {
-                delete styleObj[camelCaseProperty];
-            } else {
-                styleObj[camelCaseProperty] = value;
-            }
-
-            // Sync with the live DOM element
-            const liveElement = NODE_ELEMENT_MAP.get(node);
-            if (liveElement) {
-                // It's easier to just re-apply the whole style string
-                liveElement.style.cssText = Object.entries(styleObj)
-                    .map(([k, v]) => `${k.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}: ${v}`)
-                    .join('; ');
-            }
-        }
-        return this.liveTree;
+        return this.liveTree; // keep chaining: tree.style.set(...).style.set(...)
     }
 
     /**

@@ -1,6 +1,6 @@
 // constructors.types.hson.ts
 
-import {  HsonNode } from "../..";
+import {  HsonNode, LiveTree } from "../..";
 import { RenderΔ, HSON_FrameΔ } from "../../types-consts/constants";
 
 
@@ -16,7 +16,7 @@ export interface OutputConstructor_2 {
     toHTML(): OptionsConstructor_3 & RenderConstructor_4;
     toHSON(): OptionsConstructor_3 & RenderConstructor_4;
    /*  "dev mode" only? */
-    asTree(): ProxyBackdoor;
+    // asTree(): ProxyBackdoor;
 }
 
 /* step 3: The optional configuration methods. Each one returns the final step */
@@ -39,7 +39,7 @@ export interface FrameOptions {
 export interface RenderConstructor_4 {
     serialize(): string;
     parse(): any;
-    asBranch(): any;
+    asBranch(): LiveTree;
 }
 
 export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];

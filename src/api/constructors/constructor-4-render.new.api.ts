@@ -71,7 +71,7 @@ export function construct_render_4($context: FrameRender): RenderConstructor_4 {
          * returns the structure as a "liveTree" proxy permitting 
          *  intuitive dot-notation access & hiding VSN clutter
          */
-        // TODO--this is not correct I don't think; should invoke the newer tree methods
+        // TODO--this should be returnd one level up, alongside toHTML or toHSON, not here *as* HTML (it's not; it's a proxy)
         asBranch(): any {
             // return hson.transform.fromHSON
             return create_proxy_NEW(frame.node);

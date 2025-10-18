@@ -83,6 +83,17 @@ export class LiveTree {
     this.setSelected($nodes);
   }
 
+  get style(): StyleManager_NEW {
+    if (!this.styleManager) this.styleManager = new StyleManager_NEW(this);
+    return this.styleManager;
+  }
+
+  get dataset(): DatasetManager {
+    if (!this.datasetManager) this.datasetManager = new DatasetManager(this);
+    return this.datasetManager;
+  }
+
+
   // finder methods (convert results → refs)
   find(q: HsonQuery | string): LiveTree {
     const query = typeof q === 'string' ? parseSelector_NEW(q) : q;
@@ -104,7 +115,6 @@ export class LiveTree {
   // === legacy mutators/readers: wrap for now ===
 
   setAttr($name: string, $value: string | boolean | null): this {
-    // CHANGED: resolve per-call; legacy logic unchanged below
     this.withNodes(nodes => {
       for (const node of nodes) {
         if (!node._meta) node._meta = {};
@@ -126,7 +136,7 @@ export class LiveTree {
   }
 
   remove(): this {
-    // CHANGED: strip DOM stamp then drop map/selection
+    // strip DOM stamp then drop map/selection
     for (const r of this.selected) {
       const el = r.resolveEl();
       el?.remove();
@@ -134,7 +144,7 @@ export class LiveTree {
       if (n) {
         NODE_ELEMENT_MAP.delete(n);
         // policy: drop mapping entirely on remove (or keep for undo)
-        // drop_quid(n); // if you want to invalidate the handle
+        // drop_quid(n); // if I want to invalidate the handle
       }
     }
     this.selected = [];

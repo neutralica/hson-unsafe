@@ -45,9 +45,9 @@ export function construct_output_2($frame: FrameConstructor): OutputConstructor_
         },
 
         /* or: access the data directly as a proxy */
-        asTree() {
-            // TODO -- LIVE TREE IS CURRENTLY FED OLD SHAPE - CONVERT TO _NEW
-            return create_proxy_NEW($frame.node);
-        }
+        // this should be called 'asBranch' to match the other that does the same thing??? 
+        // asTree() {
+            // return create_proxy_NEW($frame.node);
+        // }
     };
 }

@@ -10,9 +10,9 @@ liveTree is HSON’s runtime layer for reading and mutating a document through t
 
 ## What lives where
 
-* Parsers/serializers: turn HTML/JSON/HSON ↔ HsonNode\_NEW.
-* liveTree: wraps one or more HsonNode\_NEW and gives you a chainable API to find, read, and mutate.
-* create\_live\_tree\_NEW: builds DOM from nodes and populates a `WeakMap<HsonNode_NEW, HTMLElement>`.
+* Parsers/serializers: turn HTML/JSON/HSON ↔ HsonNode.
+* liveTree: wraps one or more HsonNode and gives you a chainable API to find, read, and mutate.
+* create_live_tree: builds DOM from nodes and populates a `WeakMap<HsonNode, HTMLElement>`.
 * Quid utilities (optional): stable ids for nodes you want to re-find later (`data-_quid` in meta; not emitted by default).
 
 ---
@@ -25,7 +25,7 @@ Two entry points:
 
 ```ts
 // Replace the body’s contents with an HSON-controlled version
-const tree = hson.liveTree.queryBody().graft(); // LiveTree_NEW
+const tree = hson.liveTree.queryBody().graft(); // LiveTree
 
 // Or target a specific element
 const app = hson.liveTree.queryDom('#app').graft();
@@ -35,9 +35,9 @@ const app = hson.liveTree.queryDom('#app').graft();
 
 * reads `element.innerHTML`
 * parses to NEW nodes (HTML preflight: strips comments, expands booleans, escapes unsafe text, normalizes entities, expands voids)
-* rebuilds DOM via `create_live_tree_NEW` (populates the node→element WeakMap)
+* rebuilds DOM via `create_live_tree` (populates the node→element WeakMap)
 * replaces the original element with the controlled DOM
-* returns a `LiveTree_NEW` at the new root
+* returns a `LiveTree` at the new root
 
 ### 2) Build a detached branch (not attached to the DOM yet)
 
@@ -63,7 +63,7 @@ app.find('#container').append(branch);
 
 ## Querying
 
-A `LiveTree_NEW` wraps the current selection (one or more nodes). Methods return a new wrapper unless noted.
+A `LiveTree` wraps the current selection (one or more nodes). Methods return a new wrapper unless noted.
 
 ```ts
 // CSS-ish string or object query
@@ -75,9 +75,9 @@ const third = allItems.at(2);                  // narrow selection to index
 Query object shape:
 
 ```ts
-type HsonQuery_NEW = {
+type HsonQuery = {
   tag?: string;
-  attrs?: Partial<HsonAttrs_NEW>;
+  attrs?: Partial<HsonAttrs>;
   meta?: Record<string, string | number | boolean | RegExp>;
   text?: string | RegExp; // optional; if provided, matches descendant text
 };
@@ -107,8 +107,8 @@ const v = tree.find('#name').getValue();       // string
 const n = tree.findAll('li').count();          // number
 
 // Underlying node(s) (debugging)
-const raw = tree.find('#panel').sourceNode();      // HsonNode_NEW[]
-const one = tree.find('#panel').sourceNode(false); // first HsonNode_NEW
+const raw = tree.find('#panel').sourceNode();      // HsonNode[]
+const one = tree.find('#panel').sourceNode(false); // first HsonNode
 ```
 
 ---
@@ -165,7 +165,7 @@ Internal `data-_...` keys are reserved for HSON (array indices, quids). Dataset 
 
 ---
 
-## Identity and data-\_quid (optional)
+## Identity and data-_quid (optional)
 
 By default, serializers omit `data-_quid`. liveTree selections hold direct references to node objects and use a `WeakMap` to find DOM elements, so you usually don’t need ids.
 
@@ -175,7 +175,7 @@ Use quids if you plan to store a pointer externally and re-find the node after s
 import { ensureQuid, getNodeByQuid, seed_quids } from 'hson/quid';
 
 // Give a node an id (writes to node._meta['data-_quid'] and indexes it)
-const q = ensureQuid(tree.find('#save-button').sourceNode(false) as HsonNode_NEW);
+const q = ensureQuid(tree.find('#save-button').sourceNode(false) as HsonNode);
 
 // Later…
 const node = getNodeByQuid(q);
@@ -233,10 +233,10 @@ tree.find('#cards').append(branch);
 Store a durable handle to a node you’ll revisit:
 
 ```ts
-const q = ensureQuid(tree.find('#save').sourceNode(false) as HsonNode_NEW);
+const q = ensureQuid(tree.find('#save').sourceNode(false) as HsonNode);
 // …later after some rebuild
 const n = getNodeByQuid(q);
-if (n) new LiveTree_NEW(n).setAttr('data-status', 'done');
+if (n) new LiveTree(n).setAttr('data-status', 'done');
 ```
 
 ---
