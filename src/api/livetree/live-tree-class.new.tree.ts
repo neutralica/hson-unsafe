@@ -41,8 +41,8 @@ function makeRef(n: HsonNode): NodeRef {
 export class LiveTree {
   private selected: NodeRef[] = [];
   // (unchanged) managers…
-  private styleManager: StyleManager_NEW | null = null;
-  private datasetManager: DatasetManager | null = null;
+  private styleManager: StyleManager_NEW | undefined = undefined;
+  private datasetManager: DatasetManager | undefined = undefined;
 
   // nodes view (read-only)
   private get selectedNodes(): HsonNode[] {
@@ -214,19 +214,13 @@ export class LiveTree {
   }
 
   getFirstText(): string {
-    console.log('get first text!')
     const n = this.selectedNodes[0];
-    console.log('n:')
     if (!n) return '';
-    console.log(n);
     const el = NODE_ELEMENT_MAP.get(n);
-    console.log('el?');
-    console.log(el);
     if (el) return el.textContent ?? '';          // <-- grabs the full text
     // Fallback to model if not mounted
     const kids = (n._content ?? []).filter(is_Node_NEW);
     for (const k of kids) {
-      console.log('kids');
       if (k._tag === STR_TAG && typeof k._content?.[0] === 'string') {
         return k._content[0] as string;
       }
