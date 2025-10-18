@@ -245,10 +245,12 @@ export class LiveTree {
   public getElementFor(node: HsonNode): HTMLElement | undefined {
     return NODE_ELEMENT_MAP.get(node)
       ?? (() => {
-        const q = ensure_quid(node); // in-memory only
-        return document.querySelector(`[data-_quid="${q}"]`) as HTMLElement | undefined;
+        const q = ensure_quid(node); // safe: generates if missing
+        const el = document.querySelector(`[data-_quid="${q}"]`) as HTMLElement | null;
+        return el ?? undefined; // ← normalize null → undefined
       })();
   }
+
 
   asDomElement(): HTMLElement | undefined {
     const n = this.selectedNodes[0];

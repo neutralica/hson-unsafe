@@ -1,7 +1,8 @@
 // create-live-tree.new.ts
 
 import { HsonNode, Primitive, is_Node_NEW } from "../..";
-import { STR_TAG, VAL_TAG } from "../../types-consts/constants";
+import { ensure_quid } from "../../quid/data-quid.quid";
+import { _DATA_QUID, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { serialize_style } from "../../utils/serialize-css.utils";
 
@@ -44,13 +45,10 @@ export function create_live_tree_NEW(node: HsonNode | Primitive): Node {
     return frag;
   }
   const el = document.createElement(n._tag);
-
-
+  const q = ensure_quid(n, { persist: true });
+  el.setAttribute(`${_DATA_QUID}`, q);
   NODE_ELEMENT_MAP.set(n, el);
-  // NEW: standard element
 
-  // NEW: link node↔element (same map is fine; key is object identity)
-  NODE_ELEMENT_MAP.set(n as any, el);
 
   // NEW: reflect ONLY _attrs
   const a = n._attrs;
