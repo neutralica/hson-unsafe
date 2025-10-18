@@ -18,7 +18,7 @@ import { ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 type NodeRef = {
   q: string;
   resolveNode(): HsonNode | undefined;
-  resolveEl(): HTMLElement | null;
+  resolveEl(): HTMLElement | undefined;
 };
 
 function makeRef(n: HsonNode): NodeRef {
@@ -32,8 +32,8 @@ function makeRef(n: HsonNode): NodeRef {
     resolveNode: () => get_node_by_quid(q),
     resolveEl: () => {
       const node = get_node_by_quid(q);
-      const el = node ? NODE_ELEMENT_MAP.get(node) : null;
-      return el ?? (document.querySelector(`[${_DATA_QUID}="${q}"]`) as HTMLElement | null);
+      const el = node ? NODE_ELEMENT_MAP.get(node) : undefined;
+      return el ?? (document.querySelector(`[${_DATA_QUID}="${q}"]`) as HTMLElement | undefined);
     },
   };
 }
@@ -248,17 +248,17 @@ export class LiveTree {
    * Returns the raw HsonNode(s) for debugging.
    * @param all - If true, returns the entire array of selected nodes. Otherwise, returns the first.
    */
-  public getElementFor(node: HsonNode): HTMLElement | null {
+  public getElementFor(node: HsonNode): HTMLElement | undefined {
     return NODE_ELEMENT_MAP.get(node)
       ?? (() => {
         const q = ensure_quid(node); // in-memory only
-        return document.querySelector(`[data-_quid="${q}"]`) as HTMLElement | null;
+        return document.querySelector(`[data-_quid="${q}"]`) as HTMLElement | undefined;
       })();
   }
 
-  asDomElement(): HTMLElement | null {
+  asDomElement(): HTMLElement | undefined {
     const n = this.selectedNodes[0];
-    return n ? this.getElementFor(n) : null;
+    return n ? this.getElementFor(n) : undefined;
   }
 
   sourceNode(all = true, index?: number): HsonNode | HsonNode[] | undefined {
