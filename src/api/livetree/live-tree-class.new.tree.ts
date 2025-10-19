@@ -254,7 +254,15 @@ export class LiveTree {
 
   asDomElement(): HTMLElement | undefined {
     const n = this.selectedNodes[0];
-    return n ? this.getElementFor(n) : undefined;
+    if (!n) {
+      console.warn('[asDomElement] no nodes found in .seleted');
+      return undefined;
+    }
+    const el = this.getElementFor(n);
+    if (!el) {
+      console.warn('[asDomElement] element not found for _quid:', n._meta?.['data-_quid']);
+    }
+    return el;
   }
 
   sourceNode(all = true, index?: number): HsonNode | HsonNode[] | undefined {

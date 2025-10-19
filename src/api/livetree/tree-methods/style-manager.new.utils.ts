@@ -3,6 +3,8 @@
 
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
+import { make_string } from "../../../utils/make-string.utils";
+import { camel_to_kebab } from "../../../utils/serialize-css.utils";
 import { LiveTree } from "../live-tree-class.new.tree";
 
 /**
@@ -12,49 +14,68 @@ import { LiveTree } from "../live-tree-class.new.tree";
  * 
  */
 
-export default class StyleManager_NEW {
-    private liveTree: LiveTree;
+export default class StyleManager {
+  constructor(private liveTree: LiveTree) {}
 
-    constructor(liveTree: LiveTree) {
-        this.liveTree = liveTree;
-    }
+  set(propertyName: string, value: string | number | null): LiveTree {
+    const prop = camel_to_kebab(propertyName);
+    const val  = value == null ? '' : String(value);
 
-    /**
-     * sets a CSS style property on all selected nodes
-     * @param propertyName the CSS property (e.g., 'backgroundColor' or 'background-color')
-     * @param value the new value 
-     */
+    const nodes: HsonNode[] = this.liveTree.getSelectedNodes(); // <- getter
+    for (const node of nodes) {
+      // 1) push to DOM
+        const el = NODE_ELEMENT_MAP.get(node);
+        if (el) {
+        // setProperty handles kebab properly and avoids clobbering shorthands
+        (el as HTMLElement).style.setProperty(prop, val);
+      }
 
-    set(propertyName: string, value: string | null): LiveTree {
-        // normalize prop: backgroundColor → background-color
-        const name = propertyName.includes('-')
-            ? propertyName
-            : propertyName.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
-
-        // safest: act on the first element in the current selection
-        const el = this.liveTree.asDomElement();
-        if (!el) return this.liveTree;
-
-        if (value === null) el.style.removeProperty(name);
-        else el.style.setProperty(name, value);
-
-        return this.liveTree; // keep chaining: tree.style.set(...).style.set(...)
-    }
-
-    /**
-     * Gets a style property from the first selected node.
-     * @param propertyName The CSS property name.
-     * @returns The style value, or undefined if not found.
-     */
-    get(propertyName: string): string | undefined {
-        const node = this.liveTree.sourceNode() as HsonNode;
-        if (!node) return undefined;
-
-        const styleObj = node._attrs?.style;
-        if (typeof styleObj === 'object' && styleObj !== null) {
-            const camelCaseProperty = propertyName.replace(/-(\w)/g, (_, c) => c.toUpperCase());
-            return (styleObj as Record<string, string>)[camelCaseProperty];
+      // 2) mirror into node attrs for serialization
+      const a = (node._attrs ??= {});
+      // support string or object style; prefer object going forward
+      if (typeof a.style === 'string') {
+        // convert existing string to object once
+        const prev = a.style.trim();
+        const obj: Record<string, string> = {};
+        if (prev) {
+          prev.split(';').forEach(rule => {
+            const [k, v] = rule.split(':');
+            if (k && v) obj[k.trim()] = v.trim();
+          });
         }
-        return undefined;
+        a.style = obj;
+      }
+      const s = (a.style ??= {}) as Record<string, string>;
+      if (val === '') {
+        delete s[prop];
+      } else {
+        s[prop] = val;
+      }
     }
+
+    return this.liveTree; // enables: tree.style.set(...).style.set(...)
+  }
+
+  get(propertyName: string): string | undefined {
+    const prop = camel_to_kebab(propertyName);
+    const node = this.liveTree.getSelectedNodes()[0];
+    if (!node) return;
+    const el = NODE_ELEMENT_MAP.get(node);
+    if (el) {
+      const v = getComputedStyle(el as HTMLElement).getPropertyValue(prop);
+      return v || undefined;
+    }
+    const a = node._attrs;
+    if (!a) return;
+    if (typeof a.style === 'string') {
+      const m = a.style.match(new RegExp(`(^|;)\\s*${prop}\\s*:\\s*([^;]+)`));
+      return m?.[2]?.trim();
+    } else if (a.style && typeof a.style === 'object') {
+      return (a.style as Record<string, string>)[prop];
+    }
+  }
+
+  remove(propertyName: string): LiveTree {
+    return this.set(propertyName, null);
+  }
 }

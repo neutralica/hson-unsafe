@@ -16,6 +16,7 @@ import { parse_html_attrs } from "../../utils/parse_html_attrs.utils";
 import { _snip } from "../../utils/snip.utils";
 import { strip_html_comments } from "../../utils/strip-html-comments.new.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
+import { wrap_cdata } from "../../utils/wrap-cdata.utils";
 
 /* debug log */
 let _VERBOSE = false;
@@ -36,7 +37,8 @@ export function parse_html($input: string | Element): HsonNode {
         const bools = expand_flags(stripped);
         const safe = escape_text_nodes(bools);  // handles &, <, > in text nodes
         const ents = expand_entities(safe);
-        const final = expand_void_tags(ents);
+        const voids = expand_void_tags(ents);
+        const final = wrap_cdata(voids);
 
         const parser = new DOMParser();
         let parsedXML = parser.parseFromString(final, 'application/xml');
@@ -44,7 +46,7 @@ export function parse_html($input: string | Element): HsonNode {
 
         // If it looks like a fragment, wrap in _root and retry
         if (parseError && parseError.textContent?.includes('xtra content')) {
-            const wrapped = `<${ROOT_TAG}>\n${final}</${ROOT_TAG}>`;
+            const wrapped = `<${ROOT_TAG}>\n${voids}</${ROOT_TAG}>`;
             parsedXML = parser.parseFromString(wrapped, 'application/xml');
             parseError = parsedXML.querySelector('parsererror');
         }
@@ -84,7 +86,17 @@ function convert($el: Element): HsonNode {
     // Raw text elements: treat their textContent as a single string node
     const specialExceptions = ['style', 'script'];
     if (specialExceptions.includes(tagLower)) {
-        const text_content = $el.textContent?.trim();
+        let text_content = $el.textContent?.trim();
+
+        // NEW: handle <![CDATA[ ... ]]> safely
+        if (text_content?.startsWith("<![CDATA[")) {
+            const end = text_content.indexOf("]]>");
+            if (end === -1) {
+                _throw_transform_err("Malformed CDATA block: missing closing ']]>'", "parse-html");
+            }
+            text_content = text_content.slice("<![CDATA[".length, end);
+        }
+
         if (text_content) {
             const str = CREATE_NODE({ _tag: STR_TAG, _content: [text_content] });
             return CREATE_NODE({
@@ -258,11 +270,11 @@ function elementToNode($els: NodeListOf<ChildNode>): (HsonNode | Primitive)[] {
             // handle the empty-string sentinel *after* trimming
             if (trimmed === '""') {
                 children.push(
-                            CREATE_NODE({
-                                _tag: STR_TAG,
-                                _meta: {},
-                                _content: [""], // <-- the actual empty string
-                            }),
+                    CREATE_NODE({
+                        _tag: STR_TAG,
+                        _meta: {},
+                        _content: [""], // <-- the actual empty string
+                    }),
                 );
                 continue;
             }
