@@ -4,6 +4,7 @@ import { HsonNode, Primitive, is_Node_NEW } from "../..";
 import { ensure_quid } from "../../quid/data-quid.quid";
 import { _DATA_QUID, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
+import { map_set } from "../../utils/lookup-element.utils";
 import { serialize_style } from "../../utils/serialize-css.utils";
 
 /**
@@ -45,6 +46,7 @@ export function create_live_tree_NEW(node: HsonNode | Primitive): Node {
     return frag;
   }
   const el = document.createElement(n._tag);
+  map_set(node as unknown as object, el);  
   const q = ensure_quid(n, { persist: true });
   el.setAttribute(`${_DATA_QUID}`, q);
   NODE_ELEMENT_MAP.set(n, el);
