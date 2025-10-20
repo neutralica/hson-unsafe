@@ -10,9 +10,10 @@ import { DatasetManager } from "./tree-methods/dataset-manager.new.tree";
 import { empty_NEW } from "./tree-methods/empty.tree.new.utils";
 import { getContent_NEW } from "./tree-methods/get-content.new.tree";
 import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils";
-import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
+// import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
 import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
 import { ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
+import { StyleManager2 } from "./tree-methods/style-manager-2.utils";
 
 
 type NodeRef = {
@@ -41,7 +42,7 @@ function makeRef(n: HsonNode): NodeRef {
 export class LiveTree {
   private selected: NodeRef[] = [];
   // (unchanged) managers…
-  private styleManager: StyleManager_NEW | undefined = undefined;
+  private styleManager: StyleManager2 | undefined = undefined;
   private datasetManager: DatasetManager | undefined = undefined;
 
   // nodes view (read-only)
@@ -83,10 +84,10 @@ export class LiveTree {
     this.setSelected($nodes);
   }
 
-  get style(): StyleManager_NEW {
-    if (!this.styleManager) this.styleManager = new StyleManager_NEW(this);
-    return this.styleManager;
-  }
+  get style(): StyleManager2 {
+  if (!this.styleManager) this.styleManager = new StyleManager2(this);
+  return this.styleManager;
+}
 
   get dataset(): DatasetManager {
     if (!this.datasetManager) this.datasetManager = new DatasetManager(this);

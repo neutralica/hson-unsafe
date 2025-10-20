@@ -59,4 +59,3 @@ export const _META_DATA_PREFIX = 'data-_';
 export const _DATA_INDEX = 'data-_index';
 export const _DATA_QUID = 'data-_quid';
 export const NODE_ELEMENT_MAP = new WeakMap<HsonNode, HTMLElement>();
-
