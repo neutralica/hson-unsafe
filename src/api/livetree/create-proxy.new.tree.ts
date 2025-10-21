@@ -1,9 +1,11 @@
 // create-proxy.new.tree.hson.ts
 
-import { HsonNode, is_Node_NEW, parse_json } from "../..";
 import { is_Object, is_Primitive } from "../../core/utils/guards.core.utils";
+import { HsonNode } from "../../types-consts";
 import { STR_TAG, VAL_TAG, VSN_TAGS } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
+import { is_Node } from "../../utils/node-guards.new.utils";
+import { parse_json } from "../parsers/parse-json.new.transform";
 import { create_live_tree_NEW } from "./create-live-tree.new.tree";
 import { get_contentValue_NEW, find_child_by_tag_NEW, find_index_of_tag_NEW, update_content_NEW } from "./tree-utils/proxy-helpers.new.utils";
 import { get_semantic_child } from "./tree-utils/semantic-child.utils";
@@ -47,7 +49,8 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
                 return targetNode;
             }
             if (propertyKey === 'toJSON') {
-                return () => strip_VSNs_NEW(targetNode)?.[0];
+                return () => strip_VSNs_NEW(targetNode);
+
             }
             if (typeof propertyKey !== 'string') {
                 return Reflect.get(targetNode, propertyKey, receiver);
@@ -67,7 +70,7 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
 
             /* find direct child with a matching tag */
             const childNode = children.find(
-                (c): c is HsonNode => is_Node_NEW(c) && c._tag === propertyKey
+                (c): c is HsonNode => is_Node(c) && c._tag === propertyKey
             );
 
             if (childNode) {
@@ -98,8 +101,8 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
 
                 const hsonContainer =
                     (targetNode._content ?? [])
-                        .filter(is_Node_NEW)                  // CHANGED: now HsonNode_NEW[]
-                        .find((n: unknown) => is_Node_NEW(n) && VSN_TAGS.includes(n._tag));
+                        .filter(is_Node)                  // CHANGED: now HsonNode_NEW[]
+                        .find((n: unknown) => is_Node(n) && VSN_TAGS.includes(n._tag));
                 if (!hsonContainer) return false;
 
                 const priorIndex = find_index_of_tag_NEW(targetNode, propertyKey);
@@ -121,7 +124,7 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
                 const parentLiveElement = NODE_ELEMENT_MAP.get(targetNode);
                 if (parentLiveElement) {
                     const newLiveElement = create_live_tree_NEW(newNode);
-                    if (is_Node_NEW(priorNode)) {
+                    if (is_Node(priorNode)) {
                         const oldLiveElement = NODE_ELEMENT_MAP.get(priorNode);
                         if (oldLiveElement) {
                             oldLiveElement.replaceWith(newLiveElement);

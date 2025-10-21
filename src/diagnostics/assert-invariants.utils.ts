@@ -2,9 +2,9 @@ import { Primitive } from "../core/types-consts/core.types";
 import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG, VSN_TAGS, EVERY_VSN, ELEM_OBJ_ARR } from "../types-consts/constants";
 import { _META_DATA_PREFIX, _DATA_INDEX } from "../types-consts/constants";
 import { HsonNode, HsonMeta, HsonAttrs, NodeContent } from "../types-consts/node.new.types";
-import { make_string } from "./make-string.utils";
-import { _throw_transform_err } from "./throw-transform-err.utils";
-import { is_Node } from "./node-guards.new.utils";
+import { make_string } from "../utils/make-string.utils";
+import { _throw_transform_err } from "../utils/throw-transform-err.utils";
+import { is_Node } from "../utils/node-guards.new.utils";
 
 
 /* 

@@ -1,5 +1,6 @@
-import {  HsonNode } from "../..";
-import { assert_invariants } from "../../utils/assert-invariants.utils";
+
+import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
+import { HsonNode } from "../../types-consts";
 import { parse_tokens } from "./parse-tokens.new.transform";
 import { tokenize_hson } from "./tokenize-hson.new.transform";
 

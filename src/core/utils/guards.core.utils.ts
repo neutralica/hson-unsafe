@@ -1,7 +1,7 @@
 // is-helpers.hson.util.ts
 
-import { Primitive, BasicValue } from "../..";
-import { JsonObj, JsonType } from "../types-consts/core.types";
+
+import { BasicValue, JsonObj, JsonType, Primitive } from "../types-consts/core.types";
 
 
 /* identifies JSON objects */

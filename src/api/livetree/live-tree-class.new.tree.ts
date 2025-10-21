@@ -1,6 +1,5 @@
 // live-tree-class.tree.hson.ts
 
-import { HsonNode, is_Node_NEW, HsonQuery, Primitive } from "../..";
 import { STR_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
@@ -14,6 +13,8 @@ import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils";
 import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
 import { ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 import { StyleManager2 } from "./tree-methods/style-manager-2.utils";
+import { HsonNode, HsonQuery, Primitive } from "../../types-consts";
+import { is_Node } from "../../utils/node-guards.new.utils";
 
 
 type NodeRef = {
@@ -60,8 +61,8 @@ export class LiveTree {
     if (input instanceof LiveTree) {
       this.selected = input.selected.slice(); // copy refs
     } else if (Array.isArray(input)) {
-      this.selected = input.filter(is_Node_NEW).map(makeRef);
-    } else if (input && is_Node_NEW(input)) {
+      this.selected = input.filter(is_Node).map(makeRef);
+    } else if (input && is_Node(input)) {
       this.selected = [makeRef(input)];
     } else {
       this.selected = [];
@@ -220,7 +221,7 @@ export class LiveTree {
     const el = NODE_ELEMENT_MAP.get(n);
     if (el) return el.textContent ?? '';          // <-- grabs the full text
     // Fallback to model if not mounted
-    const kids = (n._content ?? []).filter(is_Node_NEW);
+    const kids = (n._content ?? []).filter(is_Node);
     for (const k of kids) {
       if (k._tag === STR_TAG && typeof k._content?.[0] === 'string') {
         return k._content[0] as string;
@@ -322,7 +323,7 @@ export class LiveTree {
       // Prefer live text if present; fall back to model (_str children)
       const el = NODE_ELEMENT_MAP.get(n);
       if (el) return el.textContent ?? '';
-      const kids = (n._content ?? []).filter(is_Node_NEW);
+      const kids = (n._content ?? []).filter(is_Node);
       for (const k of kids) {
         if (k._tag === STR_TAG && typeof k._content?.[0] === 'string') {
           return k._content[0] as string;
@@ -347,7 +348,7 @@ export class LiveTree {
       for (const node of nodesToSearch) {
         if ($options.findFirst && results.length) return;
         if (checkNode(node)) results.push(node);
-        const kids = (node._content ?? []).filter(is_Node_NEW);
+        const kids = (node._content ?? []).filter(is_Node);
         if (kids.length) traverse(kids);
       }
     };

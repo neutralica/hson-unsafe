@@ -1,6 +1,6 @@
-import { HsonNode, Primitive } from "../..";
+import { HsonNode } from "../../types-consts/node.new.types";
 import { RenderConstructor_4 } from "../../core/types-consts/constructors.core.types";
-import { JsonType } from "../../core/types-consts/core.types";
+import { JsonType, Primitive } from "../../core/types-consts/core.types";
 import { RenderΔ } from "../../types-consts/constants";
 import { FrameRender } from "../../types-consts/constructors.new.types";
 import { make_string } from "../../utils/make-string.utils";

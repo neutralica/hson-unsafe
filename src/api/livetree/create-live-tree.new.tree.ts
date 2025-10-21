@@ -1,10 +1,11 @@
 // create-live-tree.new.ts
 
-import { HsonNode, Primitive, is_Node_NEW } from "../..";
 import { ensure_quid } from "../../quid/data-quid.quid";
+import { HsonNode, Primitive } from "../../types-consts";
 import { _DATA_QUID, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { map_set } from "../../utils/lookup-element.utils";
+import { is_Node } from "../../utils/node-guards.new.utils";
 import { serialize_style } from "../../utils/serialize-css.utils";
 
 /**
@@ -13,7 +14,7 @@ import { serialize_style } from "../../utils/serialize-css.utils";
  */
 export function create_live_tree_NEW(node: HsonNode | Primitive): Node {
   // NEW: if not a NEW node, render as text
-  if (!is_Node_NEW(node)) {
+  if (!is_Node(node)) {
     return document.createTextNode(String(node ?? ""));
   }
 
@@ -33,7 +34,7 @@ export function create_live_tree_NEW(node: HsonNode | Primitive): Node {
       // NEW: _arr contains <_ii> items; unwrap each item’s single child
       for (const ii of n._content ?? []) {
         // _ii is enforced by invariants; be defensive anyway
-        const payload = (is_Node_NEW(ii) && Array.isArray(ii._content)) ? ii._content[0] : null;
+        const payload = (is_Node(ii) && Array.isArray(ii._content)) ? ii._content[0] : null;
         if (payload != null) frag.appendChild(create_live_tree_NEW(payload as any));
       }
       return frag;
@@ -82,13 +83,13 @@ export function create_live_tree_NEW(node: HsonNode | Primitive): Node {
 
   // NEW: children — either a single VSN wrapper or direct content
   const kids = n._content ?? [];
-  if (kids.length === 1 && is_Node_NEW(kids[0]) &&
+  if (kids.length === 1 && is_Node(kids[0]) &&
     (kids[0]._tag === "_obj" || kids[0]._tag === "_elem" || kids[0]._tag === "_arr")) {
     // unwrap the container
     const container = kids[0];
     if (container._tag === "_arr") {
       for (const ii of container._content ?? []) {
-        const payload = (is_Node_NEW(ii) && Array.isArray(ii._content)) ? ii._content[0] : null;
+        const payload = (is_Node(ii) && Array.isArray(ii._content)) ? ii._content[0] : null;
         if (payload != null) el.appendChild(create_live_tree_NEW(payload as any));
       }
     } else {

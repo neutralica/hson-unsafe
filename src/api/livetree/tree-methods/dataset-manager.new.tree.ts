@@ -1,6 +1,6 @@
 // src/utils/style-manager.utils.ts
 
-import { Primitive } from "../../..";
+import { Primitive } from "../../../types-consts";
 import { LiveTree } from "../live-tree-class.new.tree";
 
 

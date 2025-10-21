@@ -15,10 +15,18 @@
   ],
   "type": "module",
   "types": "./dist/index.d.ts",
-  "exports": {
+ "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./diagnostics": {
+      "types": "./dist/diagnostics/index.d.ts",
+      "import": "./dist/diagnostics/index.js"
+    },
+    "./types": {
+      "types": "./dist/types-consts/index.d.ts",
+      "import": "./dist/types-consts/index.js"
     }
   },
   "scripts": {

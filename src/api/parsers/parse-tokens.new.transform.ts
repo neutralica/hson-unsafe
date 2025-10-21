@@ -1,11 +1,10 @@
 // parse-tokens.transform.hson.ts
 
-import { Primitive, HsonNode, is_Node_NEW } from "../..";
 import { STR_TAG, VAL_TAG, ARR_TAG, OBJ_TAG, ELEM_TAG, ROOT_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
 import { TOKEN_KIND, CLOSE_KIND } from "../../types-consts/tokens.new.types";
 import { _DATA_INDEX } from "../../types-consts/constants";
-import { NodeContent } from "../../types-consts/node.new.types";
+import { HsonNode, NodeContent } from "../../types-consts/node.new.types";
 import { Tokens, CloseKind, TokenOpen, TokenEnd, TokenArrayOpen, TokenArrayClose, TokenKind, TokenText } from "../../types-consts/tokens.new.types";
 import { coerce } from "../../utils/coerce-string.utils";
 import { make_string } from "../../utils/make-string.utils";
@@ -14,6 +13,7 @@ import { _snip } from "../../utils/snip.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils";
 import { unwrap_root_obj } from "../../utils/unwrap-root-obj.util";
+import { Primitive } from "../../types-consts";
 
 
 /* debug log */

@@ -1,6 +1,7 @@
 // constructors.types.hson.ts
 
-import {  HsonNode, LiveTree } from "../..";
+import { LiveTree } from "../../api/livetree/live-tree-class.new.tree";
+import { HsonNode } from "../../types-consts";
 import { RenderΔ, HSON_FrameΔ } from "../../types-consts/constants";
 
 

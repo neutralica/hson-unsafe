@@ -19,25 +19,26 @@ export function strip_VSNs_NEW(node: HsonNode | Primitive | undefined): any {
     if (!is_Node(node)) {
         return undefined;
     }
-    switch (node._tag) {
+    const n: HsonNode = node;
+    switch (n._tag) {
         case STR_TAG:
         case VAL_TAG:
-            return node._content[0];
+            return n._content[0];
     }
 
     /* this is the representation for an element like <html>, <p>, <span>, etc */
     const contentArray: any[] = [];
 
     /* 2. add attributes first as single-key objects (this preserves source order) */
-    if (node._meta.attrs) {
-        for (const key in node._attrs) {
-            contentArray.push({ [key]: node._attrs[key] });
+    if (n._meta.attrs) {
+        for (const key in n._attrs) {
+            contentArray.push({ [key]: n._attrs[key] });
         }
     }
 
 
     /* 3. process and add children */
-    const container = node._content.find((c: unknown) => is_Node(c) && VSN_TAGS.includes(c._tag)) as HsonNode | undefined;
+    const container = n._content.find((c: unknown) => is_Node(c) && VSN_TAGS.includes(c._tag)) as HsonNode | undefined;
 
     if (container && container._content.length > 0) {
         for (const child of container._content) {
@@ -50,16 +51,16 @@ export function strip_VSNs_NEW(node: HsonNode | Primitive | undefined): any {
     }
 
     /* return only the content of index or root */
-    if (node._tag === II_TAG || node._tag === ROOT_TAG) {
+    if (n._tag === II_TAG || n._tag === ROOT_TAG) {
         return contentArray;
     }
 
     // 4. final assembly: return the single-key object representation for this node
     if (contentArray.length === 1 && is_Primitive(contentArray[0])) {
         /* if just a single primitive, unwrap it */
-        return { [node._tag]: contentArray[0] };
+        return { [n._tag]: contentArray[0] };
     } else {
         /* otherwise keep the array to preserve structure */
-        return { [node._tag]: contentArray };
+        return { [n._tag]: contentArray };
     }
 }

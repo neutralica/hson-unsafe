@@ -503,8 +503,8 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
 
     /* debug print — neutral summary, not the old make_string */
     if (_VERBOSE) {
+        logTokens();
     }
-    logTokens();
 
     function logTokens(): void {
         console.groupCollapsed('returning tokens (summary)');

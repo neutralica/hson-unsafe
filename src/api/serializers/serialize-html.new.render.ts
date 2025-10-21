@@ -7,7 +7,7 @@ import { make_string } from '../../utils/make-string.utils';
 import { _snip } from '../../utils/snip.utils';
 import { _throw_transform_err } from '../../utils/throw-transform-err.utils';
 import { is_Node } from '../../utils/node-guards.new.utils';
-import { assert_invariants } from '../../utils/assert-invariants.utils';
+import { assert_invariants } from '../../diagnostics/assert-invariants.utils';
 import { clone_node } from '../../utils/clone-node.utils';
 import { HsonNode } from '../../types-consts/node.new.types';
 

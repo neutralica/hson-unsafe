@@ -14,6 +14,7 @@
         "declaration": true /* Generate .d.ts files from TypeScript and JavaScript files in your project. */,
         "sourceMap": true /* Create source map files for emitted JavaScript files. */,
         "declarationMap": true /* Create sourcemaps for d.ts files. */,
+        "stripInternal": true,                            /* Disable emitting declarations that have '@internal' in their JSDoc comments. */
 
         "rootDir": "src" /* Specify the root folder within your source files. */,
         "outDir": "dist" /* Specify an output folder for all emitted files. */
@@ -83,7 +84,6 @@
 // "inlineSources": true,                            /* Include source code in the sourcemaps inside the emitted JavaScript. */
 // "emitBOM": true,                                  /* Emit a UTF-8 Byte Order Mark (BOM) in the beginning of output files. */
 // "newLine": "crlf",                                /* Set the newline character for emitting files. */
-// "stripInternal": true,                            /* Disable emitting declarations that have '@internal' in their JSDoc comments. */
 // "noEmitHelpers": true,                            /* Disable generating custom helper functions like '__extends' in compiled output. */
 // "noEmitOnError": true,                            /* Disable emitting files if any type checking errors are reported. */
 // "preserveConstEnums": true,                       /* Disable erasing 'const enum' declarations in generated code. */

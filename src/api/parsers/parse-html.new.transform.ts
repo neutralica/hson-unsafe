@@ -1,10 +1,9 @@
 // parse-html.new.transform.hson.ts (new)
 
-import { HsonNode, Primitive, is_Node_NEW } from "../..";
 import { is_Primitive } from "../../core/utils/guards.core.utils";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
-import { assert_invariants } from "../../utils/assert-invariants.utils";
+import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { coerce } from "../../utils/coerce-string.utils";
 import { escape_text_nodes } from "../../utils/escape-text-nodes.new.utils";
 import { expand_entities } from "../../utils/expand-entities.utils";
@@ -17,6 +16,7 @@ import { _snip } from "../../utils/snip.utils";
 import { strip_html_comments } from "../../utils/strip-html-comments.new.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { wrap_cdata } from "../../utils/wrap-cdata.utils";
+import { HsonNode, Primitive } from "../../types-consts";
 
 /* debug log */
 let _VERBOSE = false;

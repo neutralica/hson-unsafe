@@ -1,8 +1,9 @@
-import { serialize_hson, serialize_json, serialize_html } from "../..";
 import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types";
 import { RenderΔ } from "../../types-consts/constants";
 import { FrameConstructor, FrameRender } from "../../types-consts/constructors.new.types";
-import { create_proxy_NEW } from "../livetree/create-proxy.new.tree";
+import { serialize_hson } from "../serializers/serialize-hson.new.render";
+import { serialize_html } from "../serializers/serialize-html.new.render";
+import { serialize_json } from "../serializers/serialize-json.new.render";
 import { construct_options_3 } from "./constructor-3-options.new.api";
 import { construct_render_4 } from "./constructor-4-render.new.api";
 
