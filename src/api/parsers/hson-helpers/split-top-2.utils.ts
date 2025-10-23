@@ -6,7 +6,7 @@
  * nested arrays (both [] and «»), and inside tag headers <...>
  * note this only guards the header <...>, not inner tag content
  */
-export function split_top_level_NEW($str: string, $separator: string): string[] {
+export function split_top_level($str: string, $separator: string): string[] {
   /* early out */
   if (!$str || $str.length === 0) return [];
 

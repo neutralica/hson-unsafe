@@ -56,7 +56,7 @@ export function linter(
 
             // boolean true -> flag (no ="")
             if (v === true) return [k];
-
+            console.warn('warning: escape_attrs() (html function used for hson output; errors may occur)');
             // everything else -> key="value"
             return [`${k}="${escape_attrs(String(v))}"`];
         });

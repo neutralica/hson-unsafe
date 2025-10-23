@@ -9,7 +9,7 @@ import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { is_quote, scan_quoted_block } from "../../utils/tokenize-full-string.utils";
 import { lex_text_piece } from "./hson-helpers/lex-text-piece.utils";
 import { slice_balanced_arr } from "./hson-helpers/slice-balance.new.utils";
-import { split_top_level_NEW } from "./hson-helpers/split-top-2.utils";
+import { split_top_level } from "./hson-helpers/split-top-2.utils";
 
 
 /* position tracker */
@@ -239,7 +239,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
             finalTokens.push(CREATE_ARR_OPEN_TOKEN(closerSymbol, pOpen));
 
             /* split the array body by top-level commas (quote/array/header aware) */
-            const items = split_top_level_NEW(body, ',');
+            const items = split_top_level(body, ',');
 
             for (const itemRaw of items) {
                 const item = itemRaw.trim();
@@ -401,7 +401,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
                 if (tailRaw.startsWith('<') || tailRaw.startsWith('«') || tailRaw.startsWith('[')) {
                     finalTokens.push(...tokenize_hson(tailRaw, $depth + 1));
                 } else {
-                    const parts = split_top_level_NEW(tailRaw, ',');
+                    const parts = split_top_level(tailRaw, ',');
                     if (parts.length > 1) {
                         _throw_transform_err(
                             `[step f] multiple inline items not allowed after <${tag}>: "${tailRaw}"`,
