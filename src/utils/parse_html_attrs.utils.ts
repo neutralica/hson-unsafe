@@ -16,6 +16,8 @@ export function parse_html_attrs($el: Element): {
   let meta: HsonMeta | undefined;
 
   // walk all DOM attributes verbatim
+  const isSVG = $el.namespaceURI === "http://www.w3.org/2000/svg";
+
   for (const a of Array.from($el.attributes)) {
     const name = a.name;              // keep original case for value, but
     const n = name.toLowerCase();     // compare in lowercase
@@ -43,6 +45,15 @@ export function parse_html_attrs($el: Element): {
     if (v === "" || v === name) {
       (attrs as any)[n] = name; // canonical: key="key"
       continue;
+    }
+
+    // 1) Drop namespace declarations and xml:* control attrs
+    if (name === "xmlns" || name.startsWith("xmlns:") || name.startsWith("xml:")) continue;
+
+    // 2) Canonicalize xlink:href → href (SVG)
+    if (isSVG && n.toLowerCase() === "xlink:href") {
+      if (!$el.hasAttribute("href")) (attrs as any).href = v;
+      continue; // don’t also keep xlink:href
     }
 
     // 4) everything else: normalize to HTML semantics

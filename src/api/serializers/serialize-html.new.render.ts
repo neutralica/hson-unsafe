@@ -50,20 +50,6 @@ function escape_attr(v: string): string {
   return v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
-function stringify_style(obj: Record<string, string>): string {
-  const toKebab = (k: string) =>
-    k.replace(/[_\s]+/g, "-")
-      .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-      .replace(/-+/g, "-")
-      .toLowerCase();
-
-  return Object.keys(obj)
-    .map(k => [toKebab(k), obj[k]] as const)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([k, v]) => `${k}:${v}`)
-    .join("; ");
-}
-
 
 // DROP-IN: serialize_xml + serialize_html (2.0) — with fixes
 // - _str melts to bare text
@@ -149,6 +135,12 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
 
   let openAttrs = `<${tag}`;
   const attrs = build_wire_attrs(node);
+  if (tag === "svg") {
+  // ensure default SVG ns on the root svg element if not present
+  if (!("xmlns" in attrs)) attrs.xmlns = "http://www.w3.org/2000/svg";
+  // only add xlink ns if you still serialize any xlink:* (ideally you don’t)
+}
+
   for (const k of Object.keys(attrs).sort()) {
     openAttrs += ` ${k}="${escape_attr(attrs[k])}"`;
   }

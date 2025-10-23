@@ -11,7 +11,7 @@ import { expand_flags } from "../../utils/expand-flags.utils";
 import { expand_void_tags } from "../../utils/expand-self-closing.utils";
 import { make_string } from "../../utils/make-string.utils";
 import { is_string_NEW, is_indexed_NEW } from "../../utils/node-guards.new.utils";
-import { parse_html_attrs } from "../../utils/parse_attributes_html.utils";
+import { parse_html_attrs } from "../../utils/parse_html_attrs.utils";
 import { _snip } from "../../utils/snip.utils";
 import { strip_html_comments } from "../../utils/strip-html-comments.new.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
@@ -27,6 +27,20 @@ const _log: (...args: Parameters<typeof console.log>) => void =
             ...args.map(a => (typeof a === "string" ? _snip(a, 500) : a)))   // ← prefix + passthrough
         : () => { };
 
+function ensureSvgNamespaces(src: string): string {
+  if (!/<svg\b/i.test(src)) return src;
+
+  const hasSvgNS  = /<svg\b[^>]*\bxmlns\s*=\s*["']http:\/\/www\.w3\.org\/2000\/svg["']/i.test(src);
+  const usesXlink = /\bxlink:/i.test(src);
+  const hasXlink  = /<svg\b[^>]*\bxmlns:xlink\s*=/i.test(src);
+
+  return src.replace(/<svg\b([^>]*)>/i, (_m, attrs) => {
+    let add = "";
+    if (!hasSvgNS) add += ` xmlns="http://www.w3.org/2000/svg"`;
+    if (usesXlink && !hasXlink) add += ` xmlns:xlink="http://www.w3.org/1999/xlink"`;
+    return `<svg${attrs}${add}>`;
+  });
+}
 
 
 export function parse_html($input: string | Element): HsonNode {
@@ -38,10 +52,10 @@ export function parse_html($input: string | Element): HsonNode {
         const safe = escape_text_nodes(bools);  // handles &, <, > in text nodes
         const ents = expand_entities(safe);
         const voids = expand_void_tags(ents);
-        const final = wrap_cdata(voids);
-
+        const cdata = wrap_cdata(voids);
+        const svgSafe = ensureSvgNamespaces(cdata);
         const parser = new DOMParser();
-        let parsedXML = parser.parseFromString(final, 'application/xml');
+        let parsedXML = parser.parseFromString(svgSafe, 'application/xml');
         let parseError = parsedXML.querySelector('parsererror');
 
         // If it looks like a fragment, wrap in _root and retry
