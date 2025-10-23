@@ -7,8 +7,6 @@ export function lookup_element(node: HsonNode): Element | undefined {
     return map_get(node as unknown as object);
 }
 
-
-
 function ungregister_node(node: HsonNode): void {
   map_delete(node as unknown as object);
   const kids = node._content;

@@ -3,7 +3,8 @@
 
 import { _DATA_INDEX, _DATA_QUID } from "../types-consts/constants";
 import { HsonAttrs, HsonMeta } from "../types-consts/node.new.types";
-import { parse_style_hard_mode } from "./parse-css.utils";
+import { normalize_attr_ws } from "./normalize_attrs_ws.utils";
+import { parse_style_string } from "./parse-style.utils";
 
 
 /* NEW: collect attrs + meta from an Element */
@@ -33,7 +34,7 @@ export function parse_html_attrs($el: Element): {
     // 2) style → structured object (your rule: parse to object in-memory)
     if (n === "style") {
       // parse_css_attrs returns {} | Record<string,string>
-      (attrs as any).style = parse_style_hard_mode(v);
+      (attrs as any).style = parse_style_string(v);
       continue;
     }
 
@@ -44,8 +45,8 @@ export function parse_html_attrs($el: Element): {
       continue;
     }
 
-    // 4) everything else: literal string
-    (attrs as any)[n] = v;
+    // 4) everything else: normalize to HTML semantics
+    (attrs as any)[n] = normalize_attr_ws(v);
   }
 
   return { attrs, meta };

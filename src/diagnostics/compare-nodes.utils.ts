@@ -4,7 +4,7 @@ import { is_Node } from "../utils/node-guards.new.utils";
 import { make_string } from "../utils/make-string.utils";
 
 const LEAF = new Set(["_str", "_val"]);
-const MAX_SNIP = 180;
+const MAX_SNIP = 500;
 const ELLIPSIS = " …";
 
 const snip = (s?: string, n = MAX_SNIP) =>
@@ -199,7 +199,7 @@ export function compare_nodes(a: HsonNode, b: HsonNode, verbose = true): string[
 
     // Loud line outside the group so it’s not swallowed
     if (diffs.length) {
-        console.error(`FAILED • node-compare: first diff — ${snip(diffs[0])}`);
+        console.error(`FAILED • node-compare: first diff — ${diffs[0]}`);
     }
 
     return diffs;

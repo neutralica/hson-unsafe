@@ -23,6 +23,29 @@ const _log = _VERBOSE
     )
   : () => { };
 
+  const RAWTEXT = new Set(["style", "script"]);
+
+// Collects verbatim text from a subtree (no escaping, no trim)
+function collect_raw_text(nodes: (HsonNode | Primitive)[] | undefined): string {
+  if (!nodes || !nodes.length) return "";
+  let out = "";
+  for (const ch of nodes) {
+    if (is_Node(ch)) {
+      if (ch._tag === STR_TAG) {
+        const seg = (ch._content?.[0] ?? "") as unknown;
+        out += typeof seg === "string" ? seg : String(seg);
+      } else {
+        // descend, in case someone wrapped _str in an extra node
+        out += collect_raw_text(ch._content as any);
+      }
+    } else {
+      // primitive leaf: take as-is (no entity escaping)
+      out += String(ch);
+    }
+  }
+  return out;
+}
+
 function escape_attr(v: string): string {
   return v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
@@ -130,31 +153,18 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
     openAttrs += ` ${k}="${escape_attr(attrs[k])}"`;
   }
 
-  // Build inner first, then decide SC/OC
-
   const kids = (content as (HsonNode | Primitive)[]) ?? [];
-  // SCOSL decision must be structural, not string-based.
-  //   if (kids.length === 0) {
-  //   // Explicit open/close keeps XML valid and avoids data-loss ambiguity
-  //   return `${openAttrs}></${tag}>`;
-  // }
 
-  // Render children
-  const inner = kids.map(ch => {
-    if (is_Node(ch)) {
-      return serialize_xml(ch as HsonNode);
-    }
-    return primitive_to_xml(ch as Primitive);
-  }).join('');
-
-  // Optional guard: child(ren) rendered to whitespace → flag it
-  // if (inner.trim().length === 0) {
-  //   _throw_transform_err(
-  //     'non-empty children rendered empty; renderer bug',
-  //     'serialize_html',
-  //     make_string({ tag, kids })
-  //   );
-  // }
+  // RAW-TEXT MODE: style/script → emit verbatim, no escaping/trim/collapse
+  let inner: string;
+  if (RAWTEXT.has(tag.toLowerCase())) {
+    inner = collect_raw_text(kids)
+      .replace(/<\/(style|script)/gi, "<\\/$1>"); // guard early close
+  } else {
+    inner = kids.map(ch => is_Node(ch) ? serialize_xml(ch as HsonNode)
+      : primitive_to_xml(ch as Primitive))
+      .join("");
+  }
 
   return `${openAttrs}>${inner}</${tag}>`;
 }
@@ -174,7 +184,7 @@ export function serialize_html($node: HsonNode | Primitive): string {
   // HTML boolean attrs: key="key" → key
   const htmlString = xmlString.replace(/\b([^\s=]+)="\1"/g, '$1');
 
-  // CHANGED(tripwire): never let literal <_str> leak into output
+  // guard: never let literal <_str> leak into output
   if (/<\s*_str\b/.test(htmlString)) {
     _throw_transform_err('literal <_str> leaked into HTML output', 'serialize_html', htmlString.slice(0, 400));
   }

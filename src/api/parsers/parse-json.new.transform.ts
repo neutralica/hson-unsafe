@@ -11,6 +11,10 @@ import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { make_string } from "../../utils/make-string.utils";
 import { is_string_NEW } from "../../utils/node-guards.new.utils";
 import { Primitive } from "../../types-consts";
+import { normalize_attr_ws } from "../../utils/normalize_attrs_ws.utils";
+import { kebab_to_camel } from "../../utils/kebab-to-camel.util";
+import { parse_style_string } from "../../utils/parse-style.utils";
+import { serialize_style } from "../../utils/serialize-css.utils";
 
 
 
@@ -195,7 +199,7 @@ export function nodeFromJson(
 
                     const tagName = tagKeys[0];
 
-                    // --- NEW: hoist attributes/meta if present; do NOT drop them
+                    // hoist attributes/meta if present
                     const maybeAttrs = elObj['_attrs'];
                     const maybeMeta = elObj['_meta'];
                     const hoistedAttrs = (maybeAttrs && typeof maybeAttrs === 'object' && !Array.isArray(maybeAttrs))
@@ -204,6 +208,23 @@ export function nodeFromJson(
                     const hoistedMeta = (maybeMeta && typeof maybeMeta === 'object' && !Array.isArray(maybeMeta))
                         ? (maybeMeta as HsonMeta)
                         : undefined;
+
+                    // after you've built `hoistedAttrs`
+                    if (hoistedAttrs && Object.prototype.hasOwnProperty.call(hoistedAttrs, "style")) {
+                        const sv = (hoistedAttrs as any).style;
+
+                        if (sv && typeof sv === "object" && !Array.isArray(sv)) {
+                            // JSON gave a style object ⇒ canonicalize via your existing pair
+                            const css = serialize_style(sv as Record<string, string>);      // kebab/trim/sort
+                            (hoistedAttrs as any).style = parse_style_string(css);        // lower→camel done here
+                        } else if (typeof sv === "string") {
+                            // JSON gave style as text ⇒ parse to canonical object
+                            (hoistedAttrs as any).style = parse_style_string(sv);
+                        } else {
+                            // null/undefined ⇒ drop
+                            delete (hoistedAttrs as any).style;
+                        }
+                    }
 
                     // Build the tag’s child (0..1) from the tag payload (scalar or cluster)
                     const rawChildren = elObj[tagName] as JsonType;

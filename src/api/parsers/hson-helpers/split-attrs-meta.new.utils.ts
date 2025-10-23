@@ -2,13 +2,12 @@ import { Primitive } from "../../../types-consts";
 import { _META_DATA_PREFIX } from "../../../types-consts/constants";
 import { HsonAttrs, HsonMeta } from "../../../types-consts/node.new.types";
 import { RawAttr } from "../../../types-consts/tokens.new.types";
-import { parse_style_hard_mode } from "../../../utils/parse-css.utils";
+import { parse_style_string as parse_style } from "../../../utils/parse-style.utils";
 import { unescape_hson_string } from "../../../utils/unescape-hson.utils";
 
 // Assumptions:
 // - RawAttr.value has shape { text: string; quoted?: boolean } where `quoted`
 //   is true iff the HSON source used quotes (JSON string-literal grammar).
-// - decode_json_string_literal(s) exists and decodes exactly once (no double-decode).
 // - parse_style_hard_mode(s) returns Record<string,string>.
 
 // Helper: decode HSON token text iff it was quoted.
@@ -40,7 +39,7 @@ export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs; meta: Hson
       if (ra.value) {
         // CHANGED: decode first, then parse; keeps parity with other sources
         const decoded: string = decode_hson_value(ra.value.text, ra.value.quoted);
-        attrs.style = parse_style_hard_mode(decoded);
+        attrs.style = parse_style(decoded);
       } else {
         attrs.style = {};
       }

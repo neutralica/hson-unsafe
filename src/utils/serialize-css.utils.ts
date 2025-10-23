@@ -33,13 +33,14 @@ export function serialize_style($style: Record<string, string>): string {
     let v = String(raw).trim();                      // CHANGE: trim values
     if (!v) continue;                                // CHANGE: skip empty values
     if (v.endsWith(";")) v = v.replace(/;+$/g, "");  // CHANGE: strip any trailing semicolons
-    // NOTE: Avoid aggressive collapsing inside url()/functions. If you want to
-    //       collapse whitespace generally: v = v.replace(/\s+/g, " ");
-    entries.push([camel_to_kebab(prop), v]);
+    const isCustomProp = prop.startsWith("--");
+    const outKey = isCustomProp ? prop : camel_to_kebab(prop);
+
+    entries.push([outKey, v]);
   }
 
   // CHANGE: sort deterministically after normalization
-  entries.sort(([a], [b]) => (a < b ?  -1 : a > b ? 1 : 0));
+  entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 
   // CHANGE: no trailing semicolon; single-space after colon; single "; " between decls
   return entries.map(([k, v]) => `${k}: ${v}`).join("; ");
