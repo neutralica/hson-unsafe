@@ -22,50 +22,50 @@ const _log = _VERBOSE
  * @param {string} $text - e.g., "color: blue; font-weight: bold;"
  * @returns {Record<string, string>} - e.g., { color: 'blue', fontWeight: 'bold' }
  */
-export function parse_style_basic($text: string): string | Record<string, string> {
-  try {
-    if (!$text) {
-      console.warn('no text received');
-      return {};
-    }
+// export function parse_style_basic($text: string): string | Record<string, string> {
+//   try {
+//     if (!$text) {
+//       console.warn('no text received');
+//       return {};
+//     }
 
-    const styleObject: Record<string, string> = {};
+//     const styleObject: Record<string, string> = {};
 
-    /* 1. split the string into individual "key: value" declarations */
-    const declarations = $text.split(';');
+//     /* 1. split the string into individual "key: value" declarations */
+//     const declarations = $text.split(';');
 
-    for (const declaration of declarations) {
-      /* skip empty parts from trim */
-      if (!declaration.trim()) {
-        continue;
-      }
+//     for (const declaration of declarations) {
+//       /* skip empty parts from trim */
+//       if (!declaration.trim()) {
+//         continue;
+//       }
 
-      /* 2. get key, value */
-      const [property, ...valueParts] = declaration.split(':');
-      const value = valueParts.join(':').trim();
+//       /* 2. get key, value */
+//       const [property, ...valueParts] = declaration.split(':');
+//       const value = valueParts.join(':').trim();
 
-      if (property && value) {
-        const propTrimmed = property.trim();
+//       if (property && value) {
+//         const propTrimmed = property.trim();
 
-        /* kebab-case to camelCase conversion */
-        const camelCaseProp = propTrimmed.replace(/-(\w)/g, (_, letter) => letter.toUpperCase());
+//         /* kebab-case to camelCase conversion */
+//         const camelCaseProp = propTrimmed.replace(/-(\w)/g, (_, letter) => letter.toUpperCase());
 
-        styleObject[camelCaseProp] = value;
-      }
-    }
+//         styleObject[camelCaseProp] = value;
+//       }
+//     }
 
-    const sortStyleObj: Record<string, string> = {};
-    Object.keys(styleObject)
-      .sort()
-      .forEach(key => {
-        sortStyleObj[key] = styleObject[key];
-      });
+//     const sortStyleObj: Record<string, string> = {};
+//     Object.keys(styleObject)
+//       .sort()
+//       .forEach(key => {
+//         sortStyleObj[key] = styleObject[key];
+//       });
 
-    return sortStyleObj;
-  } catch (e) {
-    _throw_transform_err('[HSON WARN parse-css.util.ts -- error parsing CSS style string] ', 'parse_css_attrs', $text);
-  }
-}
+//     return sortStyleObj;
+//   } catch (e) {
+//     _throw_transform_err('[HSON WARN parse-css.util.ts -- error parsing CSS style string] ', 'parse_css_attrs', $text);
+//   }
+// }
 
 
 /** Parse a CSS declaration list safely (handles quotes/parentheses). */

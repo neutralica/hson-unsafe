@@ -21,17 +21,26 @@ export function camel_to_kebab($str: string): string {
  * @returns {string} a browser-compatible CSS string
  */
 export function serialize_style($style: Record<string, string>): string {
-  let cssText = "";
-
-  /* get keys, sort alphabetically before iterating (for node consistency) */
-  const sortedKeys = Object.keys($style).sort();
-
-  for (const property of sortedKeys) {
-    if (Object.prototype.hasOwnProperty.call($style, property)) {
-      const value = $style[property];
-      cssText += `${camel_to_kebab(property)}: ${value}; `;
-    }
+  // CHANGE: early return for nullish or empty objects
+  if (!$style || !Object.keys($style).length) {
+    return "";
   }
 
-  return cssText.trim();
+  // CHANGE: normalize entries BEFORE sorting/serializing
+  const entries: Array<[string, string]> = [];
+  for (const [prop, raw] of Object.entries($style)) {
+    if (raw == null) continue;                       // CHANGE: skip null/undefined
+    let v = String(raw).trim();                      // CHANGE: trim values
+    if (!v) continue;                                // CHANGE: skip empty values
+    if (v.endsWith(";")) v = v.replace(/;+$/g, "");  // CHANGE: strip any trailing semicolons
+    // NOTE: Avoid aggressive collapsing inside url()/functions. If you want to
+    //       collapse whitespace generally: v = v.replace(/\s+/g, " ");
+    entries.push([camel_to_kebab(prop), v]);
+  }
+
+  // CHANGE: sort deterministically after normalization
+  entries.sort(([a], [b]) => (a < b ?  -1 : a > b ? 1 : 0));
+
+  // CHANGE: no trailing semicolon; single-space after colon; single "; " between decls
+  return entries.map(([k, v]) => `${k}: ${v}`).join("; ");
 }
