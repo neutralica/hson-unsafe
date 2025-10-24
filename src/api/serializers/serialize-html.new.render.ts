@@ -3,7 +3,7 @@ import { is_Primitive } from '../../core/utils/guards.core.utils';
 import { ELEM_TAG, EVERY_VSN, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from '../../types-consts/constants';
 import { build_wire_attrs } from '../../utils/build-wire-attrs.utils';
 import { escape_html } from '../../utils/escape-html.utils';
-import { make_string } from '../../utils/make-string.utils';
+import { make_string } from '../../utils/make-string.nodes.utils';
 import { _snip } from '../../utils/snip.utils';
 import { _throw_transform_err } from '../../utils/throw-transform-err.utils';
 import { is_Node } from '../../utils/node-guards.new.utils';

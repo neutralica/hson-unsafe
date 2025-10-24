@@ -3,7 +3,7 @@ import { RenderConstructor_4 } from "../../core/types-consts/constructors.core.t
 import { JsonType, Primitive } from "../../core/types-consts/core.types";
 import { RenderΔ } from "../../types-consts/constants";
 import { FrameRender } from "../../types-consts/constructors.new.types";
-import { make_string } from "../../utils/make-string.utils";
+import { make_string } from "../../utils/make-string.nodes.utils";
 import { create_proxy_NEW } from "../livetree/create-proxy.new.tree";
 
 

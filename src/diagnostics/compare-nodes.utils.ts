@@ -1,7 +1,7 @@
 // compare-nodes.utils.ts
 import type { HsonNode } from "../types-consts/node.new.types";
 import { is_Node } from "../utils/node-guards.new.utils";
-import { make_string } from "../utils/make-string.utils";
+import { make_string } from "../utils/make-string.nodes.utils";
 
 const LEAF = new Set(["_str", "_val"]);
 const MAX_SNIP = 500;

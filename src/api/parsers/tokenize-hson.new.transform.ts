@@ -4,7 +4,7 @@ import { OBJ_TAG } from "../../types-consts/constants";
 import { CREATE_ARR_OPEN_TOKEN, CREATE_ARR_CLOSE_TOKEN, CREATE_EMPTY_OBJ_TOKEN, CREATE_END_TOKEN, CREATE_OPEN_TOKEN, CREATE_TEXT_TOKEN } from "../../types-consts/factories";
 import { CLOSE_KIND, ARR_SYMBOL, TOKEN_KIND } from "../../types-consts/tokens.new.types";
 import { Position, CloseKind, Tokens, RawAttr } from "../../types-consts/tokens.new.types";
-import { make_string } from "../../utils/make-string.utils";
+import { make_string } from "../../utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { is_quote, scan_quoted_block } from "../../utils/tokenize-full-string.utils";
 import { lex_text_piece } from "./hson-helpers/lex-text-piece.utils";

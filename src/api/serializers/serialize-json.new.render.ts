@@ -6,7 +6,7 @@ import { is_indexed_NEW } from "../../utils/node-guards.new.utils";
 import { ROOT_TAG, EVERY_VSN, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../types-consts/constants";
 import { JsonType, JsonObj, HsonNode } from "../../types-consts/node.new.types";
 import { clone_node } from "../../utils/clone-node.utils";
-import { make_string } from "../../utils/make-string.utils";
+import { make_string } from "../../utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { error } from "console";
 

@@ -7,7 +7,7 @@ import { _DATA_INDEX } from "../../types-consts/constants";
 import { HsonNode, NodeContent } from "../../types-consts/node.new.types";
 import { Tokens, CloseKind, TokenOpen, TokenEnd, TokenArrayOpen, TokenArrayClose, TokenKind, TokenText } from "../../types-consts/tokens.new.types";
 import { coerce } from "../../utils/coerce-string.utils";
-import { make_string } from "../../utils/make-string.utils";
+import { make_string } from "../../utils/make-string.nodes.utils";
 import { is_string_NEW } from "../../utils/node-guards.new.utils";
 import { _snip } from "../../utils/snip.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";

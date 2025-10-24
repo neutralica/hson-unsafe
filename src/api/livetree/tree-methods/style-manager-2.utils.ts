@@ -14,7 +14,7 @@
 // comment: Pull in your project types. Adjust the import paths if needed.
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
-import { lookup_element } from "../../../utils/lookup-element.utils";
+import { lookup_element } from "../../../utils/lookup-element.html.utils";
 import { LiveTree } from "../live-tree-class.new.tree";
 
 /* ------------------------------- TYPE HELPERS ------------------------------- */

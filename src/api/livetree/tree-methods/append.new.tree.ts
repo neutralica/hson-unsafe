@@ -10,8 +10,8 @@ import { create_live_tree_NEW } from "../create-live-tree.new.tree";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { CREATE_NODE } from "../../../types-consts/factories";
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
-import { make_string } from "../../../utils/make-string.utils";
-import { map_delete, map_get, map_set } from "../../../utils/lookup-element.utils";
+import { make_string } from "../../../utils/make-string.nodes.utils";
+import { map_delete, map_get, map_set } from "../../../utils/lookup-element.html.utils";
 
 /**
  * Parses content and appends it as a child to each node in the current selection.

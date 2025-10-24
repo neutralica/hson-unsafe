@@ -10,7 +10,7 @@ import { is_Node } from "../../utils/node-guards.new.utils";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
 import { HsonAttrs, HsonMeta, HsonNode } from "../../types-consts/node.new.types";
-import { make_string } from "../../utils/make-string.utils";
+import { make_string } from "../../utils/make-string.nodes.utils";
 
 // --- serialize-hson.render.ts ---
 //

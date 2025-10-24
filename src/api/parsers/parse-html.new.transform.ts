@@ -9,7 +9,7 @@ import { escape_text_nodes } from "../../utils/escape-text-nodes.new.utils";
 import { expand_entities } from "../../utils/expand-entities.utils";
 import { expand_flags } from "../../utils/expand-flags.utils";
 import { expand_void_tags } from "../../utils/expand-self-closing.utils";
-import { make_string } from "../../utils/make-string.utils";
+import { make_string } from "../../utils/make-string.nodes.utils";
 import { is_string_NEW, is_indexed_NEW } from "../../utils/node-guards.new.utils";
 import { parse_html_attrs } from "../../utils/parse_html_attrs.utils";
 import { _snip } from "../../utils/snip.utils";
@@ -17,6 +17,7 @@ import { strip_html_comments } from "../../utils/strip-html-comments.new.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { wrap_cdata } from "../../utils/wrap-cdata.utils";
 import { HsonNode, Primitive } from "../../types-consts";
+import { optional_endtag_preflight } from "../../utils/optional-endtag-preflight.html.utils";
 
 /* debug log */
 let _VERBOSE = false;
@@ -27,48 +28,72 @@ const _log: (...args: Parameters<typeof console.log>) => void =
             ...args.map(a => (typeof a === "string" ? _snip(a, 500) : a)))   // ← prefix + passthrough
         : () => { };
 
-function ensureSvgNamespaces(src: string): string {
-  if (!/<svg\b/i.test(src)) return src;
+function namespace_svg(src: string): string {
+    if (!/<svg\b/i.test(src)) return src;
 
-  const hasSvgNS  = /<svg\b[^>]*\bxmlns\s*=\s*["']http:\/\/www\.w3\.org\/2000\/svg["']/i.test(src);
-  const usesXlink = /\bxlink:/i.test(src);
-  const hasXlink  = /<svg\b[^>]*\bxmlns:xlink\s*=/i.test(src);
+    const hasSvgNS = /<svg\b[^>]*\bxmlns\s*=\s*["']http:\/\/www\.w3\.org\/2000\/svg["']/i.test(src);
+    const usesXlink = /\bxlink:/i.test(src);
+    const hasXlink = /<svg\b[^>]*\bxmlns:xlink\s*=/i.test(src);
 
-  return src.replace(/<svg\b([^>]*)>/i, (_m, attrs) => {
-    let add = "";
-    if (!hasSvgNS) add += ` xmlns="http://www.w3.org/2000/svg"`;
-    if (usesXlink && !hasXlink) add += ` xmlns:xlink="http://www.w3.org/1999/xlink"`;
-    return `<svg${attrs}${add}>`;
-  });
+    return src.replace(/<svg\b([^>]*)>/i, (_m, attrs) => {
+        let add = "";
+        if (!hasSvgNS) add += ` xmlns="http://www.w3.org/2000/svg"`;
+        if (usesXlink && !hasXlink) add += ` xmlns:xlink="http://www.w3.org/1999/xlink"`;
+        return `<svg${attrs}${add}>`;
+    });
 }
 
 
 export function parse_html($input: string | Element): HsonNode {
     let inputElement: Element;
 
-    if (typeof $input === 'string') {
+    if (typeof $input === "string") {
         const stripped = strip_html_comments($input);
         const bools = expand_flags(stripped);
-        const safe = escape_text_nodes(bools);  // handles &, <, > in text nodes
+        const safe = escape_text_nodes(bools);
         const ents = expand_entities(safe);
         const voids = expand_void_tags(ents);
         const cdata = wrap_cdata(voids);
-        const svgSafe = ensureSvgNamespaces(cdata);
-        const parser = new DOMParser();
-        let parsedXML = parser.parseFromString(svgSafe, 'application/xml');
-        let parseError = parsedXML.querySelector('parsererror');
+        const svgSafe = namespace_svg(cdata);
+        const ampSafe = svgSafe.replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});)/g, '&amp;');
 
-        // If it looks like a fragment, wrap in _root and retry
-        if (parseError && parseError.textContent?.includes('xtra content')) {
-            const wrapped = `<${ROOT_TAG}>\n${voids}</${ROOT_TAG}>`;
-            parsedXML = parser.parseFromString(wrapped, 'application/xml');
-            parseError = parsedXML.querySelector('parsererror');
+        const parser = new DOMParser();
+
+        // CHANGED: try raw (namespaced) XML first — no preflight yet
+        let xmlSrc = ampSafe; // keep the "current" source in one variable
+        let parsed = parser.parseFromString(xmlSrc, "application/xml");
+        let error = parsed.querySelector("parsererror");
+
+        // CHANGED: only if it fails, run the optional-end-tag preflight and retry
+        if (error) {
+            const balanced = optional_endtag_preflight(xmlSrc);  // CHANGED: preflight only on demand
+            if (balanced !== xmlSrc) {
+                xmlSrc = balanced;
+                parsed = parser.parseFromString(xmlSrc, "application/xml");
+                error = parsed.querySelector("parsererror");
+            }
         }
-        if (parseError) {
-            console.error("XML Parsing Error:", parseError.textContent);
-            _throw_transform_err(`Failed to parse input HTML/XML`, 'parse-html');
+
+        // CHANGED: if it still fails with “extra content at the end of the document” (fragment),
+        // wrap the *current* xmlSrc in <_root> and retry. Re-run preflight on the wrapped text.
+        if (error && /extra content/i.test(error.textContent ?? "")) {
+            const wrapped = `<${ROOT_TAG}>\n${xmlSrc}\n</${ROOT_TAG}>`;  
+            xmlSrc = wrapped;
+
+            // preflight can open/close tags across the new wrapper boundary; run again
+            const rebalanced = optional_endtag_preflight(xmlSrc);
+            if (rebalanced !== xmlSrc) xmlSrc = rebalanced;
+
+            parsed = parser.parseFromString(xmlSrc, "application/xml");
+            error = parsed.querySelector("parsererror");
         }
-        inputElement = parsedXML.documentElement!;
+
+        if (error) {
+            console.error("XML Parsing Error:", error.textContent);
+            _throw_transform_err(`Failed to parse input HTML/XML`, "parse-html");
+        }
+
+        inputElement = parsed.documentElement!;
     } else {
         inputElement = $input;
     }
