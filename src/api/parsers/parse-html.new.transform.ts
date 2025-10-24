@@ -17,7 +17,9 @@ import { strip_html_comments } from "../../utils/strip-html-comments.new.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { wrap_cdata } from "../../utils/wrap-cdata.utils";
 import { HsonNode, Primitive } from "../../types-consts";
-import { optional_endtag_preflight } from "../../utils/optional-endtag-preflight.html.utils";
+import { optional_endtag_preflight } from "../../utils/preflight-optional-endtag.html.utils";
+import { unquoted_attrs_preflight } from "../../utils/preflight-unquoted-attrs.html.utils";
+import { escape_attr_angles } from "../../utils/preflight-escape_angles.html.utils";
 
 /* debug log */
 let _VERBOSE = false;
@@ -55,6 +57,7 @@ export function parse_html($input: string | Element): HsonNode {
         const voids = expand_void_tags(ents);
         const cdata = wrap_cdata(voids);
         const svgSafe = namespace_svg(cdata);
+
         const ampSafe = svgSafe.replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});)/g, '&amp;');
 
         const parser = new DOMParser();
@@ -62,34 +65,51 @@ export function parse_html($input: string | Element): HsonNode {
         // CHANGED: try raw (namespaced) XML first — no preflight yet
         let xmlSrc = ampSafe; // keep the "current" source in one variable
         let parsed = parser.parseFromString(xmlSrc, "application/xml");
-        let error = parsed.querySelector("parsererror");
+        let err = parsed.querySelector('parsererror');
 
-        // CHANGED: only if it fails, run the optional-end-tag preflight and retry
-        if (error) {
-            const balanced = optional_endtag_preflight(xmlSrc);  // CHANGED: preflight only on demand
-            if (balanced !== xmlSrc) {
-                xmlSrc = balanced;
-                parsed = parser.parseFromString(xmlSrc, "application/xml");
-                error = parsed.querySelector("parsererror");
+        if (err) {
+            // 2) try quoting unquoted attrs (only on failure)
+            const quoted = unquoted_attrs_preflight(xmlSrc);
+            if (quoted !== xmlSrc) {
+                // re-apply amp fix because quoting might introduce new bare '&'
+                xmlSrc = quoted.replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});)/g, '&amp;');
+                parsed = parser.parseFromString(xmlSrc, 'application/xml');
+                err = parsed.querySelector('parsererror');
             }
         }
 
-        // CHANGED: if it still fails with “extra content at the end of the document” (fragment),
-        // wrap the *current* xmlSrc in <_root> and retry. Re-run preflight on the wrapped text.
-        if (error && /extra content/i.test(error.textContent ?? "")) {
-            const wrapped = `<${ROOT_TAG}>\n${xmlSrc}\n</${ROOT_TAG}>`;  
-            xmlSrc = wrapped;
-
-            // preflight can open/close tags across the new wrapper boundary; run again
-            const rebalanced = optional_endtag_preflight(xmlSrc);
-            if (rebalanced !== xmlSrc) xmlSrc = rebalanced;
-
-            parsed = parser.parseFromString(xmlSrc, "application/xml");
-            error = parsed.querySelector("parsererror");
+        if (err && /Unescaped/i.test(err.textContent ?? '')) {
+            xmlSrc = escape_attr_angles(xmlSrc);
+            parsed = parser.parseFromString(xmlSrc, 'application/xml');
+            err = parsed.querySelector('parsererror');
         }
 
-        if (error) {
-            console.error("XML Parsing Error:", error.textContent);
+        if (err && /Unescaped .*<.* in attributes/i.test(err.textContent ?? '')) {
+            xmlSrc = escape_attr_angles(xmlSrc);
+            parsed = parser.parseFromString(xmlSrc, 'application/xml');
+            err = parsed.querySelector('parsererror');
+        }
+
+        if (err) {
+            // 3) only now use your optional-end-tag preflight
+            const balanced = optional_endtag_preflight(xmlSrc);
+            if (balanced !== xmlSrc) {
+                xmlSrc = balanced;
+                parsed = parser.parseFromString(xmlSrc, 'application/xml');
+                err = parsed.querySelector('parsererror');
+            }
+        }
+
+        if (err && /extra content/i.test(err.textContent ?? '')) {
+            xmlSrc = `<${ROOT_TAG}>\n${xmlSrc}\n</${ROOT_TAG}>`;
+            const reb = optional_endtag_preflight(xmlSrc);
+            if (reb !== xmlSrc) xmlSrc = reb;
+            parsed = parser.parseFromString(xmlSrc, 'application/xml');
+            err = parsed.querySelector('parsererror');
+        }
+
+        if (err) {
+            console.error("XML Parsing Error:", err.textContent);
             _throw_transform_err(`Failed to parse input HTML/XML`, "parse-html");
         }
 
