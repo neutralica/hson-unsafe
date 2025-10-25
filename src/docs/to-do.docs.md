@@ -1,6 +1,7 @@
 TO DO
 
-hson.liveMap [by 2026]
+hson.liveMap [before 2026?]
+hson.component
 ___________
 
 - liveTree.listen - event listener getter method
