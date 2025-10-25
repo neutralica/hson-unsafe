@@ -53,3 +53,64 @@ set x/y attribute → window moves; emits no extra change event.
 drag window → attributes update and an event fires; observer doesn’t loop.
 Optional: a <hson-button> with the same reflection/event pattern (you’ll need it for the titlebar actions).
 Later: prototype <hson-live-tree> that ingests a mini HSON blob on connect and re-renders a child subtree, using the same contracts.
+
+biggest opportunities:
+State plane & persistence
+Treat every window as a tiny HSON subtree: [_elem: 'hson-window', _attrs: {x,y,w,h,open,title}, children…].
+Snapshots serialize 1:1, sort deterministically, round-trip cleanly. That makes saving/restoring sessions trivial (and diffable).
+Patches as the transport
+Drag/resize/close emit HSON deltas (set _attrs.x, set _attrs.y, etc.).
+Your store (or liveMap later) applies those patches; the element reflects via attributes.
+This avoids bespoke event payload shapes and keeps everything testable with the same compare utilities you already built.
+Normalization boundary
+All the hairy escaping/booleans/whitespace rules you fixed become the canonical edge between component and world.
+Inside the component: simple strings/lengths/flags. Outside: HSON ensures “required means required="required"”, style objects stable, entities normalized.
+Slot composition via HSON
+Represent slotted children as _elem with _attrs.slot = 'actions-end' etc.
+HSON → DOM gives you declarative slotting; DOM → HSON gives you reliable snapshots of ad-hoc UI composition.
+Deterministic layout ops
+Multi-window moves/tiling are just batch HSON patches over a selection (same “selectors” you use in tests).
+Undo/redo = patch log. Time-travelable demos for free.
+Testing & fixtures
+Your existing node comparer becomes the golden oracle: mount two windows, mutate via DOM, assert the HSON snapshot equals expected.
+Cross-format tests (HTML/JSON/HSON) keep the component honest about attrs/flags/entities.
+Schema & migrations
+Define a tiny schema for the component’s _attrs (types + defaults).
+If you rename w→width, a migration is a pure HSON transform; the window doesn’t need legacy branches.
+Remote/control plane
+Because patches are data, a remote peer can drive windows (presentations, collab) without shipping imperative code—just HSON ops.
+Devtools hooks
+Expose a data-hson-id and log each emitted patch. Your existing diffs render instantly digestible inspector views (no bespoke devtool).
+Security boundary
+Let the component opt into “HSON-safe” attributes/styles only; offload sanitization to the HSON layer you already hardened.
+
+Phase 1 — Bare window component
+Tag: <hson-window>
+Shadow DOM with:
+top bar (title slot + start/end action slots)
+scrollable content area (default slot)
+Attributes (stringy, reflected to CSS vars): open, x, y, w, h, title
+A11y: role="group", aria-labelledby to the title element
+Parts: window, titlebar, title, actions-start, actions-end, content
+CSS vars for skinning: --window-bg, --titlebar-height, --content-pad, etc.
+No motion yet. No resizing. Just renders and toggles via open.
+Phase 2 — Minimal interaction (still standalone)
+Move: pointerdown on titlebar → translate during drag (CSS transform), commit to x/y attrs on pointerup.
+Resize: explicit bottom-right grip; transform during drag, commit to w/h.
+Events: dispatch hson:window-move|resize|focus|close with {x,y,w,h} detail (bubbled, composed).
+Guard: internal writes flip a boolean so MutationObserver (later) won’t loop.
+Phase 3 — Observability hooks (to spot HSON seams)
+Logging toggle (data-debug): on any attr change or pointer-end, log a compact record: {kind:'move', x,y}, {kind:'resize', w,h}, {kind:'attr', name,value}.
+Dev CSS: ::part(titlebar) highlight when focused/dragging; simple visual sanity.
+Phase 4 — Micro tests (DOM-level, no framework)
+Mount one window; set x/y/w/h attrs programmatically → assert inline style vars applied.
+Simulate drag (dispatch pointer events) → assert attributes commit at end and a custom event fired.
+Slot churn: replace content; assert no layout crash and scroll stays intact.
+Where HSON naturally snaps in later
+Replace event payloads with HSON patches (same data, different envelope).
+Add a tiny MutationObserver on the host (attributes only) to emit patches; ignore internal writes via the guard.
+Allow an optional <script type="application/hson">… child as a data source; parse once on connect.
+Guardrails
+Always transform during drag; commit attrs at rest.
+Respect prefers-reduced-motion for hover/“reach” effects later.
+Keep the attr schema stable; introduce new behavior via attributes/events, not ad-hoc methods.
