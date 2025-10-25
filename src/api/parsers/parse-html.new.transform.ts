@@ -20,6 +20,7 @@ import { HsonNode, Primitive } from "../../types-consts";
 import { optional_endtag_preflight } from "../../utils/preflight-optional-endtag.html.utils";
 import { unquoted_attrs_preflight } from "../../utils/preflight-unquoted-attrs.html.utils";
 import { escape_attr_angles } from "../../utils/preflight-escape_angles.html.utils";
+import { dedupe_attrs_html } from "../../utils/preflight-dedupe-attrs.html.utils";
 
 /* debug log */
 let _VERBOSE = false;
@@ -68,6 +69,14 @@ export function parse_html($input: string | Element): HsonNode {
         let err = parsed.querySelector('parsererror');
 
         if (err) {
+            if (err && /Duplicate|redefined/i.test(err.textContent ?? '') ) {
+                const deduped = dedupe_attrs_html(xmlSrc);
+                if (deduped !== xmlSrc) {
+                    xmlSrc = deduped.replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});)/g, '&amp;');
+                    parsed = parser.parseFromString(xmlSrc, 'application/xml');
+                    err = parsed.querySelector('parsererror');
+                }
+            }
             // 2) try quoting unquoted attrs (only on failure)
             const quoted = unquoted_attrs_preflight(xmlSrc);
             if (quoted !== xmlSrc) {
@@ -77,7 +86,6 @@ export function parse_html($input: string | Element): HsonNode {
                 err = parsed.querySelector('parsererror');
             }
         }
-
         if (err && /Unescaped/i.test(err.textContent ?? '')) {
             xmlSrc = escape_attr_angles(xmlSrc);
             parsed = parser.parseFromString(xmlSrc, 'application/xml');
