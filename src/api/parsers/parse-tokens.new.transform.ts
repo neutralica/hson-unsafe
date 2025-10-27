@@ -300,7 +300,6 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
     /* implicit-root fallback (no explicit <_root>) */
     {
         const kids = nodes;
-        console.warn('kids');
         // if already a single cluster, keep as-is
         if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ARR_TAG || kids[0]._tag === ELEM_TAG)) {
             return CREATE_NODE({
