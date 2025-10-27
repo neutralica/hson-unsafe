@@ -20,7 +20,7 @@ import { map_delete, map_get, map_set } from "../../../utils/lookup-element.html
  * @param $content The content to append.
  * @returns The current LiveTree instance for chaining.
  */
-export function append_NEW(this: LiveTree, $content: Partial<HsonNode> | string | LiveTree): LiveTree {
+export function append(this: LiveTree, $content: Partial<HsonNode> | string | LiveTree): LiveTree {
   const selectedNodes = (this as any).selectedNodes as HsonNode[];
 
   let nodesToAppend: HsonNode[];

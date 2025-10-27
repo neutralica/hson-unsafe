@@ -13,7 +13,7 @@ import { LiveTree } from "../live-tree-class.new.tree";
  *
  * @returns An array of HsonNodes representing the content, or an empty array.
  */
-export function getContent_NEW(this: LiveTree): HsonNode[] {
+export function get_content(this: LiveTree): HsonNode[] {
     const selectedNodes = (this as any).selectedNodes as HsonNode[];
 
     if (selectedNodes.length === 0) {

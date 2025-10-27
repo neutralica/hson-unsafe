@@ -4,17 +4,19 @@ import { STR_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { _DATA_QUID } from "../../types-consts/constants";
-import { append_NEW } from "./tree-methods/append.new.tree";
+import { append } from "./tree-methods/append.new.tree";
 import { DatasetManager } from "./tree-methods/dataset-manager.new.tree";
-import { empty_NEW } from "./tree-methods/empty.tree.new.utils";
-import { getContent_NEW } from "./tree-methods/get-content.new.tree";
-import { removeChild_NEW } from "./tree-methods/remove-child.tree.new.utils";
+import { empty } from "./tree-methods/empty.tree.new.utils";
+import { get_content } from "./tree-methods/get-content.new.tree";
+import { remove_child } from "./tree-methods/remove-child.tree.new.utils";
 // import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
 import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
-import { ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
+import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 import { StyleManager2 } from "./tree-methods/style-manager-2.utils";
 import { HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-guards.new.utils";
+import { ListenerBuilder, makeListenerBuilder } from "./tree-methods/listen.tree";
+import { detach_node_deep } from "./tree-utils/detach-node.tree.utils";
 
 
 type NodeRef = {
@@ -72,23 +74,27 @@ export class LiveTree {
   private withNodes<T>(fn: (nodes: HsonNode[]) => T): T {
     return fn(this.selectedNodes);
   }
-  public append = append_NEW
-  public empty = empty_NEW;
-  public removeChild = removeChild_NEW;
-  public getContent = getContent_NEW;
+
+  public append = append
+  public empty = empty;
+  public removeChild = remove_child;
+  public getContent = get_content;
   public getSelectedNodes(): HsonNode[] {
     return this.selectedNodes;  // not a field; calls the getter above
   }
 
+  get listen(): ListenerBuilder {
+    return makeListenerBuilder(this);
+  }
   // CHANGED: constructor converts inputs → refs
   constructor($nodes?: HsonNode | HsonNode[] | LiveTree) {
     this.setSelected($nodes);
   }
 
   get style(): StyleManager2 {
-  if (!this.styleManager) this.styleManager = new StyleManager2(this);
-  return this.styleManager;
-}
+    if (!this.styleManager) this.styleManager = new StyleManager2(this);
+    return this.styleManager;
+  }
 
   get dataset(): DatasetManager {
     if (!this.datasetManager) this.datasetManager = new DatasetManager(this);
@@ -138,17 +144,17 @@ export class LiveTree {
   }
 
   remove(): this {
-    // strip DOM stamp then drop map/selection
     for (const r of this.selected) {
-      const el = r.resolveEl();
-      el?.remove();
       const n = r.resolveNode();
-      if (n) {
-        NODE_ELEMENT_MAP.delete(n);
-        // policy: drop mapping entirely on remove (or keep for undo)
-        // drop_quid(n); // if I want to invalidate the handle
-      }
+      if (!n) continue;
+
+      // tear down subtree: listeners + DOM + map
+      detach_node_deep(n);
+
+      // optional: drop quids if you consider them invalid after removal
+      drop_quid(n);
     }
+    // clear selection
     this.selected = [];
     return this;
   }
