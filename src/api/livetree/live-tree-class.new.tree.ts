@@ -15,8 +15,8 @@ import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.q
 import { StyleManager2 } from "./tree-methods/style-manager-2.utils";
 import { HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-guards.new.utils";
-import { ListenerBuilder, makeListenerBuilder } from "./tree-methods/listen.tree";
 import { detach_node_deep } from "./tree-utils/detach-node.tree.utils";
+import { ListenerBuilder, makeListenerBuilder } from "./tree-methods/listen.tree";
 
 
 type NodeRef = {
@@ -24,6 +24,13 @@ type NodeRef = {
   resolveNode(): HsonNode | undefined;
   resolveEl(): HTMLElement | undefined;
 };
+
+// finder methods (convert results → refs)
+type FindWithById = {
+  (q: HsonQuery | string): LiveTree;
+  byId(id: string): LiveTree;
+};
+
 
 function makeRef(n: HsonNode): NodeRef {
   const q = ensure_quid(n); // no persist
@@ -62,6 +69,7 @@ export class LiveTree {
   private setSelected(input?: HsonNode | HsonNode[] | LiveTree) {
     if (input instanceof LiveTree) {
       this.selected = input.selected.slice(); // copy refs
+      input.listen
     } else if (Array.isArray(input)) {
       this.selected = input.filter(is_Node).map(makeRef);
     } else if (input && is_Node(input)) {
@@ -102,11 +110,18 @@ export class LiveTree {
   }
 
 
-  // finder methods (convert results → refs)
-  find(q: HsonQuery | string): LiveTree {
-    const query = typeof q === 'string' ? parseSelector_NEW(q) : q;
-    const found = this.search(this.selectedNodes, query, { findFirst: true });
-    return new LiveTree(found);
+  get find(): FindWithById {
+    const self = this;
+
+    const base = ((q: HsonQuery | string): LiveTree => {
+      const query = typeof q === "string" ? parseSelector_NEW(q) : q;
+      const found = self.search(self.selectedNodes, query, { findFirst: true });
+      return new LiveTree(found);
+    }) as FindWithById; // localized, internal assertion
+
+    base.byId = (id: string): LiveTree => base({ attrs: { id } });
+
+    return base;
   }
 
   findAll(q: HsonQuery | string): LiveTree {
@@ -170,27 +185,38 @@ export class LiveTree {
    * @param $value new value
    * @returns current tree instance (for chaining)
    */
-  setValue($value: string): this {
+  setValue(value: string, opts?: { silent?: boolean }): this {
     for (const node of this.selectedNodes) {
-      // This method only applies to specific tags.
-      if (node._tag !== 'input' && node._tag !== 'textarea') {
-        console.warn(`setValue() called on a <${node._tag}> element. This method is intended only for <input> and <textarea>.`);
-        continue; // Skip to the next node
+      if (node._tag !== "input" && node._tag !== "textarea") {
+        console.warn(
+          `setValue() called on a <${node._tag}> element. This method is intended only for <input> and <textarea>.`
+        );
+        continue;
       }
 
-      /*  Sync the live DOM element's .value **property**. */
-      const liveElement = NODE_ELEMENT_MAP.get(node);
-      if (liveElement && 'value' in liveElement) {
-        (liveElement as HTMLInputElement | HTMLTextAreaElement).value = $value;
+      const el = NODE_ELEMENT_MAP.get(node) as
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | undefined;
+
+      if (el) {
+        const prev = el.value;
+        el.value = value;
+
+        // only fire event if the value actually changed and not silent
+        if (!opts?.silent && value !== prev) {
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        }
       }
-      /* sync 'value' **attribute**
-             (ensures data model consistency for both inputs and textareas) */
-      if (!node._meta) node._meta = {};
+
+      // sync data model
       if (!node._attrs) node._attrs = {};
-      node._attrs.value = $value;
+      node._attrs.value = value;
     }
+
     return this;
   }
+
 
   setContent($content: string): this {
     for (const node of this.selectedNodes) {

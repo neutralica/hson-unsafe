@@ -45,6 +45,9 @@ export interface ListenerBuilder {
 
   // explicit attach (returns handle). Auto-attach will also return a handle.
   attach(): ListenerSub;
+  preventDefault(): ListenerBuilder;
+  stopProp(): ListenerBuilder;
+  stopImmediateProp(): ListenerBuilder;
 }
 
 const REG = new WeakMap<EventTarget, Set<() => void>>();
@@ -77,6 +80,9 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
   let opts: ListenOpts = {};
   let each = false;
   let missingPolicy: MissingPolicy = "warn";
+  let _prevent = false;
+  let _stop = false;
+  let _stopImmediate = false;
 
   // auto-attach scheduling
   let scheduled = false;
@@ -95,8 +101,8 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
 
   const resolveTarget = (el: HTMLElement): EventTarget =>
     opts.target === "window" ? window :
-    opts.target === "document" ? document :
-    el;
+      opts.target === "document" ? document :
+        el;
 
   const collectTargets = (): HTMLElement[] => {
     if (!each) {
@@ -113,14 +119,35 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
     }
     return out;
   };
+  const on = <K extends keyof EMap>(
+    type: K,
+    handler: (ev: EMap[K]) => void
+  ): ListenerBuilder => {
+    // wrap once, read flags at dispatch so end-of-chain calls work
+    const wrapped: EventListener = (ev: Event) => {
+      // enforce in this exact order
+      if (_stopImmediate) ev.stopImmediatePropagation();
+      if (_stop) ev.stopPropagation();
+      if (_prevent && !opts.passive) ev.preventDefault(); // passive forbids preventDefault()
 
-  const on = <K extends keyof EMap>(type: K, handler: (ev: EMap[K]) => void): ListenerBuilder => {
-    const h: EventListener = (e) => handler(e as EMap[K]);
-    queue.push({ type: String(type), handler: h });
-    schedule(); // ← auto-attach at end of tick
+      handler(ev as EMap[K]);
+
+      // optional: belt-and-suspenders once — harmless if DOM once already removed it
+      if (opts.once) {
+        const tgt =
+          opts.target === "window" ? window :
+            opts.target === "document" ? document :
+              // same element resolved at attach time via resolveTarget(); this is for safety
+              (ev.currentTarget as EventTarget | null) ?? document;
+        tgt.removeEventListener(String(type), wrapped, { capture: !!opts.capture });
+      }
+    };
+
+    // queue this binding; attach() will call addEventListener with your current opts
+    queue.push({ type: String(type), handler: wrapped });
+    schedule(); // auto-attach at end of microtask
     return api;
   };
-
   const attach = (): ListenerSub => {
     const targets = collectTargets();
 
@@ -154,24 +181,28 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
 
   const api: ListenerBuilder = {
     on,
-    onClick:     (fn) => on("click", fn),
+    onClick: (fn) => on("click", fn),
     onMouseMove: (fn) => on("mousemove", fn),
     onMouseDown: (fn) => on("mousedown", fn),
-    onMouseUp:   (fn) => on("mouseup", fn),
-    onKeyDown:   (fn) => on("keydown", fn),
-    onKeyUp:     (fn) => on("keyup", fn),
+    onMouseUp: (fn) => on("mouseup", fn),
+    onKeyDown: (fn) => on("keydown", fn),
+    onKeyUp: (fn) => on("keyup", fn),
 
-    once:       () => { opts = { ...opts, once: true }; return api; },
-    passive:    () => { opts = { ...opts, passive: true }; return api; },
-    capture:    () => { opts = { ...opts, capture: true }; return api; },
-    toWindow:   () => { opts = { ...opts, target: "window" }; return api; },
+    once: () => { opts = { ...opts, once: true }; return api; },
+    passive: () => { opts = { ...opts, passive: true }; return api; },
+    capture: () => { opts = { ...opts, capture: true }; return api; },
+    toWindow: () => { opts = { ...opts, target: "window" }; return api; },
     toDocument: () => { opts = { ...opts, target: "document" }; return api; },
-    onEach:     () => { each = true; return api; },
+    onEach: () => { each = true; return api; },
 
     strict(policy: MissingPolicy = "warn") { missingPolicy = policy; return api; },
     defer() { autoEnabled = false; return api; },
 
     attach() { autoEnabled = false; return attach(); },
+    preventDefault(): ListenerBuilder { _prevent = true; return api; },
+    stopProp(): ListenerBuilder { _stop = true; return api; },
+    stopImmediateProp(): ListenerBuilder { _stopImmediate = true; return api; },
+
   };
 
   return api;
