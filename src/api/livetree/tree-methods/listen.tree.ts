@@ -48,6 +48,8 @@ export interface ListenerBuilder {
   preventDefault(): ListenerBuilder;
   stopProp(): ListenerBuilder;
   stopImmediateProp(): ListenerBuilder;
+  stopAll(): ListenerBuilder;
+  clearStops(): ListenerBuilder;
 }
 
 const REG = new WeakMap<EventTarget, Set<() => void>>();
@@ -202,7 +204,8 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
     preventDefault(): ListenerBuilder { _prevent = true; return api; },
     stopProp(): ListenerBuilder { _stop = true; return api; },
     stopImmediateProp(): ListenerBuilder { _stopImmediate = true; return api; },
-
+    stopAll(): ListenerBuilder { _stopImmediate = _stop = _prevent = true; return api; },
+    clearStops(): ListenerBuilder { _stopImmediate = _stop = _prevent = false; return api; }
   };
 
   return api;
