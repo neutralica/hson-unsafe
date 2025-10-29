@@ -176,7 +176,9 @@ function compareAny(a: any, b: any, path: string): string[] {
 // Public API
 export function compare_nodes(a: HsonNode, b: HsonNode, verbose = true): string[] {
     if (!a || !b) throw new Error(`compare_nodes: missing input (a:${JSON.stringify(a)}, b:${JSON.stringify(b)})`);
-
+    if (a === b) {
+        throw new Error('compareNodes called with identical references');
+    }
     const diffs = compare(a, b, "/_root");
 
     if (!verbose) return diffs;
@@ -200,7 +202,19 @@ export function compare_nodes(a: HsonNode, b: HsonNode, verbose = true): string[
     // Loud line outside the group so it’s not swallowed
     if (diffs.length) {
         console.error(`FAILED • node-compare: first diff — ${diffs[0]}`);
+        console.group(`node-compare FAIL`);
+        console.log('A:', snip(make_string(a), 2000));
+        console.log('B:', snip(make_string(b), 2000));
+        console.groupEnd();
     }
 
     return diffs;
+}
+
+function logCmp(path: string[], a: HsonNode, b: HsonNode, equal: boolean): void {
+    if (equal) return; // too noisy otherwise
+    console.group(`node-compare FAIL at /${path.join('/')}`);
+    console.log('A:', snip(make_string(a), 2000));
+    console.log('B:', snip(make_string(b), 2000));
+    console.groupEnd();
 }

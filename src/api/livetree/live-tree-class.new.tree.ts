@@ -4,7 +4,7 @@ import { STR_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { _DATA_QUID } from "../../types-consts/constants";
-import { append } from "./tree-methods/append.new.tree";
+import { after_paint, append } from "./tree-methods/append.new.tree";
 import { DatasetManager } from "./tree-methods/dataset-manager.new.tree";
 import { empty } from "./tree-methods/empty.tree.new.utils";
 import { get_content } from "./tree-methods/get-content.new.tree";
@@ -82,7 +82,11 @@ export class LiveTree {
   private withNodes<T>(fn: (nodes: HsonNode[]) => T): T {
     return fn(this.selectedNodes);
   }
-
+ public async afterPaint(): Promise<this> {
+    // comment: await a frame boundary without changing call sites that don’t need it
+    await after_paint();
+    return this;
+  }
   public append = append
   public empty = empty;
   public removeChild = remove_child;
