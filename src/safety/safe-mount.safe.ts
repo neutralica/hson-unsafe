@@ -23,7 +23,7 @@ export const ALLOWED_URI_REGEX: RegExp =
 /* Create a safe mount function that accepts raw HSON-compiled HTML.
    It sanitizes the string, parses into a detached <template>, then
    appends the children into the target element. */
-export function safeMountHtml(rawHtml: string, into: HTMLElement): void {
+export function safe_mount_html(rawHtml: string, into: HTMLElement): void {
     // sanitize the raw HTML string to remove scripts, on* handlers, dangerous urls
     const cleanHtml: string = DOMPurify.sanitize(rawHtml, {
         ALLOWED_TAGS,

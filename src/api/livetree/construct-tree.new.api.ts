@@ -9,7 +9,7 @@ import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
 import { create_live_tree_NEW } from "./create-live-tree.new.tree";
-import { graft_NEW } from "./graft.new.tree";
+import { graft } from "./graft.new.tree";
 import { LiveTree } from "./live-tree-class.new.tree";
 
 
@@ -76,7 +76,7 @@ export function construct_tree(
             return new LiveTree({ _tag: _ERROR, _content: [], _meta: {} });
           }
           // only call the main graft function if the element was found
-          return graft_NEW(element, $options);
+          return graft(element, $options);
         }
       };
     },
@@ -87,7 +87,7 @@ export function construct_tree(
       /* return the graft constructor object */
       return {
         graft: (): LiveTree => {
-          return graft_NEW(element, $options);
+          return graft(element, $options);
         }
       };
     },
