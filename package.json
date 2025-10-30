@@ -15,7 +15,7 @@
   ],
   "type": "module",
   "types": "./dist/index.d.ts",
- "exports": {
+  "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -43,6 +43,6 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "dompurify": "^3.2.6"
+    "dompurify": "^3.3.0"
   }
 }
