@@ -21,7 +21,7 @@ const _VERBOSE = true;
 const boundLog = console.log.bind(console, '%c[hson token-Nodifier]', 'color: darkgreen; background: lightblue;');
 const _log = _VERBOSE ? boundLog : () => { };
 
-const make_leaf = (v: Primitive): HsonNode =>
+export const make_leaf = (v: Primitive): HsonNode =>
 (is_string_NEW(v)
     ? { _tag: STR_TAG, _meta: {}, _content: [v] }
     : { _tag: VAL_TAG, _meta: {}, _content: [v] });

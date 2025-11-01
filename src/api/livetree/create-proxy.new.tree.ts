@@ -1,12 +1,13 @@
 // create-proxy.new.tree.hson.ts
 
 import { is_Object, is_Primitive } from "../../core/utils/guards.core.utils";
+import { set_attrs_safe } from "../../safety/safe-mount.safe";
 import { HsonNode } from "../../types-consts";
 import { STR_TAG, VAL_TAG, VSN_TAGS } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { is_Node } from "../../utils/node-guards.new.utils";
 import { parse_json } from "../parsers/parse-json.new.transform";
-import { create_live_tree_NEW } from "./create-live-tree.new.tree";
+import { create_live_tree } from "./create-live-tree.new.tree";
 import { get_contentValue_NEW, find_child_by_tag_NEW, find_index_of_tag_NEW, update_content_NEW } from "./tree-utils/proxy-helpers.new.utils";
 import { get_semantic_child } from "./tree-utils/semantic-child.utils";
 import { strip_VSNs_NEW } from "./tree-utils/strip-vsns.new.utils";
@@ -123,7 +124,7 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
                 if (VERBOSE) console.dir(hsonContainer._content, { depth: 5 });
                 const parentLiveElement = NODE_ELEMENT_MAP.get(targetNode);
                 if (parentLiveElement) {
-                    const newLiveElement = create_live_tree_NEW(newNode);
+                    const newLiveElement = create_live_tree(newNode);
                     if (is_Node(priorNode)) {
                         const oldLiveElement = NODE_ELEMENT_MAP.get(priorNode);
                         if (oldLiveElement) {
@@ -153,7 +154,7 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
 
                     const liveElement = NODE_ELEMENT_MAP.get(targetNode);
                     if (liveElement) {
-                        liveElement.setAttribute(propertyKey, String(value));
+                        set_attrs_safe(liveElement, propertyKey, String(value));
                     }
 
                     $log(`[OK] successfully set attribute '${propertyKey}' on <${targetNode._tag}>`);

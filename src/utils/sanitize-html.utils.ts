@@ -1,29 +1,70 @@
-// sanitize-html.util.ts
+// utils/sanitize-html.utils.ts
+import DOMPurify from "dompurify";
 
-import  DOMPurify from "dompurify";
-import { _ERROR, _FALSE, ARR_TAG, ELEM_OBJ, ELEM_TAG, II_TAG, OBJ_TAG, VAL_TAG, ROOT_TAG, STR_TAG } from "../types-consts/constants";
-import { ALLOWED_ATTR, ALLOWED_TAGS, ALLOWED_URI_REGEX } from "../safety/safe-mount.safe";
+/** Broad but finite HTML5 base list; extend if you use more. */
+export const ALLOWED_TAGS: string[] = [
+  "a","abbr","address","article","aside","b","bdi","bdo","blockquote","br","button",
+  "caption","code","col","colgroup","data","dd","del","details","dfn","div","dl","dt",
+  "em","figcaption","figure","footer","h1","h2","h3","h4","h5","h6","header","hr",
+  "i","img","input","ins","kbd","label","li","main","mark","nav","ol","p","picture",
+  "pre","q","rp","rt","ruby","s","samp","section","small","span","strong","sub","summary",
+  "sup","table","tbody","td","tfoot","th","thead","time","tr","u","ul","var"
+];
 
-/**
- * sanitizes html strings to prevent potential cross-site scripting (XSS) attacks
- *
- * @param $input - the HTML content to process
- * @param options - configuration for this step
- * @param options.sanitize - set to false to disable HTML sanitization
- * @returns - the next step in the processing chain
- */
+export const ALLOWED_ATTR: string[] = [
+  "href","src","srcset","sizes","alt","title","id","class",
+  "role","aria-label","aria-hidden","aria-expanded","aria-controls",
+  "target","rel","loading","decoding","data-*"
+];
 
-// Return type is explicit; no `as`
-export function sanitize_html(input: string): string {
-  // Mutable copies to satisfy DOMPurify typings
-  const clean: string = DOMPurify.sanitize(input, {
-    ALLOWED_TAGS: [...ALLOWED_TAGS],
+/** Never permitted regardless of discovery. */
+export const FORBID_TAGS_HARD: Set<string> = new Set([
+  "script","style","iframe","object","embed","link","meta","base","form",
+  "svg","math","video","audio" // keep blocked unless you add a strict SVG subset
+]);
+
+/** Your project’s legit custom UI tags (not required—discovery will see them anyway). */
+export const UI_CUSTOM_TAGS: string[] = [
+  "sky-back","cloudy-sky","cloud","hson-data","hson-input","hson-output","live-component"
+];
+
+export const ALLOWED_URI_REGEX: RegExp =
+  /^(?:https?:|mailto:|tel:|data:image\/)/i;
+
+/** Discover all tag names in a string without attaching to DOM. */
+export function discoverTags(html: string): Set<string> {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html; // inert parse
+  const seen = new Set<string>();
+  const walk = (node: Node): void => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      seen.add((node as Element).tagName.toLowerCase());
+    }
+    for (let c = node.firstChild; c; c = c.nextSibling) walk(c);
+  };
+  walk(tpl.content);
+  return seen;
+}
+
+/** Build the per-call ADD_TAGS by union(discovered, UI tags) minus hard forbids. */
+export function buildAddTags(html: string): string[] {
+  const disc = discoverTags(html);
+  for (const t of Array.from(disc)) {
+    if (FORBID_TAGS_HARD.has(t)) disc.delete(t);
+  }
+  // Union + de-dup; include your known UI tags up front
+  return [...new Set([...UI_CUSTOM_TAGS, ...disc])];
+}
+
+/** One-shot sanitize with discovery-driven allowlist. */
+export function sanitize_external(html: string): string {
+  const ADD_TAGS = buildAddTags(html);
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [...ALLOWED_TAGS],     // pass mutable copies
     ALLOWED_ATTR: [...ALLOWED_ATTR],
-    FORBID_TAGS: ["script","style","iframe","object","embed","link","meta","base","form","input","video","audio"],
-    FORBID_ATTR: ["style","onerror","onclick","onload","onmouseover","on*", "srcdoc"],
-    ALLOW_DATA_ATTR: true,
-    KEEP_CONTENT: false,
-    ALLOWED_URI_REGEXP: ALLOWED_URI_REGEX
+    ADD_TAGS,                            // discovery result
+    FORBID_ATTR: ["style","onerror","onclick","onload","on*","srcdoc"],
+    ALLOWED_URI_REGEXP: ALLOWED_URI_REGEX,
+    KEEP_CONTENT: false
   });
-  return clean;
 }

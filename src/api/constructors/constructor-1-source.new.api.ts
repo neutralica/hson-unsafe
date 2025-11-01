@@ -2,8 +2,6 @@ import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.t
 import { JsonType } from "../../core/types-consts/core.types";
 import { HsonNode } from "../../types-consts";
 import { SourceConstructor_1, FrameConstructor } from "../../types-consts/constructors.new.types";
-import { make_string } from "../../utils/make-string.nodes.utils";
-import { sanitize_html } from "../../utils/sanitize-html.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
@@ -45,11 +43,7 @@ export function construct_source_1(
     const raw: string =
       typeof $input === "string" ? $input : $input.innerHTML;
 
-    // Sanitize unless explicitly disabled
-    const content: string = $options.sanitize ? sanitize_html(raw) : raw;
-
-    // Parse to HSON node tree (pure step)
-    const node: HsonNode = parse_html(content);
+    const node: HsonNode = parse_html(raw); 
 
     const meta: Record<string, unknown> = $options.sanitize
       ? { sanitized: true }
@@ -57,11 +51,11 @@ export function construct_source_1(
 
     if (_VERBOSE) {
       console.groupCollapsed("fromHTML frame");
-      console.log({ inputPreview: content.slice(0, 200), meta });
+      console.log({ inputPreview: raw.slice(0, 200), meta });
       console.groupEnd();
     }
 
-    const frame: FrameConstructor = { input: content, node, meta };
+    const frame: FrameConstructor = { input: raw, node, meta };
     return construct_output_2(frame);
   },
 

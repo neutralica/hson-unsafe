@@ -13,10 +13,13 @@ import { remove_child } from "./tree-methods/remove-child.tree.new.utils";
 import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 import { StyleManager2 } from "./tree-methods/style-manager-2.utils";
-import { HsonNode, HsonQuery, Primitive } from "../../types-consts";
+import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-guards.new.utils";
 import { detach_node_deep } from "./tree-utils/detach-node.tree.utils";
 import { ListenerBuilder, makeListenerBuilder } from "./tree-methods/listen.tree";
+import { set_attrs_safe } from "../../safety/safe-mount.safe";
+import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
+import { make_leaf } from "../parsers/parse-tokens.new.transform";
 
 
 type NodeRef = {
@@ -36,7 +39,7 @@ function makeRef(n: HsonNode): NodeRef {
   const q = ensure_quid(n); // no persist
   // stamp only if already mounted
   const el0 = NODE_ELEMENT_MAP.get(n);
-  if (el0) el0.setAttribute(_DATA_QUID, q);
+  if (el0) set_attrs_safe(el0, _DATA_QUID, q);
 
   return {
     q,
@@ -82,7 +85,7 @@ export class LiveTree {
   private withNodes<T>(fn: (nodes: HsonNode[]) => T): T {
     return fn(this.selectedNodes);
   }
- public async afterPaint(): Promise<this> {
+  public async afterPaint(): Promise<this> {
     // comment: await a frame boundary without changing call sites that don’t need it
     await after_paint();
     return this;
@@ -146,16 +149,23 @@ export class LiveTree {
       for (const node of nodes) {
         if (!node._meta) node._meta = {};
         if (!node._attrs) node._attrs = {};
-        const el = NODE_ELEMENT_MAP.get(node) ?? document.querySelector(`[data-_quid="${ensure_quid(node)}"]`);
+        const el = NODE_ELEMENT_MAP.get(node);
+        if (!el) {
+          // TODO(streamline): add bindNodeEl() + invariant once mapping is centralized
+          _throw_transform_err(
+            `[LiveTree] invariant: missing element for node (quid=${ensure_quid(node)}, tag=${node._tag})`,
+            'getElementForNode'
+          );
+        }
         if ($value === false || $value === null) {
           delete node._attrs[$name];
           (el as HTMLElement | null)?.removeAttribute($name);
         } else if ($value === true || $value === $name) {
           delete node._attrs[$name];
-          (el as HTMLElement | null)?.setAttribute($name, '');
+          set_attrs_safe(el, $name, '');
         } else {
           node._attrs[$name] = $value;
-          (el as HTMLElement | null)?.setAttribute($name, String($value));
+          set_attrs_safe(el, $name, String($value));
         }
       }
     });
@@ -189,7 +199,7 @@ export class LiveTree {
    * @param $value new value
    * @returns current tree instance (for chaining)
    */
-  setValue(value: string, opts?: { silent?: boolean }): this {
+  setFormValue(value: string, opts?: { silent?: boolean }): this {
     for (const node of this.selectedNodes) {
       if (node._tag !== "input" && node._tag !== "textarea") {
         console.warn(
@@ -222,15 +232,13 @@ export class LiveTree {
   }
 
 
-  setContent($content: string): this {
+  setContent(v: BasicValue): this {
     for (const node of this.selectedNodes) {
-      const textNode = CREATE_NODE({ _tag: STR_TAG, _content: [$content] });
-      node._content = [textNode];
-
-      const liveElement = NODE_ELEMENT_MAP.get(node);
-      if (liveElement) {
-        liveElement.textContent = $content;
-      }
+      const leaf = make_leaf(v);
+      node._content = [leaf];
+      const el = NODE_ELEMENT_MAP.get(node);
+      if (!el) _throw_transform_err(`missing element for node ${ensure_quid(node)}`, 'setContent');
+      (el as HTMLElement).textContent = v === null ? "" : String(v);
     }
     return this;
   }
@@ -401,7 +409,7 @@ export class LiveTree {
       const q = ensure_quid(n /* default persist:false */);
       // if this node is mounted, stamp DOM attribute for stable lookup
       const el = NODE_ELEMENT_MAP.get(n);
-      if (el) el.setAttribute(_DATA_QUID, q);
+      if (el) set_attrs_safe(el, _DATA_QUID, q);
     }
   }
 

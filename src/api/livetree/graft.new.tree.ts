@@ -1,11 +1,10 @@
 // graft.tree.hson.ts
 
 import { HsonNode } from "../../types-consts";
-import { sanitize_html } from "../../utils/sanitize-html.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { unwrap_root_elem } from "../../utils/unwrap-root-elem.new.utils";
 import { parse_html } from "../parsers/parse-html.new.transform";
-import { create_live_tree_NEW } from "./create-live-tree.new.tree";
+import { create_live_tree } from "./create-live-tree.new.tree";
 import { LiveTree } from "./live-tree-class.new.tree";
 
 
@@ -36,11 +35,10 @@ export function graft(
   if (!targetElement) {
     _throw_transform_err('error getting target element', 'graft', $element);
   }
-  /* copy current HTML content of target */
+  
+  /* copy current HTML content of target & parse to nodes */
   const sourceHTML = targetElement.innerHTML;
-  /* parse html into nodes */
-  const cleanHTML = $options.unsafe ? sourceHTML : sanitize_html(sourceHTML);
-  const rootNode: HsonNode = parse_html(cleanHTML);
+  const rootNode: HsonNode = parse_html(sourceHTML);
 
   /* recursively render the HsonNode tree back into live DOM elements,
       then populate the `nodeElementMap`, linking the two */
@@ -58,7 +56,7 @@ export function graft(
   }
   const nodeToRender = contentNodes[0];
 
-  newDOMFragment.appendChild(create_live_tree_NEW(nodeToRender));
+  newDOMFragment.appendChild(create_live_tree(nodeToRender));
   /* replace the DOM element with the new liveTree-controlled model */
   targetElement.replaceChildren(newDOMFragment)
   /* return queryable liveTree */

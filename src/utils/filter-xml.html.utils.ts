@@ -77,7 +77,7 @@ function escape_attr_amps(src: string): string {
    3) Single entry: HTML-ish → XML-safe string
    Order matters: first convert known named entities, then fix raw & in attrs.
    ────────────────────────────────────────────────────────────── */
-export function sanitize_for_xml(input: string): string {
+export function filter_xml(input: string): string {
   let s = input;
   s = replace_name_w_numeric(s);
   s = escape_attr_amps(s);

@@ -6,7 +6,7 @@ import { unwrap_root_elem } from "../../../utils/unwrap-root-elem.new.utils";
 import { STR_TAG, ELEM_TAG } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
 import { _throw_transform_err } from "../../../utils/throw-transform-err.utils";
-import { create_live_tree_NEW } from "../create-live-tree.new.tree";
+import { create_live_tree } from "../create-live-tree.new.tree";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { CREATE_NODE } from "../../../types-consts/factories";
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
@@ -57,7 +57,7 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
     const liveElement = map_get(targetNode as unknown as object);
     if (liveElement) {
       for (const newNode of nodesToAppend) {
-        const dom = create_live_tree_NEW(newNode); // Node (Element or Fragment)
+        const dom = create_live_tree(newNode); // Node (Element or Fragment)
         // NOTE: create_live_tree_NEW now calls mapSet internally per Element it creates
         liveElement.appendChild(dom);
       }

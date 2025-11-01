@@ -1,44 +1,58 @@
 // client/safe-mount.ts
-// CHANGED: use DOMPurify to sanitize any untrusted HTML before mounting.
-// Assumes DOMPurify included via bundler (es module)
-import DOMPurify from "dompurify";
-// packages/hson-secure/src/policy.ts
-// ✅ Make these readonly lists (no `as`), so they’re safe to share
-export const ALLOWED_TAGS: Array<string> = [
-    "a", "p", "div", "span", "strong", "em", "ul", "ol", "li", "br", "hr",
-    "img", "h1", "h2", "h3", "h4", "h5", "h6"
-];
+import {  ALLOWED_URI_REGEX, sanitize_external } from "../utils/sanitize-html.utils";
 
-export const ALLOWED_ATTR: Array<string> = [
-    "href", "src", "srcset", "sizes", "alt", "title", "id", "class",
-    "role", "aria-label", "aria-hidden", "data-*", "target", "rel", "loading", "decoding"
-];
 
-// 🔧 Lowercase `i` flag; also give it an explicit type
-export const ALLOWED_URI_REGEX: RegExp =
-    /^(?:https?:|mailto:|tel:|data:image\/)/i;
-
-// convenience: attach rel to target=_blank later in a post-pass
-
-/* Create a safe mount function that accepts raw HSON-compiled HTML.
-   It sanitizes the string, parses into a detached <template>, then
-   appends the children into the target element. */
-export function safe_mount_html(rawHtml: string, into: HTMLElement): void {
-    // sanitize the raw HTML string to remove scripts, on* handlers, dangerous urls
-    const cleanHtml: string = DOMPurify.sanitize(rawHtml, {
-        ALLOWED_TAGS,
-        ALLOWED_ATTR,
-        FORBID_ATTR: ["style", "onerror", "onclick", "onload", "on*"],
-        // keep only safe URL protocols
-        ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|data:image\/)/i
-    });
-
-    // Place sanitized HTML into a detached <template> element (inert until appended)
-    const t: HTMLTemplateElement = document.createElement("template");
-    t.innerHTML = cleanHtml;
-
-    // Move children into destination in one operation
-    // (this avoids incremental attachment and prevents half-adopted markup)
-    const frag: DocumentFragment = t.content;
-    into.appendChild(frag);
+export function mount_html_safe(rawHtml: string, into: HTMLElement): void {
+  const cleanHtml = sanitize_external(rawHtml); // discover → allow → sanitize
+  const t = document.createElement("template");
+  t.innerHTML = cleanHtml;          // inert parse
+  into.appendChild(t.content);      // single adopt, no innerHTML writes
 }
+
+// safety/set-attr-safe.ts
+const FORBID_ATTR = new Set(["style"]); // keep this strict for now
+const URL_ATTR = new Set(["href", "src", "srcset", "sizes"]);
+
+export function set_attrs_safe(el: Element, name: string, value: string): void {
+  const n = name.toLowerCase();
+
+  // Block event handlers and style entirely
+  if (n.startsWith("on") || FORBID_ATTR.has(n)) return;
+
+  if (URL_ATTR.has(n)) {
+    // conservative srcset split
+    const items = n === "srcset"
+      ? value.split(",").map(p => (p.trim().split(/\s+/)[0] ?? ""))
+      : [value.trim()];
+    for (const url of items) {
+      if (url && !ALLOWED_URI_REGEX.test(url)) return; // reject whole write
+    }
+    // extra: normalize rel for target=_blank links
+    if (n === "href" && (el as HTMLAnchorElement).target === "_blank") {
+      const a = el as HTMLAnchorElement;
+      const rel = (a.rel || "").split(/\s+/);
+      if (!rel.includes("noopener")) rel.push("noopener");
+      if (!rel.includes("noreferrer")) rel.push("noreferrer");
+      a.rel = rel.join(" ").trim();
+    }
+  }
+
+  el.setAttribute(name, value);
+}
+
+// safety/create-element-safe.ts
+const DANGEROUS_TAGS = new Set([
+  "script", "style", "iframe", "object", "embed", "link", "meta", "base",
+  "form", "input", "video", "audio"
+]);
+
+export function create_el_safe(tagName: string): HTMLElement {
+  const t = tagName.toLowerCase();
+  if (DANGEROUS_TAGS.has(t)) {
+    const el = document.createElement("_tag");
+    set_attrs_safe(el, "name", tagName); // encode original
+    return el;
+  }
+  return document.createElement(tagName);
+}
+

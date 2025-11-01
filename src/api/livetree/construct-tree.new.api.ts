@@ -4,11 +4,10 @@ import { JsonType } from "../../core/types-consts/core.types";
 import { HsonNode } from "../../types-consts";
 import { _ERROR } from "../../types-consts/constants";
 import { TreeConstructor_Source, BranchConstructor, GraftConstructor } from "../../types-consts/tree.new.types";
-import { sanitize_html } from "../../utils/sanitize-html.utils";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
-import { create_live_tree_NEW } from "./create-live-tree.new.tree";
+import { create_live_tree } from "./create-live-tree.new.tree";
 import { graft } from "./graft.new.tree";
 import { LiveTree } from "./live-tree-class.new.tree";
 
@@ -25,7 +24,7 @@ export function construct_tree(
   /* internal helper to create a detached branch from a root node
       it builds the dom elements in memory but does not attach them */
   const createBranch = ($rootNode: HsonNode): LiveTree => {
-    create_live_tree_NEW($rootNode); /* populate the NODE_ELEMENT_MAP */
+    create_live_tree($rootNode); /* populate the NODE_ELEMENT_MAP */
     return new LiveTree($rootNode);
   };
 
@@ -35,8 +34,7 @@ export function construct_tree(
     /* methods for creating detached branches from data */
 
     fromHTML($html: string): BranchConstructor {
-      const cleanHtml = $options.unsafe ? $html : sanitize_html($html);
-      const rootNode = parse_html(cleanHtml);
+      const rootNode = parse_html($html);
       const branch = createBranch(rootNode);
       return {
         asBranch: () => branch,
