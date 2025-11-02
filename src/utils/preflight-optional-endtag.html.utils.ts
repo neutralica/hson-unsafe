@@ -4,12 +4,13 @@
 // - Edits only the string you feed to the XML parser (Nodes stay clean)
 
 type Range = { start: number; end: number };
+type ListFrame = { name: 'ul' | 'ol'; liOpen: boolean }; // CHANGED
 
 export function optional_endtag_preflight(src: string): string {
   // 0) Fast exit
   if (!/[<]([a-zA-Z/_])/.test(src)) return src;
-  console.log('src')
-  console.log(src)
+  // console.log('src')
+  // console.log(src)
   // 1) Protect raw-text blocks, comments, CDATA
   const RAW = /<(script|style|textarea|noscript|xmp|iframe)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
   const COMM = /<!--[\s\S]*?-->/g;
@@ -31,12 +32,11 @@ export function optional_endtag_preflight(src: string): string {
 
   // 2) Walk tags; maintain tiny stacks for lists/dl/p/table
   type Tag = { name: string; iOpenEnd: number; iAfterOpen: number };
-  const openList: Tag[] = [];          // ul/ol -> li
-  const openDL: Tag[] = [];            // dl -> dt/dd
-  let openP: Tag | null = null;        // p
+  const openList: ListFrame[] = [];                                     // CHANGED
+  const openDL: Tag[] = [];
+  let openP: Tag | null = null;
   const openTable: { tr: Tag | null; cell: Tag | null; section: 'thead' | 'tbody' | 'tfoot' | null } = { tr: null, cell: null, section: null };
 
-  // we’ll build edits to splice later
   const inserts: Array<{ at: number; text: string }> = [];
 
   // helpers
@@ -47,7 +47,6 @@ export function optional_endtag_preflight(src: string): string {
 
   // regex to find tags (cheap tokenizer)
   const TAG = /<\s*(\/)?\s*([a-zA-Z_:][-a-zA-Z0-9_:.]*)\b[^>]*?(\/?)\s*>/g;
-
   let m: RegExpExecArray | null;
   while ((m = TAG.exec(src))) {
     const iTag = m.index;
@@ -58,26 +57,48 @@ export function optional_endtag_preflight(src: string): string {
     const selfClose = !!m[3];
     const name = rawName.toLowerCase();
 
-    if (isVSN(name)) continue; // never balance around VSNs
+    if (isVSN(name)) continue;
 
-    // --- LISTS: <ul>/<ol>/<li> ---
-    if (!isClose && (name === 'ul' || name === 'ol')) {
-      openList.push({ name, iOpenEnd: TAG.lastIndex, iAfterOpen: TAG.lastIndex });
+    // --- LISTS: <ul>/<ol>/<li> ----------------------------------------------
+
+    // CHANGED: opening a list just pushes a new frame; do not touch li state yet
+    if (!isClose && (name === 'ul' || name === 'ol')) {                 // CHANGED
+      openList.push({ name: name as 'ul' | 'ol', liOpen: false });      // CHANGED
       continue;
     }
-    if (!isClose && name === 'li') {
-      // close previous <li> at same depth
+
+    // CHANGED: when starting a new <li>, close the previous one only if liOpen at this depth
+    if (!isClose && name === 'li') {                                    // CHANGED
       const last = openList[openList.length - 1];
-      if (last && last.name && last.iOpenEnd < iTag) {
-        // find prior <li> still open: heuristic—insert </li> before this <li>
-        inserts.push({ at: iTag, text: '</li>' });
+      if (last) {
+        if (last.liOpen) inserts.push({ at: iTag, text: '</li>' });     // CHANGED
+        last.liOpen = true;                                             // CHANGED
       }
       continue;
     }
-    if (isClose && (name === 'ul' || name === 'ol')) {
-      // ensure closing </li> before closing list
-      inserts.push({ at: iTag, text: '</li>' });
-      openList.pop();
+
+    // CHANGED: explicit </li> closes the liOpen bit for this depth
+    if (isClose && name === 'li') {                                     // CHANGED
+      const last = openList[openList.length - 1];
+      if (last && last.liOpen) last.liOpen = false;                     // CHANGED
+      continue;
+    }
+
+    // CHANGED: only close a dangling </li> when the list itself closes AND a <li> is actually open
+    if (isClose && (name === 'ul' || name === 'ol')) {                  // CHANGED
+      const last = openList[openList.length - 1];
+      if (last && last.liOpen) {
+        inserts.push({ at: iTag, text: '</li>' });                      // CHANGED
+        last.liOpen = false;                                            // CHANGED
+      }
+      if (last && last.name === name) openList.pop();                   // CHANGED
+      else {
+        // tolerant pop if malformed nesting
+        for (let i = openList.length - 2; i >= 0; i--) {
+          if (openList[i].name === name) { openList.length = i; break; }
+        }
+        openList.pop();
+      }
       continue;
     }
 
@@ -187,14 +208,7 @@ export function optional_endtag_preflight(src: string): string {
     if (inHole(ins.at)) continue;
     out = out.slice(0, ins.at) + ins.text + out.slice(ins.at);
   }
-  const liBeforeLi = /(<li\b[^>]*>(?:(?!<\/li>).)*?)(?=<li\b)/gis;
-  // Close the last <li> before the closing </ul>/<ol> (don’t cross an existing </li>)
-  const liBeforeListEnd = /(<li\b[^>]*>(?:(?!<\/li>).)*?)(?=<\/(?:ul|ol)\b)/gis;
-  console.log('out:')
-  console.log(out)
-  out = out
-    .replace(liBeforeLi, '$1</li>')
-    .replace(liBeforeListEnd, '$1</li>');
+
   console.log('out final')
   console.log(out)
 
