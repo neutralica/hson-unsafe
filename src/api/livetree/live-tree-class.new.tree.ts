@@ -199,7 +199,7 @@ export class LiveTree {
    * @param $value new value
    * @returns current tree instance (for chaining)
    */
-  setFormValue(value: string, opts?: { silent?: boolean }): this {
+  setValue(value: string, opts?: { silent?: boolean }): this {
     for (const node of this.selectedNodes) {
       if (node._tag !== "input" && node._tag !== "textarea") {
         console.warn(
@@ -232,7 +232,7 @@ export class LiveTree {
   }
 
 
-  setContent(v: BasicValue): this {
+  setContent(v: Primitive): this {
     for (const node of this.selectedNodes) {
       const leaf = make_leaf(v);
       node._content = [leaf];

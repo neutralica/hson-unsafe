@@ -59,15 +59,21 @@ export function create_live_tree(node: HsonNode | Primitive): Node {
   if (a) {
     for (const [key, raw] of Object.entries(a)) {
       if (raw == null) continue;
-
-      // NEW: style may be string or object
       if (key === "style") {
+        const elt = el as HTMLElement;
+
         if (typeof raw === "string") {
-          set_attrs_safe(el, "style", raw);
+          // Assign full declaration block; safe because it's code-side, not markup
+          elt.style.cssText = raw;
         } else if (raw && typeof raw === "object") {
-          set_attrs_safe(el, "style", serialize_style(raw as Record<string, string>));
+          const obj = raw as Record<string, string | number | null>;
+          for (const [prop, v] of Object.entries(obj)) {
+            const val = v == null ? "" : String(v);
+            if (val === "") elt.style.removeProperty(prop);
+            else elt.style.setProperty(prop, val);
+          }
         }
-        continue;
+        continue; // prevent the normal attr path
       }
 
       // NEW: boolean presence attrs
