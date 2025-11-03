@@ -25,25 +25,12 @@ const _log = _VERBOSE
 
 export function serialize_json($node: HsonNode): string {
     const clone = clone_node($node)
-    assert_invariants(clone, 'serialize json')
-    if (_VERBOSE) {
-        console.groupCollapsed('---> serializing json');
-        console.log('input node:');
-        console.log(make_string(clone));
-        console.groupEnd();
-    }
+    assert_invariants(clone, 'serialize_json')
     const serializedJson = jsonFromNode(clone);
-
     try {
-        const json = make_string({ [ROOT_TAG]: serializedJson });
-        if (_VERBOSE) {
-            console.groupCollapsed('returning json:');
-            console.log(json);
-            console.groupEnd();
-        }
+        const json = make_string(serializedJson);
         return json;
     } catch (e: any) {
-
         _throw_transform_err(`error during final JSON.stringify\n ${e.message}`, 'serialize-json');
     }
 }
@@ -72,7 +59,6 @@ function jsonFromNode($node: HsonNode): JsonType {
         }
     
     /* step 1: catch VSNs */
-    _log(`NEXT: { ${$node._tag} }`)
 
     switch ($node._tag) {
         case ROOT_TAG: {
@@ -188,8 +174,6 @@ function jsonFromNode($node: HsonNode): JsonType {
             if (hasMeta) {
                 (finalJson as any)._meta = $node._meta;
             }
-
-
             return finalJson;
         }
     }

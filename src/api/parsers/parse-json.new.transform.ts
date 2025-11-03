@@ -319,43 +319,42 @@ export function nodeFromJson(
 
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
+
 export function parse_json($input: string | JsonType): HsonNode {
-    let parsed: JsonType;
-    try {
-        parsed = typeof $input === "string" ? JSON.parse($input) : $input;
-    } catch (e) {
-        _throw_transform_err(`invalid JSON input ${make_string($input)}`, "parse-json", String(e));
-    }
+  let parsed: JsonType;
+  try {
+    parsed = typeof $input === "string" ? JSON.parse($input) : $input;
+  } catch (e) {
+    _throw_transform_err(`invalid JSON input ${make_string($input)}`, "parse-json", String(e));
+  }
 
-    // Optional unwrap of {_root: ... , _meta?: {...}}.
-    let jsonToProcess: JsonType = parsed;
-    let rootMeta: HsonMeta | undefined;
-
-    if (is_Object(parsed)) {
-        const obj = parsed as JsonObj;
-        const keys = Object.keys(obj).filter(k => k !== "_meta");
-        if (keys.length === 1 && keys[0] === ROOT_TAG) {
-            jsonToProcess = obj[ROOT_TAG] as JsonType;
-            // keep meta but only data-_*
-            if (obj._meta && is_Object(obj._meta)) {
-                const filtered: HsonMeta = {};
-                for (const [k, v] of Object.entries(obj._meta)) {
-                    if (k.startsWith(_META_DATA_PREFIX)) (filtered as any)[k] = v;
-                }
-                if (Object.keys(filtered).length) rootMeta = filtered;
-            }
-            // NOTE: ignore any _attrs on the wrapper; VSNs must not carry _attrs
+  // unwrap legacy {_root: ...} but keep data-* meta (unchanged)
+  let jsonToProcess: JsonType = parsed;
+  let rootMeta: HsonMeta | undefined;
+  if (is_Object(parsed)) {
+    const obj = parsed as JsonObj;
+    const keys = Object.keys(obj).filter(k => k !== "_meta");
+    if (keys.length === 1 && keys[0] === ROOT_TAG) {
+      jsonToProcess = obj[ROOT_TAG] as JsonType;
+      if (obj._meta && is_Object(obj._meta)) {
+        const filtered: HsonMeta = {};
+        for (const [k, v] of Object.entries(obj._meta)) {
+          if (k.startsWith(_META_DATA_PREFIX)) (filtered as any)[k] = v;
         }
+        if (Object.keys(filtered).length) rootMeta = filtered;
+      }
     }
+  }
 
-    // Recurse with _root as the parent context.
-    const { node } = nodeFromJson(jsonToProcess, getTag(jsonToProcess));
-    const root = CREATE_NODE({
-        _tag: ROOT_TAG,
-        _meta: rootMeta,
-        _content: [node],
-    });
-    assert_invariants(root, 'root');
+  
+  // ------------------------------------------------------------------------------
 
-    return root;
+  const { node } = nodeFromJson(jsonToProcess, getTag(jsonToProcess));
+  const root = CREATE_NODE({
+    _tag: ROOT_TAG,
+    _meta: rootMeta,
+    _content: [node],
+  });
+  assert_invariants(root, "root");
+  return root;
 }

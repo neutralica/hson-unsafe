@@ -15,12 +15,12 @@ import { parse_html_attrs } from "../../utils/parse_html_attrs.utils";
 import { _snip } from "../../utils/snip.utils";
 import { strip_html_comments } from "../../utils/strip-html-comments.new.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
-import { wrap_cdata } from "../../utils/wrap-cdata.utils";
+import { wrap_cdata } from "../../safety/wrap-cdata.utils";
 import { HsonNode, Primitive } from "../../types-consts";
-import { optional_endtag_preflight } from "../../utils/preflight-optional-endtag.html.utils";
-import { unquoted_attrs_preflight } from "../../utils/preflight-unquoted-attrs.html.utils";
-import { escape_attr_angles } from "../../utils/preflight-escape_angles.html.utils";
-import { dedupe_attrs_html } from "../../utils/preflight-dedupe-attrs.html.utils";
+import { optional_endtag_preflight } from "../../safety/preflight-optional-endtag.html.utils";
+import { unquoted_attrs_preflight } from "../../safety/preflight-unquoted-attrs.html.utils";
+import { escape_attr_angles } from "../../safety/preflight-escape_angles.html.utils";
+import { dedupe_attrs_html } from "../../safety/preflight-dedupe-attrs.html.utils";
 
 /* debug log */
 let _VERBOSE = false;

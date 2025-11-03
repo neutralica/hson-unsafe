@@ -2,7 +2,7 @@
 
 
 import { HsonNode } from "./node.new.types";
-import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen, TokenEnd, TokenArrayOpen, TokenArrayClose, TokenText, TokenEmptyObj, TOKEN_KIND } from "./tokens.new.types";
+import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen, TokenClose, TokenArrayOpen, TokenArrayClose, TokenText, TokenEmptyObj, TOKEN_KIND } from "./tokens.new.types";
 
 export const CREATE_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
   _tag: partial._tag ?? '', 
@@ -15,7 +15,7 @@ export const CREATE_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
 export const CREATE_OPEN_TOKEN = (tag: string, rawAttrs: RawAttr[], pos: Position): TokenOpen =>
   ({ kind: TOKEN_KIND.OPEN, tag, rawAttrs, pos });
 
-export const CREATE_END_TOKEN = (close: CloseKind, pos: Position): TokenEnd =>
+export const CREATE_END_TOKEN = (close: CloseKind, pos: Position): TokenClose =>
   ({ kind: TOKEN_KIND.CLOSE, close, pos });
 
 export const CREATE_ARR_OPEN_TOKEN = (variant: ArraySymbol, pos: Position): TokenArrayOpen =>

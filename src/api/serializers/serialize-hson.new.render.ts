@@ -169,7 +169,7 @@ function getSelfCloseValueNEW(node: HsonNode): Primitive | undefined {
 /* -------------------------------------------------------------------------- */
 
 
-type ParentCluster = typeof OBJ_TAG | typeof ELEM_TAG | typeof ARR_TAG;
+export type ParentCluster = typeof OBJ_TAG | typeof ELEM_TAG | typeof ARR_TAG;
 
 
 /* recursively serialize a NEW node into HSON wire */
@@ -265,46 +265,33 @@ function emitNode(
 
         /* 5) _root: keep on wire (current policy); choose closer by melted child */
         if (node._tag === ROOT_TAG) {
-            // _root never carries attrs/meta in wire form; if present that’s a higher-level invariant error,
-            // but the serializer should ignore them (do NOT emit them).
             const kids = (node._content ?? []) as HsonNode[];
 
-            // 1) Empty explicit <_root> → empty object cluster shorthand
             if (kids.length === 0) {
-                // Prefer the canonical empty-obj under root:
-                // <_root
-                //   <>
-                // >
-                return `<${ROOT_TAG}\n${pad}<>\n>`;
+                // CHANGED: no generic `<>`. An empty document is an empty fragment.
+                return ""; // emit nothing
             }
 
-            // 2) Must have exactly one cluster child
             if (kids.length !== 1) {
-                _throw_transform_err('_root must have exactly one cluster child', 'serialize_hson_NEW', make_string(kids));
+                _throw_transform_err('_root must have exactly one cluster child', 'serialize_hson');
             }
+
             const cluster = kids[0];
-
             if (!ELEM_OBJ_ARR.includes(cluster._tag)) {
-                _throw_transform_err('_root child must be _obj | _elem | _arr', 'serialize_hson_NEW', make_string(cluster));
+                _throw_transform_err('_root child must be _obj | _elem | _arr', 'serialize_hson');
             }
 
-            // 3) Do NOT normalize/wrap here. Propagate the child cluster as-is.
-            //    We also DO NOT convert ARR→OBJ anymore. Whatever cluster is present, we emit it raw.
-            const inner = emitNode(
-                cluster /* unchanged */,
-                depth + 1,
-                cluster._tag as ParentCluster /* parentCluster = child */,
-                guard
-            );
+            // CHANGED: emit *only* the child cluster, with no `_root` and no synthetic sentinel.
+            const inner = emitNode(cluster, 0, cluster._tag as ParentCluster, guard);
 
-            // --- CHANGED: choose _root closer based on the child kind
-            // _elem → '/>'  ;  _obj/_arr → '>'
-            const rootCloser = (cluster._tag === ELEM_TAG) ? '/>' : '>';
+            // Special case: if (cluster is _obj and has 0 props) and you want a shorthand, *then* return "<>"
+            if (cluster._tag === OBJ_TAG && (cluster._content?.length ?? 0) === 0) {
+                return "<>"; // optional shorthand, matches parser C above
+            }
 
-            // Keep the same newline formatting: closer on its own line, left-aligned (no pad),
-            // to match previous emissions and your examples.
-            return `<${ROOT_TAG}\n${pad}${inner}\n${rootCloser}`;
+            return inner.trim();
         }
+
 
         /* 4) _obj / _elem clusters: melt; never emit their tags */
         if (node._tag === OBJ_TAG || node._tag === ELEM_TAG) {
@@ -340,7 +327,14 @@ function emitNode(
                     return `${pad}<${key}\n${rendered}\n${pad}>`;
                 }).join("\n");
             }
-            return kids.map(k => emitNode(k, depth, cluster, guard)).join("\n");
+            return (node._content ?? [])
+                .map(k => emitNode(
+                    k as HsonNode,
+                    depth,
+                    ELEM_TAG as ParentCluster, // ← keep element context for child emission
+                    guard
+                ))
+                .join("\n");
         }
 
 
@@ -464,7 +458,7 @@ function emitNode(
 
         // If nothing actually rendered, self-close regardless of computed closer.
         if (inner.length === 0) {
-            return `${pad}<${node._tag}${attrsStr} />`;
+            return `${pad}<${node._tag}${attrsStr} ${closer}`;
         }
 
         // Use the computed closer.

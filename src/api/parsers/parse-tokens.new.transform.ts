@@ -2,10 +2,10 @@
 
 import { STR_TAG, VAL_TAG, ARR_TAG, OBJ_TAG, ELEM_TAG, ROOT_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
-import { TOKEN_KIND, CLOSE_KIND } from "../../types-consts/tokens.new.types";
+import { TOKEN_KIND, CLOSE_KIND, TokenEmptyObj } from "../../types-consts/tokens.new.types";
 import { _DATA_INDEX } from "../../types-consts/constants";
 import { HsonNode, NodeContent } from "../../types-consts/node.new.types";
-import { Tokens, CloseKind, TokenOpen, TokenEnd, TokenArrayOpen, TokenArrayClose, TokenKind, TokenText } from "../../types-consts/tokens.new.types";
+import { Tokens, CloseKind, TokenOpen, TokenClose, TokenArrayOpen, TokenArrayClose, TokenKind, TokenText } from "../../types-consts/tokens.new.types";
 import { coerce } from "../../utils/coerce-string.utils";
 import { make_string } from "../../utils/make-string.nodes.utils";
 import { is_string_NEW } from "../../utils/node-guards.new.utils";
@@ -14,6 +14,7 @@ import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils";
 import { unwrap_root_obj } from "../../utils/unwrap-root-obj.util";
 import { Primitive } from "../../types-consts";
+import { ParentCluster } from "../serializers/serialize-hson.new.render";
 
 
 /* debug log */
@@ -40,9 +41,6 @@ export const make_leaf = (v: Primitive): HsonNode =>
  * @returns {HsonNode} the fully constructed, hierarchical root hsonnode.
  */
 
-/* top-level token stream → HsonNode_NEW
-   this wraps multiple top-level nodes in a _root with elem semantics
-*/
 export function parse_tokens($tokens: Tokens[]): HsonNode {
     const nodes: HsonNode[] = [];
     const topCloseKinds: CloseKind[] = [];
@@ -51,9 +49,11 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
     const N = $tokens.length;
     function _peek(): Tokens | undefined { return $tokens[ix]; }
     function _take(kind: typeof TOKEN_KIND.OPEN): TokenOpen;
-    function _take(kind: typeof TOKEN_KIND.CLOSE): TokenEnd;
+    function _take(kind: typeof TOKEN_KIND.CLOSE): TokenClose;
     function _take(kind: typeof TOKEN_KIND.ARR_OPEN): TokenArrayOpen;
     function _take(kind: typeof TOKEN_KIND.ARR_CLOSE): TokenArrayClose;
+    function _take(kind: typeof TOKEN_KIND.TEXT): TokenText;
+    function _take(kind: typeof TOKEN_KIND.EMPTY_OBJ): TokenEmptyObj;
     function _take(): Tokens | null;
 
     // CHANGED: runtime impl checks when an expected kind is passed
@@ -94,6 +94,16 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
     function isTokenOpen(t: Tokens | null | undefined): t is TokenOpen {
         return !!t && t.kind === TOKEN_KIND.OPEN;
     }
+
+    function isTokenClose(t: Tokens | null | undefined): t is TokenClose {
+        return !!t && t.kind === TOKEN_KIND.CLOSE;
+    }
+    function isTokenText(t: Tokens | null | undefined): t is TokenText {
+        return !!t && t.kind === TOKEN_KIND.TEXT;
+    }
+    function isTokenArrOpen(t: Tokens | null | undefined): t is TokenArrayOpen {
+        return !!t && t.kind === TOKEN_KIND.ARR_OPEN;
+    }
     function readTag($isTopLevel = false): { node: HsonNode; closeKind: CloseKind } {
         // NOTE: _take() returning any is sketchy; narrow immediately.
         const tok = _take();
@@ -116,7 +126,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             node._attrs = attrs;
         }
 
-        let sawClose: TokenEnd | null = null;
+        let sawClose: TokenClose | null = null;
         const kids: HsonNode[] = [];
         let sawEmptyObjShorthand = false; // <-- NEW
 
@@ -124,29 +134,47 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         while (ix < N) {
             const t = _peek(); if (!t) break;
 
+            // ✅ end of this tag
+            if (isTokenClose(t)) {
+                sawClose = _take(TOKEN_KIND.CLOSE);
+                break;
+            }
+
+            // ✅ empty object shorthand "<>"
             if (t.kind === TOKEN_KIND.EMPTY_OBJ) {
-                _take();
-                sawEmptyObjShorthand = true;      // <-- NEW: remember "<>"
+                _take(TOKEN_KIND.EMPTY_OBJ);
+                sawEmptyObjShorthand = true;
                 continue;
             }
-            if (t.kind === TOKEN_KIND.CLOSE) { sawClose = _take() as TokenEnd; break; }
 
-            if (t.kind === TOKEN_KIND.TEXT) {
-                const tt = _take() as TokenText;
+            // ✅ nested array
+            if (isTokenArrOpen(t)) {
+                kids.push(readArray());
+                continue;
+            }
+
+            // ✅ nested tag
+            if (isTokenOpen(t)) {
+                kids.push(readTag(false).node);
+                continue;
+            }
+
+            // ✅ nested text → primitive leaf
+            if (isTokenText(t)) {
+                const tt = _take(TOKEN_KIND.TEXT);
                 const prim = tt.quoted ? decode_json_string_literal(tt.raw) : coerce(tt.raw);
                 kids.push(make_leaf(prim));
                 continue;
             }
 
-
-            if (t.kind === TOKEN_KIND.ARR_OPEN) { kids.push(readArray()); continue; }
-            if (t.kind === TOKEN_KIND.OPEN) { kids.push(readTag(false).node); continue; }
-
             _throw_transform_err(`unexpected token ${t.kind} inside <${open.tag}>`, 'parse_tokens_NEW');
         }
 
-        if (!sawClose) _throw_transform_err(`missing CLOSE for <${open.tag}>`, 'parse_tokens_NEW');
-        const closeKind = sawClose.close;
+        // strong narrow
+        if (sawClose === null) {
+            _throw_transform_err(`missing CLOSE for <${open.tag}>`, 'parse_tokens_NEW');
+        }
+        const closeKind: CloseKind = sawClose.close;
 
         // ---------- <_root>: choose cluster by its own closer; never mix modes ----------
         if (open.tag === ROOT_TAG) {
@@ -280,35 +308,63 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
 
     /* drive the stream */
     while (ix < N) {
-        const t = _peek();
-        if (!t) break;
-        if (t.kind === TOKEN_KIND.OPEN) { nodes.push(readTag(true).node); continue; }
-        if (t.kind === TOKEN_KIND.ARR_OPEN) { nodes.push(readArray()); continue; }
-        if (t.kind === TOKEN_KIND.TEXT) {
-            // top-level TEXT is allowed (outside arrays) → becomes a leaf
-            const tt = _take() as TokenText;
-            const prim = tt.quoted ? decode_json_string_literal(tt.raw) : coerce(tt.raw);
-            nodes.push(make_leaf(prim));
+        const t = _peek(); if (!t) break;
+
+        if (t.kind === TOKEN_KIND.OPEN) {
+            // CHANGED: mark top-level so we record the closer
+            const { node, closeKind } = readTag(true); // <-- true
+            nodes.push(node);
+            topCloseKinds.push(closeKind); // <-- record
             continue;
         }
+        if (t.kind === TOKEN_KIND.ARR_OPEN) {
+            nodes.push(readArray());
+            topCloseKinds.push('obj'); // arrays are object-closer at top
+            continue;
+        }
+        if (t.kind === TOKEN_KIND.EMPTY_OBJ) {
+            _take(TOKEN_KIND.EMPTY_OBJ);
+            nodes.push(CREATE_NODE({ _tag: OBJ_TAG, _meta: {}, _content: [] }));
+            topCloseKinds.push('obj');
+            continue;
+        }
+        if (t.kind === TOKEN_KIND.TEXT) {
+            const tt = _take(TOKEN_KIND.TEXT);
+            const prim = tt.quoted ? decode_json_string_literal(tt.raw) : coerce(tt.raw);
+            nodes.push(make_leaf(prim));
+            topCloseKinds.push('elem');
+            continue;
+        }
+
         _throw_transform_err(`unexpected top-level token ${t.kind}`, 'parse_tokens_new');
     }
+
     if (nodes.length === 1 && nodes[0]._tag === ROOT_TAG) {
         return nodes[0]; // <-- CHANGED
     }
 
-    /* implicit-root fallback (no explicit <_root>) */
+    /* implicit-root fallback (no explicit <_root>) ----------------------------*/
     {
         const kids = nodes;
-        // if already a single cluster, keep as-is
+
+        // 0) single <_root> already (kept earlier) — nothing to do
+
+        // 1) already a single cluster → keep as-is
         if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ARR_TAG || kids[0]._tag === ELEM_TAG)) {
+            const child = kids[0];
+            return CREATE_NODE({ _tag: ROOT_TAG, _meta: {}, _content: [child] });
+        }
+
+        // 2) single standard tag → wrap according to its closer
+        if (kids.length === 1 && typeof kids[0]._tag === 'string' && !kids[0]._tag.startsWith('_')) {
+            const mode = topCloseKinds[0] === CLOSE_KIND.obj ? OBJ_TAG : ELEM_TAG; // CHANGED
             return CREATE_NODE({
                 _tag: ROOT_TAG, _meta: {},
-                _content: [CREATE_NODE({ _tag: kids[0]._tag, _meta: {}, _content: kids[0]._content ?? [] })],
+                _content: [CREATE_NODE({ _tag: mode, _meta: {}, _content: [kids[0]] })],
             });
         }
 
-        // empty → empty object cluster
+        // 3) empty → empty object cluster
         if (kids.length === 0) {
             return CREATE_NODE({
                 _tag: ROOT_TAG, _meta: {},
@@ -316,13 +372,15 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             });
         }
 
-        // all non-VSN tags and unique → _obj, else _elem
-        const allProps = kids.every(n => typeof n._tag === 'string' && !n._tag.startsWith('_'));
-        const unique = allProps && (new Set(kids.map(n => n._tag))).size === kids.length;
-        const clusterTag = unique ? OBJ_TAG : ELEM_TAG;
+        // 4) multiple top-level nodes → choose by unanimous closer; mixed ⇒ element
+        const allObj = topCloseKinds.length > 0 && topCloseKinds.every(k => k === CLOSE_KIND.obj);
+        const allElem = topCloseKinds.length > 0 && topCloseKinds.every(k => k === CLOSE_KIND.elem);
+        const clusterTag = allObj ? OBJ_TAG : (allElem ? ELEM_TAG : ELEM_TAG); // mixed → _elem
+
         return CREATE_NODE({
             _tag: ROOT_TAG, _meta: {},
             _content: [CREATE_NODE({ _tag: clusterTag, _meta: {}, _content: kids })],
         });
     }
+
 }

@@ -180,6 +180,6 @@ export function serialize_html($node: HsonNode | Primitive): string {
   if (/<\s*_str\b/.test(htmlString)) {
     _throw_transform_err('literal <_str> leaked into HTML output', 'serialize_html', htmlString.slice(0, 400));
   }
-  return `<${ROOT_TAG}>\n${htmlString}\n</${ROOT_TAG}>`;
+  return htmlString.trim();
 
 }

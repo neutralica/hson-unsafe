@@ -1,5 +1,5 @@
 // client/safe-mount.ts
-import {  ALLOWED_URI_REGEX, sanitize_external } from "../utils/sanitize-html.utils";
+import {  ALLOWED_URI_REGEX, sanitize_external } from "./sanitize-html.utils";
 
 
 export function mount_html_safe(rawHtml: string, into: HTMLElement): void {
