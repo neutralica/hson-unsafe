@@ -5,9 +5,9 @@ import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_T
 import { CREATE_NODE } from "../../types-consts/factories";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { coerce } from "../../utils/coerce-string.utils";
-import { escape_text_nodes } from "../../utils/escape-text-nodes.new.utils";
+import { escape_text } from "../../utils/escape-text.new.utils";
 import { expand_entities } from "../../utils/expand-entities.utils";
-import { expand_flags } from "../../utils/expand-flags.utils";
+import { expand_flags } from "../../utils/html-preflights/expand-flags.utils";
 import { expand_void_tags } from "../../utils/expand-self-closing.utils";
 import { make_string } from "../../utils/make-string.nodes.utils";
 import { is_string_NEW, is_indexed_NEW } from "../../utils/node-guards.new.utils";
@@ -21,6 +21,8 @@ import { optional_endtag_preflight } from "../../safety/preflight-optional-endta
 import { unquoted_attrs_preflight } from "../../safety/preflight-unquoted-attrs.html.utils";
 import { escape_attr_angles } from "../../safety/preflight-escape_angles.html.utils";
 import { dedupe_attrs_html } from "../../safety/preflight-dedupe-attrs.html.utils";
+import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
+import { disallow_illegal_attrs } from "../../utils/html-preflights/hash-name.utils";
 
 /* debug log */
 let _VERBOSE = false;
@@ -53,13 +55,22 @@ export function parse_html($input: string | Element): HsonNode {
     if (typeof $input === "string") {
         const stripped = strip_html_comments($input);
         const bools = expand_flags(stripped);
-        const safe = escape_text_nodes(bools);
+        const safe = escape_text(bools);
         const ents = expand_entities(safe);
-        const voids = expand_void_tags(ents);
+
+        const unquotedSafe = quote_unquoted_attrs(ents);
+        const quotedSafe = escape_attr_angles(unquotedSafe);
+        const xmlNameSafe = disallow_illegal_attrs(quotedSafe);  // adds per-element data-_attrmap
+
+
+        const voids = expand_void_tags(xmlNameSafe);
         const cdata = wrap_cdata(voids);
         const svgSafe = namespace_svg(cdata);
 
-        const ampSafe = svgSafe.replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});)/g, '&amp;');
+        const ampSafe = svgSafe.replace(
+            /&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});)/g,
+            "&amp;"
+        );
 
         const parser = new DOMParser();
 
@@ -69,7 +80,7 @@ export function parse_html($input: string | Element): HsonNode {
         let err = parsed.querySelector('parsererror');
 
         if (err) {
-            if (err && /Duplicate|redefined/i.test(err.textContent ?? '') ) {
+            if (err && /Duplicate|redefined/i.test(err.textContent ?? '')) {
                 const deduped = dedupe_attrs_html(xmlSrc);
                 if (deduped !== xmlSrc) {
                     xmlSrc = deduped.replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});)/g, '&amp;');

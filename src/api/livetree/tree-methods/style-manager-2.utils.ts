@@ -309,4 +309,78 @@ export class StyleManager {
         return this.tree;
     }
 
+    /**
+ * .cssReplace({ width: '240px', transform: 'translate(10px,20px)', '--win-bg': '#111' })
+ * Behavior:
+ *   - Removes any existing inline declarations not listed in `props`
+ *   - Sets the provided declarations (merge order doesn’t matter; result is exact)
+ *   - `null` removes a provided key; `undefined` is ignored
+ *   - Numbers are passed through as-is (supply units yourself)
+ */
+    cssReplace(
+        props: Record<string, string | number | null | undefined>
+    ): LiveTree {
+        // 1) Normalize the incoming prop names once (camelCase → kebab, except for --vars)
+        const incoming: Record<string, string | number | null> = {};
+        const propNames = Object.keys(props);
+        for (let i = 0; i < propNames.length; i += 1) {
+            const raw = propNames[i];
+            const norm = raw.startsWith("--")
+                ? raw
+                : raw.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
+
+            const v = props[raw]; // type: string | number | null | undefined
+
+            // NEW: skip undefined so assignment matches the declared map type
+            if (v === undefined) {
+                continue;
+            }
+
+            // OK: v is now string | number | null
+            incoming[norm] = v;
+        }
+
+        // 2) For each selected node, remove any existing declarations not in `incoming`
+        const nodes = this.tree.getSelectedNodes();
+        for (let i = 0; i < nodes.length; i += 1) {
+            // read current inline style text directly from attrs if present
+            // (we avoid new helpers: stays local and harmless)
+            const n = nodes[i] as { _attrs?: Record<string, string> };
+            const styleText = n._attrs?.style ?? "";
+            if (styleText) {
+                const existingKeys = styleText
+                    .split(";")
+                    .map(s => s.trim())
+                    .filter(Boolean)
+                    .map(rule => {
+                        const idx = rule.indexOf(":");
+                        return idx > 0 ? rule.slice(0, idx).trim() : "";
+                    })
+                    .filter(Boolean);
+                for (let k = 0; k < existingKeys.length; k += 1) {
+                    const key = existingKeys[k];
+                    if (!(key in incoming)) {
+                        // remove keys not present in replacement set
+                        this.remove(key);
+                    }
+                }
+            }
+        }
+
+        // 3) Apply the provided declarations
+        const keys = Object.keys(incoming);
+        for (let i = 0; i < keys.length; i += 1) {
+            const k = keys[i];
+            const v = incoming[k];
+            if (v === undefined) continue;  // skip holes
+            if (v === null) {
+                this.remove(k);               // explicit null means "remove this key"
+            } else {
+                this.setProperty(k, v);       // reuse your existing single-prop pathway
+            }
+        }
+
+        return this.tree;
+    }
+
 }

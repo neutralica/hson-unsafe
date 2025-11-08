@@ -1,12 +1,12 @@
 // escape-text-segments.util.ts
 
 /**
- * Escape only TEXT nodes (outside of <tags ...>).
+ * Escape only text nodes (outside of <tags ...>).
  * - Replaces bare "&" (not already an entity) with "&amp;"
  * - Replaces "<" with "&lt;" and ">" with "&gt;" in text
  * - Leaves markup and attribute values untouched (handles quotes inside tags)
  */
-export function escape_text_nodes(input: string): string {
+export function escape_text(input: string): string {
   let out = "";
   let i = 0, n = input.length;
   let inTag = false;
@@ -18,7 +18,7 @@ export function escape_text_nodes(input: string): string {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
 
-  // NEW: XML NameStartChar (very simplified) + specials
+  // XML NameStartChar (very simplified) + specials
   const isTagStarter = (c: string | undefined) =>
     !!c && (c === ":" || c === "_" || /[A-Za-z]/.test(c) || c === "!" || c === "?" || c === "/");
 
