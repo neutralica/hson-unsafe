@@ -236,7 +236,7 @@ function buildSetFacade(tree: LiveTree, keys: ReadonlyArray<AllowedStyleKey>): S
 }
 
 /* --------------------------------- MANAGER ---------------------------------- */
-export class StyleManager2 {
+export class StyleManager {
     // // CHANGED: accept the real LiveTree; do not reference private methods.
     private readonly tree: LiveTree;
     private readonly runtimeKeys: ReadonlyArray<AllowedStyleKey>;
@@ -282,4 +282,31 @@ export class StyleManager2 {
     keys(): ReadonlyArray<AllowedStyleKey> {
         return this.runtimeKeys;
     }
+    // NEW: batch inline-style setter (merge semantics; no global refactors)
+    /**
+     * .css({ width: 240, transform: 'translate(10px, 20px)', '--win-bg': '#111' })
+     * - Numbers are passed through as-is; if you want 'px', supply the unit string.
+     * - Null removes a property; undefined is ignored.
+     * - Merge semantics: only the provided keys are changed.
+     */
+    css(
+        props: Record<string, string | number | null | undefined>
+    ): LiveTree {
+        // snapshot keys once; iteration order preserved
+        const keys = Object.keys(props);
+        for (let i = 0; i < keys.length; i += 1) {
+            const k = keys[i];
+            const v = props[k];
+            if (v === undefined) continue;        // skip holes
+            if (v === null) {
+                // CHANGED: allow null to mean "remove this declaration"
+                this.remove(k);
+            } else {
+                // CHANGED: delegate to existing single-prop pathway
+                this.setProperty(k, v);
+            }
+        }
+        return this.tree;
+    }
+
 }

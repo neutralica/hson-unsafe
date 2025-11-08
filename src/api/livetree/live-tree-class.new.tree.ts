@@ -12,7 +12,7 @@ import { remove_child } from "./tree-methods/remove-child.tree.new.utils";
 // import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
 import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
-import { StyleManager2 } from "./tree-methods/style-manager-2.utils";
+import { StyleManager } from "./tree-methods/style-manager-2.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-guards.new.utils";
 import { detach_node_deep } from "./tree-utils/detach-node.tree.utils";
@@ -55,7 +55,7 @@ function makeRef(n: HsonNode): NodeRef {
 export class LiveTree {
   private selected: NodeRef[] = [];
   // (unchanged) managers…
-  private styleManager: StyleManager2 | undefined = undefined;
+  private styleManager: StyleManager | undefined = undefined;
   private datasetManager: DatasetManager | undefined = undefined;
 
   // nodes view (read-only)
@@ -106,8 +106,8 @@ export class LiveTree {
     this.setSelected($nodes);
   }
 
-  get style(): StyleManager2 {
-    if (!this.styleManager) this.styleManager = new StyleManager2(this);
+  get style(): StyleManager {
+    if (!this.styleManager) this.styleManager = new StyleManager(this);
     return this.styleManager;
   }
 
@@ -301,7 +301,7 @@ export class LiveTree {
   asDomElement(): HTMLElement | undefined {
     const n = this.selectedNodes[0];
     if (!n) {
-      console.warn('[asDomElement] no nodes found in .seleted');
+      console.warn('[asDomElement] no nodes found in .selected');
       return undefined;
     }
     const el = this.getElementFor(n);
