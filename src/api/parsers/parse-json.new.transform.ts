@@ -8,11 +8,11 @@ import { JsonType, HsonMeta, JsonObj, HsonAttrs, HsonNode } from "../../types-co
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { _snip } from "../../utils/snip.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
-import { make_string } from "../../utils/make-string.nodes.utils";
-import { is_string_NEW } from "../../utils/node-guards.new.utils";
+import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
+import { is_string_NEW } from "../../utils/node-utils/node-guards.new.utils";
 import { Primitive } from "../../types-consts";
 import { normalize_attr_ws } from "../../utils/normalize_attrs_ws.utils";
-import { kebab_to_camel } from "../../utils/kebab-to-camel.util";
+import { kebab_to_camel } from "../../utils/primitive-utils/kebab-to-camel.util";
 import { parse_style_string } from "../../utils/parse-style.utils";
 import { serialize_style } from "../../utils/serialize-css.utils";
 

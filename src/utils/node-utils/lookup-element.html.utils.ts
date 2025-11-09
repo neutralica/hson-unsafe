@@ -1,21 +1,12 @@
 // lookup-element.utils.ts
 
-import { HsonNode } from "../types-consts/node.new.types";
+import { HsonNode } from "../../types-consts/node.new.types";
 
 
 export function lookup_element(node: HsonNode): Element | undefined {
     return map_get(node as unknown as object);
 }
 
-function ungregister_node(node: HsonNode): void {
-  map_delete(node as unknown as object);
-  const kids = node._content;
-  if (Array.isArray(kids)) {
-    for (const child of kids) {
-      if (child && typeof child === "object") ungregister_node(child as HsonNode);
-    }
-  }
-}
 
 /* =============================== * 
  *    node registry methods        *

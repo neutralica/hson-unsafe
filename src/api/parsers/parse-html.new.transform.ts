@@ -4,35 +4,24 @@ import { is_Primitive } from "../../core/utils/guards.core.utils";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
-import { coerce } from "../../utils/coerce-string.utils";
-import { escape_text } from "../../utils/escape-text.new.utils";
-import { expand_entities } from "../../utils/expand-entities.utils";
+import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
+import { escape_text } from "../../utils/html-preflights/escape-text.new.utils";
+import { expand_entities } from "../../utils/html-preflights/expand-entities.utils";
 import { expand_flags } from "../../utils/html-preflights/expand-flags.utils";
-import { expand_void_tags } from "../../utils/expand-self-closing.utils";
-import { make_string } from "../../utils/make-string.nodes.utils";
-import { is_string_NEW, is_indexed_NEW } from "../../utils/node-guards.new.utils";
+import { expand_void_tags } from "../../utils/html-preflights/expand-self-closing.utils";
+import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
+import { is_string_NEW, is_indexed_NEW } from "../../utils/node-utils/node-guards.new.utils";
 import { parse_html_attrs } from "../../utils/parse_html_attrs.utils";
 import { _snip } from "../../utils/snip.utils";
-import { strip_html_comments } from "../../utils/strip-html-comments.new.utils";
+import { strip_html_comments } from "../../utils/html-preflights/strip-html-comments.new.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { wrap_cdata } from "../../safety/wrap-cdata.utils";
 import { HsonNode, Primitive } from "../../types-consts";
-import { optional_endtag_preflight } from "../../safety/preflight-optional-endtag.html.utils";
-import { unquoted_attrs_preflight } from "../../safety/preflight-unquoted-attrs.html.utils";
-import { escape_attr_angles } from "../../safety/preflight-escape_angles.html.utils";
-import { dedupe_attrs_html } from "../../safety/preflight-dedupe-attrs.html.utils";
+import { optional_endtag_preflight } from "../../utils/html-preflights/optional-endtag.html.utils";
+import { escape_attr_angles } from "../../safety/escape_angles.html.utils";
+import { dedupe_attrs_html } from "../../safety/dedupe-attrs.html.utils";
 import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
 import { disallow_illegal_attrs } from "../../utils/html-preflights/hash-name.utils";
-import { kMaxLength } from "buffer";
-
-/* debug log */
-let _VERBOSE = false;
-const _log: (...args: Parameters<typeof console.log>) => void =
-    _VERBOSE
-        ? (...args) => console.log(
-            '[parse_html_NEW]: ',
-            ...args.map(a => (typeof a === "string" ? _snip(a, 500) : a)))   // ← prefix + passthrough
-        : () => { };
 
 function namespace_svg(src: string): string {
     if (!/<svg\b/i.test(src)) return src;
@@ -58,16 +47,9 @@ export function parse_html($input: string | Element): HsonNode {
         const bools = expand_flags(stripped);
         const safe = escape_text(bools);
         const ents = expand_entities(safe);
-        console.log(ents);
-        
         const unquotedSafe = quote_unquoted_attrs(ents);
-        console.log(unquotedSafe);
         const quotedSafe = escape_attr_angles(unquotedSafe);
-        console.log(quotedSafe);
-        const xmlNameSafe = disallow_illegal_attrs(quotedSafe);  // adds per-element data--attrmap
-        console.log(xmlNameSafe);
-
-
+        const xmlNameSafe = disallow_illegal_attrs(quotedSafe);  
         const voids = expand_void_tags(xmlNameSafe);
         const cdata = wrap_cdata(voids);
         const svgSafe = namespace_svg(cdata);
@@ -94,7 +76,7 @@ export function parse_html($input: string | Element): HsonNode {
                 }
             }
             // 2) try quoting unquoted attrs (only on failure)
-            const quoted = unquoted_attrs_preflight(xmlSrc);
+            const quoted = quote_unquoted_attrs(xmlSrc);
             if (quoted !== xmlSrc) {
                 // re-apply amp fix because quoting might introduce new bare '&'
                 xmlSrc = quoted.replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});)/g, '&amp;');
@@ -193,10 +175,8 @@ function convert($el: Element): HsonNode {
     }
 
     // Build children (DOM → HSON)
-    _log('standard tag - processing child nodes:');
     const childNodes: HsonNode[] = [];
     const children = elementToNode($el.childNodes);
-    _log(make_string(children));
 
     for (const child of children) {
         if (is_Primitive(child)) {
@@ -207,7 +187,6 @@ function convert($el: Element): HsonNode {
         }
     }
 
-    _log(`determining final node structure per tag ${tagLower}`);
 
     // ---------- VSN tags in HTML ----------
 
@@ -253,7 +232,6 @@ function convert($el: Element): HsonNode {
     }
 
     if (tagLower === ARR_TAG) {
-        _log('array detected; returning in _array wrapper');
         if (!childNodes.every(node => is_indexed_NEW(node))) {
             _throw_transform_err('_array children are not valid index tags', 'parse-html');
         }

@@ -2,9 +2,9 @@ import { Primitive } from "../core/types-consts/core.types";
 import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG, VSN_TAGS, EVERY_VSN, ELEM_OBJ_ARR } from "../types-consts/constants";
 import { _META_DATA_PREFIX, _DATA_INDEX } from "../types-consts/constants";
 import { HsonNode, HsonMeta, HsonAttrs, NodeContent } from "../types-consts/node.new.types";
-import { make_string } from "../utils/make-string.nodes.utils";
+import { make_string } from "../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../utils/throw-transform-err.utils";
-import { is_Node } from "../utils/node-guards.new.utils";
+import { is_Node } from "../utils/node-utils/node-guards.new.utils";
 
 
 /* 
@@ -14,16 +14,6 @@ import { is_Node } from "../utils/node-guards.new.utils";
 
 
 type Cfg = { throwOnFirst?: boolean };
-const _VERBOSE = false;
-const STYLE = 'color:violet;font-weight:400;padding:1px 3px;border-radius:4px';
-const _log = _VERBOSE
-  ? (...args: unknown[]) =>
-    console.log(
-      ['%c%s', ...args.map(() => '%c%o')].join(' '),
-      STYLE, '[ASSERT_INVARIANTS] →',
-      ...args.flatMap(a => [STYLE, a]),
-    )
-  : () => { };
 
 export function assert_invariants(root: HsonNode, fn = '[source fn not given]', cfg: Cfg = { throwOnFirst: true }): void {
   const errs: string[] = [];

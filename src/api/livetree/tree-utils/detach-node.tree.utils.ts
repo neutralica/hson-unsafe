@@ -2,7 +2,7 @@
 
 import { HsonNode } from "../../../types-consts";
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
-import { is_Node } from "../../../utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { _listeners_off_for_target } from "../tree-methods/listen.tree";
 
 

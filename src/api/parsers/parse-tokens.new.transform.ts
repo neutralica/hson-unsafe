@@ -6,21 +6,18 @@ import { TOKEN_KIND, CLOSE_KIND, TokenEmptyObj } from "../../types-consts/tokens
 import { _DATA_INDEX } from "../../types-consts/constants";
 import { HsonNode, NodeContent } from "../../types-consts/node.new.types";
 import { Tokens, CloseKind, TokenOpen, TokenClose, TokenArrayOpen, TokenArrayClose, TokenKind, TokenText } from "../../types-consts/tokens.new.types";
-import { coerce } from "../../utils/coerce-string.utils";
-import { make_string } from "../../utils/make-string.nodes.utils";
-import { is_string_NEW } from "../../utils/node-guards.new.utils";
+import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
+import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
+import { is_string_NEW } from "../../utils/node-utils/node-guards.new.utils";
 import { _snip } from "../../utils/snip.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
-import { split_attrs_meta } from "./hson-helpers/split-attrs-meta.new.utils";
 import { unwrap_root_obj } from "../../utils/unwrap-root-obj.util";
 import { Primitive } from "../../types-consts";
 import { ParentCluster } from "../serializers/serialize-hson.new.render";
+import { split_attrs_meta } from "../../utils/hson-helpers/split-attrs-meta.new.utils";
 
 
 /* debug log */
-const _VERBOSE = true;
-const boundLog = console.log.bind(console, '%c[hson token-Nodifier]', 'color: darkgreen; background: lightblue;');
-const _log = _VERBOSE ? boundLog : () => { };
 
 export const make_leaf = (v: Primitive): HsonNode =>
 (is_string_NEW(v)

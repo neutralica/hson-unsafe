@@ -1,7 +1,7 @@
 // proxy-helpers.tree.ts
 
 import { Primitive } from "../../../core/types-consts/core.types";
-import { is_Node } from "../../../utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { VSN_TAGS, ELEM_TAG, STR_TAG, VAL_TAG, NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
 import { CREATE_NODE } from "../../../types-consts/factories";

@@ -2,26 +2,12 @@
 
 import { Primitive } from "../../core/types-consts/core.types";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
-import { is_indexed_NEW } from "../../utils/node-guards.new.utils";
+import { is_indexed_NEW } from "../../utils/node-utils/node-guards.new.utils";
 import { ROOT_TAG, EVERY_VSN, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../types-consts/constants";
 import { JsonType, JsonObj, HsonNode } from "../../types-consts/node.new.types";
-import { clone_node } from "../../utils/clone-node.utils";
-import { make_string } from "../../utils/make-string.nodes.utils";
+import { clone_node } from "../../utils/node-utils/clone-node.utils";
+import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
-import { error } from "console";
-
-
-/* debug log */
-let _VERBOSE = false;
-const STYLE = 'color:lightgreen;font-weight:400;padding:1px 3px;border-radius:4px';
-const _log = _VERBOSE
-    ? (...args: unknown[]) =>
-        console.log(
-            ['%c%s', ...args.map(() => '%c%o')].join(' '),
-            STYLE, '[serialize-Json_NEW] →',
-            ...args.flatMap(a => [STYLE, a]),
-        )
-    : () => { };
 
 export function serialize_json($node: HsonNode): string {
     const clone = clone_node($node)
@@ -71,8 +57,6 @@ function jsonFromNode($node: HsonNode): JsonType {
         }
 
         case ARR_TAG: {
-            _log(`  <_array> tag reached: creating JSON array`);
-            _log(make_string($node));
             let array: JsonType[] = [];
             if ($node._content) {
                 /*  content of _array node must be _ii nodes */
@@ -115,24 +99,18 @@ function jsonFromNode($node: HsonNode): JsonType {
         case STR_TAG:
         case VAL_TAG: {
             /* return Primitive content directly */
-            _log(`  <_prim>: returning number value: ${$node._content[0]}`);
             return $node._content[0] as Primitive;
         }
 
         case ELEM_TAG: {
             /* _elem tags are native to HTML and will be carried through the JSON as-is; the only 
                 exceptional handling is the contents of _elem tags are not rewrapped in an _obj */
-            _log('[recurseJSON] processing _elem VSN');
             const elemItems: JsonType = [];
             for (const itemNode of ($node._content)) {
                 /* recursively convert each item node in the _elem to its JSON equivalent */
-                _log('recursing item node: ', make_string(itemNode))
                 const jsonItem = jsonFromNode(itemNode as HsonNode);
                 elemItems.push(jsonItem);
-                _log('pushing list item to <_elem >:')
-                _log(jsonItem)
             }
-            _log('returning list items:', elemItems)
             return { [ELEM_TAG]: elemItems };
         }
         case II_TAG: {
@@ -143,8 +121,6 @@ function jsonFromNode($node: HsonNode): JsonType {
         }
 
         default: { /* "standard" tag (e.g. "foo", "kingdom", "html", "p", "span") */
-            _log(`  standardTag <${$node._tag}> processing its value/content.`);
-            _log(make_string($node._content));
 
             let tempJson: JsonObj = {};
             if ($node._content && $node._content.length === 0) {

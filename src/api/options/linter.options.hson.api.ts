@@ -1,8 +1,8 @@
 // linter.options.hson.api.ts
 
 import { HsonNode } from "../../types-consts";
-import { escape_attrs } from "../../utils/escape_attrs.utils";
-import { is_Node } from "../../utils/node-guards.new.utils";
+import { escape_html } from "../../utils/html-utils/escape-html.utils";
+import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { serialize_style } from "../../utils/serialize-css.utils";
 
 
@@ -51,14 +51,14 @@ export function linter(
             // style object -> CSS string
             if (k === "style" && typeof v === "object" && !Array.isArray(v)) {
                 const css = serialize_style(v as Record<string, string>);
-                return css ? [`style="${escape_attrs(css)}"`] : [];
+                return css ? [`style="${escape_html(css)}"`] : [];
             }
 
             // boolean true -> flag (no ="")
             if (v === true) return [k];
             console.warn('warning: escape_attrs() (html function used for hson output; errors may occur)');
             // everything else -> key="value"
-            return [`${k}="${escape_attrs(String(v))}"`];
+            return [`${k}="${escape_html(String(v))}"`];
         });
     const oneLine = `<${node._tag}` +
         (attrs.length ? " " + attrs.join(" ") : "") +

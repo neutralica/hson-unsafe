@@ -8,13 +8,6 @@ import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
 import { construct_output_2 } from "./constructor-2-output.new.api";
 
-/* debug log */
-let _VERBOSE = false;
-const $log = _VERBOSE
-  ? console.log
-  : () => { };
-
-
 /**
  * hson.transform - step 1 (of 4)
  * extends three methods that accept source data 
@@ -48,12 +41,6 @@ export function construct_source_1(
     const meta: Record<string, unknown> = $options.sanitize
       ? { sanitized: true }
       : {};
-
-    if (_VERBOSE) {
-      console.groupCollapsed("fromHTML frame");
-      console.log({ inputPreview: raw.slice(0, 200), meta });
-      console.groupEnd();
-    }
 
     const frame: FrameConstructor = { input: raw, node, meta };
     return construct_output_2(frame);

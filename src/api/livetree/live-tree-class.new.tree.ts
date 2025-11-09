@@ -14,7 +14,7 @@ import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 import { StyleManager } from "./tree-methods/style-manager-2.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
-import { is_Node } from "../../utils/node-guards.new.utils";
+import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { detach_node_deep } from "./tree-utils/detach-node.tree.utils";
 import { ListenerBuilder, makeListenerBuilder } from "./tree-methods/listen.tree";
 import { set_attrs_safe } from "../../safety/safe-mount.safe";

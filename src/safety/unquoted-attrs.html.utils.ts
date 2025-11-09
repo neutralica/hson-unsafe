@@ -1,7 +1,7 @@
 // Quote unquoted attribute values: foo=bar  ->  foo="bar"
 // Does not touch values already quoted with " or '
 // Safe for punctuation allowed by HTML in unquoted attrs.
-export function unquoted_attrs_preflight(src: string): string {
+export function quote_unquoted_attrs(src: string): string {
     return src.replace(
         /<([a-zA-Z][^\s>/]*)([^>]*?)>/g,
         (_m: string, tag: string, attrs: string) => {

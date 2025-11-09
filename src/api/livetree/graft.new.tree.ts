@@ -8,15 +8,6 @@ import { create_live_tree } from "./create-live-tree.new.tree";
 import { LiveTree } from "./live-tree-class.new.tree";
 
 
-
-/* debug log */
-let _VERBOSE = true;
-const _log = _VERBOSE
-  ? console.log
-  : () => { };
-
-
-
 /**
  * grafts the hson model onto a DOM element, making it live and interactive
  *  - parses the element's existing HTML, rebuilds it as an HSON-managed

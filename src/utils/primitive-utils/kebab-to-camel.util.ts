@@ -21,11 +21,3 @@ export function kebab_to_camel(s: string): string {
   // turn -a into A
   return x.replace(/-([a-zA-Z0-9])/g, (_, c: string) => c.toUpperCase());
 }
-
-/* examples:
-kebab_to_camel("border-radius")      // "borderRadius"
-kebab_to_camel("-webkit-transform")  // "WebkitTransform"
-kebab_to_camel("-ms-transition")     // "msTransition"
-kebab_to_camel("font-size")          // "fontSize"
-kebab_to_camel("color")              // "color"
-*/

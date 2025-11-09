@@ -1,27 +1,15 @@
 import { Primitive } from '../../core/types-consts/core.types'
 import { is_Primitive } from '../../core/utils/guards.core.utils';
 import { ELEM_TAG, EVERY_VSN, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from '../../types-consts/constants';
-import { build_wire_attrs } from '../../utils/build-wire-attrs.utils';
-import { escape_html } from '../../utils/escape-html.utils';
-import { make_string } from '../../utils/make-string.nodes.utils';
+import { build_wire_attrs } from '../../utils/html-utils/build-wire-attrs.utils';
+import { escape_html } from '../../utils/html-utils/escape-html.utils';
+import { make_string } from '../../utils/primitive-utils/make-string.nodes.utils';
 import { _snip } from '../../utils/snip.utils';
 import { _throw_transform_err } from '../../utils/throw-transform-err.utils';
-import { is_Node } from '../../utils/node-guards.new.utils';
+import { is_Node } from '../../utils/node-utils/node-guards.new.utils';
 import { assert_invariants } from '../../diagnostics/assert-invariants.utils';
-import { clone_node } from '../../utils/clone-node.utils';
+import { clone_node } from '../../utils/node-utils/clone-node.utils';
 import { HsonNode } from '../../types-consts/node.new.types';
-
-const _VERBOSE = false;
-const STYLE = 'color:fuschia;font-weight:400;padding:1px 3px;border-radius:4px';
-// tweak _log to style every arg (incl. your prefix), no helpers:
-const _log = _VERBOSE
-  ? (...args: unknown[]) =>
-    console.log(
-      ['%c%s', ...args.map(() => '%c%o')].join(' '),
-      STYLE, '[serialize-html_NEW] →',
-      ...args.flatMap(a => [STYLE, a]),
-    )
-  : () => { };
 
   const RAWTEXT = new Set(["style", "script"]);
 

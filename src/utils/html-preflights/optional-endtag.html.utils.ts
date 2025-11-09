@@ -1,7 +1,7 @@
 // OPTIONAL-END-TAG BALANCER (XML preflight)
 // - Closes <li>, <dt>/<dd>, <p>, and basic table cells/rows/sections
 // - Skips raw-text elements and VSN tags (<_*>)
-// - Edits only the string you feed to the XML parser (Nodes stay clean)
+// - Edits only the string fed to the XML parser (Nodes stay clean)
 
 type Range = { start: number; end: number };
 type ListFrame = { name: 'ul' | 'ol'; liOpen: boolean }; // CHANGED
@@ -9,8 +9,7 @@ type ListFrame = { name: 'ul' | 'ol'; liOpen: boolean }; // CHANGED
 export function optional_endtag_preflight(src: string): string {
   // 0) Fast exit
   if (!/[<]([a-zA-Z/_])/.test(src)) return src;
-  // console.log('src')
-  // console.log(src)
+
   // 1) Protect raw-text blocks, comments, CDATA
   const RAW = /<(script|style|textarea|noscript|xmp|iframe)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
   const COMM = /<!--[\s\S]*?-->/g;

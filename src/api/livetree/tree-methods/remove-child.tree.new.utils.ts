@@ -1,7 +1,7 @@
 // remove-child.tree.utils.ts
 
 
-import { is_Node } from "../../../utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { HsonNode } from "../../../types-consts/node.new.types";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { HsonQuery } from "../../../types-consts/tree.new.types";

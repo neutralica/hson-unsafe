@@ -1,5 +1,5 @@
-import { HsonNode } from "../types-consts";
-import { ROOT_TAG } from "../types-consts/constants";
+import { HsonNode } from "../../types-consts";
+import { ROOT_TAG } from "../../types-consts/constants";
 import { is_Node } from "./node-guards.new.utils";
 
 export function unwrap_returned_root(root: HsonNode): ReadonlyArray<HsonNode> {

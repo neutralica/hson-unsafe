@@ -1,6 +1,7 @@
 // slice-balance.new.utils.ts
 
-import { _throw_transform_err } from "../../../utils/throw-transform-err.utils";
+import { _throw_transform_err } from "../throw-transform-err.utils";
+
 
 /**
  * slice_balanced_arr:

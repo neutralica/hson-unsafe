@@ -2,7 +2,7 @@
 
 
 
-import { is_Node } from "../../../utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { HsonNode } from "../../../types-consts/node.new.types";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";

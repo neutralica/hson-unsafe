@@ -1,7 +1,7 @@
 // get-content.tree.ts
 
 
-import { is_Node } from "../../../utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { ELEM_TAG } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
 import { LiveTree } from "../live-tree-class.new.tree";

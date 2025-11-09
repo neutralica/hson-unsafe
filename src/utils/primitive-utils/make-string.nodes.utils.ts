@@ -1,7 +1,7 @@
 // make-string.utils.ts
 
-import { is_Node } from "./node-guards.new.utils";
-import { HsonNode, HsonAttrs, HsonMeta } from "../types-consts/node.new.types";
+import { is_Node } from "../node-utils/node-guards.new.utils";
+import { HsonNode, HsonAttrs, HsonMeta } from "../../types-consts/node.new.types";
 
 /** Pretty-print any value with stable, node-friendly key order. */
 export function make_string_pretty(value: unknown, indent = 2): string {
