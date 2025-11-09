@@ -1,9 +1,10 @@
 // detach.ts
 
-import { HsonNode } from "../../../types-consts";
-import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
-import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
-import { _listeners_off_for_target } from "../tree-methods/listen.tree";
+import { _listeners_off_for_target } from "../../api/livetree/tree-methods/listen.tree";
+import { HsonNode } from "../../types-consts";
+import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
+import { is_Node } from "../node-utils/node-guards.new.utils";
+
 
 
 type NodeWithKids = { _content?: unknown[] };

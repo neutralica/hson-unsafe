@@ -9,12 +9,12 @@ import { Tokens, CloseKind, TokenOpen, TokenClose, TokenArrayOpen, TokenArrayClo
 import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { is_string_NEW } from "../../utils/node-utils/node-guards.new.utils";
-import { _snip } from "../../utils/snip.utils";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
-import { unwrap_root_obj } from "../../utils/unwrap-root-obj.util";
+import { _snip } from "../../utils/sys-utils/snip.utils";
+import { unwrap_root_obj } from "../../utils/json-utils/unwrap-root-obj.util";
 import { Primitive } from "../../types-consts";
 import { ParentCluster } from "../serializers/serialize-hson.new.render";
-import { split_attrs_meta } from "../../utils/hson-helpers/split-attrs-meta.new.utils";
+import { split_attrs_meta } from "../../utils/hson-utils/split-attrs-meta.new.utils";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
 
 /* debug log */

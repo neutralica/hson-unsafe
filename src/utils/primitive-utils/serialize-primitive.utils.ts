@@ -1,6 +1,6 @@
 // serialize-primitive.utils.ts
 
-import { Primitive } from "../core/types-consts/core.types";
+import { Primitive } from "../../core/types-consts/core.types";
 /**
  * serializes a BasicValue type into its string representation
  *

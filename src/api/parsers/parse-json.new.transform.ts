@@ -6,15 +6,15 @@ import { CREATE_NODE } from "../../types-consts/factories";
 import { _DATA_INDEX, _META_DATA_PREFIX } from "../../types-consts/constants";
 import { JsonType, HsonMeta, JsonObj, HsonAttrs, HsonNode } from "../../types-consts/node.new.types";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
-import { _snip } from "../../utils/snip.utils";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
+import { _snip } from "../../utils/sys-utils/snip.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { is_string_NEW } from "../../utils/node-utils/node-guards.new.utils";
 import { Primitive } from "../../types-consts";
-import { normalize_attr_ws } from "../../utils/normalize_attrs_ws.utils";
+import { normalize_attr_ws } from "../../utils/attrs-utils/normalize_attrs_ws.utils";
 import { kebab_to_camel } from "../../utils/primitive-utils/kebab-to-camel.util";
-import { parse_style_string } from "../../utils/parse-style.utils";
-import { serialize_style } from "../../utils/serialize-css.utils";
+import { parse_style_string } from "../../utils/attrs-utils/parse-style.utils";
+import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
 
 

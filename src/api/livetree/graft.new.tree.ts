@@ -1,8 +1,8 @@
 // graft.tree.hson.ts
 
 import { HsonNode } from "../../types-consts";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
-import { unwrap_root_elem } from "../../utils/unwrap-root-elem.new.utils";
+import { unwrap_root_elem } from "../../utils/html-utils/unwrap-root-elem.new.utils";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { create_live_tree } from "./create-live-tree.new.tree";
 import { LiveTree } from "./live-tree-class.new.tree";

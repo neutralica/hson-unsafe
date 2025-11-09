@@ -4,12 +4,12 @@ import { ELEM_TAG, EVERY_VSN, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from '../../
 import { build_wire_attrs } from '../../utils/html-utils/build-wire-attrs.utils';
 import { escape_html } from '../../utils/html-utils/escape-html.utils';
 import { make_string } from '../../utils/primitive-utils/make-string.nodes.utils';
-import { _snip } from '../../utils/snip.utils';
-import { _throw_transform_err } from '../../utils/throw-transform-err.utils';
+import { _snip } from '../../utils/sys-utils/snip.utils';
 import { is_Node } from '../../utils/node-utils/node-guards.new.utils';
 import { assert_invariants } from '../../diagnostics/assert-invariants.utils';
 import { clone_node } from '../../utils/node-utils/clone-node.utils';
 import { HsonNode } from '../../types-consts/node.new.types';
+import { _throw_transform_err } from '../../utils/sys-utils/throw-transform-err.utils';
 
   const RAWTEXT = new Set(["style", "script"]);
 

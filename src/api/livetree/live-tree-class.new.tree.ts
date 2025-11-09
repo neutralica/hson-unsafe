@@ -10,16 +10,16 @@ import { empty } from "./tree-methods/empty.tree.new.utils";
 import { get_content } from "./tree-methods/get-content.new.tree";
 import { remove_child } from "./tree-methods/remove-child.tree.new.utils";
 // import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
-import { parseSelector_NEW } from "./tree-utils/parse-selector.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 import { StyleManager } from "./tree-methods/style-manager-2.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
-import { detach_node_deep } from "./tree-utils/detach-node.tree.utils";
 import { ListenerBuilder, makeListenerBuilder } from "./tree-methods/listen.tree";
 import { set_attrs_safe } from "../../safety/safe-mount.safe";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { make_leaf } from "../parsers/parse-tokens.new.transform";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
+import { detach_node_deep } from "../../utils/tree-utils/detach-node.tree.utils";
+import { parseSelector_NEW } from "../../utils/tree-utils/parse-selector.utils";
 
 
 type NodeRef = {

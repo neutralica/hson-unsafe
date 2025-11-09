@@ -7,7 +7,7 @@ import { _DATA_QUID, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { map_set } from "../../utils/node-utils/lookup-element.html.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
-import { serialize_style } from "../../utils/serialize-css.utils";
+import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
 
 /**
  * render NEW nodes directly to DOm

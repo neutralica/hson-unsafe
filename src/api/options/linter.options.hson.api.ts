@@ -3,7 +3,7 @@
 import { HsonNode } from "../../types-consts";
 import { escape_html } from "../../utils/html-utils/escape-html.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
-import { serialize_style } from "../../utils/serialize-css.utils";
+import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
 
 
 

@@ -7,7 +7,7 @@ import { ROOT_TAG, EVERY_VSN, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_T
 import { JsonType, JsonObj, HsonNode } from "../../types-consts/node.new.types";
 import { clone_node } from "../../utils/node-utils/clone-node.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
 export function serialize_json($node: HsonNode): string {
     const clone = clone_node($node)

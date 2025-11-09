@@ -11,10 +11,9 @@ import { expand_flags } from "../../utils/html-preflights/expand-flags.utils";
 import { expand_void_tags } from "../../utils/html-preflights/expand-self-closing.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { is_string_NEW, is_indexed_NEW } from "../../utils/node-utils/node-guards.new.utils";
-import { parse_html_attrs } from "../../utils/parse_html_attrs.utils";
-import { _snip } from "../../utils/snip.utils";
+import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs.utils";
+import { _snip } from "../../utils/sys-utils/snip.utils";
 import { strip_html_comments } from "../../utils/html-preflights/strip-html-comments.new.utils";
-import { _throw_transform_err } from "../../utils/throw-transform-err.utils";
 import { wrap_cdata } from "../../safety/wrap-cdata.utils";
 import { HsonNode, Primitive } from "../../types-consts";
 import { optional_endtag_preflight } from "../../utils/html-preflights/optional-endtag.html.utils";
@@ -22,6 +21,7 @@ import { escape_attr_angles } from "../../safety/escape_angles.html.utils";
 import { dedupe_attrs_html } from "../../safety/dedupe-attrs.html.utils";
 import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
 import { disallow_illegal_attrs } from "../../utils/html-preflights/hash-name.utils";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
 function namespace_svg(src: string): string {
     if (!/<svg\b/i.test(src)) return src;

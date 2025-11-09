@@ -1,7 +1,6 @@
 // parse-css.utils.ts
 
-import { kebab_to_camel } from "./primitive-utils/kebab-to-camel.util";
-import { _throw_transform_err } from "./throw-transform-err.utils";
+import { kebab_to_camel } from "../primitive-utils/kebab-to-camel.util";
 
 /** Parse a CSS declaration list safely (handles quotes/parentheses). */
 export function parse_style_string(input: string): Record<string, string> {
