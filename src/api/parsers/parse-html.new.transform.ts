@@ -23,6 +23,7 @@ import { escape_attr_angles } from "../../safety/preflight-escape_angles.html.ut
 import { dedupe_attrs_html } from "../../safety/preflight-dedupe-attrs.html.utils";
 import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
 import { disallow_illegal_attrs } from "../../utils/html-preflights/hash-name.utils";
+import { kMaxLength } from "buffer";
 
 /* debug log */
 let _VERBOSE = false;
@@ -57,10 +58,14 @@ export function parse_html($input: string | Element): HsonNode {
         const bools = expand_flags(stripped);
         const safe = escape_text(bools);
         const ents = expand_entities(safe);
-
+        console.log(ents);
+        
         const unquotedSafe = quote_unquoted_attrs(ents);
+        console.log(unquotedSafe);
         const quotedSafe = escape_attr_angles(unquotedSafe);
-        const xmlNameSafe = disallow_illegal_attrs(quotedSafe);  // adds per-element data-_attrmap
+        console.log(quotedSafe);
+        const xmlNameSafe = disallow_illegal_attrs(quotedSafe);  // adds per-element data--attrmap
+        console.log(xmlNameSafe);
 
 
         const voids = expand_void_tags(xmlNameSafe);

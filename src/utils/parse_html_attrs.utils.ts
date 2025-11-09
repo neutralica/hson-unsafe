@@ -1,7 +1,7 @@
 // parse_html_attrs.utils.ts
 
 
-import { _DATA_INDEX, _DATA_QUID } from "../types-consts/constants";
+import { _DATA_INDEX, _DATA_QUID, _TRANSIT_PREFIX } from "../types-consts/constants";
 import { HsonAttrs, HsonMeta } from "../types-consts/node.new.types";
 import { normalize_attr_ws } from "./normalize_attrs_ws.utils";
 import { parse_style_string } from "./parse-style.utils";
@@ -16,47 +16,34 @@ export function parse_html_attrs($el: Element): {
   let meta: HsonMeta | undefined;
 
   // walk all DOM attributes verbatim
-  const isSVG = $el.namespaceURI === "http://www.w3.org/2000/svg";
-
   for (const a of Array.from($el.attributes)) {
-    const name = a.name;              // keep original case for value, but
-    const n = name.toLowerCase();     // compare in lowercase
+    const name = a.name;
+    const n = name.toLowerCase();
     const v = a.value ?? "";
 
-    // 1) system meta on wire: data-_{index,quid} → _meta
-    if (n === _DATA_INDEX) {
-      (meta ??= {})[_DATA_INDEX] = v;
-      continue;
-    }
-    if (n === _DATA_QUID) {
-      (meta ??= {})[_DATA_QUID] = v;
-      continue;
-    }
+    // A) strip transit-only hints outright
+    if (n.startsWith(_TRANSIT_PREFIX)) continue;
 
-    // 2) style → structured object (your rule: parse to object in-memory)
-    if (n === "style") {
-      // parse_css_attrs returns {} | Record<string,string>
-      (attrs as any).style = parse_style_string(v);
-      continue;
-    }
+    // B) _meta-on-wire (reserved)
+    if (n === _DATA_INDEX) { (meta ??= {})[_DATA_INDEX] = v; continue; }
+    if (n === _DATA_QUID) { (meta ??= {})[_DATA_QUID] = v; continue; }
 
-    // 3) boolean-ish HTML flags canonicalized as key="key"
-    //    presence-only or empty string → "key"
-    if (v === "" || v === name) {
-      (attrs as any)[n] = name; // canonical: key="key"
-      continue;
-    }
+    // C) style → structured object (unchanged)
+    if (n === "style") { (attrs as any).style = parse_style_string(v); continue; }
 
-    // 1) Drop namespace declarations and xml:* control attrs
+    // D) ignore xmlns / xml:* noise
     if (name === "xmlns" || name.startsWith("xmlns:") || name.startsWith("xml:")) continue;
 
-    // 2) Canonicalize xlink:href → href (SVG)
-    if (isSVG && n.toLowerCase() === "xlink:href") {
+    // E) svg alias normalize (unchanged)
+    if ($el.namespaceURI === "http://www.w3.org/2000/svg" && n === "xlink:href") {
       if (!$el.hasAttribute("href")) (attrs as any).href = v;
-      continue; // don’t also keep xlink:href
+      continue;
     }
 
-    // 4) everything else: normalize to HTML semantics
+    // F) presence-only flags canonicalized as key="key"
+    if (v === "" || v === name) { (attrs as any)[n] = name; continue; }
+
+    // G) default: normalized user attribute
     (attrs as any)[n] = normalize_attr_ws(v);
   }
 
