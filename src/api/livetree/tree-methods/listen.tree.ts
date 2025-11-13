@@ -113,10 +113,12 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
     }
     // iterate all nodes in current selection
     const out: HTMLElement[] = [];
-    const all = tree.findAll({}); // your selection-wide enumerator
+    const all = tree.findAll({}); // selection-wide enumerator
     const n = all.count();
     for (let i = 0; i < n; i++) {
-      const el = all.at(i).asDomElement();
+      const atIndex = all.at(i);
+      if (!atIndex) { continue }
+      const el = atIndex.asDomElement();
       if (el) out.push(el);
     }
     return out;

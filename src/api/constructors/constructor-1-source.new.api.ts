@@ -28,84 +28,82 @@ export function construct_source_1(
      * @returns {OutputConstructor_2} the next step of the API for selecting output format.
      */
 
-     fromHTML(
+    fromHTML(
       $input: string | HTMLElement,
       $options: { sanitize: boolean } = { sanitize: true }
     ): OutputConstructor_2 {
-    // Prefer innerHTML for HTMLElement: we want the children, not a wrapper tag
-    const raw: string =
-      typeof $input === "string" ? $input : $input.innerHTML;
+      const raw: string =
+        typeof $input === "string" ? $input : $input.innerHTML;
+      const node: HsonNode = parse_html(raw);
 
-    const node: HsonNode = parse_html(raw); 
+      const meta: Record<string, unknown> = $options.sanitize
+        ? { sanitized: true }
+        : {};
 
-    const meta: Record<string, unknown> = $options.sanitize
-      ? { sanitized: true }
-      : {};
+      const frame: FrameConstructor = { input: raw, node, meta };
+      return construct_output_2(frame);
+    },
 
-    const frame: FrameConstructor = { input: raw, node, meta };
-    return construct_output_2(frame);
-  },
+    /**
+     * parses a json string or object to hson nodes.
+     * @param {string | JsonType} $input the json source data.
+     * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
+     */
+    fromJSON($input: string | JsonType): OutputConstructor_2 {
+      const node = parse_json($input as string);
+      const frame: FrameConstructor = {
+        input: typeof $input === "string" ? $input : JSON.stringify($input),
+        node
+      };
+      return construct_output_2(frame);
+    },
 
-  /**
-   * parses a json string or object to hson nodes.
-   * @param {string | JsonType} $input the json source data.
+    /**
+     * parses an hson string into hson nodes.
+     * @param {string} $input the hson source data.
+     * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
+     */
+    fromHSON($input: string): OutputConstructor_2 {
+      const node = parse_hson($input);
+      const frame: FrameConstructor = { input: $input, node };
+      return construct_output_2(frame);
+    },
+
+    /**
+   * initializes the pipeline from an existing HsonNode.
+   * @param {HsonNode_NEW} $node the hson node structure.
    * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
    */
-  fromJSON($input: string | JsonType): OutputConstructor_2 {
-    const node = parse_json($input as string);
-    const frame: FrameConstructor = {
-      input: typeof $input === "string" ? $input : JSON.stringify($input),
-      node
-    };
-    return construct_output_2(frame);
-  },
-
-  /**
-   * parses an hson string into hson nodes.
-   * @param {string} $input the hson source data.
-   * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
-   */
-  fromHSON($input: string): OutputConstructor_2 {
-    const node = parse_hson($input);
-    const frame: FrameConstructor = { input: $input, node };
-    return construct_output_2(frame);
-  },
-
-  /**
- * initializes the pipeline from an existing HsonNode.
- * @param {HsonNode_NEW} $node the hson node structure.
- * @returns {OutputConstructor_2} the next stage of the API for selecting output format.
- */
-  fromNode($node: HsonNode): OutputConstructor_2 {
-    const frame: FrameConstructor = { input: JSON.stringify($node), node: $node };
-    return construct_output_2(frame);
-  },
+    fromNode($node: HsonNode): OutputConstructor_2 {
+      const frame: FrameConstructor = { input: JSON.stringify($node), node: $node };
+      return construct_output_2(frame);
+    },
 
 
 
-  queryDOM(selector: string): OutputConstructor_2 {
-    // CHANGED: explicit null check with good error, no silent empty string
-    const element = document.querySelector<HTMLElement>(selector);
-    if (!element) {
-      _throw_transform_err(`queryDOM(): no element for selector "${selector}"`, 'queryDOM', selector);
-    }
+    queryDOM(selector: string): OutputConstructor_2 {
+      // CHANGED: explicit null check with good error, no silent empty string
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) {
+        _throw_transform_err(`queryDOM(): no element for selector "${selector}"`, 'queryDOM', selector);
+      }
 
-    const html: string = element.innerHTML;
-    return this.fromHTML(html); // fromHTML handles sanitize/unsafe
-  },
-
-
-  /* uses document.body.innerHTML as the source */
-  queryBody(): OutputConstructor_2 {
-    // defensive check; some environments can have no body briefly
-    const body = document.body as HTMLElement | null;
-    if (!body) {
-      _throw_transform_err('queryBody(): document.body is not available', 'queryBody');
-    }
-    const html: string = body.innerHTML;
-    return this.fromHTML(html); // same rule: sanitize in fromHTML
-  },
+      const html: string = element.innerHTML;
+      return this.fromHTML(html); // fromHTML handles sanitize/unsafe
+    },
 
 
-};
+    /* uses document.body.innerHTML as the source */
+    queryBody(): OutputConstructor_2 {
+      // defensive check; some environments can have no body briefly
+      const body = document.body as HTMLElement | null;
+      if (!body) {
+        _throw_transform_err('queryBody(): document.body is not available', 'queryBody');
+      }
+      const html: string = body.innerHTML;
+      return this.fromHTML(html); // same rule: sanitize in fromHTML
+    },
+
+
+  };
 }

@@ -19,7 +19,8 @@ import { set_attrs_safe } from "../../safety/safe-mount.safe";
 import { make_leaf } from "../parsers/parse-tokens.new.transform";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { detach_node_deep } from "../../utils/tree-utils/detach-node.tree.utils";
-import { parseSelector_NEW } from "../../utils/tree-utils/parse-selector.utils";
+import { parseSelector } from "../../utils/tree-utils/parse-selector.utils";
+
 
 
 type NodeRef = {
@@ -33,6 +34,53 @@ type FindWithById = {
   (q: HsonQuery | string): LiveTree;
   byId(id: string): LiveTree;
 };
+
+interface MultiResult {
+  // batch ops
+  asBranch(): LiveTree;
+  style: LiveTree['style'];                       // ← simple, correct
+
+  // attrs (forward to your existing LiveTree methods)
+  setAttrs(name: string, value: string | boolean | null): any;
+  setAttrs(map: Record<string, string | boolean | null>): any;
+  getAttrs(): Record<string, string> | undefined;
+
+  // array-ish
+  toArray(): LiveTree[];
+  forEach(fn: (node: LiveTree, i: number) => void): void;
+  map<T>(fn: (node: LiveTree, i: number) => T): T[];
+
+  // convenience expected by callers
+  count(): number;
+  at(i: number): LiveTree | undefined;
+}
+
+function makeMulti(found: HsonNode[]): MultiResult {
+  const branch = new LiveTree(found);            // batch target (all)
+  const arr = found.map(n => new LiveTree([n])); // single-node wrappers
+
+  function setAttrs(nameOrMap: any, val?: any) {
+    // forward to your existing LiveTree.setAttrs
+    return (branch as any).setAttrs(nameOrMap, val);
+  }
+
+  return {
+    asBranch() { return branch; },
+
+    // getter preserves the exact type of LiveTree['style']
+    get style() { return branch.style; },
+
+    setAttrs,                                      // overload impl
+    getAttrs() { return (branch as any).getAttrs?.(); },
+
+    toArray() { return arr; },
+    forEach(fn) { for (let i = 0; i < arr.length; i++) fn(arr[i], i); },
+    map(fn) { return arr.map(fn); },
+
+    count() { return arr.length; },
+    at(i) { return (i >= 0 && i < arr.length) ? arr[i] : undefined; },
+  };
+}
 
 
 function makeRef(n: HsonNode): NodeRef {
@@ -121,7 +169,7 @@ export class LiveTree {
     const self = this;
 
     const base = ((q: HsonQuery | string): LiveTree => {
-      const query = typeof q === "string" ? parseSelector_NEW(q) : q;
+      const query = typeof q === "string" ? parseSelector(q) : q;
       const found = self.search(self.selectedNodes, query, { findFirst: true });
       return new LiveTree(found);
     }) as FindWithById; // localized, internal assertion
@@ -130,11 +178,16 @@ export class LiveTree {
 
     return base;
   }
-
-  findAll(q: HsonQuery | string): LiveTree {
-    const query = typeof q === 'string' ? parseSelector_NEW(q) : q;
+  findAll(q: HsonQuery | string): MultiResult {
+    const query = typeof q === 'string' ? parseSelector(q) : q;
     const found = this.search(this.selectedNodes, query, { findFirst: false });
-    return new LiveTree(found);
+
+    // if no matches, return an inert wrapper rather than throwing
+    if (!found.length) {
+      return makeMulti([]);  // empty branch behaves safely
+    }
+
+    return makeMulti(found);
   }
 
   at(index: number): LiveTree {
@@ -144,29 +197,40 @@ export class LiveTree {
 
   // === legacy mutators/readers: wrap for now ===
 
-  setAttr($name: string, $value: string | boolean | null): this {
+  setAttrs(name: string, value: string | boolean | null): this;
+  setAttrs(map: Record<string, string | boolean | null>): this;
+
+  // impl
+  setAttrs(a: string | Record<string, string | boolean | null>, v?: string | boolean | null): this {
+    if (typeof a === "string") {
+      return this._setOne(a, v ?? "");
+    }
+    for (const [k, val] of Object.entries(a)) this._setOne(k, val);
+    return this;
+  }
+
+  // tiny internal: single-attr write with ns awareness (works for both HTML and SVG)
+  private _setOne(name: string, value: string | boolean | null): this {
     this.withNodes(nodes => {
       for (const node of nodes) {
-        if (!node._meta) node._meta = {};
         if (!node._attrs) node._attrs = {};
-        const el = NODE_ELEMENT_MAP.get(node);
-        if (!el) {
-          // TODO(streamline): add bindNodeEl() + invariant once mapping is centralized
-          _throw_transform_err(
-            `[LiveTree] invariant: missing element for node (quid=${ensure_quid(node)}, tag=${node._tag})`,
-            'getElementForNode'
-          );
+        const el = NODE_ELEMENT_MAP.get(node) as Element | undefined;
+        if (!el) _throw_transform_err(`[LiveTree] missing element for node`, 'getElementForNode');
+
+        if (value === false || value === null) {
+          delete node._attrs[name];
+          el.removeAttribute(name);
+          continue;
         }
-        if ($value === false || $value === null) {
-          delete node._attrs[$name];
-          (el as HTMLElement | null)?.removeAttribute($name);
-        } else if ($value === true || $value === $name) {
-          delete node._attrs[$name];
-          set_attrs_safe(el, $name, '');
-        } else {
-          node._attrs[$name] = $value;
-          set_attrs_safe(el, $name, String($value));
+        if (value === true || value === name) {
+          // boolean present attribute
+          delete node._attrs[name];
+          el.setAttribute(name, "");
+          continue;
         }
+        const s = String(value);
+        node._attrs[name] = s;
+        el.setAttribute(name, s);
       }
     });
     return this;
@@ -245,7 +309,7 @@ export class LiveTree {
 
 
   removeAttr($name: string): this {
-    return this.setAttr($name, null);
+    return this.setAttrs($name, null);
   }
 
 

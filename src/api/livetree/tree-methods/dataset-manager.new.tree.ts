@@ -25,7 +25,7 @@ export class DatasetManager {
      */
     set(key: string, value: string | null): LiveTree {
         const dataAttrName = `data-${key}`;
-        this.liveTree.setAttr(dataAttrName, value);
+        this.liveTree.setAttrs(dataAttrName, value);
         return this.liveTree;
     }
 
