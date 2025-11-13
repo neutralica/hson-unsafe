@@ -210,7 +210,3 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
 
   return api;
 }
-
-/* LiveTree augmentation (if you haven’t added it in-class) */
-// declare module './liveTree' { interface LiveTree { readonly listen: ListenerBuilder } }
-// Object.defineProperty(LiveTree.prototype, 'listen', { get() { return makeListenerBuilder(this as LiveTree); }});
