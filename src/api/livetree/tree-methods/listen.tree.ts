@@ -101,18 +101,18 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
     });
   };
 
-  const resolveTarget = (el: HTMLElement): EventTarget =>
+  const resolveTarget = (el: Element): EventTarget =>
     opts.target === "window" ? window :
       opts.target === "document" ? document :
         el;
 
-  const collectTargets = (): HTMLElement[] => {
+  const collectTargets = (): Element[] => {
     if (!each) {
       const el = tree.asDomElement();
       return el ? [el] : [];
     }
     // iterate all nodes in current selection
-    const out: HTMLElement[] = [];
+    const out: Element[] = [];
     const all = tree.findAll({}); // selection-wide enumerator
     const n = all.count();
     for (let i = 0; i < n; i++) {

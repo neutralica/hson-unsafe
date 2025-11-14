@@ -27,7 +27,7 @@ import { parse_selector } from "../../utils/tree-utils/parse-selector.utils";
 type NodeRef = {
   q: string;
   resolveNode(): HsonNode | undefined;
-  resolveEl(): HTMLElement | undefined;
+  resolveEl(): Element | undefined;
 };
 
 // finder methods (convert results → refs)
@@ -353,17 +353,17 @@ export class LiveTree {
    * Returns the raw HsonNode(s) for debugging.
    * @param all - If true, returns the entire array of selected nodes. Otherwise, returns the first.
    */
-  public getElementFor(node: HsonNode): HTMLElement | undefined {
+  public getElementFor(node: HsonNode): Element | undefined {
     return NODE_ELEMENT_MAP.get(node)
       ?? (() => {
         const q = ensure_quid(node); // safe: generates if missing
-        const el = document.querySelector(`[data-_quid="${q}"]`) as HTMLElement | null;
+        const el = document.querySelector(`[data-_quid="${q}"]`) as Element | null;
         return el ?? undefined; // ← normalize null → undefined
       })();
   }
 
 
-  asDomElement(): HTMLElement | undefined {
+  asDomElement(): Element | undefined {
     const n = this.selectedNodes[0];
     if (!n) {
       console.warn('[asDomElement] no nodes found in .selected');

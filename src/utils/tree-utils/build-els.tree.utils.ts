@@ -46,7 +46,7 @@ export function build_element(node: HsonNode, parentNs: string = HTML_NS): Eleme
 
   // !!! TODO BUG ERROR
   // the casting here is not correct and could bite us later but satisfies type checking for now
-  NODE_ELEMENT_MAP.set(node, el as HTMLElement);
+  NODE_ELEMENT_MAP.set(node, el);
   return el;
 }
 
