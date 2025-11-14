@@ -19,7 +19,8 @@ import { set_attrs_safe } from "../../safety/safe-mount.safe";
 import { make_leaf } from "../parsers/parse-tokens.new.transform";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { detach_node_deep } from "../../utils/tree-utils/detach-node.tree.utils";
-import { parseSelector } from "../../utils/tree-utils/parse-selector.utils";
+import { parse_selector } from "../../utils/tree-utils/parse-selector.utils";
+
 
 
 
@@ -169,7 +170,7 @@ export class LiveTree {
     const self = this;
 
     const base = ((q: HsonQuery | string): LiveTree => {
-      const query = typeof q === "string" ? parseSelector(q) : q;
+      const query = typeof q === "string" ? parse_selector(q) : q;
       const found = self.search(self.selectedNodes, query, { findFirst: true });
       return new LiveTree(found);
     }) as FindWithById; // localized, internal assertion
@@ -179,7 +180,7 @@ export class LiveTree {
     return base;
   }
   findAll(q: HsonQuery | string): MultiResult {
-    const query = typeof q === 'string' ? parseSelector(q) : q;
+    const query = typeof q === 'string' ? parse_selector(q) : q;
     const found = this.search(this.selectedNodes, query, { findFirst: false });
 
     // if no matches, return an inert wrapper rather than throwing

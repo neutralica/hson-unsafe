@@ -4,6 +4,7 @@ import { JsonType } from "../../core/types-consts/core.types";
 import { HsonNode } from "../../types-consts";
 import { _ERROR } from "../../types-consts/constants";
 import { TreeConstructor_Source, BranchConstructor, GraftConstructor } from "../../types-consts/tree.new.types";
+import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
@@ -28,17 +29,26 @@ export function construct_tree(
     return new LiveTree($rootNode);
   };
 
-
   /* the main object returned by construct_tree */
   return {
     /* methods for creating detached branches from data */
 
     fromHTML($html: string): BranchConstructor {
-      const rootNode = parse_html($html);
-      const branch = createBranch(rootNode);
-      return {
-        asBranch: () => branch,
-      };
+      let branch: LiveTree;
+      if (isSvgMarkup($html.trimStart())) {
+        const el = new DOMParser().parseFromString($html, "image/svg+xml").documentElement;
+        const node = node_from_svg(el);
+        branch = createBranch(node);
+        return {
+          asBranch: () => branch,
+        };
+      } else {
+        const rootNode = parse_html($html);
+        branch = createBranch(rootNode);
+        return {
+          asBranch: () => branch,
+        };
+      }
     },
 
     fromJSON($json: string | JsonType): BranchConstructor {

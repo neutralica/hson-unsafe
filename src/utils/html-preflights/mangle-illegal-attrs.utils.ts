@@ -18,7 +18,7 @@ function xHHHdisallowed(name: string): string {
   return out;
 }
 
-export function disallow_illegal_attrs(src: string): string {
+export function mangle_illegal_attrs(src: string): string {
   let out = "";
   let i = 0;
   while (i < src.length) {

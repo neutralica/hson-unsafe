@@ -6,7 +6,7 @@ import { HsonQuery } from "../../types-consts";
  * parses a simple CSS selector string into an HsonQuery object
  *   currently supports: tag, #id, .class, [attribute], and [attribute="value"]
  */
-export function parseSelector(selector: string): HsonQuery {
+export function parse_selector(selector: string): HsonQuery {
     const query: HsonQuery = { attrs: {} };
 
     /* regular expression matches the parts of a selector */

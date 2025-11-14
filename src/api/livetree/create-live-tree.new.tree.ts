@@ -85,8 +85,6 @@ export function create_live_tree(node: HsonNode | Primitive): Node {
     }
   }
 
-  // NEW: NEVER reflect _meta to DOM (including data-_*)
-  // (Those are for invariants/round-trips only.)
 
   // NEW: children — either a single VSN wrapper or direct content
   const kids = n._content ?? [];

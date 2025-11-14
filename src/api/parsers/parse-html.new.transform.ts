@@ -20,24 +20,9 @@ import { optional_endtag_preflight } from "../../utils/html-preflights/optional-
 import { escape_attr_angles } from "../../safety/escape_angles.html.utils";
 import { dedupe_attrs_html } from "../../safety/dedupe-attrs.html.utils";
 import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
-import { disallow_illegal_attrs } from "../../utils/html-preflights/hash-name.utils";
+import { mangle_illegal_attrs } from "../../utils/html-preflights/mangle-illegal-attrs.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
-
-function namespace_svg(src: string): string {
-    if (!/<svg\b/i.test(src)) return src;
-
-    const hasSvgNS = /<svg\b[^>]*\bxmlns\s*=\s*["']http:\/\/www\.w3\.org\/2000\/svg["']/i.test(src);
-    const usesXlink = /\bxlink:/i.test(src);
-    const hasXlink = /<svg\b[^>]*\bxmlns:xlink\s*=/i.test(src);
-
-    return src.replace(/<svg\b([^>]*)>/i, (_m, attrs) => {
-        let add = "";
-        if (!hasSvgNS) add += ` xmlns="http://www.w3.org/2000/svg"`;
-        if (usesXlink && !hasXlink) add += ` xmlns:xlink="http://www.w3.org/1999/xlink"`;
-        return `<svg${attrs}${add}>`;
-    });
-}
-
+import { namespace_svg } from "../../utils/html-preflights/namespace-svg";
 
 export function parse_html($input: string | Element): HsonNode {
     let inputElement: Element;
@@ -49,7 +34,7 @@ export function parse_html($input: string | Element): HsonNode {
         const ents = expand_entities(safe);
         const unquotedSafe = quote_unquoted_attrs(ents);
         const quotedSafe = escape_attr_angles(unquotedSafe);
-        const xmlNameSafe = disallow_illegal_attrs(quotedSafe);  
+        const xmlNameSafe = mangle_illegal_attrs(quotedSafe);  
         const voids = expand_void_tags(xmlNameSafe);
         const cdata = wrap_cdata(voids);
         const svgSafe = namespace_svg(cdata);
