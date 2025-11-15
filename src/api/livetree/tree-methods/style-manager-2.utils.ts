@@ -12,9 +12,8 @@
 
 /* ---------------------------------- IMPORTS --------------------------------- */
 // comment: Pull in your project types. Adjust the import paths if needed.
-import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.new.types";
-import { lookup_element } from "../../../utils/node-utils/lookup-element.html.utils";
+import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree } from "../live-tree-class.new.tree";
 
 /* ------------------------------- TYPE HELPERS ------------------------------- */
@@ -112,7 +111,7 @@ function ensureStyleObject(a: Record<string, unknown>): Record<string, string> {
 // comment: Write a single property (kebab) to DOM + node attrs.
 function applyStyleToNode(node: HsonNode, kebabName: string, value: string): void {
     // 1) push to DOM if element exists
-    const el = lookup_element(node);
+    const el = getElementForNode(node);
     if (el instanceof HTMLElement) {
         if (value === "") {
             el.style.removeProperty(kebabName);
@@ -143,7 +142,7 @@ function applyStyleToNode(node: HsonNode, kebabName: string, value: string): voi
 
 // comment: Read a single property (kebab) from DOM (preferred) or node attrs.
 function readStyleFromNode(node: HsonNode, kebabName: string): string | undefined {
-    const el = lookup_element(node);
+    const el = getElementForNode(node);
     if (el instanceof HTMLElement) {
         const v = getComputedStyle(el).getPropertyValue(kebabName);
         const t = v.trim();

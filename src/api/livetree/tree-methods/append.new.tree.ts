@@ -8,10 +8,9 @@ import { HsonNode } from "../../../types-consts/node.new.types";
 import { create_live_tree } from "../create-live-tree.new.tree";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { CREATE_NODE } from "../../../types-consts/factories";
-import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { make_string } from "../../../utils/primitive-utils/make-string.nodes.utils";
-import { map_delete, map_get, map_set } from "../../../utils/node-utils/lookup-element.html.utils";
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
+import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
 
 /**
  * Parses content and appends it as a child to each node in the current selection.
@@ -54,7 +53,7 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
     containerNode._content!.push(...nodesToAppend);
 
     // [UNCHANGED] DOM sync: simply append whatever the factory returns
-    const liveElement = map_get(targetNode as unknown as object);
+    const liveElement = getElementForNode(targetNode);
     if (liveElement) {
       for (const newNode of nodesToAppend) {
         const dom = create_live_tree(newNode); // Node (Element or Fragment)

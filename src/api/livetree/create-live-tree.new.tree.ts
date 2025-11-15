@@ -3,18 +3,15 @@
 import { ensure_quid } from "../../quid/data-quid.quid";
 import { create_el_safe, set_attrs_safe } from "../../safety/safe-mount.safe";
 import { HsonNode, Primitive } from "../../types-consts";
-import { _DATA_QUID, ARR_TAG, ELEM_TAG, OBJ_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
-import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
-import { map_set } from "../../utils/node-utils/lookup-element.html.utils";
+import { _DATA_QUID, ARR_TAG, ELEM_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { SVG_NS } from "../../utils/node-utils/node-from-svg.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
-import { linkNodeToElement } from "../../utils/node-utils/node-map-helpers.utils";
+import { linkNodeToElement } from "../../utils/tree-utils/node-map-helpers.utils";
 
 /**
  * render NEW nodes directly to DOm
  * VSNs (_root/_obj/_arr/_elem) are virtual and never become DOM elements
  */
-// parent namespace param with default, everything else stays structurally the same
 export function create_live_tree(
   node: HsonNode | Primitive,
   parentNs: "html" | "svg" = "html"
@@ -33,10 +30,10 @@ export function create_live_tree(
   }
 
   // NEW: unwrap virtual structure nodes via a fragment
-  if (n._tag === "_root" || n._tag === "_obj" || n._tag === "_elem" || n._tag === "_arr") {
+  if (n._tag === ROOT_TAG || n._tag === OBJ_TAG || n._tag === ELEM_TAG || n._tag === ARR_TAG) {
     const frag = document.createDocumentFragment();
 
-    if (n._tag === "_arr") {
+    if (n._tag === ARR_TAG) {
       // _arr contains <_ii> items; unwrap each item’s single child
       for (const ii of n._content ?? []) {
         const payload = (is_Node(ii) && Array.isArray(ii._content)) ? ii._content[0] : null;
@@ -65,7 +62,7 @@ export function create_live_tree(
       : create_el_safe(n._tag) as HTMLElement;
 
   // map node → element (unchanged)
-  map_set(node as unknown as object, el);
+  linkNodeToElement(node, el);
   const q = ensure_quid(n, { persist: true });
 
   // QUID is a regular data-* attr; safe to always apply the same way
@@ -111,7 +108,7 @@ export function create_live_tree(
       // everything else → string
       const str = String(raw);
       if (ns === "svg") {
-        // CRITICAL: no name munging, keep viewBox exactly as node_from_svg produced it
+        // no name munging, keep viewBox exactly as node_from_svg produced it
         el.setAttribute(key, str);
       } else {
         set_attrs_safe(el as HTMLElement, key, str);

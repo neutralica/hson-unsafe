@@ -20,7 +20,7 @@ import { make_leaf } from "../parsers/parse-tokens.new.transform";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { detach_node_deep } from "../../utils/tree-utils/detach-node.tree.utils";
 import { parse_selector } from "../../utils/tree-utils/parse-selector.utils";
-import { getElementForNode } from "../../utils/node-utils/node-map-helpers.utils";
+import { getElementForNode } from "../../utils/tree-utils/node-map-helpers.utils";
 
 
 

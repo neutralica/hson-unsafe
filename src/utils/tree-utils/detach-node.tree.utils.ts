@@ -4,7 +4,7 @@ import { _listeners_off_for_target } from "../../api/livetree/tree-methods/liste
 import { HsonNode } from "../../types-consts";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { is_Node } from "../node-utils/node-guards.new.utils";
-import { getElementForNode } from "../node-utils/node-map-helpers.utils";
+import { getElementForNode } from "./node-map-helpers.utils";
 
 
 

@@ -6,7 +6,7 @@ import { HsonNode } from "../../types-consts";
 import { STR_TAG, VAL_TAG, VSN_TAGS } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
-import { getElementForNode } from "../../utils/node-utils/node-map-helpers.utils";
+import { getElementForNode } from "../../utils/tree-utils/node-map-helpers.utils";
 import { get_contentValue_NEW, find_child_by_tag_NEW, find_index_of_tag_NEW, update_content_NEW } from "../../utils/tree-utils/proxy-helpers.new.utils";
 import { get_semantic_child } from "../../utils/tree-utils/semantic-child.utils";
 import { strip_VSNs_NEW } from "../../utils/tree-utils/strip-vsns.new.utils";

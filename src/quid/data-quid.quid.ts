@@ -2,7 +2,7 @@
 
 import { HsonNode } from '../types-consts/node.new.types';
 import { _DATA_QUID, ARR_TAG, ELEM_TAG, II_TAG, NODE_ELEMENT_MAP, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from '../types-consts/constants';
-import { getElementForNode } from '../utils/node-utils/node-map-helpers.utils';
+import { getElementForNode } from '../utils/tree-utils/node-map-helpers.utils';
 
 // Use type-only imports and .js specifiers to play nice with verbatimModuleSyntax
 
