@@ -41,7 +41,7 @@ const DEBUG_UPDATE_MAP = new WeakMap<HsonNode, number>();
  */
 
 /* TODO create HsonProxy type */
-export function create_proxy_NEW(targetNode: HsonNode): any {
+export function create_proxy(targetNode: HsonNode): any {
     const handler: ProxyHandler<HsonNode> = {
         /**
          * GET 
@@ -78,7 +78,7 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
 
             if (childNode) {
                 const primitive = get_contentValue_NEW(childNode);
-                return primitive !== null ? primitive : create_proxy_NEW(childNode);
+                return primitive !== null ? primitive : create_proxy(childNode);
             }
 
             return undefined;
@@ -122,9 +122,7 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
                     DEBUG_UPDATE_MAP.set(targetNode, timestamp);
                 }
 
-                $log('hson after SET:');
-                if (VERBOSE) console.dir(hsonContainer._content, { depth: 5 });
-                const parentLiveElement =getElementForNode(targetNode);
+                const parentLiveElement = getElementForNode(targetNode);
                 if (parentLiveElement) {
                     const newLiveElement = create_live_tree(newNode);
                     if (is_Node(priorNode)) {

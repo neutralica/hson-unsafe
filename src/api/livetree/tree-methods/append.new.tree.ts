@@ -52,7 +52,7 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
     // push into data model
     containerNode._content!.push(...nodesToAppend);
 
-    // [UNCHANGED] DOM sync: simply append whatever the factory returns
+    // DOM sync: simply append whatever the factory returns
     const liveElement = getElementForNode(targetNode);
     if (liveElement) {
       for (const newNode of nodesToAppend) {

@@ -20,8 +20,6 @@ export function graft(
   $element?: HTMLElement,
   $options: { unsafe: boolean } = { unsafe: false }
 ): LiveTree {
-  /* get target element or document.body if no arg */
-  // WARN BUG default alert - do we want to default to document.body here? 
   const targetElement = $element;
   if (!targetElement) {
     _throw_transform_err('error getting target element', 'graft', $element);
