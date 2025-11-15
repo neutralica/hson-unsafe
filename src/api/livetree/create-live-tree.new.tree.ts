@@ -3,11 +3,12 @@
 import { ensure_quid } from "../../quid/data-quid.quid";
 import { create_el_safe, set_attrs_safe } from "../../safety/safe-mount.safe";
 import { HsonNode, Primitive } from "../../types-consts";
-import { _DATA_QUID, STR_TAG, VAL_TAG } from "../../types-consts/constants";
+import { _DATA_QUID, ARR_TAG, ELEM_TAG, OBJ_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { map_set } from "../../utils/node-utils/lookup-element.html.utils";
 import { SVG_NS } from "../../utils/node-utils/node-from-svg.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
+import { linkNodeToElement } from "../../utils/node-utils/node-map-helpers.utils";
 
 /**
  * render NEW nodes directly to DOm
@@ -69,7 +70,7 @@ export function create_live_tree(
 
   // QUID is a regular data-* attr; safe to always apply the same way
   set_attrs_safe(el as HTMLElement, `${_DATA_QUID}`, q);
-  NODE_ELEMENT_MAP.set(n, el);
+  linkNodeToElement(n, el);
 
   // reflect ONLY _attrs
   const a = n._attrs;
@@ -123,7 +124,7 @@ export function create_live_tree(
   if (
     kids.length === 1 &&
     is_Node(kids[0]) &&
-    (kids[0]._tag === "_obj" || kids[0]._tag === "_elem" || kids[0]._tag === "_arr")
+    (kids[0]._tag === OBJ_TAG || kids[0]._tag === ELEM_TAG || kids[0]._tag === ARR_TAG)
   ) {
     // unwrap the container
     const container = kids[0];

@@ -18,7 +18,7 @@ export function parse_html_attrs($el: Element): {
   // walk all DOM attributes verbatim
   for (const a of Array.from($el.attributes)) {
     const name = a.name;
-    const n = name === 'viewBox' ? name : name.toLowerCase();
+    const n = name.toLowerCase();
     const v = a.value ?? "";
 
     // A) strip transit-only hints outright

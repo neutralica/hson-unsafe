@@ -6,6 +6,7 @@ import { HsonNode } from "../../types-consts";
 import { STR_TAG, VAL_TAG, VSN_TAGS } from "../../types-consts/constants";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
+import { getElementForNode } from "../../utils/node-utils/node-map-helpers.utils";
 import { get_contentValue_NEW, find_child_by_tag_NEW, find_index_of_tag_NEW, update_content_NEW } from "../../utils/tree-utils/proxy-helpers.new.utils";
 import { get_semantic_child } from "../../utils/tree-utils/semantic-child.utils";
 import { strip_VSNs_NEW } from "../../utils/tree-utils/strip-vsns.new.utils";
@@ -123,11 +124,11 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
 
                 $log('hson after SET:');
                 if (VERBOSE) console.dir(hsonContainer._content, { depth: 5 });
-                const parentLiveElement = NODE_ELEMENT_MAP.get(targetNode);
+                const parentLiveElement =getElementForNode(targetNode);
                 if (parentLiveElement) {
                     const newLiveElement = create_live_tree(newNode);
                     if (is_Node(priorNode)) {
-                        const oldLiveElement = NODE_ELEMENT_MAP.get(priorNode);
+                        const oldLiveElement = getElementForNode(priorNode);
                         if (oldLiveElement) {
                             oldLiveElement.replaceWith(newLiveElement);
                         }
@@ -153,7 +154,7 @@ export function create_proxy_NEW(targetNode: HsonNode): any {
 
                     targetNode._attrs[propertyKey] = String(value);
 
-                    const liveElement = NODE_ELEMENT_MAP.get(targetNode);
+                    const liveElement = getElementForNode(targetNode);
                     if (liveElement) {
                         set_attrs_safe(liveElement, propertyKey, String(value));
                     }

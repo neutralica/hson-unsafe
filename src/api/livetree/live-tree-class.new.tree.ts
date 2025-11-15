@@ -20,6 +20,7 @@ import { make_leaf } from "../parsers/parse-tokens.new.transform";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { detach_node_deep } from "../../utils/tree-utils/detach-node.tree.utils";
 import { parse_selector } from "../../utils/tree-utils/parse-selector.utils";
+import { getElementForNode } from "../../utils/node-utils/node-map-helpers.utils";
 
 
 
@@ -87,7 +88,7 @@ function makeMulti(found: HsonNode[]): MultiResult {
 function makeRef(n: HsonNode): NodeRef {
   const q = ensure_quid(n); // no persist
   // stamp only if already mounted
-  const el0 = NODE_ELEMENT_MAP.get(n);
+  const el0 = getElementForNode(n);
   if (el0) set_attrs_safe(el0, _DATA_QUID, q);
 
   return {
@@ -95,7 +96,7 @@ function makeRef(n: HsonNode): NodeRef {
     resolveNode: () => get_node_by_quid(q),
     resolveEl: () => {
       const node = get_node_by_quid(q);
-      const el = node ? NODE_ELEMENT_MAP.get(node) : undefined;
+      const el = node ? getElementForNode(node) : undefined;
       return el ?? (document.querySelector(`[${_DATA_QUID}="${q}"]`) as HTMLElement | undefined);
     },
   };
@@ -215,7 +216,7 @@ export class LiveTree {
     this.withNodes(nodes => {
       for (const node of nodes) {
         if (!node._attrs) node._attrs = {};
-        const el = NODE_ELEMENT_MAP.get(node) as Element | undefined;
+        const el = getElementForNode(node) as Element | undefined;
         if (!el) _throw_transform_err(`[LiveTree] missing element for node`, 'getElementForNode');
 
         if (value === false || value === null) {
@@ -273,7 +274,7 @@ export class LiveTree {
         continue;
       }
 
-      const el = NODE_ELEMENT_MAP.get(node) as
+      const el = getElementForNode(node) as
         | HTMLInputElement
         | HTMLTextAreaElement
         | undefined;
@@ -295,18 +296,25 @@ export class LiveTree {
 
     return this;
   }
-
-
   setContent(v: Primitive): this {
     for (const node of this.selectedNodes) {
       const leaf = make_leaf(v);
       node._content = [leaf];
-      const el = NODE_ELEMENT_MAP.get(node);
-      if (!el) _throw_transform_err(`missing element for node ${ensure_quid(node)}`, 'setContent');
+
+      const el = getElementForNode(node);
+      if (!el) {
+        const quid = node._meta?._quid ?? "<no-quid>";
+        _throw_transform_err(
+          `missing element for node (tag=${node._tag}, quid=${quid})`,
+          "setContent",
+        );
+      }
+
       (el as HTMLElement).textContent = v === null ? "" : String(v);
     }
     return this;
   }
+
 
 
   removeAttr($name: string): this {
@@ -327,7 +335,7 @@ export class LiveTree {
   getFirstText(): string {
     const n = this.selectedNodes[0];
     if (!n) return '';
-    const el = NODE_ELEMENT_MAP.get(n);
+    const el = getElementForNode(n);
     if (el) return el.textContent ?? '';          // <-- grabs the full text
     // Fallback to model if not mounted
     const kids = (n._content ?? []).filter(is_Node);
@@ -345,21 +353,8 @@ export class LiveTree {
 
   getValue(): string {
     if (this.selectedNodes.length === 0) return '';
-    const liveElement = NODE_ELEMENT_MAP.get(this.selectedNodes[0]);
+    const liveElement = getElementForNode(this.selectedNodes[0]);
     return (liveElement as HTMLInputElement | HTMLTextAreaElement)?.value ?? '';
-  }
-
-  /**
-   * Returns the raw HsonNode(s) for debugging.
-   * @param all - If true, returns the entire array of selected nodes. Otherwise, returns the first.
-   */
-  public getElementFor(node: HsonNode): Element | undefined {
-    return NODE_ELEMENT_MAP.get(node)
-      ?? (() => {
-        const q = ensure_quid(node); // safe: generates if missing
-        const el = document.querySelector(`[data-_quid="${q}"]`) as Element | null;
-        return el ?? undefined; // ← normalize null → undefined
-      })();
   }
 
 
@@ -369,7 +364,7 @@ export class LiveTree {
       console.warn('[asDomElement] no nodes found in .selected');
       return undefined;
     }
-    const el = this.getElementFor(n);
+    const el = getElementForNode(n);
     if (!el) {
       console.warn('[asDomElement] element not found for _quid:', n._meta?.['data-_quid']);
     }
@@ -430,7 +425,7 @@ export class LiveTree {
     };
     const nodeText = (n: HsonNode): string => {
       // Prefer live text if present; fall back to model (_str children)
-      const el = NODE_ELEMENT_MAP.get(n);
+      const el = getElementForNode(n);
       if (el) return el.textContent ?? '';
       const kids = (n._content ?? []).filter(is_Node);
       for (const k of kids) {
@@ -473,7 +468,7 @@ export class LiveTree {
       // ensure in-memory quid (no persistence)
       const q = ensure_quid(n /* default persist:false */);
       // if this node is mounted, stamp DOM attribute for stable lookup
-      const el = NODE_ELEMENT_MAP.get(n);
+      const el = getElementForNode(n);
       if (el) set_attrs_safe(el, _DATA_QUID, q);
     }
   }
@@ -482,7 +477,7 @@ export class LiveTree {
   // use when detaching/removing from DOM to avoid orphan attributes
   private unmap_quid(): void {
     for (const n of this.selectedNodes) {
-      const el = NODE_ELEMENT_MAP.get(n);
+      const el = getElementForNode(n);
       if (el) el.removeAttribute(_DATA_QUID);
     }
   }

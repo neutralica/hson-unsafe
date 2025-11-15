@@ -7,6 +7,7 @@ import { HsonNode } from "../../../types-consts/node.new.types";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.utils";
+import { getElementForNode } from "../../../utils/node-utils/node-map-helpers.utils";
 
 export function empty(this: LiveTree): LiveTree {
     const selectedNodes = (this as any).selectedNodes as HsonNode[];
@@ -24,7 +25,7 @@ export function empty(this: LiveTree): LiveTree {
         node._content = [];
 
         // 3) ensure the element has no stray DOM children (paranoia; usually already gone)
-        const el = NODE_ELEMENT_MAP.get(node);
+        const el = getElementForNode(node);
         if (el) while (el.firstChild) el.removeChild(el.firstChild);
     }
 

@@ -2,6 +2,7 @@
 
 import { HsonNode } from '../types-consts/node.new.types';
 import { _DATA_QUID, ARR_TAG, ELEM_TAG, II_TAG, NODE_ELEMENT_MAP, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from '../types-consts/constants';
+import { getElementForNode } from '../utils/node-utils/node-map-helpers.utils';
 
 // Use type-only imports and .js specifiers to play nice with verbatimModuleSyntax
 
@@ -59,23 +60,6 @@ export function reindex_quid(n: HsonNode): void {
   QUID_TO_NODE.set(q, n);
 }
 
-/** Seed quids on standard tags only (by default) */
-export function seed_quids(root: HsonNode, includeVSNs = false): void {
-  const VSN = new Set<string>([ROOT_TAG,OBJ_TAG,ARR_TAG,ELEM_TAG,II_TAG,STR_TAG,VAL_TAG]);
-  const stack: HsonNode[] = [root];
-  while (stack.length) {
-    const n = stack.pop()!;
-    const isVSN = VSN.has(n._tag);
-    if (includeVSNs || !isVSN) ensure_quid(n);
-    const kids = n._content;
-    if (Array.isArray(kids)) {
-      for (const k of kids) {
-        if (k && typeof k === "object" && "_tag" in k) stack.push(k as HsonNode);
-      }
-    }
-  }
-}
-
 export { _DATA_QUID };
 
 // --- NEW: drop_quid (removes both registry entries, and optionally _meta) ---
@@ -95,7 +79,7 @@ export function drop_quid(n: HsonNode, opts?: { scrubMeta?: boolean; stripDomAtt
 
   // optional: strip DOM attribute if mounted
   if (opts?.stripDomAttr) {
-    const el = NODE_ELEMENT_MAP.get(n as any); // avoid import loop by localizing this in one place if needed
+    const el = getElementForNode(n as any); // avoid import loop by localizing this in one place if needed
     el?.removeAttribute('data-_quid');
   }
 }
