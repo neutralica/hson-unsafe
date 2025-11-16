@@ -1,7 +1,7 @@
 // data-quid.quid.ts
 
 import { HsonNode } from '../types-consts/node.new.types';
-import { _DATA_QUID, ARR_TAG, ELEM_TAG, II_TAG, NODE_ELEMENT_MAP, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from '../types-consts/constants';
+import { _DATA_QUID} from '../types-consts/constants';
 import { getElementForNode } from '../utils/tree-utils/node-map-helpers.utils';
 
 // Use type-only imports and .js specifiers to play nice with verbatimModuleSyntax
@@ -80,7 +80,7 @@ export function drop_quid(n: HsonNode, opts?: { scrubMeta?: boolean; stripDomAtt
   // optional: strip DOM attribute if mounted
   if (opts?.stripDomAttr) {
     const el = getElementForNode(n as any); // avoid import loop by localizing this in one place if needed
-    el?.removeAttribute('data-_quid');
+    el?.removeAttribute(_DATA_QUID);
   }
 }
 

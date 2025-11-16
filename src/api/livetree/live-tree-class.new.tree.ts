@@ -1,8 +1,6 @@
 // live-tree-class.tree.hson.ts
 
 import { STR_TAG } from "../../types-consts/constants";
-import { CREATE_NODE } from "../../types-consts/factories";
-import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { _DATA_QUID } from "../../types-consts/constants";
 import { after_paint, append } from "./tree-methods/append.new.tree";
 import { DatasetManager } from "./tree-methods/dataset-manager.new.tree";
@@ -28,7 +26,7 @@ import { getElementForNode } from "../../utils/tree-utils/node-map-helpers.utils
 type NodeRef = {
   q: string;
   resolveNode(): HsonNode | undefined;
-  resolveEl(): Element | undefined;
+  resolveElement(): Element | undefined;
 };
 
 // finder methods (convert results → refs)
@@ -94,7 +92,7 @@ function makeRef(n: HsonNode): NodeRef {
   return {
     q,
     resolveNode: () => get_node_by_quid(q),
-    resolveEl: () => {
+    resolveElement: () => {
       const node = get_node_by_quid(q);
       const el = node ? getElementForNode(node) : undefined;
       return el ?? (document.querySelector(`[${_DATA_QUID}="${q}"]`) as HTMLElement | undefined);
@@ -366,7 +364,7 @@ export class LiveTree {
     }
     const el = getElementForNode(n);
     if (!el) {
-      console.warn('[asDomElement] element not found for _quid:', n._meta?.['data-_quid']);
+      console.warn('[asDomElement] element not found for _quid:', n._meta?.[_DATA_QUID]);
     }
     return el;
   }

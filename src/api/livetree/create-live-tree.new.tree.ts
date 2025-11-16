@@ -1,72 +1,84 @@
 // create-live-tree.new.ts
 
-import { ensure_quid } from "../../quid/data-quid.quid";
 import { create_el_safe, set_attrs_safe } from "../../safety/safe-mount.safe";
 import { HsonNode, Primitive } from "../../types-consts";
-import { _DATA_QUID, ARR_TAG, ELEM_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
+import {
+  _DATA_QUID,   // NOTE: can now be removed if not used elsewhere in this file
+  ARR_TAG,
+  ELEM_TAG,
+  OBJ_TAG,
+  ROOT_TAG,
+  STR_TAG,
+  VAL_TAG,
+} from "../../types-consts/constants";
 import { SVG_NS } from "../../utils/node-utils/node-from-svg.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { linkNodeToElement } from "../../utils/tree-utils/node-map-helpers.utils";
+// CHANGED: removed ensure_quid, NODE_ELEMENT_MAP, map_set imports
 
 /**
- * render NEW nodes directly to DOm
- * VSNs (_root/_obj/_arr/_elem) are virtual and never become DOM elements
+ * Render NEW nodes directly to DOM.
+ * VSNs (_root/_obj/_arr/_elem) are virtual and never become DOM elements.
+ *
+ * IMPORTANT: no quid logic here; LiveTree is responsible for quids.
  */
 export function create_live_tree(
   node: HsonNode | Primitive,
   parentNs: "html" | "svg" = "html"
 ): Node {
-  // NEW: if not a NEW node, render as text
+  // Non-node primitives → plain text
   if (!is_Node(node)) {
     return document.createTextNode(String(node ?? ""));
   }
 
   const n = node as HsonNode;
 
-  // NEW: primitive wrappers → single text node
+  // Primitive wrappers → text
   if (n._tag === STR_TAG || n._tag === VAL_TAG) {
     const v = n._content?.[0];
     return document.createTextNode(String(v ?? ""));
   }
 
-  // NEW: unwrap virtual structure nodes via a fragment
-  if (n._tag === ROOT_TAG || n._tag === OBJ_TAG || n._tag === ELEM_TAG || n._tag === ARR_TAG) {
+  // VSNs: unwrap into a fragment
+  if (
+    n._tag === ROOT_TAG ||
+    n._tag === OBJ_TAG ||
+    n._tag === ELEM_TAG ||
+    n._tag === ARR_TAG
+  ) {
     const frag = document.createDocumentFragment();
 
     if (n._tag === ARR_TAG) {
       // _arr contains <_ii> items; unwrap each item’s single child
       for (const ii of n._content ?? []) {
-        const payload = (is_Node(ii) && Array.isArray(ii._content)) ? ii._content[0] : null;
-        if (payload != null) frag.appendChild(create_live_tree(payload as any, parentNs)); // CHANGED: pass ns
+        const payload =
+          is_Node(ii) && Array.isArray(ii._content) ? ii._content[0] : null;
+        if (payload != null) {
+          frag.appendChild(create_live_tree(payload as HsonNode | Primitive, parentNs));
+        }
       }
       return frag;
     }
 
     // _root/_obj/_elem → render their children directly
     for (const child of n._content ?? []) {
-      frag.appendChild(create_live_tree(child as any, parentNs)); // CHANGED: pass ns
+      frag.appendChild(create_live_tree(child as HsonNode | Primitive, parentNs));
     }
     return frag;
   }
 
   // REAL ELEMENT NODE --------------------------------------
 
-  // decide namespace for *this* element + its descendants
-  // <svg> always switches to SVG; children inherit svg unless they explicitly introduce foreignObject later
+  // decide namespace for *this* element + descendants
   const ns: "html" | "svg" = n._tag === "svg" ? "svg" : parentNs;
 
   // create element respecting namespace
   const el: Element =
     ns === "svg"
       ? document.createElementNS(SVG_NS, n._tag)
-      : create_el_safe(n._tag) as HTMLElement;
+      : (create_el_safe(n._tag) as HTMLElement);
 
-  // map node → element (unchanged)
-  linkNodeToElement(node, el);
-  const q = ensure_quid(n, { persist: true });
-
-  // QUID is a regular data-* attr; safe to always apply the same way
-  set_attrs_safe(el as HTMLElement, `${_DATA_QUID}`, q);
+  // single source of truth for mapping HsonNode -> Element
   linkNodeToElement(n, el);
 
   // reflect ONLY _attrs
@@ -75,7 +87,7 @@ export function create_live_tree(
     for (const [key, raw] of Object.entries(a)) {
       if (raw == null) continue;
 
-      // special style handling (same logic, works for HTML + SVG since both expose .style)
+      // style handling
       if (key === "style") {
         const elt = el as HTMLElement | SVGElement;
 
@@ -95,9 +107,9 @@ export function create_live_tree(
       // boolean presence attrs
       if (raw === true) {
         if (ns === "svg") {
-          el.setAttribute(key, "");           // SVG path: no HTML normalization
+          el.setAttribute(key, "");
         } else {
-          set_attrs_safe(el as HTMLElement, key, ""); // existing HTML path
+          set_attrs_safe(el as HTMLElement, key, "");
         }
         continue;
       }
@@ -108,7 +120,6 @@ export function create_live_tree(
       // everything else → string
       const str = String(raw);
       if (ns === "svg") {
-        // no name munging, keep viewBox exactly as node_from_svg produced it
         el.setAttribute(key, str);
       } else {
         set_attrs_safe(el as HTMLElement, key, str);
@@ -121,23 +132,28 @@ export function create_live_tree(
   if (
     kids.length === 1 &&
     is_Node(kids[0]) &&
-    (kids[0]._tag === OBJ_TAG || kids[0]._tag === ELEM_TAG || kids[0]._tag === ARR_TAG)
+    (kids[0]._tag === OBJ_TAG ||
+      kids[0]._tag === ELEM_TAG ||
+      kids[0]._tag === ARR_TAG)
   ) {
-    // unwrap the container
     const container = kids[0];
-    if (container._tag === "_arr") {
+
+    if (container._tag === ARR_TAG) {
       for (const ii of container._content ?? []) {
-        const payload = (is_Node(ii) && Array.isArray(ii._content)) ? ii._content[0] : null;
-        if (payload != null) el.appendChild(create_live_tree(payload as any, ns)); // CHANGED: pass ns
+        const payload =
+          is_Node(ii) && Array.isArray(ii._content) ? ii._content[0] : null;
+        if (payload != null) {
+          el.appendChild(create_live_tree(payload as HsonNode | Primitive, ns));
+        }
       }
     } else {
       for (const c of container._content ?? []) {
-        el.appendChild(create_live_tree(c as any, ns)); // CHANGED: pass ns
+        el.appendChild(create_live_tree(c as HsonNode | Primitive, ns));
       }
     }
   } else {
     for (const c of kids) {
-      el.appendChild(create_live_tree(c as any, ns)); // CHANGED: pass ns
+      el.appendChild(create_live_tree(c as HsonNode | Primitive, ns));
     }
   }
 

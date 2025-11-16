@@ -14,15 +14,6 @@ import { parse_json } from "../parsers/parse-json.new.transform";
 import { create_live_tree } from "./create-live-tree.new.tree";
 
 
-
-
-
-/* debug log */
-let VERBOSE = false;
-const $log = VERBOSE
-    ? console.log
-    : () => { };
-
 const DEBUG_UPDATE_MAP = new WeakMap<HsonNode, number>();
 /**
  * factory function that creates a live, interactive proxy for an hsonnode tree.
@@ -118,7 +109,6 @@ export function create_proxy(targetNode: HsonNode): any {
                 }
                 if (targetNode._tag === 'body') {
                     const timestamp = Date.now();
-                    $log(`(SET tagged <body> with timestamp: ${timestamp})`);
                     DEBUG_UPDATE_MAP.set(targetNode, timestamp);
                 }
 
@@ -135,7 +125,6 @@ export function create_proxy(targetNode: HsonNode): any {
                     }
                 }
 
-                $log(`[OK] replaced/created child <${propertyKey}> in <${targetNode._tag}>`);
                 return true;
             }
 
@@ -144,7 +133,6 @@ export function create_proxy(targetNode: HsonNode): any {
                 const childNodeToUpdate = find_child_by_tag_NEW(targetNode, propertyKey);
                 if (childNodeToUpdate) {
                     update_content_NEW(childNodeToUpdate, value);
-                    $log(`[OK] successfully updated content of child <${propertyKey}> in <${targetNode._tag}>`);
                     return true;
                 } else {
                     if (!targetNode._meta) targetNode._meta = {};
@@ -157,7 +145,6 @@ export function create_proxy(targetNode: HsonNode): any {
                         set_attrs_safe(liveElement, propertyKey, String(value));
                     }
 
-                    $log(`[OK] successfully set attribute '${propertyKey}' on <${targetNode._tag}>`);
                     return true;
                 }
             }

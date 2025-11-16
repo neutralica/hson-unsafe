@@ -2,6 +2,7 @@
 
 import { is_Node } from "../node-utils/node-guards.new.utils";
 import { HsonNode, HsonAttrs, HsonMeta } from "../../types-consts/node.new.types";
+import { _DATA_INDEX, _DATA_QUID } from "../../types-consts/constants";
 
 /** Pretty-print any value with stable, node-friendly key order. */
 export function make_string_pretty(value: unknown, indent = 2): string {
@@ -79,7 +80,7 @@ function orderStyleObject(s: Record<string, unknown>) {
 function orderMeta(m: HsonMeta) {
   const out: any = {};
   // If you want certain meta keys first, prioritize them here:
-  const priority = ["data-_quid", "data-_index"];
+  const priority = [_DATA_QUID, _DATA_INDEX];
   const keys = [
     ...priority.filter(k => k in (m as any)),
     ...Object.keys(m).sort().filter(k => !priority.includes(k)),
