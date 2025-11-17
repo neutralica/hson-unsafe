@@ -5,11 +5,8 @@ import { Patch, Store, Path, PatchOp, PathSeg } from "../livemap/types.livemap";
 type Subscriber = ($patch: Patch) => void;
 
 export class InMemoryStore implements Store {
-  // keep your canonical model here; you can maintain both JSON and NEW views if helpful
   private rootJson: unknown;
   private subscribers: Subscriber[] = [];
-
-  // You can also keep a QUID→DOM map and Path→Node map elsewhere if that’s your pattern
 
   constructor(initialJson: unknown) {
     this.rootJson = initialJson;
@@ -33,10 +30,9 @@ export class InMemoryStore implements Store {
     return cur;
   }
 
-  // Read an HSON/NEW node view at a path (stub: adapt to your NEW machinery)
+  // Read an Hson node view at a path (stub)
   readNode(_path: Path): HsonNode {
-    // In your codebase, you likely already have JSON⇄NEW conversion or a live NEW tree.
-    // Here you’d return the NEW node corresponding to the path. Keep one authoritative source.
+  
     // Placeholder to meet the interface:
     return {
       _tag: "_root",
@@ -49,7 +45,7 @@ export class InMemoryStore implements Store {
   // -- write + notify --
 
   transact(patch: Patch): void {
-    // 1) Apply ops to the JSON view (or to NEW, if that’s your canonical)
+    // 1) Apply ops to the JSON view (or to Node, if canonical)
     for (const op of patch.ops) {
       this.applyOp(op);
     }
@@ -76,8 +72,8 @@ export class InMemoryStore implements Store {
       return;
     }
     if (op.kind === "set:attr") {
-      // If JSON is your canonical, attrs likely live under some object key;
-      // if NEW is canonical, you’d set attrs on the NEW node instead.
+      // If JSON is canonical, attrs likely live under some object key;
+      // if HsonNodes are canonical, set attrs on the NEW node instead.
       // This example assumes JSON carries a parallel structure like:
       // { _attrs: {class: "..."} } at the target object path.
       const node = this.ensureObjectAt(op.path);

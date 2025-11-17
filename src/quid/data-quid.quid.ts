@@ -52,7 +52,7 @@ export function get_node_by_quid(q: string): HsonNode | undefined {
   return QUID_TO_NODE.get(q);
 }
 
-/** Re-index a node you’ve structurally replaced */
+/** Re-index a node that was structurally replaced */
 export function reindex_quid(n: HsonNode): void {
   const q = get_quid(n);
   if (!q) return;
@@ -62,8 +62,7 @@ export function reindex_quid(n: HsonNode): void {
 
 export { _DATA_QUID };
 
-// --- NEW: drop_quid (removes both registry entries, and optionally _meta) ---
-//  [CHANGED] added function
+// --- drop_quid (removes both registry entries, and optionally _meta) ---
 export function drop_quid(n: HsonNode, opts?: { scrubMeta?: boolean; stripDomAttr?: boolean }) {
   const q = get_quid(n);
   if (!q) return;
@@ -84,8 +83,7 @@ export function drop_quid(n: HsonNode, opts?: { scrubMeta?: boolean; stripDomAtt
   }
 }
 
-// --- NEW: has_quid (fast check to avoid re-seeding) ---
-//  [CHANGED] added function
+// --- has_quid (fast check to avoid re-seeding) ---
 export function has_quid(n: HsonNode): boolean {
   return !!get_quid(n);
 }

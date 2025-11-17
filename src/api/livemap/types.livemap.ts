@@ -42,7 +42,7 @@ export type OpInsert = {
   kind: "arr:insert";               // arrays only
   path: Path;                       // path to array
   index: number;
-  node: HsonNode;                   // your NEW node shape
+  node: HsonNode;                  
 };
 
 export type OpRemove = {

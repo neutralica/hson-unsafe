@@ -46,7 +46,7 @@ export function parse_html($input: string | Element): HsonNode {
 
         const parser = new DOMParser();
 
-        // CHANGED: try raw (namespaced) XML first — no preflight yet
+        // try raw (namespaced) XML first — no preflight yet
         let xmlSrc = ampSafe; // keep the "current" source in one variable
         let parsed = parser.parseFromString(xmlSrc, "application/xml");
         let err = parsed.querySelector('parsererror');
@@ -82,7 +82,7 @@ export function parse_html($input: string | Element): HsonNode {
         }
 
         if (err) {
-            // 3) only now use your optional-end-tag preflight
+            // 3) now use optional-end-tag preflight
             const balanced = optional_endtag_preflight(xmlSrc);
             if (balanced !== xmlSrc) {
                 xmlSrc = balanced;
@@ -153,7 +153,7 @@ function convert($el: Element): HsonNode {
                 _tag: baseTag,
                 _attrs: sortedAcc,
                 _meta: metaAcc && Object.keys(metaAcc).length ? metaAcc : undefined,
-                // CHANGED: no inner _elem — children go directly
+                // no inner _elem — children go directly
                 _content: [str],
             });
         }
@@ -176,7 +176,7 @@ function convert($el: Element): HsonNode {
     // ---------- VSN tags in HTML ----------
 
     if (tagLower === VAL_TAG) {
-        // CHANGED: minimal, canonical <_val> handling (coerce strings → non-string primitive)
+        // minimal, canonical <_val> handling (coerce strings → non-string primitive)
         if (childNodes.length !== 1) {
             _throw_transform_err('<_val> must contain exactly one value', 'parse-html');
         }
@@ -184,7 +184,7 @@ function convert($el: Element): HsonNode {
         const only = children[0] as unknown; // pre-wrapped atom from elementToNode
 
         const coerceNonString = (s: string): Primitive => {
-            const v = coerce(s); // use your canonical coerce
+            const v = coerce(s); 
             return v as Primitive;
         };
 
@@ -327,7 +327,7 @@ function elementToNode($els: NodeListOf<ChildNode>): (HsonNode | Primitive)[] {
 
             // ignore layout-only whitespace; otherwise pass string through
             if (trimmed.length > 0) {
-                children.push(trimmed); // (or coerce(trimmed) if that’s your policy)
+                children.push(trimmed); // (or coerce(trimmed)?)
             }
 
             continue;

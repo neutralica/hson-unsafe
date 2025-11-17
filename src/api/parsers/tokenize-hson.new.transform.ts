@@ -176,17 +176,14 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
             continue;
         }
 
-        /* Step B */
-        /* check for '<' implicit object trigger */
         /* Step B: lone '<' implicit object trigger */
         if (LONE_OPEN_ANGLE_REGEX.test(currentLine)) {
             _log(`[tokenize_hson depth=${$depth} L=${currentIx + 1}] lone '<' detected`);
 
-            // Keep your markers (helps with validation/indent tracking)
             contextStack.push({ type: 'IMPLICIT_OBJECT' });
             contextStack.push({ type: 'CLUSTER', close: CLOSE_KIND.obj, implicit: true });
 
-            // NEW: emit a real OPEN for a synthetic _obj
+            // emit a real OPEN for a synthetic _obj
             const lineNo = currentIx + 1;
             const leadCol = currentLine.search(/\S|$/) + 1;
             const posOpen = _pos(lineNo, leadCol, _offset + leadCol - 1);
@@ -292,7 +289,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
                     _log(`[step e] suppress END for implicit non-object cluster at L${currentIx + 1}`);
                 }
 
-                // If you keep an IMPLICIT_OBJECT marker, pop it when we close the obj box.
+                // pop IMPLICIT_OBJECT marker when we close the obj box.
                 const top = contextStack[contextStack.length - 1];
                 if (isObjClose && top && (top as any).type === 'IMPLICIT_OBJECT') {
                     contextStack.pop();
@@ -453,12 +450,12 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
                     _throw_transform_err('unexpected trailing characters after quoted text', 'tokenize_hson');
                 }
 
-                // advance past the consumed lines using your existing bump
+                // advance past the consumed lines 
                 for (let k = ix; k <= endLine; k++) _bump_line(getLine(k));
                 continue;
             }
 
-            // non-quoted: you may keep the comment-trimming now
+            // non-quoted
             const m = currentLine.match(/^\s*(.+?)(?:\s*\/\/.*)?\s*$/);
             const body = m ? m[1] : '';
 
@@ -494,7 +491,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
         const residual = contextStack.map((c) => {
             if (c.type === 'CLUSTER') return `<cluster ${c.close ?? 'pending'}>`;
             if (c.type === 'IMPLICIT_OBJECT') return '< < (implicit object)';
-            /* c.type === 'TAG' if you still use it elsewhere */
+            /* c.type === 'TAG' */
             return '<tag?>';
         }).join(', ');
         _throw_transform_err(`final check failed: tokenizer finished with ${contextStack.length} unclosed items: ${residual}`, 'tokenize-hson');

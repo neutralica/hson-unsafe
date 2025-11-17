@@ -4,14 +4,14 @@ import { HsonNode } from "../../types-consts";
 import { STR_TAG } from "../../types-consts/constants";
 
 
-// CHANGED: tiny helper once, reuse everywhere
+//  tiny helper once, reuse everywhere
 export const SVG_NS = "http://www.w3.org/2000/svg";
 export const HTML_NS = "http://www.w3.org/1999/xhtml";
 export const isSvgMarkup = (s: string) => /^<\s*svg[\s>]/i.test(s);
 
 // NEW: DOM → HSON (namespace-aware)
 export function node_from_svg(el: Element): HsonNode {
-  const tag = el.tagName; // keep case if your engine expects exact; or `toLowerCase()`
+  const tag = el.tagName; // keep case if engine expects exact; or `toLowerCase()`
   const attrs: Record<string, string> = {};
   for (let i = 0; i < el.attributes.length; i++) {
     const a = el.attributes[i];
@@ -26,7 +26,7 @@ export function node_from_svg(el: Element): HsonNode {
     }
   });
   return {
-    _tag: tag.toLowerCase(),               // align to your HSON tag scheme
+    _tag: tag.toLowerCase(),              
     _attrs: attrs,
     _content: kids.length ? kids : [],
     _meta: { }       

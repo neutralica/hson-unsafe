@@ -3,7 +3,7 @@ export function screen_url(value: string): boolean {
   const v = value.trim();
   if (v.length === 0) return false;
 
-  // ftp/mailto/tel allowed if you want them; keep it narrow by default
+  // ftp/mailto/tel allowed but keep it narrow by default
   const allowedSchemes = ["https:", "http:", "data:", "blob:"];
   try {
     const u = new URL(v, location.origin);

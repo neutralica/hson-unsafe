@@ -39,21 +39,8 @@ function escape_attr(v: string): string {
 }
 
 
-// DROP-IN: serialize_xml + serialize_html (2.0) — with fixes
-// - _str melts to bare text
-// - _val is literal (<_val>…</_val>)
-// - _elem flattens; _root melts its single cluster
-// - _obj property loop is total; no silent self-closing when a child exists
-// - self-close only when computed inner === ""
-// - consistent primitive escaping via primitive_to_xml
-// Assumes these exist in your module scope:
-//   - is_Primitive, is_Node, build_wire_attrs, escape_html, escape_attr,
-//     clone_node, assert_invariants, _throw_transform_err, make_string
-//   - constants: STR_TAG, VAL_TAG, ROOT_TAG, OBJ_TAG, ARR_TAG, II_TAG, ELEM_TAG, EVERY_VSN
-// ---------------------------------------------------------------------------
-
 function primitive_to_xml(p: Primitive): string {
-  // same semantics you had; strings escape as text, others stringify+escape
+  //  strings escape as text, others stringify+escape
   if (typeof p === 'string') return escape_html(p);
   return escape_html(String(p));
 }
@@ -66,13 +53,13 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
 
   const { _tag: tag, _content: content = [] } = node;
 
-  // CHANGED(label): correct origin label for error
+  // correct origin label for error
   if (tag.startsWith('_') && !EVERY_VSN.includes(tag)) {
     _throw_transform_err(`unknown VSN-like tag: <${tag}>`, 'serialize_html');
   }
 
   switch (tag) {
-    // CHANGED: _str always melts to bare text
+    // _str always melts to bare text
     case STR_TAG: {
       if (!content || content.length !== 1 || typeof content[0] !== 'string') {
         _throw_transform_err('<_str> must contain exactly one string', 'serialize_html');
@@ -88,7 +75,7 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
       return escape_html(s);
     }
 
-    // CHANGED: keep <_val> literal for round-trip typing
+    // keep <_val> literal for round-trip typing
     case VAL_TAG: {
       if (!content || content.length !== 1) {
         _throw_transform_err('<_val> must contain exactly one value', 'serialize_html');
@@ -126,7 +113,6 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   if (tag === "svg") {
   // ensure default SVG ns on the root svg element if not present
   if (!("xmlns" in attrs)) attrs.xmlns = "http://www.w3.org/2000/svg";
-  // only add xlink ns if you still serialize any xlink:* (ideally you don’t)
 }
 
   for (const k of Object.keys(attrs).sort()) {
@@ -149,6 +135,16 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   return `${openAttrs}>${inner}</${tag}>`;
 }
 
+
+/* serialize_xml + serialize_html (2.0) — with fixes
+- _str melts to bare text
+- _val is literal (<_val>…</_val>)
+- _elem flattens; _root melts its single cluster
+- _obj property loop is total; no silent self-closing when a child exists
+- self-close only when computed inner === ""
+- consistent primitive escaping via primitive_to_xml
+---------------------------------------------------------------------------
+ */
 export function serialize_html($node: HsonNode | Primitive): string {
 
   const clone = clone_node($node);
@@ -156,7 +152,7 @@ export function serialize_html($node: HsonNode | Primitive): string {
     _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize_html', make_string($node));
   }
 
-  // keep your tree assertions; they’ll throw loudly if structure is off
+  // tree assertions throw if structure is off
   assert_invariants(clone, 'serialize_html');
 
   const xmlString = serialize_xml(clone);

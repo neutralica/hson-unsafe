@@ -1,7 +1,7 @@
 // utils/sanitize-html.utils.ts
 import DOMPurify from "dompurify";
 
-/** Broad but finite HTML5 base list; extend if you use more. */
+/** Broad but finite HTML5 base list; extend if needed */
 export const ALLOWED_TAGS: string[] = [
   "a", "abbr", "address", "article", "aside", "b", "bdi", "bdo", "blockquote", "br", "button",
   "caption", "code", "col", "colgroup", "data", "dd", "del", "details", "dfn", "div", "dl", "dt",
@@ -20,7 +20,7 @@ export const ALLOWED_ATTR: string[] = [
 /** Never permitted regardless of discovery. */
 export const FORBID_TAGS_HARD: Set<string> = new Set([
   "script", "style", "iframe", "object", "embed", "link", "meta", "base", "form",
-  "svg", "math", "video", "audio" // keep blocked unless you add a strict SVG subset
+  "svg", "math", "video", "audio" // keep blocked unless adding a strict SVG subset
 ]);
 
 
@@ -49,7 +49,7 @@ export function buildAddTags(html: string): string[] {
   for (const t of Array.from(disc)) {
     if (FORBID_TAGS_HARD.has(t)) disc.delete(t);
   }
-  // Union + de-dup; include your known UI tags up front
+  // Union + de-dup; include known UI tags up front
   return [...new Set([...disc])];
 }
 

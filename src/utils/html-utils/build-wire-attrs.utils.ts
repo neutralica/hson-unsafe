@@ -8,23 +8,23 @@ import { serialize_style } from "../attrs-utils/serialize-css.utils";
 export function build_wire_attrs(n: HsonNode): Record<string, string> {
   const out: Record<string, string> = {};
 
-  // 1) user attrs (primitives only; style handled elsewhere if you have it)
+  // 1) user attrs (primitives only; style handled elsewhere)
   const a = n._attrs;
   if (a) {
     for (const [k, v] of Object.entries(a)) {
-      // CHANGED: handle style instead of skipping it
+      //  handle style instead of skipping it
       if (k === "style") {
         if (v && typeof v === "object" && !Array.isArray(v)) {
-          // CHANGED: object → CSS text
+          //  object → CSS text
           out.style = serialize_style(v as Record<string, string>);
         } else if (typeof v === "string") {
-          // CHANGED: already a CSS string; pass through
+          //  already a CSS string; pass through
           out.style = v;
         }
-        continue; // CHANGED: done with style
+        continue; //  done with style
       }
 
-      // unchanged: primitives/other attrs
+      // un primitives/other attrs
       out[k] = String(v as any);
     }
   }

@@ -1,7 +1,7 @@
 /* =============================================================================
-   StyleManager2 — drop-in, no LiveTreeLike, no SSR
+   StyleManager
    - Accepts the real LiveTree in constructor (no private withNodes usage)
-   - Uses public liveTree.getSelectedNodes() (matches your current API)
+   - Uses public liveTree.getSelectedNodes() (matches current API)
    - Preserves ergonomic API: tree.style.set.color("blue"), set["--var"]("…")
    - Keeps classic methods for compatibility: set(name, val), get(name), remove(name)
    - Mirrors to DOM via NODE_ELEMENT_MAP when available, and to node._attrs.style (object)
@@ -10,8 +10,6 @@
      else falls back to a small safe list. Types come from CSSStyleDeclaration.
    ========================================================================== */
 
-/* ---------------------------------- IMPORTS --------------------------------- */
-// comment: Pull in your project types. Adjust the import paths if needed.
 import { HsonNode } from "../../../types-consts/node.new.types";
 import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree } from "../live-tree-class.new.tree";
@@ -81,7 +79,7 @@ function kebabToCamel(input: string): string {
 
 // comment: Normalize style storage on node._attrs.style to an object (kebab keys).
 function ensureStyleObject(a: Record<string, unknown>): Record<string, string> {
-    // // CHANGED: prefer object going forward; upgrade string-once if present.
+    // prefer object going forward; upgrade string-once if present.
     const prev = a.style;
     if (typeof prev === "string") {
         const out: Record<string, string> = Object.create(null);
@@ -166,10 +164,10 @@ function readStyleFromNode(node: HsonNode, kebabName: string): string | undefine
 
 /* --------------------------- FACADE (Proxy-based) --------------------------- */
 type StyleSetterFacade = {
-    // // CHANGED: typed camelCase keys → setter(value: string)
+    // typed camelCase keys → setter(value: string)
     [K in AllowedStyleKey]: (value: string) => LiveTree;
 } & {
-    // // CHANGED: bracket access allows kebab/custom ('--brand', 'background-color')
+    // bracket access allows kebab/custom ('--brand', 'background-color')
     [custom: string]: (value: string) => LiveTree;
 };
 
@@ -186,7 +184,7 @@ function buildSetFacade(tree: LiveTree, keys: ReadonlyArray<AllowedStyleKey>): S
         if (hit) return hit;
 
         const setter = (value: string): LiveTree => {
-            // // CHANGED: write across all currently selected nodes
+            // write across all currently selected nodes
             const nodes = tree.getSelectedNodes();
             const kebab = name.startsWith("--") || name.includes("-") ? name : camelToKebab(name);
             const val = value; // keep raw; empty string removes property
@@ -236,16 +234,16 @@ function buildSetFacade(tree: LiveTree, keys: ReadonlyArray<AllowedStyleKey>): S
 
 /* --------------------------------- MANAGER ---------------------------------- */
 export class StyleManager {
-    // // CHANGED: accept the real LiveTree; do not reference private methods.
+    // accept the real LiveTree; do not reference private methods.
     private readonly tree: LiveTree;
     private readonly runtimeKeys: ReadonlyArray<AllowedStyleKey>;
     private readonly _set: StyleSetterFacade;
 
     constructor(tree: LiveTree) {
         this.tree = tree;
-        // // CHANGED: compute keys once (DOM probe if available).
+        // compute keys once (DOM probe if available).
         this.runtimeKeys = computeRuntimeKeys();
-        // // CHANGED: build the proxy using those keys.
+        // build the proxy using those keys.
         this._set = buildSetFacade(this.tree, this.runtimeKeys);
     }
     get set(): StyleSetterFacade {
@@ -263,7 +261,6 @@ export class StyleManager {
         return this.tree;
     }
 
-    // // CHANGED: read path mirrors your old get() logic.
     get(propertyName: string): string | undefined {
         const nodes = this.tree.getSelectedNodes();
         const first = nodes[0];
@@ -272,16 +269,17 @@ export class StyleManager {
         return readStyleFromNode(first, kebab);
     }
 
-    // // CHANGED: remove maps to empty-string (CSS remove).
+    // remove maps to empty-string (CSS remove).
     remove(propertyName: string): LiveTree {
         return this.setProperty(propertyName, "");
     }
 
-    // // CHANGED: expose the (frozen) key list for tests/inspection.
+    // expose the (frozen) key list for tests/inspection.
     keys(): ReadonlyArray<AllowedStyleKey> {
         return this.runtimeKeys;
     }
-    // NEW: batch inline-style setter (merge semantics; no global refactors)
+
+    // batch inline-style setter (merge semantics; no global refactors)
     /**
      * .css({ width: 240, transform: 'translate(10px, 20px)', '--win-bg': '#111' })
      * - Numbers are passed through as-is; if you want 'px', supply the unit string.
@@ -298,10 +296,10 @@ export class StyleManager {
             const v = props[k];
             if (v === undefined) continue;        // skip holes
             if (v === null) {
-                // CHANGED: allow null to mean "remove this declaration"
+                // allow null to mean "remove this declaration"
                 this.remove(k);
             } else {
-                // CHANGED: delegate to existing single-prop pathway
+                // delegate to existing single-prop pathway
                 this.setProperty(k, v);
             }
         }
@@ -314,7 +312,7 @@ export class StyleManager {
  *   - Removes any existing inline declarations not listed in `props`
  *   - Sets the provided declarations (merge order doesn’t matter; result is exact)
  *   - `null` removes a provided key; `undefined` is ignored
- *   - Numbers are passed through as-is (supply units yourself)
+ *   - Numbers are passed through as-is (units must be supplied)
  */
     cssReplace(
         props: Record<string, string | number | null | undefined>
@@ -375,7 +373,7 @@ export class StyleManager {
             if (v === null) {
                 this.remove(k);               // explicit null means "remove this key"
             } else {
-                this.setProperty(k, v);       // reuse your existing single-prop pathway
+                this.setProperty(k, v);     
             }
         }
 

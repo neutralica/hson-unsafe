@@ -209,7 +209,7 @@ export class LiveMapProjector implements Projector {
 }
 
 // Helper: consistent coercion from DOM control value → model value.
-// Keep symmetric with your serializers to avoid drift.
+// Keep symmetric with serializers to avoid drift.
 function coerceFromInput(el: HTMLElement): unknown {
   if (el instanceof HTMLInputElement) {
     if (el.type === "number") {
@@ -225,6 +225,6 @@ function coerceFromInput(el: HTMLElement): unknown {
 }
 
 function cryptoRandomTx(): TxId {
-  // Not cryptographically strong across all environments; replace per your utilities.
+  // Not cryptographically strong across all environments
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }

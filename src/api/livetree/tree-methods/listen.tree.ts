@@ -147,7 +147,7 @@ export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
       }
     };
 
-    // queue this binding; attach() will call addEventListener with your current opts
+    // queue this binding; attach() will call addEventListener with current opts
     queue.push({ type: String(type), handler: wrapped });
     schedule(); // auto-attach at end of microtask
     return api;

@@ -28,13 +28,13 @@ export function parse_html_attrs($el: Element): {
     if (n === _DATA_INDEX) { (meta ??= {})[_DATA_INDEX] = v; continue; }
     if (n === _DATA_QUID) { (meta ??= {})[_DATA_QUID] = v; continue; }
 
-    // C) style → structured object (unchanged)
+    // C) style → structured object 
     if (n === "style") { (attrs as any).style = parse_style_string(v); continue; }
 
     // D) ignore xmlns / xml:* noise
     if (name === "xmlns" || name.startsWith("xmlns:") || name.startsWith("xml:")) continue;
 
-    // E) svg alias normalize (unchanged)
+    // E) svg alias normalize
     if ($el.namespaceURI === "http://www.w3.org/2000/svg" && n === "xlink:href") {
       if (!$el.hasAttribute("href")) (attrs as any).href = v;
       continue;

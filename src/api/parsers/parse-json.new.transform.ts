@@ -93,7 +93,7 @@ export function nodeFromJson(
 
     // ---- 0) Primitive branch (strings → _str, others → _val) ----
     if ($parentTag === STR_TAG || $parentTag === VAL_TAG) {
-        // CHANGED: preserve empty-string as a real scalar (_str([""]))
+        // preserve empty-string as a real scalar (_str([""]))
         if ($parentTag === STR_TAG) {
             if (!is_string($srcJson)) {
                 _throw_transform_err(`expected string for ${STR_TAG}, got ${typeof $srcJson}`, 'nodeFromJson.primitive');
@@ -188,10 +188,10 @@ export function nodeFromJson(
                 if (val && typeof val === 'object' && !Array.isArray(val)) {
                     const elObj = val as Record<string, unknown>;
 
-                    // Keep your existing guard against raw VSN misuse, but STOP forbidding _attrs/_meta.
+                    // guard against raw VSN misuse
                     assertNoForbiddenVSNKeysInJSON(elObj, `"_elem"[${ix}]`);
 
-                    // Exactly one non-underscore tag key required (you already enforce this)
+                    // Exactly one non-underscore tag key required
                     const tagKeys = nonUnderscoreKeys(elObj);
                     if (tagKeys.length !== 1) {
                         _throw_transform_err('element-object must have exactly one tag key', 'parse_json', make_string(elObj));
@@ -209,12 +209,11 @@ export function nodeFromJson(
                         ? (maybeMeta as HsonMeta)
                         : undefined;
 
-                    // after you've built `hoistedAttrs`
                     if (hoistedAttrs && Object.prototype.hasOwnProperty.call(hoistedAttrs, "style")) {
                         const sv = (hoistedAttrs as any).style;
 
                         if (sv && typeof sv === "object" && !Array.isArray(sv)) {
-                            // JSON gave a style object ⇒ canonicalize via your existing pair
+                            // JSON gave a style object ⇒ canonicalize 
                             const css = serialize_style(sv as Record<string, string>);      // kebab/trim/sort
                             (hoistedAttrs as any).style = parse_style_string(css);        // lower→camel done here
                         } else if (typeof sv === "string") {
@@ -260,7 +259,7 @@ export function nodeFromJson(
         const propertyNodes: HsonNode[] = propKeys.map((key) => {
             const raw = obj[key] as JsonType;
 
-            // CHANGED: build a child node for the property value WITHOUT collapsing "".
+            // build a child node for the property value WITHOUT collapsing "".
             let child: HsonNode;
 
             if (typeof raw === 'string') {
@@ -291,7 +290,7 @@ export function nodeFromJson(
                 _throw_transform_err(`unsupported JSON value for key "${key}"`, 'nodeFromJson.object.value');
             }
 
-            // CHANGED: JSON-mode property ⇒ inner _obj wrapper unless the child is already a cluster
+            // JSON-mode property ⇒ inner _obj wrapper unless the child is already a cluster
             const payload =
                 (child._tag === OBJ_TAG || child._tag === ARR_TAG)
                     ? [child]                                    // passthrough single cluster

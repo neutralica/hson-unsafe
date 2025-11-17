@@ -53,7 +53,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
     function _take(kind: typeof TOKEN_KIND.EMPTY_OBJ): TokenEmptyObj;
     function _take(): Tokens | null;
 
-    // CHANGED: runtime impl checks when an expected kind is passed
+    // runtime impl checks when an expected kind is passed
     function _take(expected?: TokenKind): any {
         const tok = $tokens[ix++] as Tokens | undefined;
         if (!tok) return null;
@@ -194,7 +194,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             return { node, closeKind };
         }
 
-        // ---------- VSN passthroughs (unchanged) ----------
+        // ---------- VSN passthroughs ----------
         if (open.tag === OBJ_TAG || open.tag === ARR_TAG || open.tag === ELEM_TAG) {
             node._content = kids as NodeContent;
             if ($isTopLevel) topCloseKinds.push(closeKind);
@@ -269,7 +269,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             if (t.kind === TOKEN_KIND.EMPTY_OBJ) {
 
                 _take();
-                // CHANGED: build an empty object *item*
+                // build an empty object *item*
                 childNode = CREATE_NODE({ _tag: OBJ_TAG, _meta: {}, _content: [] });
 
             } else if (t.kind === TOKEN_KIND.TEXT) {
@@ -308,7 +308,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         const t = _peek(); if (!t) break;
 
         if (t.kind === TOKEN_KIND.OPEN) {
-            // CHANGED: mark top-level so we record the closer
+            // mark top-level so we record the closer
             const { node, closeKind } = readTag(true); // <-- true
             nodes.push(node);
             topCloseKinds.push(closeKind); // <-- record
@@ -337,7 +337,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
     }
 
     if (nodes.length === 1 && nodes[0]._tag === ROOT_TAG) {
-        return nodes[0]; // <-- CHANGED
+        return nodes[0];
     }
 
     /* implicit-root fallback (no explicit <_root>) ----------------------------*/

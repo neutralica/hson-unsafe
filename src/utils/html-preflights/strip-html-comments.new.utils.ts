@@ -4,7 +4,7 @@
  * Removes HTML/ESI comments from a string BEFORE XML parsing.
  * - Strips all <!-- ... --> blocks (non-greedy, multiline)
  * - Also removes any unterminated <!-- ... at EOF (for bad markup in the wild)
- * - Does NOT touch anything else; safe to run before your other preflight steps
+ * - Does NOT touch anything else; safe to run before other preflight steps
  */
 export function strip_html_comments(input: string): string {
   if (!input || input.indexOf('<!--') === -1) return input;

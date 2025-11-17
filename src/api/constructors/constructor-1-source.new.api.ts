@@ -82,7 +82,7 @@ export function construct_source_1(
 
 
     queryDOM(selector: string): OutputConstructor_2 {
-      // CHANGED: explicit null check with good error, no silent empty string
+      // explicit null check with good error, no silent empty string
       const element = document.querySelector<HTMLElement>(selector);
       if (!element) {
         _throw_transform_err(`queryDOM(): no element for selector "${selector}"`, 'queryDOM', selector);

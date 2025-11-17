@@ -12,7 +12,7 @@ import { unescape_hson_string } from "./unescape-hson.utils";
 
 // Helper: decode HSON token text iff it was quoted.
 function decode_hson_value(text: string, quoted: boolean | undefined): string {
-  // CHANGED: single, explicit decision point
+  // single, explicit decision point
   return quoted ? unescape_hson_string(text) : text.trim();
 }
 
@@ -25,7 +25,7 @@ export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs; meta: Hson
 
     // Route meta: ONLY data-_* goes to _meta (HSON edge — no HTML entities here)
     if (k.startsWith(_META_DATA_PREFIX)) {
-      // CHANGED: decode quoted HSON once before storing
+      // decode quoted HSON once before storing
       if (ra.value) {
         const val: string = decode_hson_value(ra.value.text, ra.value.quoted);
         meta[k] = val;
@@ -37,7 +37,7 @@ export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs; meta: Hson
     // style → decode (if quoted) → parse to object
     if (k === "style") {
       if (ra.value) {
-        // CHANGED: decode first, then parse; keeps parity with other sources
+        // decode first, then parse; keeps parity with other sources
         const decoded: string = decode_hson_value(ra.value.text, ra.value.quoted);
         attrs.style = parse_style_string(decoded);
       } else {
@@ -48,15 +48,15 @@ export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs; meta: Hson
 
     // Flags & normal values (HSON edge — JSON-literal quotes only, no HTML entities)
     if (!ra.value) {
-      // Bare flag: key present with "key" (your established convention)
-      attrs[k] = k as unknown as Primitive; // NOTE: keep your existing flag shape
+      // flag === key="key"
+      attrs[k] = k as unknown as Primitive; 
       continue;
     }
 
-    // CHANGED: decode quoted HSON once
+    // decode quoted HSON once
     const val: string = decode_hson_value(ra.value.text, ra.value.quoted);
 
-    // Maintain your disabled="" / disabled="disabled" → key flag behavior
+    // Maintain disabled="" / disabled="disabled" → key flag behavior
     if (val === "" || val === k) {
       attrs[k] = k as unknown as Primitive;
     } else {

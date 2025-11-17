@@ -268,7 +268,7 @@ function emitNode(
             const kids = (node._content ?? []) as HsonNode[];
 
             if (kids.length === 0) {
-                // CHANGED: no generic `<>`. An empty document is an empty fragment.
+                // no generic `<>`. An empty document is an empty fragment.
                 return ""; // emit nothing
             }
 
@@ -281,10 +281,10 @@ function emitNode(
                 _throw_transform_err('_root child must be _obj | _elem | _arr', 'serialize_hson');
             }
 
-            // CHANGED: emit *only* the child cluster, with no `_root` and no synthetic sentinel.
+            // emit *only* the child cluster, with no `_root` and no synthetic sentinel.
             const inner = emitNode(cluster, 0, cluster._tag as ParentCluster, guard);
 
-            // Special case: if (cluster is _obj and has 0 props) and you want a shorthand, *then* return "<>"
+            // Special case: if (cluster is _obj and has 0 props) return "<>"
             if (cluster._tag === OBJ_TAG && (cluster._content?.length ?? 0) === 0) {
                 return "<>"; // optional shorthand, matches parser C above
             }
@@ -387,7 +387,7 @@ function emitNode(
             return undefined;
         }
 
-        // primitive -> HSON literal (same logic you already have)
+        // primitive -> HSON literal
         function emit_primitive_as_hson(p: Primitive): string {
             return typeof p === 'string' ? JSON.stringify(p) : String(p);
         }

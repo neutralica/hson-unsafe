@@ -228,8 +228,8 @@ export function assertNewShapeQuick(n: any, where: string): void {
     if (Array.isArray(content)) {
       // Don’t descend into leaves; main walk already validates payload shape/arity
       if (tag === STR_TAG || tag === VAL_TAG) {
-        // optional: enforce arity here if you want, but don’t throw on the primitive itself
-        // if (content.length !== 1) throw new Error('...'); // up to you
+        // optional: enforce arity here, but don’t throw on the primitive itself
+        // if (content.length !== 1) throw new Error('...'); 
       } else {
         for (const c of content) {
           // Only push nodes; ignore primitives here.

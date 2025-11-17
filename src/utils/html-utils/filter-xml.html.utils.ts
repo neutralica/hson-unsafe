@@ -2,7 +2,7 @@
 
 /* ──────────────────────────────────────────────────────────────
    1) Named HTML entities → numeric (XML-safe)
-   Extend this table as you encounter more in the wild.
+   Extend this table as more are encountered in the wild.
    ────────────────────────────────────────────────────────────── */
 const NAMED_TO_NUMERIC: Record<string, number> = {
   nbsp: 160, copy: 169, reg: 174, trade: 8482, euro: 8364,

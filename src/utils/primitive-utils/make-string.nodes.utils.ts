@@ -9,7 +9,7 @@ export function make_string_pretty(value: unknown, indent = 2): string {
   return JSON.stringify(canon(value), null, indent);
 }
 
-/** Backward-compatible alias if you already use make_string everywhere */
+/** Backward-compatible alias */
 export const make_string = make_string_pretty;
 
 export function isRef(x: unknown): x is object {
@@ -21,7 +21,7 @@ function canon(v: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
   // Arrays: walk, but don't add array itself (optional)
   if (Array.isArray(v)) return v.map(x => canon(x, seen));
 
-  if (isRef(v)) {                         // CHANGED: use isRef
+  if (isRef(v)) {                       
     if (seen.has(v)) return "[[Circular]]";
     seen.add(v);                          // safe: v is an object/function
 
@@ -79,7 +79,7 @@ function orderStyleObject(s: Record<string, unknown>) {
 
 function orderMeta(m: HsonMeta) {
   const out: any = {};
-  // If you want certain meta keys first, prioritize them here:
+  // prioritize _meta keys
   const priority = [_DATA_QUID, _DATA_INDEX];
   const keys = [
     ...priority.filter(k => k in (m as any)),

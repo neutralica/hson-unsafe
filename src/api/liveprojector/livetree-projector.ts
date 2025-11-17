@@ -22,9 +22,9 @@ export class LiveTreeProjector implements Projector {
     this.path = path;
     this.mode = mode;
 
-    // Initial materialization from NEW → DOM (you already have this machinery).
+
     const node: HsonNode = this.store.readNode(path);
-    // TODO: replace this with your existing NEW→DOM renderer.
+    // TODO: replace this with existing NEW→DOM renderer.
     this.renderInitialDom(node, root);
 
     // Subscribe to the store and apply minimal DOM patches.
@@ -43,10 +43,10 @@ export class LiveTreeProjector implements Projector {
   onPatch(patch: Patch): void {
     if (!this.root) return;
     // TODO: For each op that touches this.path subtree, compute and apply minimal DOM updates.
-    // You already have QUID maps → target the exact element and update text/attrs/children.
+
   }
 
   private renderInitialDom(node: HsonNode, root: Element): void {
-    // TODO: Call your existing NEW→DOM projector.
+    // TODO: Call DOM projector.
   }
 }

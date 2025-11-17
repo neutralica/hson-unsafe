@@ -4,7 +4,7 @@
 // - Edits only the string fed to the XML parser (Nodes stay clean)
 
 type Range = { start: number; end: number };
-type ListFrame = { name: 'ul' | 'ol'; liOpen: boolean }; // CHANGED
+type ListFrame = { name: 'ul' | 'ol'; liOpen: boolean }; 
 
 export function optional_endtag_preflight(src: string): string {
   // 0) Fast exit
@@ -31,7 +31,7 @@ export function optional_endtag_preflight(src: string): string {
 
   // 2) Walk tags; maintain tiny stacks for lists/dl/p/table
   type Tag = { name: string; iOpenEnd: number; iAfterOpen: number };
-  const openList: ListFrame[] = [];                                     // CHANGED
+  const openList: ListFrame[] = [];                                     
   const openDL: Tag[] = [];
   let openP: Tag | null = null;
   const openTable: { tr: Tag | null; cell: Tag | null; section: 'thead' | 'tbody' | 'tfoot' | null } = { tr: null, cell: null, section: null };
@@ -60,37 +60,37 @@ export function optional_endtag_preflight(src: string): string {
 
     // --- LISTS: <ul>/<ol>/<li> ----------------------------------------------
 
-    // CHANGED: opening a list just pushes a new frame; do not touch li state yet
-    if (!isClose && (name === 'ul' || name === 'ol')) {                 // CHANGED
-      openList.push({ name: name as 'ul' | 'ol', liOpen: false });      // CHANGED
+    //  opening a list just pushes a new frame; do not touch li state yet
+    if (!isClose && (name === 'ul' || name === 'ol')) {                 
+      openList.push({ name: name as 'ul' | 'ol', liOpen: false });      
       continue;
     }
 
-    // CHANGED: when starting a new <li>, close the previous one only if liOpen at this depth
-    if (!isClose && name === 'li') {                                    // CHANGED
+    //  when starting a new <li>, close the previous one only if liOpen at this depth
+    if (!isClose && name === 'li') {                                    
       const last = openList[openList.length - 1];
       if (last) {
-        if (last.liOpen) inserts.push({ at: iTag, text: '</li>' });     // CHANGED
-        last.liOpen = true;                                             // CHANGED
+        if (last.liOpen) inserts.push({ at: iTag, text: '</li>' });     
+        last.liOpen = true;                                             
       }
       continue;
     }
 
-    // CHANGED: explicit </li> closes the liOpen bit for this depth
-    if (isClose && name === 'li') {                                     // CHANGED
+    //  explicit </li> closes the liOpen bit for this depth
+    if (isClose && name === 'li') {                                     
       const last = openList[openList.length - 1];
-      if (last && last.liOpen) last.liOpen = false;                     // CHANGED
+      if (last && last.liOpen) last.liOpen = false;                     
       continue;
     }
 
-    // CHANGED: only close a dangling </li> when the list itself closes AND a <li> is actually open
-    if (isClose && (name === 'ul' || name === 'ol')) {                  // CHANGED
+    //  only close a dangling </li> when the list itself closes AND a <li> is actually open
+    if (isClose && (name === 'ul' || name === 'ol')) {                  
       const last = openList[openList.length - 1];
       if (last && last.liOpen) {
-        inserts.push({ at: iTag, text: '</li>' });                      // CHANGED
-        last.liOpen = false;                                            // CHANGED
+        inserts.push({ at: iTag, text: '</li>' });                      
+        last.liOpen = false;                                            
       }
-      if (last && last.name === name) openList.pop();                   // CHANGED
+      if (last && last.name === name) openList.pop();                   
       else {
         // tolerant pop if malformed nesting
         for (let i = openList.length - 2; i >= 0; i--) {

@@ -61,7 +61,7 @@ export function construct_tree(
 
 
     fromHSON($hson: string): BranchConstructor {
-      // assumes you have tokenize_hson and parse_tokens available
+      // assumes tokenize_hson and parse_tokens available
       const rootNode = parse_hson($hson);
       const branch = createBranch(rootNode);
       return {

@@ -26,7 +26,7 @@ export function escape_text(input: string): string {
     if (!inTag) {
       let j = i;
       while (j < n) {
-        if (input[j] === "<" && isTagStarter(input[j + 1])) break; // CHANGED
+        if (input[j] === "<" && isTagStarter(input[j + 1])) break; 
         j++;
       }
       if (j > i) out += escapeText(input.slice(i, j));

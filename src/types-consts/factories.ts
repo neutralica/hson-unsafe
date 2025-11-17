@@ -11,7 +11,7 @@ export const CREATE_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
   _meta:  partial._meta ?? {},
 });
 
-// Tiny factories (so your tokenizer never constructs shapes inline)
+// Tiny factories (so tokenizer never constructs shapes inline)
 export const CREATE_OPEN_TOKEN = (tag: string, rawAttrs: RawAttr[], pos: Position): TokenOpen =>
   ({ kind: TOKEN_KIND.OPEN, tag, rawAttrs, pos });
 

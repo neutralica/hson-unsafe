@@ -86,7 +86,7 @@ function jsonFromNode($node: HsonNode): JsonType {
                     let value: JsonType = {};
                     if (propNode._content && propNode._content.length > 0) {
                         const child = propNode._content[0];
-                        // CHANGED: assign directly; do NOT Object.assign into {}
+                        // assign directly; do NOT Object.assign into {}
                         value = jsonFromNode(child as HsonNode);
                     }
                     jsonObj[key] = value as JsonType;

@@ -14,7 +14,7 @@ import {
 import { SVG_NS } from "../../utils/node-utils/node-from-svg.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { linkNodeToElement } from "../../utils/tree-utils/node-map-helpers.utils";
-// CHANGED: removed ensure_quid, NODE_ELEMENT_MAP, map_set imports
+// removed ensure_quid, NODE_ELEMENT_MAP, map_set imports
 
 /**
  * Render NEW nodes directly to DOM.

@@ -40,7 +40,7 @@ interface MultiResult {
   asBranch(): LiveTree;
   style: LiveTree['style'];                       // ← simple, correct
 
-  // attrs (forward to your existing LiveTree methods)
+  // attrs (forward to existing LiveTree methods)
   setAttrs(name: string, value: string | boolean | null): any;
   setAttrs(map: Record<string, string | boolean | null>): any;
   getAttrs(): Record<string, string> | undefined;
@@ -60,7 +60,7 @@ function makeMulti(found: HsonNode[]): MultiResult {
   const arr = found.map(n => new LiveTree([n])); // single-node wrappers
 
   function setAttrs(nameOrMap: any, val?: any) {
-    // forward to your existing LiveTree.setAttrs
+    // forward to LiveTree.setAttrs
     return (branch as any).setAttrs(nameOrMap, val);
   }
 
@@ -102,7 +102,7 @@ function makeRef(n: HsonNode): NodeRef {
 
 export class LiveTree {
   private selected: NodeRef[] = [];
-  // (unchanged) managers…
+  //  managers
   private styleManager: StyleManager | undefined = undefined;
   private datasetManager: DatasetManager | undefined = undefined;
 
@@ -129,7 +129,7 @@ export class LiveTree {
       this.selected = [];
     }
   }
-  // CHANGED: helper to temporarily run legacy logic that expects nodes
+  // helper to temporarily run legacy logic that expects nodes
   private withNodes<T>(fn: (nodes: HsonNode[]) => T): T {
     return fn(this.selectedNodes);
   }
@@ -149,7 +149,7 @@ export class LiveTree {
   get listen(): ListenerBuilder {
     return makeListenerBuilder(this);
   }
-  // CHANGED: constructor converts inputs → refs
+  // constructor converts inputs → refs
   constructor($nodes?: HsonNode | HsonNode[] | LiveTree) {
     this.setSelected($nodes);
   }
@@ -244,7 +244,7 @@ export class LiveTree {
       // tear down subtree: listeners + DOM + map
       detach_node_deep(n);
 
-      // optional: drop quids if you consider them invalid after removal
+      // drop quids (if invalid after removal)
       drop_quid(n);
     }
     // clear selection
@@ -389,7 +389,7 @@ export class LiveTree {
         if (qv instanceof RegExp) {
           if (typeof nv !== 'string' || !qv.test(nv)) return false;
         } else if (typeof qv === 'object' && qv !== null) {
-          // shallow object compare (e.g., style object); tweak if you need deep
+          // shallow object compare (e.g., style object); tweak if deep needed
           if (typeof nv !== 'object' || nv === null) return false;
           for (const [sk, sv] of Object.entries(qv as Record<string, unknown>)) {
             if ((nv as any)[sk] !== sv) return false;
