@@ -3,13 +3,14 @@ import { JsonType } from "../../core/types-consts/core.types";
 import { HsonNode } from "../../types-consts";
 import { SourceConstructor_1, FrameConstructor } from "../../types-consts/constructors.new.types";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
+import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
 import { construct_output_2 } from "./constructor-2-output.new.api";
 
 /**
- * hson.transform - step 1 (of 4)
+ * hson.transform constructor - step 1 (of 4)
  * extends three methods that accept source data 
  *  - json or html, as string or parsed
  *  - hson as string 
@@ -32,17 +33,29 @@ export function construct_source_1(
       $input: string | HTMLElement,
       $options: { sanitize: boolean } = { sanitize: true }
     ): OutputConstructor_2 {
+      // CHANGED: normalize HTML once
       const raw: string =
         typeof $input === "string" ? $input : $input.innerHTML;
-      const node: HsonNode = parse_html(raw);
 
-      const meta: Record<string, unknown> = $options.sanitize
-        ? { sanitized: true }
-        : {};
+      // NEW: decide whether to sanitize
+      const shouldSanitize: boolean =
+        !options.unsafe && $options.sanitize !== false;
+
+      // NEW: pick parser based on pipeline mode
+      const node: HsonNode = shouldSanitize
+        ? parse_external_html(raw) // DOMPurify + parse_html
+        : parse_html(raw);         // existing raw path
+
+      // NEW (optional but useful): meta records both raw + sanitization flag
+      const meta: Record<string, unknown> = {
+        sanitized: shouldSanitize,
+        rawInput: raw,
+      };
 
       const frame: FrameConstructor = { input: raw, node, meta };
       return construct_output_2(frame);
     },
+
 
     /**
      * parses a json string or object to hson nodes.

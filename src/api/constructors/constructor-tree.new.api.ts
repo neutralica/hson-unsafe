@@ -5,12 +5,15 @@ import { HsonNode } from "../../types-consts";
 import { _ERROR } from "../../types-consts/constants";
 import { TreeConstructor_Source, BranchConstructor, GraftConstructor } from "../../types-consts/tree.new.types";
 import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
+import { LiveTree } from "../livetree";
+import { create_live_tree } from "../livetree/create-live-tree.new.tree";
+import { graft } from "../livetree/graft.new.tree";
+import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
-import { create_live_tree } from "./create-live-tree.new.tree";
-import { graft } from "./graft.new.tree";
-import { LiveTree } from "./live-tree-class.new.tree";
+
 
 
 /**
@@ -32,23 +35,37 @@ export function construct_tree(
   /* the main object returned by construct_tree */
   return {
     /* methods for creating detached branches from data */
-
     fromHTML($html: string): BranchConstructor {
-      let branch: LiveTree;
-      if (isSvgMarkup($html.trimStart())) {
-        const el = new DOMParser().parseFromString($html, "image/svg+xml").documentElement;
-        const node = node_from_svg(el);
-        branch = createBranch(node);
-        return {
-          asBranch: () => branch,
-        };
+      let node: HsonNode;
+
+      const trimmed = $html.trimStart();
+
+      if (isSvgMarkup(trimmed)) {
+        if (!$options.unsafe) {
+          // SAFE pipeline: SVG from external HTML is not allowed
+          _throw_transform_err(
+            "liveTree.fromHTML(): SVG markup is only allowed on UNSAFE pipeline or via internal node_from_svg.",
+            "liveTree.fromHTML",
+            $html.slice(0, 200)
+          );
+        }
+
+        // UNSAFE: legacy SVG path (internal demo content)
+        const el = new DOMParser()
+          .parseFromString($html, "image/svg+xml")
+          .documentElement;
+        node = node_from_svg(el);
       } else {
-        const rootNode = parse_html($html);
-        branch = createBranch(rootNode);
-        return {
-          asBranch: () => branch,
-        };
+        // NON-SVG HTML: safe pipeline → sanitized; unsafe → raw
+        node = $options.unsafe
+          ? parse_html($html)
+          : parse_external_html($html);
       }
+
+      const branch = createBranch(node);
+      return {
+        asBranch: () => branch,
+      };
     },
 
     fromJSON($json: string | JsonType): BranchConstructor {

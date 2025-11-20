@@ -1,27 +1,26 @@
 // parse-html.new.transform.hson.ts (new)
 
-import { is_Primitive } from "../../core/utils/guards.core.utils";
+import { HsonNode, Primitive } from "../../types-consts";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
-import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
+import { is_Primitive } from "../../core/utils/guards.core.utils";
+import { is_string_NEW, is_indexed_NEW } from "../../utils/node-utils/node-guards.new.utils";
+import { _snip } from "../../utils/sys-utils/snip.utils";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
+import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs.utils";
 import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
-import { escape_text } from "../../utils/html-preflights/escape-text.new.utils";
+import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { expand_entities } from "../../utils/html-preflights/expand-entities.utils";
 import { expand_flags } from "../../utils/html-preflights/expand-flags.utils";
 import { expand_void_tags } from "../../utils/html-preflights/expand-self-closing.utils";
-import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
-import { is_string_NEW, is_indexed_NEW } from "../../utils/node-utils/node-guards.new.utils";
-import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs.utils";
-import { _snip } from "../../utils/sys-utils/snip.utils";
+import { escape_text } from "../../utils/html-preflights/escape-text.new.utils";
 import { strip_html_comments } from "../../utils/html-preflights/strip-html-comments.new.utils";
 import { wrap_cdata } from "../../safety/wrap-cdata.utils";
-import { HsonNode, Primitive } from "../../types-consts";
 import { optional_endtag_preflight } from "../../utils/html-preflights/optional-endtag.html.utils";
 import { escape_attr_angles } from "../../safety/escape_angles.html.utils";
 import { dedupe_attrs_html } from "../../safety/dedupe-attrs.html.utils";
 import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
 import { mangle_illegal_attrs } from "../../utils/html-preflights/mangle-illegal-attrs.utils";
-import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { namespace_svg } from "../../utils/html-preflights/namespace-svg";
 
 export function parse_html($input: string | Element): HsonNode {

@@ -138,7 +138,7 @@ export class LiveTree {
     await after_paint();
     return this;
   }
-  public append = append
+  public append = append;
   public empty = empty;
   public removeChild = remove_child;
   public getContent = get_content;
@@ -457,27 +457,6 @@ export class LiveTree {
 
     traverse($nodes);
     return $options.findFirst ? results.slice(0, 1) : results;
-  }
-
-
-  // ensure each selected node has a quid, and ensure DOM attribute exists if mounted
-  private map_quid(): void {
-    for (const n of this.selectedNodes) {
-      // ensure in-memory quid (no persistence)
-      const q = ensure_quid(n /* default persist:false */);
-      // if this node is mounted, stamp DOM attribute for stable lookup
-      const el = getElementForNode(n);
-      if (el) set_attrs_safe(el, _DATA_QUID, q);
-    }
-  }
-
-  // remove DOM attribute for the selected nodes (does not remove in-memory mapping)
-  // use when detaching/removing from DOM to avoid orphan attributes
-  private unmap_quid(): void {
-    for (const n of this.selectedNodes) {
-      const el = getElementForNode(n);
-      if (el) el.removeAttribute(_DATA_QUID);
-    }
   }
 
 }
