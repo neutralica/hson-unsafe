@@ -1,13 +1,13 @@
-import { HsonNode } from "../../../types-consts";
-import { FrameConstructor } from "../../../types-consts/constructors.types";
-import { JsonValue } from "../../../types-consts/node.new.types";
-import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
-import { parse_external_html } from "../../parsers/parse-external-html.transform";
-import { parse_hson } from "../../parsers/parse-hson.new.transform";
-import { parse_html } from "../../parsers/parse-html.new.transform";
-import { parse_json } from "../../parsers/parse-json.new.transform";
+import { HsonNode } from "../../types-consts";
+import { FrameConstructor } from "../../core/types-consts/constructors.core.types";
+import { JsonValue } from "../../types-consts/node.new.types";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
+import { parse_external_html } from "../parsers/parse-external-html.transform";
+import { parse_hson } from "../parsers/parse-hson.new.transform";
+import { parse_html } from "../parsers/parse-html.new.transform";
+import { parse_json } from "../parsers/parse-json.new.transform";
 import { construct_output_2_NEW } from "./construct-output-2";
-import { SourceConstructor_1_NEW, OutputConstructor_2_NEW } from "./new-types";
+import { SourceConstructor_1_NEW, OutputConstructor_2_NEW } from "../../types-consts/new-types";
 
 // If not already declared elsewhere, keep this in a shared types file.
 export interface HtmlSourceOptions {

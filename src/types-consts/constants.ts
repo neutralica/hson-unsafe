@@ -48,9 +48,9 @@ export const $HSON = 'hson' as const;
 export const $JSON = 'json' as const;
 export const $HTML = 'html' as const;
 export const $NODES = 'nodes' as const;
-export const RenderΔ = { HSON: $HSON, HTML: $HTML, JSON: $JSON, NODES: $NODES } as const;
+export const $RENDER = { HSON: $HSON, HTML: $HTML, JSON: $JSON, NODES: $NODES } as const;
 
-export const HSON_FrameΔ = {
+export const $HSON_FRAME = {
   GEN: 'generate',
   STD: 'standard',
   SUBSET: 'subset',

@@ -14,8 +14,6 @@ import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
 
-
-
 /**
  * factory function that builds the entry-point for the liveTree pipeline
  * @param $options - an object to control behavior, e.g., { unsafe: boolean }

@@ -1,6 +1,6 @@
-import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
-import { construct_render_4_NEW } from "./construct-render-4";
-import { OptionsConstructor_3_NEW, FrameOptions, RenderConstructor_4_NEW, FrameRender_NEW } from "./new-types";
+import { RenderFormats } from "../../core/types-consts/constructors.core.types";
+import { construct_render_4_NEW } from "./construct-render-4"; 
+import { OptionsConstructor_3_NEW, FrameOptions, RenderConstructor_4_NEW, FrameRender_NEW } from "../../types-consts/new-types";
 
 /**
  * Stage 3 (NEW): applying output options.

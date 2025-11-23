@@ -1,9 +1,9 @@
-import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
-import { HsonNode } from "../../../types-consts";
-import { RenderΔ } from "../../../types-consts/constants";
-import { JsonValue } from "../../../types-consts/node.new.types";
-import { make_string } from "../../../utils/primitive-utils/make-string.nodes.utils";
-import { FrameRender_NEW, ParsedResult, RenderConstructor_4_NEW } from "./new-types";
+import { RenderFormats } from "../../core/types-consts/constructors.core.types";
+import { HsonNode } from "../../types-consts";
+import { $RENDER } from "../../types-consts/constants";
+import { JsonValue } from "../../types-consts/node.new.types";
+import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
+import { FrameRender_NEW, ParsedResult, RenderConstructor_4_NEW } from "../../types-consts/new-types";
 
 /**
  * Stage 4 (NEW, terminal): serialize or project the final data.
@@ -38,14 +38,14 @@ export function construct_render_4_NEW<K extends RenderFormats>(
      */
     serialize(): string {
       switch (output) {
-        case RenderΔ.HSON: {
+        case $RENDER.HSON: {
           if (!frame.hson) {
             throw new Error("serialize(): frame is missing HSON data");
           }
           return frame.hson;
         }
 
-        case RenderΔ.JSON: {
+        case $RENDER.JSON: {
           if (frame.json == null) {
             throw new Error("serialize(): frame is missing JSON data");
           }
@@ -54,7 +54,7 @@ export function construct_render_4_NEW<K extends RenderFormats>(
             : make_string(frame.json);
         }
 
-        case RenderΔ.HTML: {
+        case $RENDER.HTML: {
           if (frame.html == null) {
             throw new Error("serialize(): frame is missing HTML data");
           }
@@ -86,7 +86,7 @@ export function construct_render_4_NEW<K extends RenderFormats>(
      */
     parse(): ParsedResult<K>  {
       switch (output) {
-        case RenderΔ.JSON: {
+        case $RENDER.JSON: {
           if (frame.json == null) {
             throw new Error("parse(): frame is missing JSON data");
           }
@@ -100,7 +100,7 @@ export function construct_render_4_NEW<K extends RenderFormats>(
           return frame.json as ParsedResult<K> ;
         }
 
-        case RenderΔ.HSON: {
+        case $RENDER.HSON: {
           if (!frame.node) {
             throw new Error("parse(): frame is missing HSON node data");
           }
@@ -108,7 +108,7 @@ export function construct_render_4_NEW<K extends RenderFormats>(
           return frame.node as ParsedResult<K> ;
         }
 
-        case RenderΔ.HTML: {
+        case $RENDER.HTML: {
           // Explicitly refuse a "parsed" HTML value.
           throw new Error(
             ".parse() is not available for the HTML output format.\n" +
@@ -121,30 +121,5 @@ export function construct_render_4_NEW<K extends RenderFormats>(
       }
     },
 
-    /**
-     * Project the current Nodes into a LiveTree branch.
-     *
-     * Behavior:
-     * - Uses the current `frame.node` as the root Node.
-     * - Builds the LiveTree structure, populating the NODE_ELEMENT_MAP
-     *   via `create_live_tree` without immediately grafting to the DOM.
-     *
-     * This is the bridge from:
-     *   "stateless transform pipeline" → "stateful DOM interaction".
-     */
-    // asBranch(): LiveTree {
-    //   if (!frame.node) {
-    //     throw new Error("asBranch(): frame is missing HSON node data");
-    //   }
-
-    //   const rootNode: HsonNode = frame.node;
-
-    //   // Populate DOM / NODE_ELEMENT_MAP for this subtree without attaching.
-    //   // (If create_live_tree returns a DOM Node, we can ignore it here and
-    //   // let LiveTree handle actual grafting / append later.)
-    //   create_live_tree(rootNode);
-
-    //   return new LiveTree(rootNode);
-    // },
   };
 }

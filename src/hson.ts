@@ -1,7 +1,6 @@
-import { construct_source_1 } from "./api/constructors/constructor-1-source.api";
 import { construct_tree } from "./api/constructors/constructor-tree.api";
-import { construct_source_1_NEW } from "./api/constructors/NEW/construct-source-1";
-import { DomQueryLiveTreeConstructor, DomQuerySourceConstructor, OutputConstructor_2_NEW } from "./api/constructors/NEW/new-types";
+import { construct_source_1_NEW } from "./api/constructors/construct-source-1";
+import { DomQueryLiveTreeConstructor, DomQuerySourceConstructor, OutputConstructor_2_NEW } from "./types-consts/new-types";
 import { LiveTree } from "./api/livetree";
 import { HsonNode } from "./types-consts";
 import { JsonValue } from "./types-consts/node.new.types";
@@ -10,66 +9,17 @@ import { JsonValue } from "./types-consts/node.new.types";
 (globalThis as any)._test_ON = () => { (globalThis as any).test_new = true; location.reload(); };
 (globalThis as any)._test_OFF = () => { (globalThis as any).test_new = false; location.reload(); };
 
-/** import hson 
- * current methods: 
- * - transform() (for simple conversions from format to format)
- * - liveTree() (returns a manipulable JSON tree 'grafted' into the DOM)
- * - unsafe (provides access to non-sanitized versions of the pipelines)
- */
-export const hson_OLD = {
-  /**
-   * the entry point for all stateless data transformations
-   * returns a chainable object to convert between formats
-   * sanitizes html by default
-   */
-  get transform() {
-    return construct_source_1({ unsafe: false });
-  },
-
-  /**
-   * the entry point for the stateful dom interaction pipeline
-   * returns a chainable object for creating and manipulating live trees
-   * sanitizes html by default
-   */
-  get liveTree() {
-    return construct_tree({ unsafe: false });
-  },
-
-  /**
-   * provides access to unsafe, non-sanitized versions of the pipelines
-   * use with trusted, developer-authored content only
-   */
-  UNSAFE: {
-    /**
-     * accesses the unsafe stateless data transformation pipeline
-     */
-    get transform() {
-      return construct_source_1({ unsafe: true });
-    },
-    /**
-     * accesses the unsafe stateful dom interaction pipeline
-     */
-    get liveTree() {
-      return construct_tree({ unsafe: true });
-    }
-  },
-
-  /**
-   * stubbed out for future development
-   */
-  liveMap: {},
-};
-
 
 
 
 /**
- * HSON public facade (NEW).
+ * HSON public facade (NEW 23NOV2025).
  *
  * This is the primary entry point for all HSON operations.
  *
  * Design:
- * - Step 1: choose a **source** via:
+ * [SOURCE]
+ * - Step 1: choose a source via:
  *     - `hson.fromUntrustedHtml(html)`
  *     - `hson.fromTrustedHtml(html)`
  *     - `hson.fromJSON(json)`
@@ -78,9 +28,30 @@ export const hson_OLD = {
  *     - `hson.queryDOM(selector)`
  *     - `hson.queryBody()`
  *
+ * [OUTPUT]
  * - Step 2: chain into the existing output pipeline returned by step 1:
  *   e.g. `.toHtml()`, `.toJson()`, `.toHson()`, `.branch()` (LiveTree), etc.
  *
+ * * [OPTIONS]
+ * - Step 3: optional formatting and rendering controls:
+ *       .spaced()   // human-readable formatting
+ *       .noBreak()  // single-line output
+ *       .linted()   // canonical formatting
+ *       .withOptions({...}) // fine-grained control
+ *
+ * [RENDER]
+ * - Step 4: finalize the chain:
+ *       .serialize()  → string output (HTML, JSON, or HSON text)
+ *       .parse()      → structured data (JSONValue or HsonNode)
+ *       .asBranch()   → LiveTree instance created from HTML
+ *
+ * Together these four steps form the complete HSON transformation pipeline:
+ *   1) choose source
+ *   2) choose output format
+ *   3) optionally configure output
+ *   4) produce final result (string, data, or LiveTree)
+
+
  * Trust model overview:
  *
  * - `fromUntrustedHtml(html)`:
@@ -95,14 +66,11 @@ export const hson_OLD = {
  *     are blocked in the safe pipeline.
  *
  * - `fromJSON`, `fromHSON`, `fromNode`:
- *   - Treat inputs as *structural data / Nodes*, not markup.
- *   - No DOMPurify is applied here.
+ *   - Treat inputs as data, not markup.
+ *   - No DOMPurify is applied here by default.
  *   - If these structures encode HTML AST and you need HTML-style sanitization,
  *     that should be done explicitly later (e.g. Nodes → HTML → DOMPurify → Nodes).
  *
- * The older `hson.transform` / `hson.liveTree` getters are preserved for
- * backwards compatibility but are deprecated in favor of these flattened
- * entrypoints.
  */
 
 export const hson = {

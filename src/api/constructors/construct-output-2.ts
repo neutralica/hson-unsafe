@@ -1,21 +1,19 @@
-import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
-import { HsonNode } from "../../../types-consts";
-import { RenderΔ } from "../../../types-consts/constants";
-import { FrameConstructor } from "../../../types-consts/constructors.types";
-import { LiveTree } from "../../livetree";
-import { create_live_tree } from "../../livetree/create-live-tree.tree";
-import { parse_external_html } from "../../parsers/parse-external-html.transform";
-import { serialize_hson } from "../../serializers/serialize-hson.new.render";
-import { serialize_html } from "../../serializers/serialize-html.new.render";
-import { serialize_json } from "../../serializers/serialize-json.new.render";
-import { construct_options_3 } from "../constructor-3-options.api";
-import { construct_render_4 } from "../constructor-4-render.api";
+import { RenderFormats } from "../../core/types-consts/constructors.core.types";
+import { HsonNode } from "../../types-consts";
+import { $RENDER } from "../../types-consts/constants";
+import { FrameConstructor } from "../../core/types-consts/constructors.core.types"; 
+import { LiveTree } from "../livetree";
+import { create_live_tree } from "../livetree/create-live-tree.tree";
+import { parse_external_html } from "../parsers/parse-external-html.transform";
+import { serialize_hson } from "../serializers/serialize-hson.new.render";
+import { serialize_html } from "../serializers/serialize-html.new.render";
+import { serialize_json } from "../serializers/serialize-json.new.render";
 import { construct_options_3_NEW } from "./construct-options-3";
 import { construct_render_4_NEW } from "./construct-render-4";
-import { OutputConstructor_2_NEW, OptionsConstructor_3_NEW, RenderConstructor_4_NEW, LiveTreeConstructor_3_NEW, FrameRender_NEW } from "./new-types";
+import { OutputConstructor_2_NEW, OptionsConstructor_3_NEW, RenderConstructor_4_NEW, LiveTreeConstructor_3_NEW, FrameRender_NEW } from "../../types-consts/new-types";
 
 /**
- * HSON pipeline – stage 2 (NEW): select output format.
+ * HSON pipeline – stage 2: select output format.
  *
  * This takes a normalized HSON "frame" (Node + meta) produced by
  * `construct_source_NEW` and produces the format-selection surface:
@@ -51,27 +49,27 @@ export function construct_output_2_NEW(frame: FrameConstructor): OutputConstruct
     return {
       toHSON() {
         const hson = serialize_hson(currentFrame.node);
-        const ctx: FrameRender_NEW<(typeof RenderΔ)["HSON"]> = {
+        const ctx: FrameRender_NEW<(typeof $RENDER)["HSON"]> = {
           frame: { ...currentFrame, hson },
-          output: RenderΔ.HSON,
+          output: $RENDER.HSON,
         };
         return makeFinalizer(ctx);
       },
 
       toJSON() {
         const json = serialize_json(currentFrame.node);
-        const ctx: FrameRender_NEW<(typeof RenderΔ)["JSON"]> = {
+        const ctx: FrameRender_NEW<(typeof $RENDER)["JSON"]> = {
           frame: { ...currentFrame, json },
-          output: RenderΔ.JSON,
+          output: $RENDER.JSON,
         };
         return makeFinalizer(ctx);
       },
 
       toHTML(){
         const html = serialize_html(currentFrame.node);
-        const ctx: FrameRender_NEW<(typeof RenderΔ)["HTML"]> = {
+        const ctx: FrameRender_NEW<(typeof $RENDER)["HTML"]> = {
           frame: { ...currentFrame, html },
-          output: RenderΔ.HTML,
+          output: $RENDER.HTML,
         };
         return makeFinalizer(ctx);
       },

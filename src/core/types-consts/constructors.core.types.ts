@@ -1,14 +1,26 @@
 // constructors.types.hson.ts
 
-import { LiveTree } from "../../api/livetree/live-tree-class.new.tree";
+
 import { HsonNode } from "../../types-consts";
-import { RenderΔ, HSON_FrameΔ } from "../../types-consts/constants";
+import { $RENDER, $HSON_FRAME } from "../../types-consts/constants";
 import { JsonType } from "./core.types";
 
 
+export interface FrameConstructor {
+    input: string | Element;
+    node: HsonNode;
+    hson?: string;
+    html?: string;
+    json?: JsonType | string;
+    mode?: FrameMode;
+    meta?: Record<string, unknown>;
+    options?: FrameOptions;
+};
+
+ 
 export type ProxyBackdoor = { _withNodes: HsonNode;[key: string]: any; };
 
-export type RenderFormats = (typeof RenderΔ)[keyof typeof RenderΔ];
+export type RenderFormats = (typeof $RENDER)[keyof typeof $RENDER];
 
 /* step 2: the output format selection
     returns an object that is a combination of the optional step (3) and the 
@@ -44,4 +56,4 @@ export interface RenderConstructor_4 {
     // asBranch(): LiveTree;
 }
 
-export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];
+export type FrameMode = (typeof $HSON_FRAME)[keyof typeof $HSON_FRAME];

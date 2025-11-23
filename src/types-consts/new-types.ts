@@ -1,9 +1,9 @@
 
-import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
-import { RenderΔ, HSON_FrameΔ } from "../../../types-consts/constants";
-import { FrameConstructor } from "../../../types-consts/constructors.types";
-import { HsonNode, JsonValue } from "../../../types-consts/node.new.types";
-import { LiveTree } from "../../livetree";
+import { RenderFormats } from "../core/types-consts/constructors.core.types";
+import { $RENDER, } from "./constants";
+import { FrameConstructor } from "../core/types-consts/constructors.core.types";
+import { HsonNode, JsonValue } from "./node.new.types";
+import { LiveTree } from "../api/livetree";
 
 export interface FrameRender_NEW<K extends RenderFormats> {
   frame: FrameConstructor;
@@ -85,14 +85,14 @@ export interface SourceConstructor_1_NEW {
  *       .serialize();    // step 4 – final action
  */
 export interface OutputConstructor_2_NEW {
-    toJSON(): OptionsConstructor_3_NEW<(typeof RenderΔ)["JSON"]> &
-        RenderConstructor_4_NEW<(typeof RenderΔ)["JSON"]>;
+    toJSON(): OptionsConstructor_3_NEW<(typeof $RENDER)["JSON"]> &
+        RenderConstructor_4_NEW<(typeof $RENDER)["JSON"]>;
 
-    toHSON(): OptionsConstructor_3_NEW<(typeof RenderΔ)["HSON"]> &
-        RenderConstructor_4_NEW<(typeof RenderΔ)["HSON"]>;
+    toHSON(): OptionsConstructor_3_NEW<(typeof $RENDER)["HSON"]> &
+        RenderConstructor_4_NEW<(typeof $RENDER)["HSON"]>;
 
-    toHTML(): OptionsConstructor_3_NEW<(typeof RenderΔ)["HTML"]> &
-        RenderConstructor_4_NEW<(typeof RenderΔ)["HTML"]>;
+    toHTML(): OptionsConstructor_3_NEW<(typeof $RENDER)["HTML"]> &
+        RenderConstructor_4_NEW<(typeof $RENDER)["HTML"]>;
 
     // NEW: LiveTree output family
     liveTree(): LiveTreeConstructor_3_NEW;
@@ -267,9 +267,9 @@ export interface DomQueryLiveTreeConstructor {
 
 
 export type ParsedResult<K extends RenderFormats> =
-    K extends (typeof RenderΔ)["JSON"]
+    K extends (typeof $RENDER)["JSON"]
     ? JsonValue
-    : K extends (typeof RenderΔ)["HSON"]
+    : K extends (typeof $RENDER)["HSON"]
     ? HsonNode
     // HTML has no parseable “valueful” representation in this API
     : never;
