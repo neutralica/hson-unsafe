@@ -27,7 +27,7 @@ export interface HtmlSourceOptions {
  * Unified HSON source constructor (NEW).
  *
  * This is stage 1 of the NEW pipeline:
- *   - It accepts *source formats* (HTML / JSON / HSON / DOM / Node),
+ *   - It accepts *source formats* (HTML / JSON / HSON / DOM / IR),
  *   - Normalizes them into a single HsonNode frame,
  *   - Then hands that frame to `construct_output_2_NEW` (stage 2).
  *

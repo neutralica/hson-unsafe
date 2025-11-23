@@ -17,7 +17,7 @@ export interface HtmlSourceOptions {
 }
 
 export interface SourceConstructor_1_NEW {
-    /** HSON text → Node */
+    /** HSON string → Node */
     fromHSON(input: string): OutputConstructor_2_NEW;
 
     /** JSON → Nodes */
@@ -25,7 +25,7 @@ export interface SourceConstructor_1_NEW {
 
     /** HTML → Nodes
      *
-     * - `input` may be an HTML string or an Element whose `innerHTML` is used.
+     * - `input` may be an HTML string or an Element (its `innerHTML` is used).
      * - `options.sanitize` controls *per-call* behavior in the safe pipeline:
      *     - safe pipeline (`unsafe: false`):
      *         - `sanitize !== false` → DOMPurify (`parse_external_html`)
@@ -57,9 +57,6 @@ export interface SourceConstructor_1_NEW {
     queryBody(): OutputConstructor_2_NEW;
 }
 
-export type ProxyBackdoor = { _withNodes: HsonNode;[key: string]: unknown };
-
-export type RenderFormats = (typeof RenderΔ)[keyof typeof RenderΔ];
 
 /**
  * NEW: Step 2 – output format selection.
@@ -113,6 +110,29 @@ export interface OutputConstructor_2_NEW {
      */
     sanitizeBEWARE(): OutputConstructor_2_NEW;
 }
+// generic builder: no DOM mount target → no graft()
+// export interface OutputBuilder {
+//     toJSON(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
+//     toHTML(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
+//     toHSON(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
+//     liveTree(): LiveTreeBuilder_NoGraft;
+//     sanitizeBEWARE(): OutputBuilder;
+// }
+
+// // same as above, but only created by queryDOM/queryBody
+// // → it remembers a mount target internally
+// export interface OutputBuilder_WithGraft extends OutputBuilder {
+//     liveTree(): LiveTreeBuilder_WithGraft;
+// }
+
+// export  interface LiveTreeBuilder_NoGraft {
+//     asBranch(): LiveTree;
+// }
+
+// export interface LiveTreeBuilder_WithGraft {
+//     asBranch(): LiveTree;
+//     graft(): LiveTree;   // uses the mount target captured by queryDOM/queryBody
+// }
 
 export interface LiveTreeConstructor_3_NEW {
     asBranch(): LiveTree;
@@ -218,4 +238,14 @@ export interface RenderConstructor_4_NEW {
     asBranch(): LiveTree;
 }
 
-export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];
+// export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];
+
+// what hson.queryDOM/queryBody return
+export interface DomQuerySourceConstructor {
+  liveTree(): DomQueryLiveTreeConstructor;
+}
+
+// what hson.queryDOM(...).liveTree() returns
+export interface DomQueryLiveTreeConstructor {
+  graft(): LiveTree;
+}

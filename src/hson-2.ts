@@ -1,7 +1,7 @@
 
 import { construct_tree } from "./api/constructors/constructor-tree.api";
 import { construct_source_1_NEW } from "./api/constructors/NEW/construct-source-1";
-import { OutputConstructor_2 } from "./core/types-consts/constructors.core.types";
+import { OutputConstructor_2_NEW } from "./api/constructors/NEW/new-types";
 import { HsonNode } from "./types-consts";
 import { JsonType } from "./types-consts/node.new.types";
 
@@ -46,7 +46,7 @@ import { JsonType } from "./types-consts/node.new.types";
  * backwards compatibility but are deprecated in favor of these flattened
  * entrypoints.
  */
-export const hson2 = {
+export const hsonToDelete = {
 
   /**
    * External / untrusted HTML → sanitized HSON Nodes → (chained output).
@@ -64,7 +64,7 @@ export const hson2 = {
    *     - serialize (`.toHtml()`, `.toJson()`, `.toHson()`),
    *     - or project into a LiveTree (`.branch()`).
    */
-  fromUntrustedHtml(input: string | Element): OutputConstructor_2 {
+  fromUntrustedHtml(input: string | Element): OutputConstructor_2_NEW {
     return construct_source_1_NEW({ unsafe: false }).fromHTML(input, {
       sanitize: true,
     });
@@ -86,7 +86,7 @@ export const hson2 = {
    *
    * Never feed untrusted / user-supplied HTML through this method.
    */
-  fromTrustedHtml(input: string | Element): OutputConstructor_2 {
+  fromTrustedHtml(input: string | Element): OutputConstructor_2_NEW {
     return construct_source_1_NEW({ unsafe: true }).fromHTML(input, {
       sanitize: false,
     });
@@ -107,7 +107,7 @@ export const hson2 = {
    * - If your JSON encodes an HTML AST and you want HTML-style sanitization,
    *   you must handle that explicitly (e.g. Nodes → HTML → DOMPurify → Nodes).
    */
-  fromJSON(input: string | JsonType): OutputConstructor_2 {
+  fromJSON(input: string | JsonType): OutputConstructor_2_NEW {
     // You can choose `{ unsafe: true }` or `{ unsafe: false }` here; for JSON,
     // the "unsafe" flag only tags meta and affects follow-up HTML parsing
     // decisions, not this step itself. Using `unsafe: true` makes it explicit
@@ -120,7 +120,7 @@ export const hson2 = {
    *
    * Parses HSON source text into Nodes. No DOMPurify is used here.
    */
-  fromHSON(input: string): OutputConstructor_2 {
+  fromHSON(input: string): OutputConstructor_2_NEW {
     return construct_source_1_NEW({ unsafe: true }).fromHSON(input);
   },
 
@@ -130,7 +130,7 @@ export const hson2 = {
    * Initializes the pipeline from an already-constructed Node.
    * No sanitization is applied here.
    */
-  fromNode(node: HsonNode): OutputConstructor_2 {
+  fromNode(node: HsonNode): OutputConstructor_2_NEW {
     return construct_source_1_NEW({ unsafe: true }).fromNode(node);
   },
 
@@ -149,7 +149,7 @@ export const hson2 = {
    *   current document is typically authored by you.
    * - Throws a structured transform error if the selector matches nothing.
    */
-  queryDOM(selector: string): OutputConstructor_2 {
+  queryDOM(selector: string): OutputConstructor_2_NEW {
     return construct_source_1_NEW({ unsafe: true }).queryDOM(selector);
   },
 
@@ -161,7 +161,7 @@ export const hson2 = {
    - Uses the *trusted* HTML path by default (no DOMPurify).
    * - Throws a structured transform error if `document.body` is unavailable.
    */
-  queryBody(): OutputConstructor_2 {
+  queryBody(): OutputConstructor_2_NEW {
     return construct_source_1_NEW({ unsafe: true }).queryBody();
   },
 

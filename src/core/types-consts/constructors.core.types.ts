@@ -40,7 +40,7 @@ export interface FrameOptions {
 export interface RenderConstructor_4 {
     serialize(): string;
     parse(): any;
-    asBranch(): LiveTree;
+    // asBranch(): LiveTree;
 }
 
 export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];

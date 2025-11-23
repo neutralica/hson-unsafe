@@ -9,6 +9,8 @@ import { serialize_html } from "../../serializers/serialize-html.new.render";
 import { serialize_json } from "../../serializers/serialize-json.new.render";
 import { construct_options_3 } from "../constructor-3-options.api";
 import { construct_render_4 } from "../constructor-4-render.api";
+import { construct_options_3_NEW } from "./construct-options-3";
+import { construct_render_4_NEW } from "./construct-render-4";
 import { OutputConstructor_2_NEW, OptionsConstructor_3_NEW, RenderConstructor_4_NEW, LiveTreeConstructor_3_NEW } from "./new-types";
 
 /**
@@ -37,8 +39,8 @@ export function construct_output_2_NEW(frame: FrameConstructor): OutputConstruct
 
   function makeFinalizer(context: FrameRender): OptionsConstructor_3_NEW & RenderConstructor_4_NEW {
     return {
-      ...construct_options_3(context),
-      ...construct_render_4(context),
+      ...construct_options_3_NEW(context),
+      ...construct_render_4_NEW(context),
     };
   }
 

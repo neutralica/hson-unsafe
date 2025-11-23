@@ -3,7 +3,7 @@
 import { create_el_safe, set_attrs_safe } from "../../safety/safe-mount.safe";
 import { HsonNode, Primitive } from "../../types-consts";
 import {
-  _DATA_QUID,   // NOTE: can now be removed if not used elsewhere in this file
+  _DATA_QUID,  
   ARR_TAG,
   ELEM_TAG,
   OBJ_TAG,
@@ -14,7 +14,7 @@ import {
 import { SVG_NS } from "../../utils/node-utils/node-from-svg.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { linkNodeToElement } from "../../utils/tree-utils/node-map-helpers.utils";
-// removed ensure_quid, NODE_ELEMENT_MAP, map_set imports
+
 
 /**
  * Render NEW nodes directly to DOM.

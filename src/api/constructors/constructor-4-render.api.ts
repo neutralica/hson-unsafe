@@ -4,7 +4,7 @@ import { JsonType, Primitive } from "../../core/types-consts/core.types";
 import { RenderΔ } from "../../types-consts/constants";
 import { FrameRender } from "../../types-consts/constructors.new.types";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
-import { create_proxy } from "../livetree/create-proxy.tree";
+
 
 
 /**
@@ -71,10 +71,10 @@ export function construct_render_4($context: FrameRender): RenderConstructor_4 {
          * returns the structure as a "liveTree" proxy permitting 
          *  intuitive dot-notation access & hiding VSN clutter
          */
-        // TODO--this should be returnd one level up, alongside toHTML or toHSON, not here *as* HTML (it's not; it's a proxy)
-        asBranch(): any {
-            // return hson.transform.fromHSON
-            return create_proxy(frame.node);
-        }
+        // // TODO--this should be returnd one level up, alongside toHTML or toHSON, not here *as* HTML (it's not; it's a proxy)
+        // asBranch(): any {
+        //     // return hson.transform.fromHSON
+        //     return create_proxy(frame.node);
+        // }
     };
 }
