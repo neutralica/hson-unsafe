@@ -4,7 +4,7 @@ import { JsonType, Primitive } from "../../core/types-consts/core.types";
 import { RenderΔ } from "../../types-consts/constants";
 import { FrameRender } from "../../types-consts/constructors.new.types";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
-import { create_proxy } from "../livetree/create-proxy.new.tree";
+import { create_proxy } from "../livetree/create-proxy.tree";
 
 
 /**

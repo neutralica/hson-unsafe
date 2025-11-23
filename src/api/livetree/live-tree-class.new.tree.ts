@@ -2,11 +2,11 @@
 
 import { STR_TAG } from "../../types-consts/constants";
 import { _DATA_QUID } from "../../types-consts/constants";
-import { after_paint, append } from "./tree-methods/append.new.tree";
-import { DatasetManager } from "./tree-methods/dataset-manager.new.tree";
-import { empty } from "./tree-methods/empty.tree.new.utils";
-import { get_content } from "./tree-methods/get-content.new.tree";
-import { remove_child } from "./tree-methods/remove-child.tree.new.utils";
+import { after_paint, append } from "./tree-methods/append.tree";
+import { DatasetManager } from "./tree-methods/dataset-manager.tree";
+import { empty } from "./tree-methods/empty.tree.utils";
+import { get_content } from "./tree-methods/get-content.tree";
+import { remove_child } from "./tree-methods/remove-child.tree.utils";
 // import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 import { StyleManager } from "./tree-methods/style-manager-2.utils";

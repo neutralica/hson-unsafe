@@ -7,7 +7,7 @@ import { TreeConstructor_Source, BranchConstructor, GraftConstructor } from "../
 import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { LiveTree } from "../livetree";
-import { create_live_tree } from "../livetree/create-live-tree.new.tree";
+import { create_live_tree } from "../livetree/create-live-tree.tree";
 import { graft } from "../livetree/graft.new.tree";
 import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";

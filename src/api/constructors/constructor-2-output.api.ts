@@ -4,8 +4,8 @@ import { FrameConstructor, FrameRender } from "../../types-consts/constructors.n
 import { serialize_hson } from "../serializers/serialize-hson.new.render";
 import { serialize_html } from "../serializers/serialize-html.new.render";
 import { serialize_json } from "../serializers/serialize-json.new.render";
-import { construct_options_3 } from "./constructor-3-options.new.api";
-import { construct_render_4 } from "./constructor-4-render.new.api";
+import { construct_options_3 } from "./constructor-3-options.api";
+import { construct_render_4 } from "./constructor-4-render.api";
 
 /**
  *  hson.transform / stage 2 (of 4) - select output format
@@ -45,10 +45,7 @@ export function construct_output_2($frame: FrameConstructor): OutputConstructor_
             return createFinalizer_NEW(context);
         },
 
-        /* or: access the data directly as a proxy */
-        // this should be called 'asBranch' to match the other that does the same thing??? 
-        // asTree() {
-            // return create_proxy_NEW($frame.node);
-        // }
+
+
     };
 }

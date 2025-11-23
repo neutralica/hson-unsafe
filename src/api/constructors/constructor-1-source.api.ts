@@ -7,7 +7,7 @@ import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
-import { construct_output_2 } from "./constructor-2-output.new.api";
+import { construct_output_2 } from "./constructor-2-output.api";
 
 /**
  * hson.transform constructor - step 1 (of 4)

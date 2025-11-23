@@ -1,5 +1,5 @@
-import { construct_source_1 } from "./api/constructors/constructor-1-source.new.api";
-import { construct_tree } from "./api/constructors/constructor-tree.new.api";
+import { construct_source_1 } from "./api/constructors/constructor-1-source.api";
+import { construct_tree } from "./api/constructors/constructor-tree.api";
 
 
 (globalThis as any)._test_ON  = () => { (globalThis as any).test_new = true;  location.reload(); };

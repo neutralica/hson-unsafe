@@ -11,7 +11,7 @@ import { get_contentValue_NEW, find_child_by_tag_NEW, find_index_of_tag_NEW, upd
 import { get_semantic_child } from "../../utils/tree-utils/semantic-child.utils";
 import { strip_VSNs_NEW } from "../../utils/tree-utils/strip-vsns.new.utils";
 import { parse_json } from "../parsers/parse-json.new.transform";
-import { create_live_tree } from "./create-live-tree.new.tree";
+import { create_live_tree } from "./create-live-tree.tree";
 
 
 const DEBUG_UPDATE_MAP = new WeakMap<HsonNode, number>();
