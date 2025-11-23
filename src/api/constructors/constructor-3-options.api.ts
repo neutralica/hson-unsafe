@@ -1,5 +1,5 @@
 import { OptionsConstructor_3, FrameOptions, RenderConstructor_4 } from "../../core/types-consts/constructors.core.types";
-import { FrameRender } from "../../types-consts/constructors.new.types";
+import { FrameRender } from "../../types-consts/constructors.types";
 import { construct_render_4 } from "./constructor-4-render.api";
 
 /**

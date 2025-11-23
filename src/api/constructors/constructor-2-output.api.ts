@@ -1,6 +1,6 @@
 import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types";
 import { RenderΔ } from "../../types-consts/constants";
-import { FrameConstructor, FrameRender } from "../../types-consts/constructors.new.types";
+import { FrameConstructor, FrameRender } from "../../types-consts/constructors.types";
 import { serialize_hson } from "../serializers/serialize-hson.new.render";
 import { serialize_html } from "../serializers/serialize-html.new.render";
 import { serialize_json } from "../serializers/serialize-json.new.render";

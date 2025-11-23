@@ -1,7 +1,14 @@
 
+import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
 import { RenderΔ, HSON_FrameΔ } from "../../../types-consts/constants";
+import { FrameConstructor } from "../../../types-consts/constructors.types";
 import { HsonNode, JsonType } from "../../../types-consts/node.new.types";
 import { LiveTree } from "../../livetree";
+
+export interface FrameRender_NEW<K extends RenderFormats> {
+  frame: FrameConstructor;
+  output: K;
+}
 
 export interface HtmlSourceOptions {
     /** Override per-call HTML sanitization.
@@ -78,9 +85,14 @@ export interface SourceConstructor_1_NEW {
  *       .serialize();    // step 4 – final action
  */
 export interface OutputConstructor_2_NEW {
-    toJSON(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
-    toHTML(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
-    toHSON(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
+    toJSON(): OptionsConstructor_3_NEW<(typeof RenderΔ)["JSON"]> &
+        RenderConstructor_4_NEW<(typeof RenderΔ)["JSON"]>;
+
+    toHSON(): OptionsConstructor_3_NEW<(typeof RenderΔ)["HSON"]> &
+        RenderConstructor_4_NEW<(typeof RenderΔ)["HSON"]>;
+
+    toHTML(): OptionsConstructor_3_NEW<(typeof RenderΔ)["HTML"]> &
+        RenderConstructor_4_NEW<(typeof RenderΔ)["HTML"]>;
 
     // NEW: LiveTree output family
     liveTree(): LiveTreeConstructor_3_NEW;
@@ -149,7 +161,8 @@ export interface LiveTreeConstructor_3_NEW {
  *   // or
  *   hson.fromJSON(data).toHTML().spaced().linted().serialize();
  */
-export interface OptionsConstructor_3_NEW {
+export interface OptionsConstructor_3_NEW<K extends RenderFormats> {
+
     /**
      * Attach a full options object.
      *
@@ -157,16 +170,17 @@ export interface OptionsConstructor_3_NEW {
      * helpers like `.noBreak()` and `.spaced()` are just shorthands that
      * call `withOptions` under the hood.
      */
-    withOptions(opts: Partial<FrameOptions>): RenderConstructor_4_NEW;
+    withOptions(opts: Partial<FrameOptions>): RenderConstructor_4_NEW<K>;
+
 
     /** Convenience: set the `noBreak` flag (single-line render). */
-    noBreak(): RenderConstructor_4_NEW;
+    noBreak(): RenderConstructor_4_NEW<K>;
 
     /** Convenience: enable "spaced" output (e.g. pretty-print JSON / HSON). */
-    spaced(): RenderConstructor_4_NEW;
+    spaced(): RenderConstructor_4_NEW<K>;
 
     /** Convenience: enable linted / normalized output, if supported. */
-    linted(): RenderConstructor_4_NEW;
+    linted(): RenderConstructor_4_NEW<K>;
 }
 
 /**
@@ -197,7 +211,8 @@ export interface FrameOptions {
  * - `parse()`     → structured representation (type depends on format),
  * - `asBranch()`  → LiveTree projection for DOM interaction.
  */
-export interface RenderConstructor_4_NEW {
+export interface RenderConstructor_4_NEW<K extends RenderFormats> {
+
     /**
      * Render the current frame as a string in the chosen format.
      *
@@ -222,7 +237,7 @@ export interface RenderConstructor_4_NEW {
      * - The return type is `unknown` by design. Callers are expected to
      *   narrow or cast based on which `toX()` they used.
      */
-    parse(): unknown;
+    parse(): ParsedResult<K>;
 
     /**
      * Project the current Nodes into a LiveTree branch.
@@ -235,17 +250,26 @@ export interface RenderConstructor_4_NEW {
      * This is the bridge between the stateless transform pipeline and the
      * stateful DOM interaction layer.
      */
-    asBranch(): LiveTree;
+    // asBranch(): LiveTree;
 }
 
 // export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];
 
 // what hson.queryDOM/queryBody return
 export interface DomQuerySourceConstructor {
-  liveTree(): DomQueryLiveTreeConstructor;
+    liveTree(): DomQueryLiveTreeConstructor;
 }
 
 // what hson.queryDOM(...).liveTree() returns
 export interface DomQueryLiveTreeConstructor {
-  graft(): LiveTree;
+    graft(): LiveTree;
 }
+
+
+export type ParsedResult<K extends RenderFormats> =
+    K extends (typeof RenderΔ)["JSON"]
+    ? JsonType
+    : K extends (typeof RenderΔ)["HSON"]
+    ? HsonNode
+    // HTML has no parseable “valueful” representation in this API
+    : never;

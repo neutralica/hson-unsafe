@@ -1,7 +1,7 @@
 import { OutputConstructor_2 } from "../../core/types-consts/constructors.core.types";
 import { JsonType } from "../../core/types-consts/core.types";
 import { HsonNode } from "../../types-consts";
-import { SourceConstructor_1, FrameConstructor } from "../../types-consts/constructors.new.types";
+import { SourceConstructor_1, FrameConstructor } from "../../types-consts/constructors.types";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";

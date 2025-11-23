@@ -3,9 +3,10 @@
 import { LiveTree } from "../../api/livetree/live-tree-class.new.tree";
 import { HsonNode } from "../../types-consts";
 import { RenderΔ, HSON_FrameΔ } from "../../types-consts/constants";
+import { JsonType } from "./core.types";
 
 
-export type ProxyBackdoor = { _withNodes: HsonNode; [key: string]: any; };
+export type ProxyBackdoor = { _withNodes: HsonNode;[key: string]: any; };
 
 export type RenderFormats = (typeof RenderΔ)[keyof typeof RenderΔ];
 
@@ -16,7 +17,7 @@ export interface OutputConstructor_2 {
     toJSON(): OptionsConstructor_3 & RenderConstructor_4;
     toHTML(): OptionsConstructor_3 & RenderConstructor_4;
     toHSON(): OptionsConstructor_3 & RenderConstructor_4;
-   /*  "dev mode" only? */
+    /*  "dev mode" only? */
     // asTree(): ProxyBackdoor;
 }
 

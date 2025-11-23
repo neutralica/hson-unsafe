@@ -1,6 +1,7 @@
+import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
 import { HsonNode } from "../../../types-consts";
 import { RenderΔ } from "../../../types-consts/constants";
-import { FrameConstructor, FrameRender } from "../../../types-consts/constructors.new.types";
+import { FrameConstructor } from "../../../types-consts/constructors.types";
 import { LiveTree } from "../../livetree";
 import { create_live_tree } from "../../livetree/create-live-tree.tree";
 import { parse_external_html } from "../../parsers/parse-external-html.transform";
@@ -11,7 +12,7 @@ import { construct_options_3 } from "../constructor-3-options.api";
 import { construct_render_4 } from "../constructor-4-render.api";
 import { construct_options_3_NEW } from "./construct-options-3";
 import { construct_render_4_NEW } from "./construct-render-4";
-import { OutputConstructor_2_NEW, OptionsConstructor_3_NEW, RenderConstructor_4_NEW, LiveTreeConstructor_3_NEW } from "./new-types";
+import { OutputConstructor_2_NEW, OptionsConstructor_3_NEW, RenderConstructor_4_NEW, LiveTreeConstructor_3_NEW, FrameRender_NEW } from "./new-types";
 
 /**
  * HSON pipeline – stage 2 (NEW): select output format.
@@ -37,7 +38,9 @@ import { OutputConstructor_2_NEW, OptionsConstructor_3_NEW, RenderConstructor_4_
  */
 export function construct_output_2_NEW(frame: FrameConstructor): OutputConstructor_2_NEW {
 
-  function makeFinalizer(context: FrameRender): OptionsConstructor_3_NEW & RenderConstructor_4_NEW {
+  function makeFinalizer<K extends RenderFormats>(
+    context: FrameRender_NEW<K>
+  ): OptionsConstructor_3_NEW<K> & RenderConstructor_4_NEW<K> {
     return {
       ...construct_options_3_NEW(context),
       ...construct_render_4_NEW(context),
@@ -46,27 +49,27 @@ export function construct_output_2_NEW(frame: FrameConstructor): OutputConstruct
 
   function makeBuilder(currentFrame: FrameConstructor): OutputConstructor_2_NEW {
     return {
-      toHSON(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW {
+      toHSON() {
         const hson = serialize_hson(currentFrame.node);
-        const ctx: FrameRender = {
+        const ctx: FrameRender_NEW<(typeof RenderΔ)["HSON"]> = {
           frame: { ...currentFrame, hson },
           output: RenderΔ.HSON,
         };
         return makeFinalizer(ctx);
       },
 
-      toJSON(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW {
+      toJSON() {
         const json = serialize_json(currentFrame.node);
-        const ctx: FrameRender = {
+        const ctx: FrameRender_NEW<(typeof RenderΔ)["JSON"]> = {
           frame: { ...currentFrame, json },
           output: RenderΔ.JSON,
         };
         return makeFinalizer(ctx);
       },
 
-      toHTML(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW {
+      toHTML(){
         const html = serialize_html(currentFrame.node);
-        const ctx: FrameRender = {
+        const ctx: FrameRender_NEW<(typeof RenderΔ)["HTML"]> = {
           frame: { ...currentFrame, html },
           output: RenderΔ.HTML,
         };

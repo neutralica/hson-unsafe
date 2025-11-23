@@ -1,6 +1,6 @@
-import { FrameRender } from "../../../types-consts/constructors.new.types";
+import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
 import { construct_render_4_NEW } from "./construct-render-4";
-import { OptionsConstructor_3_NEW, FrameOptions, RenderConstructor_4_NEW } from "./new-types";
+import { OptionsConstructor_3_NEW, FrameOptions, RenderConstructor_4_NEW, FrameRender_NEW } from "./new-types";
 
 /**
  * Stage 3 (NEW): applying output options.
@@ -18,7 +18,9 @@ import { OptionsConstructor_3_NEW, FrameOptions, RenderConstructor_4_NEW } from 
  * @param render - the render context from stage 2 (format already chosen).
  * @returns an object exposing the options surface (stage 3).
  */
-export function construct_options_3_NEW(render: FrameRender): OptionsConstructor_3_NEW {
+export function construct_options_3_NEW<K extends RenderFormats>(
+  render: FrameRender_NEW<K>
+): OptionsConstructor_3_NEW<K> {
   const { frame, output } = render;
 
   return {
@@ -28,8 +30,8 @@ export function construct_options_3_NEW(render: FrameRender): OptionsConstructor
      * Convenience helpers like `.noBreak()` and `.spaced()` are shorthands
      * for calling this with specific flags.
      */
-    withOptions(opts: FrameOptions): RenderConstructor_4_NEW {
-      const updatedFrame: FrameRender["frame"] = {
+    withOptions(opts: FrameOptions):  RenderConstructor_4_NEW<K> {
+      const updatedFrame: FrameRender_NEW<K>["frame"] = {
         ...frame,
         options: { ...frame.options, ...opts },
       };
@@ -39,8 +41,8 @@ export function construct_options_3_NEW(render: FrameRender): OptionsConstructor
     /**
      * Format the output on a single line with no line breaks.
      */
-    noBreak(): RenderConstructor_4_NEW {
-      const updatedFrame: FrameRender["frame"] = {
+    noBreak():  RenderConstructor_4_NEW<K> {
+      const updatedFrame: FrameRender_NEW<K>["frame"] = {
         ...frame,
         options: { ...frame.options, noBreak: true },
       };
@@ -50,8 +52,8 @@ export function construct_options_3_NEW(render: FrameRender): OptionsConstructor
     /**
      * Add human-readable spacing and indentation to the output.
      */
-    spaced(): RenderConstructor_4_NEW {
-      const updatedFrame: FrameRender["frame"] = {
+    spaced():  RenderConstructor_4_NEW<K> {
+      const updatedFrame: FrameRender_NEW<K>["frame"] = {
         ...frame,
         options: { ...frame.options, spaced: true },
       };
@@ -61,8 +63,8 @@ export function construct_options_3_NEW(render: FrameRender): OptionsConstructor
     /**
      * Apply linting / canonicalization rules to the output.
      */
-    linted(): RenderConstructor_4_NEW {
-      const updatedFrame: FrameRender["frame"] = {
+    linted(): RenderConstructor_4_NEW<K> {
+      const updatedFrame: FrameRender_NEW<K>["frame"] = {
         ...frame,
         options: { ...frame.options, linted: true },
       };

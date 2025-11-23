@@ -1,5 +1,5 @@
 import { HsonNode } from "../../../types-consts";
-import { FrameConstructor } from "../../../types-consts/constructors.new.types";
+import { FrameConstructor } from "../../../types-consts/constructors.types";
 import { JsonType } from "../../../types-consts/node.new.types";
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
 import { parse_external_html } from "../../parsers/parse-external-html.transform";

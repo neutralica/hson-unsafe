@@ -1,11 +1,9 @@
+import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
 import { HsonNode } from "../../../types-consts";
 import { RenderΔ } from "../../../types-consts/constants";
-import { FrameRender } from "../../../types-consts/constructors.new.types";
 import { JsonType } from "../../../types-consts/node.new.types";
 import { make_string } from "../../../utils/primitive-utils/make-string.nodes.utils";
-import { LiveTree } from "../../livetree";
-import { create_live_tree } from "../../livetree/create-live-tree.tree";
-import { RenderConstructor_4_NEW } from "./new-types";
+import { FrameRender_NEW, ParsedResult, RenderConstructor_4_NEW } from "./new-types";
 
 /**
  * Stage 4 (NEW, terminal): serialize or project the final data.
@@ -24,7 +22,9 @@ import { RenderConstructor_4_NEW } from "./new-types";
  * - `parse()`     → structured value (JSON / Nodes),
  * - `asBranch()`  → LiveTree projection for DOM interaction.
  */
-export function construct_render_4_NEW(context: FrameRender): RenderConstructor_4_NEW {
+export function construct_render_4_NEW<K extends RenderFormats>(
+  context: FrameRender_NEW<K>
+): RenderConstructor_4_NEW<K> {
   const { frame, output } = context;
 
   return {
@@ -84,7 +84,7 @@ export function construct_render_4_NEW(context: FrameRender): RenderConstructor_
      *   const val = hson.fromJSON(data).toJSON().parse(); // val: unknown
      *   if (Array.isArray(val)) { ... }
      */
-    parse(): unknown {
+    parse(): ParsedResult<K>  {
       switch (output) {
         case RenderΔ.JSON: {
           if (frame.json == null) {
@@ -93,11 +93,11 @@ export function construct_render_4_NEW(context: FrameRender): RenderConstructor_
 
           if (typeof frame.json === "string") {
             // JSON string → parse
-            return JSON.parse(frame.json) as JsonType;
+            return JSON.parse(frame.json) as ParsedResult<K> ;
           }
 
           // Already a structured JSON value.
-          return frame.json as JsonType;
+          return frame.json as ParsedResult<K> ;
         }
 
         case RenderΔ.HSON: {
@@ -105,7 +105,7 @@ export function construct_render_4_NEW(context: FrameRender): RenderConstructor_
             throw new Error("parse(): frame is missing HSON node data");
           }
           // The Node itself is the “parsed” representation.
-          return frame.node as HsonNode;
+          return frame.node as ParsedResult<K> ;
         }
 
         case RenderΔ.HTML: {
@@ -132,19 +132,19 @@ export function construct_render_4_NEW(context: FrameRender): RenderConstructor_
      * This is the bridge from:
      *   "stateless transform pipeline" → "stateful DOM interaction".
      */
-    asBranch(): LiveTree {
-      if (!frame.node) {
-        throw new Error("asBranch(): frame is missing HSON node data");
-      }
+    // asBranch(): LiveTree {
+    //   if (!frame.node) {
+    //     throw new Error("asBranch(): frame is missing HSON node data");
+    //   }
 
-      const rootNode: HsonNode = frame.node;
+    //   const rootNode: HsonNode = frame.node;
 
-      // Populate DOM / NODE_ELEMENT_MAP for this subtree without attaching.
-      // (If create_live_tree returns a DOM Node, we can ignore it here and
-      // let LiveTree handle actual grafting / append later.)
-      create_live_tree(rootNode);
+    //   // Populate DOM / NODE_ELEMENT_MAP for this subtree without attaching.
+    //   // (If create_live_tree returns a DOM Node, we can ignore it here and
+    //   // let LiveTree handle actual grafting / append later.)
+    //   create_live_tree(rootNode);
 
-      return new LiveTree(rootNode);
-    },
+    //   return new LiveTree(rootNode);
+    // },
   };
 }
