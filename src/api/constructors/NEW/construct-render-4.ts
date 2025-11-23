@@ -1,7 +1,7 @@
 import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
 import { HsonNode } from "../../../types-consts";
 import { RenderΔ } from "../../../types-consts/constants";
-import { JsonType } from "../../../types-consts/node.new.types";
+import { JsonValue } from "../../../types-consts/node.new.types";
 import { make_string } from "../../../utils/primitive-utils/make-string.nodes.utils";
 import { FrameRender_NEW, ParsedResult, RenderConstructor_4_NEW } from "./new-types";
 

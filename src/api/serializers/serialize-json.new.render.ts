@@ -4,7 +4,7 @@ import { Primitive } from "../../core/types-consts/core.types";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { is_indexed_NEW } from "../../utils/node-utils/node-guards.new.utils";
 import { ROOT_TAG, EVERY_VSN, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../types-consts/constants";
-import { JsonType, JsonObj, HsonNode } from "../../types-consts/node.new.types";
+import { JsonValue, JsonObj, HsonNode } from "../../types-consts/node.new.types";
 import { clone_node } from "../../utils/node-utils/clone-node.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
@@ -30,10 +30,10 @@ export function serialize_json($node: HsonNode): string {
  * back into its equivalent javascript representation.
  *
  * @param {HsonNode} $node - the hsonnode to convert
- * @returns {JsonType} the resulting javascript object, array, or primitive value
+ * @returns {JsonValue} the resulting javascript object, array, or primitive value
  */
 
-function jsonFromNode($node: HsonNode): JsonType {
+function jsonFromNode($node: HsonNode): JsonValue {
 
     if (!$node || (typeof $node._tag !== 'string')) {
         console.warn('warning! node is type: ', typeof $node);
@@ -57,7 +57,7 @@ function jsonFromNode($node: HsonNode): JsonType {
         }
 
         case ARR_TAG: {
-            let array: JsonType[] = [];
+            let array: JsonValue[] = [];
             if ($node._content) {
                 /*  content of _array node must be _ii nodes */
                 for (const iiNode of $node._content as HsonNode[]) {
@@ -83,13 +83,13 @@ function jsonFromNode($node: HsonNode): JsonType {
             if ($node._content) {
                 for (const propNode of $node._content as HsonNode[]) {
                     const key = propNode._tag;
-                    let value: JsonType = {};
+                    let value: JsonValue = {};
                     if (propNode._content && propNode._content.length > 0) {
                         const child = propNode._content[0];
                         // assign directly; do NOT Object.assign into {}
                         value = jsonFromNode(child as HsonNode);
                     }
-                    jsonObj[key] = value as JsonType;
+                    jsonObj[key] = value as JsonValue;
                 }
             }
             return jsonObj;
@@ -105,7 +105,7 @@ function jsonFromNode($node: HsonNode): JsonType {
         case ELEM_TAG: {
             /* _elem tags are native to HTML and will be carried through the JSON as-is; the only 
                 exceptional handling is the contents of _elem tags are not rewrapped in an _obj */
-            const elemItems: JsonType = [];
+            const elemItems: JsonValue = [];
             for (const itemNode of ($node._content)) {
                 /* recursively convert each item node in the _elem to its JSON equivalent */
                 const jsonItem = jsonFromNode(itemNode as HsonNode);

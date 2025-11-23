@@ -1,6 +1,6 @@
 import { HsonNode } from "../../../types-consts";
 import { FrameConstructor } from "../../../types-consts/constructors.types";
-import { JsonType } from "../../../types-consts/node.new.types";
+import { JsonValue } from "../../../types-consts/node.new.types";
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
 import { parse_external_html } from "../../parsers/parse-external-html.transform";
 import { parse_hson } from "../../parsers/parse-hson.new.transform";
@@ -105,7 +105,7 @@ export function construct_source_1_NEW(
      * - If your JSON encodes an HTML-like AST and you want HTML-style
      *   sanitization, you must opt into that later (Node → HTML → DOMPurify → Node).
      */
-    fromJSON(input: string | JsonType): OutputConstructor_2_NEW {
+    fromJSON(input: string | JsonValue): OutputConstructor_2_NEW {
       const raw: string =
         typeof input === "string" ? input : JSON.stringify(input);
 

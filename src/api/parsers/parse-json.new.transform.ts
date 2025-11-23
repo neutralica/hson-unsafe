@@ -4,7 +4,7 @@ import { is_Primitive, is_Object, is_not_string, is_string } from "../../core/ut
 import { VAL_TAG, STR_TAG, ARR_TAG, OBJ_TAG, EVERY_VSN, II_TAG, ELEM_TAG, ROOT_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
 import { _DATA_INDEX, _META_DATA_PREFIX } from "../../types-consts/constants";
-import { JsonType, HsonMeta, JsonObj, HsonAttrs, HsonNode } from "../../types-consts/node.new.types";
+import { JsonValue, HsonMeta, JsonObj, HsonAttrs, HsonNode } from "../../types-consts/node.new.types";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { _snip } from "../../utils/sys-utils/snip.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
@@ -32,7 +32,7 @@ function dataOnlyMeta(meta: unknown): HsonMeta {
     return out;
 }
 
-function getTag($value: JsonType): string {
+function getTag($value: JsonValue): string {
     // 1) Collections first (so they aren't misclassified as "not string")
     if (Array.isArray($value)) return ARR_TAG;            // _arr
     if (is_Object($value)) return OBJ_TAG;              // _obj
@@ -82,12 +82,12 @@ function assertNoForbiddenVSNKeysInJSON(obj: Record<string, unknown>, where: str
  * 
  * (the items of a json array will be contained within an '_array' vsn, which behaves differently)
  *
- * @param {string | JsonType} $srcJson - the json data to parse, either as a raw string or a pre-parsed javascript object/array.
+ * @param {string | JsonValue} $srcJson - the json data to parse, either as a raw string or a pre-parsed javascript object/array.
  * @param {string} $parentTag - the parent tag, usually necessary for determining which VSN to create 
  * @returns {HsonNode} the root hsonnode of the resulting data structure.
  */
 export function nodeFromJson(
-    $srcJson: JsonType,
+    $srcJson: JsonValue,
     $parentTag: string
 ): { node: HsonNode } {
 
@@ -124,7 +124,7 @@ export function nodeFromJson(
         if (!Array.isArray($srcJson)) {
             _throw_transform_err('array expected for ARR_TAG parent', 'parse_json', make_string($srcJson));
         }
-        const items = ($srcJson as JsonType[]).map((val, ix) => {
+        const items = ($srcJson as JsonValue[]).map((val, ix) => {
             const childTag = getTag(val);
             const child = nodeFromJson(val, childTag).node;
             return CREATE_NODE({
@@ -151,7 +151,7 @@ export function nodeFromJson(
                 _throw_transform_err('"_root" object must not have non-underscore siblings', 'parse_json', make_string(obj));
             }
             // Parse the root payload
-            const rootPayload = obj[ROOT_TAG] as JsonType;
+            const rootPayload = obj[ROOT_TAG] as JsonValue;
             if (rootPayload === undefined) {
                 // Empty _root (allowed) → no children
                 return { node: CREATE_NODE({ _tag: ROOT_TAG, _content: [] }) };
@@ -175,7 +175,7 @@ export function nodeFromJson(
                 _throw_transform_err('"_elem" must contain an array', 'parse_json', make_string(list));
             }
 
-            const children: HsonNode[] = (list as JsonType[]).map((val, ix) => {
+            const children: HsonNode[] = (list as JsonValue[]).map((val, ix) => {
                 // string → _str, number|boolean|null → _val
                 if (is_string(val)) {
                     return CREATE_NODE({ _tag: STR_TAG, _meta: {}, _content: [val] });
@@ -226,7 +226,7 @@ export function nodeFromJson(
                     }
 
                     // Build the tag’s child (0..1) from the tag payload (scalar or cluster)
-                    const rawChildren = elObj[tagName] as JsonType;
+                    const rawChildren = elObj[tagName] as JsonValue;
                     let tagKids: HsonNode[] = [];
                     if (rawChildren !== undefined) {
                         const kidTag = getTag(rawChildren);
@@ -257,7 +257,7 @@ export function nodeFromJson(
         const propKeys = Object.keys(obj);
 
         const propertyNodes: HsonNode[] = propKeys.map((key) => {
-            const raw = obj[key] as JsonType;
+            const raw = obj[key] as JsonValue;
 
             // build a child node for the property value WITHOUT collapsing "".
             let child: HsonNode;
@@ -319,8 +319,8 @@ export function nodeFromJson(
 
 /* --- main exported function; parses the JSON (if string) and sends in to loop --- */
 
-export function parse_json($input: string | JsonType): HsonNode {
-  let parsed: JsonType;
+export function parse_json($input: string | JsonValue): HsonNode {
+  let parsed: JsonValue;
   try {
     parsed = typeof $input === "string" ? JSON.parse($input) : $input;
   } catch (e) {
@@ -328,13 +328,13 @@ export function parse_json($input: string | JsonType): HsonNode {
   }
 
   // unwrap legacy {_root: ...} but keep data-* meta (unchanged)
-  let jsonToProcess: JsonType = parsed;
+  let jsonToProcess: JsonValue = parsed;
   let rootMeta: HsonMeta | undefined;
   if (is_Object(parsed)) {
     const obj = parsed as JsonObj;
     const keys = Object.keys(obj).filter(k => k !== "_meta");
     if (keys.length === 1 && keys[0] === ROOT_TAG) {
-      jsonToProcess = obj[ROOT_TAG] as JsonType;
+      jsonToProcess = obj[ROOT_TAG] as JsonValue;
       if (obj._meta && is_Object(obj._meta)) {
         const filtered: HsonMeta = {};
         for (const [k, v] of Object.entries(obj._meta)) {

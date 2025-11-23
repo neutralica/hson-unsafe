@@ -3,7 +3,7 @@ import { construct_tree } from "./api/constructors/constructor-tree.api";
 import { construct_source_1_NEW } from "./api/constructors/NEW/construct-source-1";
 import { OutputConstructor_2_NEW } from "./api/constructors/NEW/new-types";
 import { HsonNode } from "./types-consts";
-import { JsonType } from "./types-consts/node.new.types";
+import { JsonValue } from "./types-consts/node.new.types";
 
 /**
  * HSON public facade (NEW).
@@ -107,7 +107,7 @@ export const hsonToDelete = {
    * - If your JSON encodes an HTML AST and you want HTML-style sanitization,
    *   you must handle that explicitly (e.g. Nodes → HTML → DOMPurify → Nodes).
    */
-  fromJSON(input: string | JsonType): OutputConstructor_2_NEW {
+  fromJSON(input: string | JsonValue): OutputConstructor_2_NEW {
     // You can choose `{ unsafe: true }` or `{ unsafe: false }` here; for JSON,
     // the "unsafe" flag only tags meta and affects follow-up HTML parsing
     // decisions, not this step itself. Using `unsafe: true` makes it explicit

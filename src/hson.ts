@@ -4,7 +4,7 @@ import { construct_source_1_NEW } from "./api/constructors/NEW/construct-source-
 import { DomQueryLiveTreeConstructor, DomQuerySourceConstructor, OutputConstructor_2_NEW } from "./api/constructors/NEW/new-types";
 import { LiveTree } from "./api/livetree";
 import { HsonNode } from "./types-consts";
-import { JsonType } from "./types-consts/node.new.types";
+import { JsonValue } from "./types-consts/node.new.types";
 
 
 (globalThis as any)._test_ON = () => { (globalThis as any).test_new = true; location.reload(); };
@@ -165,7 +165,7 @@ export const hson = {
    * - If your JSON encodes an HTML AST and you want HTML-style sanitization,
    *   you must handle that explicitly (e.g. Nodes → HTML → DOMPurify → Nodes).
    */
-  fromJSON(input: string | JsonType): OutputConstructor_2_NEW {
+  fromJSON(input: string | JsonValue): OutputConstructor_2_NEW {
     // You can choose `{ unsafe: true }` or `{ unsafe: false }` here; for JSON,
     // the "unsafe" flag only tags meta and affects follow-up HTML parsing
     // decisions, not this step itself. Using `unsafe: true` makes it explicit

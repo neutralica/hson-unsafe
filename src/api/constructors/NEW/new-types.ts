@@ -2,7 +2,7 @@
 import { RenderFormats } from "../../../core/types-consts/constructors.core.types";
 import { RenderΔ, HSON_FrameΔ } from "../../../types-consts/constants";
 import { FrameConstructor } from "../../../types-consts/constructors.types";
-import { HsonNode, JsonType } from "../../../types-consts/node.new.types";
+import { HsonNode, JsonValue } from "../../../types-consts/node.new.types";
 import { LiveTree } from "../../livetree";
 
 export interface FrameRender_NEW<K extends RenderFormats> {
@@ -28,7 +28,7 @@ export interface SourceConstructor_1_NEW {
     fromHSON(input: string): OutputConstructor_2_NEW;
 
     /** JSON → Nodes */
-    fromJSON(input: string | JsonType): OutputConstructor_2_NEW;
+    fromJSON(input: string | JsonValue): OutputConstructor_2_NEW;
 
     /** HTML → Nodes
      *
@@ -268,7 +268,7 @@ export interface DomQueryLiveTreeConstructor {
 
 export type ParsedResult<K extends RenderFormats> =
     K extends (typeof RenderΔ)["JSON"]
-    ? JsonType
+    ? JsonValue
     : K extends (typeof RenderΔ)["HSON"]
     ? HsonNode
     // HTML has no parseable “valueful” representation in this API
