@@ -7,7 +7,6 @@ import { DatasetManager } from "./tree-methods/dataset-manager.tree";
 import { empty } from "./tree-methods/empty.tree.utils";
 import { get_content } from "./tree-methods/get-content.tree";
 import { remove_child } from "./tree-methods/remove-child.tree.utils";
-// import StyleManager_NEW from "./tree-methods/style-manager.new.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
 import { StyleManager } from "./tree-methods/style-manager-2.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";

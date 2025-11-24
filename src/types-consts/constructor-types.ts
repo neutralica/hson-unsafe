@@ -68,7 +68,7 @@ export interface SourceConstructor_1 {
  * NEW: Step 2 – output format selection.
  *
  * This is the object you get back after choosing a *source* via
- * `construct_source_NEW(...).fromX(...)`.
+ * `construct_source(...).fromX(...)`.
  *
  * Each `to...` method:
  * - chooses an output *format* (HTML / JSON / HSON),
@@ -103,47 +103,25 @@ export interface OutputConstructor_2 {
      *   1) takes the current Node (frame.node),
      *   2) serializes it to HTML,
      *   3) runs that HTML through the *untrusted* HTML pipeline
-     *      (DOMPurify via `parse_external_html`),
+     *      (DOMPurify via `parse_external_html` / 'sanitize_html'),
      *   4) parses the sanitized HTML back into Nodes,
      *   5) returns a NEW builder rooted at that sanitized Nodes.
      *
      * Use cases:
-     * - JSON/HSON/Nodes that semantically encode HTML AST and need to be run
-     *   through the HTML sanitizer before touching the DOM.
+     * - unknown/untrusted JSON/HSON/Nodes that semantically encode HTML 
+     *   may need to be run through the HTML sanitizer before touching the DOM.
      *
      * Dangers:
-     * - If your Node is *not* HTML-shaped (e.g. plain data blobs),
-     *   this will happily nuke most of it; the sanitizer sees it as markup
-     *   and strips aggressively.
+     * - If your data is *not* HTML-shaped (e.g. is JSON, or nodes encoding same),
+     *   this will return an empty string; the DOMPuriufy sees underscored tags 
+     *   as invalid markup and strips aggressively.
      *
-     * In other words: only call this when your Node is intended to represent
-     * HTML-ish structure.
+     *  *** ONLY call this on HsonNodes that encode HTML ***
+     * 
      */
     sanitizeBEWARE(): OutputConstructor_2;
 }
-// generic builder: no DOM mount target → no graft()
-// export interface OutputBuilder {
-//     toJSON(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
-//     toHTML(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
-//     toHSON(): OptionsConstructor_3_NEW & RenderConstructor_4_NEW;
-//     liveTree(): LiveTreeBuilder_NoGraft;
-//     sanitizeBEWARE(): OutputBuilder;
-// }
 
-// // same as above, but only created by queryDOM/queryBody
-// // → it remembers a mount target internally
-// export interface OutputBuilder_WithGraft extends OutputBuilder {
-//     liveTree(): LiveTreeBuilder_WithGraft;
-// }
-
-// export  interface LiveTreeBuilder_NoGraft {
-//     asBranch(): LiveTree;
-// }
-
-// export interface LiveTreeBuilder_WithGraft {
-//     asBranch(): LiveTree;
-//     graft(): LiveTree;   // uses the mount target captured by queryDOM/queryBody
-// }
 
 export interface LiveTreeConstructor_3 {
     asBranch(): LiveTree;

@@ -27,12 +27,8 @@ export function is_Node(bit: unknown): bit is HsonNode {
 }
 
 
-export function is_string_NEW(txt: JsonValue): txt is string {
-  return (typeof txt === 'string')
-}
-
 /* identifies HsonNodes that contain a BasicValue as content */
-export function is_NEW_PRIM_or_STR(node: HsonNode): boolean {
+export function is_Primitive_node(node: HsonNode): boolean {
   return (
     node._content.length === 1 &&
     is_Primitive(node._content[0]) &&
@@ -42,7 +38,7 @@ export function is_NEW_PRIM_or_STR(node: HsonNode): boolean {
 }
 
 /* identifies _ii index tags in an _array */
-export function is_indexed_NEW(node: HsonNode): boolean {
+export function is_indexed(node: HsonNode): boolean {
   return (
     node._tag === II_TAG &&
     Array.isArray(node._content) &&

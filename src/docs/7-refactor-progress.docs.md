@@ -110,7 +110,7 @@ Got it. Here’s your recap restyled into a clean status document — sectioned,
 ### **Refactor: NEW Node Shape**
 
 * All parsers (json/html/hson) → `NEW` nodes.
-* Public wrappers: `parse → assert_invariants_NEW → return NEW`.
+* Public wrappers: `parse → assert_invariants → return NEW`.
 * Old compat path removed from runtime.
 * Exports cleaned (`index` → NEW types).
 
@@ -118,9 +118,9 @@ Got it. Here’s your recap restyled into a clean status document — sectioned,
 
 ### **LiveTree Migration**
 
-* `LiveTree_NEW`: selection = array of NEW nodes.
+* `LiveTree`: selection = array of NEW nodes.
 * Chainable API: `find`, `findAll`, `at`, `append`, `setAttr`, `setValue`, etc.
-* DOM link map = `NODE_ELEMENT_MAP_NEW`.
+* DOM link map = `NODE_ELEMENT_MAP`.
 * Query support: tag/attrs/meta matching, RegExp for meta.
 * Added `.style` & `.dataset` managers.
 
@@ -129,7 +129,7 @@ Got it. Here’s your recap restyled into a clean status document — sectioned,
 ### **Grafting Path**
 
 * Constructors (`fromHTML/fromJSON/fromHSON`) return NEW nodes.
-* `create_live_tree_NEW` → DOM without illegal meta attrs.
+* `create_live_tree` → DOM without illegal meta attrs.
 
 ---
 

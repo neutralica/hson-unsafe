@@ -57,7 +57,6 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
     if (liveElement) {
       for (const newNode of nodesToAppend) {
         const dom = create_live_tree(newNode); // Node (Element or Fragment)
-        // NOTE: create_live_tree_NEW now calls mapSet internally per Element it creates
         liveElement.appendChild(dom);
       }
     }

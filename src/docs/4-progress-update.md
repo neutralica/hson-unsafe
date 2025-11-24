@@ -13,11 +13,11 @@ Original entry paths now thin wrappers that call old (and optionally shadow-run 
 Core (shared): Primitive, BasicValue, JsonAny, JsonObj
 
 OLD node: HsonNode with _content: (HsonNode|Primitive)[], _meta = { attrs, flags }.
-NEW node: HsonNode_NEW with:
+NEW node: HsonNode with:
 _tag (unchanged)
 _content (unchanged)
-_attrs: HsonAttrs_NEW (all HTML-ish attributes, including style as string|object).
-_meta: HsonMeta_NEW (non-HTML “system” fields only; currently: 'data-index', 'data-quid').
+_attrs: HsonAttrs (all HTML-ish attributes, including style as string|object).
+_meta: HsonMeta (non-HTML “system” fields only; currently: 'data-index', 'data-quid').
 VSN tags: _root, _obj, _arr, _elem, _ii, _str, _val
 
 # _meta/_attrs decisions
@@ -44,9 +44,9 @@ style attribute parsed to an object; serializer emits stable, key-sorted CSS (vi
 
 
 compat layer
-toNEW(HsonNode) -> HsonNode_NEW 
-toOLD(HsonNode_NEW) -> HsonNode:
-Folds legacy flags (HsonFlags) into newly all-encompassing _attrs (HsonAttrs_NEW) as key="key" -> key="key" denotes a flag.
+toNEW(HsonNode) -> HsonNode 
+toOLD(HsonNode) -> HsonNode:
+Folds legacy flags (HsonFlags) into newly all-encompassing _attrs (HsonAttrs) as key="key" -> key="key" denotes a flag.
 Preserves _meta keys (stringifies 'data-_index').
 
 Equality:
@@ -61,7 +61,7 @@ Wrappers always use the OLD paths, but when (SHADOW_ENABLED()), runs NEW paths i
 - JSON
 NEW parse/serialize implemented and parity-checked via wrappers.
 Wrapper compares canonicalized results; still returns OLD.
-Stable factories NEW_NODE / NEW_NEW_NODE used; no STR/VAL wrappers in JSON output.
+Stable factories NEW_NODE; no STR/VAL wrappers in JSON output.
 ***JSON REFACTOR IS BELIEVED STABLE***
 
 - HTML

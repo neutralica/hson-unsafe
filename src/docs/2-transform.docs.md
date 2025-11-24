@@ -8,7 +8,7 @@
 
 # HSON.transform
 
-HSON.transform is the conversion layer that parses HTML, JSON, or HSON into a single in-memory tree (HsonNode\_NEW) and serializes back out. You can use it two ways:
+HSON.transform is the conversion layer that parses HTML, JSON, or HSON into a single in-memory tree (HsonNode\) and serializes back out. You can use it two ways:
 
 1. direct functions (explicit, low-level)
 2. a small fluent builder (convenience chain)
@@ -21,7 +21,7 @@ Parsers return the NEW node shape and run structural checks. Serializers respect
 
 ### Parse
 
-* `parse_html(input: string | Element): HsonNode_NEW`
+* `parse_html(input: string | Element): HsonNode`
   XML-mode HTML parse with a preflight:
 
   * strip HTML comments
@@ -31,27 +31,27 @@ Parsers return the NEW node shape and run structural checks. Serializers respect
   * expand void tags to `<br />` style
     Children of standard tags are wrapped in a single `_elem`. Arrays use `_arr/_ii` with `data-_index` in meta to preserve order.
 
-* `parse_json(input: string): HsonNode_NEW`
+* `parse_json(input: string): HsonNode`
   Strict JSON parse. Objects become `_obj` (unique child tags). Arrays become `_arr` containing `_ii` children with `data-_index` in meta. Numbers are distinguished from strings, including exponent and leading-dot forms.
 
-* `parse_hson(input: string): HsonNode_NEW`
+* `parse_hson(input: string): HsonNode`
   paredHTML/HSON grammar to NEW nodes. Block closers decide cluster type: `>` for `_obj` and `/>` for `_elem`. Arrays accept `« … »` or `[...]` on input; re-serialize as guillemets.
 
-All three parse wrappers run `assert_invariants_NEW(node)` before returning.
+All three parse wrappers run `assert_invariants(node)` before returning.
 
 ### Serialize
 
-* `serialize_html(node: HsonNode_NEW): string`
+* `serialize_html(node: HsonNode): string`
   Emits XML-valid HTML. Optimizes simple primitives to single-line tags:
 
   * `<p "hello" />` for a single `_str` child
   * `<br />` for void elements
     Style can be an object or string; objects serialize to CSS text. Internal meta like `data-_quid` is omitted by default. Array indices are honored during HTML↔JSON transforms but are not emitted as user attributes.
 
-* `serialize_json(node: HsonNode_NEW): string`
+* `serialize_json(node: HsonNode): string`
   Canonical JSON. `_obj` produces objects, `_elem` sequences produce arrays when appropriate. Primitives preserve type.
 
-* `serialize_hson(node: HsonNode_NEW): string`
+* `serialize_hson(node: HsonNode): string`
   paredHTML. Object blocks close with `>`, element blocks with `/>`, arrays as `« … »`. Single-primitive children render inline when safe.
 
 ---
@@ -68,7 +68,7 @@ All three parse wrappers run `assert_invariants_NEW(node)` before returning.
 * Value-wrapper VSNs (`_str`, `_val`) never have `_attrs`.
 * Only meta keys prefixed with `data-_` are allowed in `_meta`.
 
-`assert_invariants_NEW` is used at parse boundaries and before serialization during tests and internal pipelines.
+`assert_invariants` is used at parse boundaries and before serialization during tests and internal pipelines.
 
 ---
 
@@ -85,7 +85,7 @@ type FrameOptions = {
 
 type FrameConstructor = {
   input: string | Element;
-  node: HsonNode_NEW;
+  node: HsonNode;
   hson?: string;
   html?: string;
   json?: string;

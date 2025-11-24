@@ -58,7 +58,7 @@ Schema overrides (per-path widgets, constraints).
 Perf polish (virtual lists, batched patches).
 A11y polish.
 API sketch (conceptual)
-liveMap.render(rootValue, schema?) -> LiveTree_NEW (returns a LiveTree handle to the view)
+liveMap.render(rootValue, schema?) -> LiveTree (returns a LiveTree handle to the view)
 liveMap.attach(model, rootEl, schema?) (dashboard; subscribes to model)
 liveMap.control(model, rootEl, schema?) (control panel; two-way binding)
 Bottom line: liveMap is straightforward as a snapshot, manageable as a dashboard, and moderately complex as a full control panel. It should be simpler than liveTree’s DOM sync because you control the generated markup and the widgets. Your existing QUID, maps, coercion, and array/index machinery give you most of the skeleton already.

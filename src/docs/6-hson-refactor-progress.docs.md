@@ -27,7 +27,7 @@ Recurses into children; all primitives should be wrapped in _str or _val in node
 Normalization & comparator
 
 normalizeNEWStrict
-Accepts a HsonNode_NEW (or array in the overload; all call sites now pass nodes).
+Accepts a HsonNode (or array in the overload; all call sites now pass nodes).
 Normalizes style (string/object) to a canonical object via normalize_style(); drops it if empty.
 Coerces all data-_… attr values to strings, moves to _meta. all 'data-_' properties go to _meta
 Promotes primitives in _content: strings → _str; other primitives → _val. // (***this should not be done by the normalizer/comparator; it should already be the idiomatic shape of the nodes, both old and new. FYI.***)

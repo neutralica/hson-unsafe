@@ -10,7 +10,7 @@ import { is_Node } from "../node-utils/node-guards.new.utils";
  * recursive function that strips off VSN clutter and returns core data in 
  * its native structure for intuitive traversal and manipulation
  */
-export function strip_VSNs_NEW(node: HsonNode | Primitive | undefined): any {
+export function strip_VSNs(node: HsonNode | Primitive | undefined): any {
     /*  1. base case: BasicValues and their VSN wrappers resolve to the raw value */
     if (is_Primitive(node)) {
         return node;
@@ -42,7 +42,7 @@ export function strip_VSNs_NEW(node: HsonNode | Primitive | undefined): any {
     if (container && container._content.length > 0) {
         for (const child of container._content) {
             /*  unwrapping the _ii for array items is handled by the recursive call */
-            const processedChild = strip_VSNs_NEW(child);
+            const processedChild = strip_VSNs(child);
             if (processedChild !== undefined) {
                 contentArray.push(processedChild);
             }

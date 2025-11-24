@@ -57,7 +57,7 @@ Type safety cleanup
 _take() overloads extended to include TOKEN_KIND.TEXT and TOKEN_KIND.EMPTY_OBJ, silencing 18047/2339 compiler warnings.
 Replaced stray any usage with proper discriminants.
 Serializer symmetry check (sanity pass)
-Verified serialize_hson_NEW.emitNode() respects VSN neutrality: _obj/_elem clusters are emitted, not invented.
+Verified serialize_hson.emitNode() respects VSN neutrality: _obj/_elem clusters are emitted, not invented.
 Ensured no attribute emission from VSNs.
  Discoveries & Design Insights
 Closer semantics as truth source → not only safer, but philosophically aligned with HSON’s goal: HTML and JSON are the same tree described in two dialects.

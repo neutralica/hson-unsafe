@@ -2,7 +2,7 @@
 
 import { JsonObj, Primitive } from "../../core/types-consts/core.types";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
-import { is_indexed_NEW } from "../../utils/node-utils/node-guards.new.utils";
+import { is_indexed } from "../../utils/node-utils/node-guards.new.utils";
 import { ROOT_TAG, EVERY_VSN, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../types-consts/constants";
 import {  HsonNode } from "../../types-consts/node.types";
 import { JsonValue } from "../../core/types-consts/core.types";
@@ -62,7 +62,7 @@ function jsonFromNode($node: HsonNode): JsonValue {
             if ($node._content) {
                 /*  content of _array node must be _ii nodes */
                 for (const iiNode of $node._content as HsonNode[]) {
-                    if (is_indexed_NEW(iiNode)) {
+                    if (is_indexed(iiNode)) {
                         array.push(jsonFromNode(iiNode._content[0] as HsonNode));
                     } else {
                         _throw_transform_err(`malformed _ii node in _array`, 'serialize-json');

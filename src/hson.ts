@@ -6,8 +6,8 @@ import { HsonNode } from "./types-consts";
 import { JsonValue } from "./core/types-consts/core.types";
 
 
-(globalThis as any)._test_ON = () => { (globalThis as any).test_new = true; location.reload(); };
-(globalThis as any)._test_OFF = () => { (globalThis as any).test_new = false; location.reload(); };
+(globalThis as any)._test_ON = () => { (globalThis as any).test = true; location.reload(); };
+(globalThis as any)._test_OFF = () => { (globalThis as any).test = false; location.reload(); };
 
 
 

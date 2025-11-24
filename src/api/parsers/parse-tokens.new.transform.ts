@@ -7,20 +7,18 @@ import { _DATA_INDEX } from "../../types-consts/constants";
 import { HsonNode, NodeContent } from "../../types-consts/node.types";
 import { Tokens, CloseKind, TokenOpen, TokenClose, TokenArrayOpen, TokenArrayClose, TokenKind, TokenText } from "../../types-consts/tokens.types";
 import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
-import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
-import { is_string_NEW } from "../../utils/node-utils/node-guards.new.utils";
 import { _snip } from "../../utils/sys-utils/snip.utils";
 import { unwrap_root_obj } from "../../utils/json-utils/unwrap-root-obj.util";
 import { Primitive } from "../../types-consts";
-import { ParentCluster } from "../serializers/serialize-hson.new.render";
 import { split_attrs_meta } from "../../utils/hson-utils/split-attrs-meta.new.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
+import { is_string } from "../../core/utils/guards.core.utils";
 
 
 /* debug log */
 
 export const make_leaf = (v: Primitive): HsonNode =>
-(is_string_NEW(v)
+(is_string(v)
     ? { _tag: STR_TAG, _meta: {}, _content: [v] }
     : { _tag: VAL_TAG, _meta: {}, _content: [v] });
 
@@ -58,7 +56,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         const tok = $tokens[ix++] as Tokens | undefined;
         if (!tok) return null;
         if (expected && tok.kind !== expected) {
-            _throw_transform_err(`expected ${expected}, got ${tok.kind}`, 'parse_tokens_NEW');
+            _throw_transform_err(`expected ${expected}, got ${tok.kind}`, 'parse_tokens');
         }
         return tok;
     }
@@ -105,7 +103,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         // NOTE: _take() returning any is sketchy; narrow immediately.
         const tok = _take();
         if (!isTokenOpen(tok)) {
-            _throw_transform_err(`expected OPEN, got ${tok?.kind ?? 'eof'}`, 'parse_tokens_new');
+            _throw_transform_err(`expected OPEN, got ${tok?.kind ?? 'eof'}`, 'parse_tokens');
         }
         const open = tok as TokenOpen;
 
@@ -164,12 +162,12 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
                 continue;
             }
 
-            _throw_transform_err(`unexpected token ${t.kind} inside <${open.tag}>`, 'parse_tokens_NEW');
+            _throw_transform_err(`unexpected token ${t.kind} inside <${open.tag}>`, 'parse_tokens');
         }
 
         // strong narrow
         if (sawClose === null) {
-            _throw_transform_err(`missing CLOSE for <${open.tag}>`, 'parse_tokens_NEW');
+            _throw_transform_err(`missing CLOSE for <${open.tag}>`, 'parse_tokens');
         }
         const closeKind: CloseKind = sawClose.close;
 
@@ -255,7 +253,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
     function readArray(): HsonNode {
         const arrOpen = _take();
         if (!arrOpen || arrOpen.kind !== TOKEN_KIND.ARR_OPEN) {
-            _throw_transform_err(`expected ARR_OPEN, got ${arrOpen?.kind ?? 'eof'}`, 'parse_tokens_new');
+            _throw_transform_err(`expected ARR_OPEN, got ${arrOpen?.kind ?? 'eof'}`, 'parse_tokens');
         }
         const items: HsonNode[] = [];
         let idx = 0;
@@ -283,7 +281,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             } else if (t.kind === TOKEN_KIND.ARR_OPEN) {
                 childNode = readArray();
             } else {
-                _throw_transform_err(`unexpected ${t.kind} in array`, 'parse_tokens_new');
+                _throw_transform_err(`unexpected ${t.kind} in array`, 'parse_tokens');
             }
 
             const passThruVSNs = new Set<string>([OBJ_TAG, ARR_TAG, ELEM_TAG, STR_TAG, VAL_TAG]);
@@ -333,7 +331,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             continue;
         }
 
-        _throw_transform_err(`unexpected top-level token ${t.kind}`, 'parse_tokens_new');
+        _throw_transform_err(`unexpected top-level token ${t.kind}`, 'parse_tokens');
     }
 
     if (nodes.length === 1 && nodes[0]._tag === ROOT_TAG) {

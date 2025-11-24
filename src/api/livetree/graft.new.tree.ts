@@ -13,7 +13,7 @@ import { LiveTree } from "./live-tree-class.new.tree";
  *  - parses the element's existing HTML, rebuilds it as an HSON-managed
  *     DOM tree, and returns a queryable HsonTree instance that auto-updates
  * @param {HTMLElement} $element the target HTMLElement to graft onto (default = document.body)
- * @returns {LiveTree_NEW}an HsonTree instance for querying and manipulating the grafted element
+ * @returns {LiveTree} an HsonTree instance for querying and manipulating the grafted element
  */
 
 export function graft(
@@ -24,7 +24,7 @@ export function graft(
   if (!targetElement) {
     _throw_transform_err('error getting target element', 'graft', $element);
   }
-  
+
   /* copy current HTML content of target & parse to nodes */
   const sourceHTML = targetElement.innerHTML;
   const rootNode: HsonNode = parse_html(sourceHTML);

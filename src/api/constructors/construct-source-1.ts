@@ -29,7 +29,7 @@ export interface HtmlSourceOptions {
  * This is stage 1 of the NEW pipeline:
  *   - It accepts *source formats* (HTML / JSON / HSON / DOM / IR),
  *   - Normalizes them into a single HsonNode frame,
- *   - Then hands that frame to `construct_output_2_NEW` (stage 2).
+ *   - Then hands that frame to `construct_output_2` (stage 2).
  *
  * It does **not** attach anything to the DOM.
  *

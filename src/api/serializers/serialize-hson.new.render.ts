@@ -13,31 +13,12 @@ import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
 // --- serialize-hson.render.ts ---
-//
-// CHANGES vs OLD:
-// • Uses NEW node model: _attrs + _meta('data-_'*) instead of old meta.attrs/flags.
-// • Never emits VSNs on HSON wire (except current, intentional <_root …> container).
-// • Splits _str vs _val emission (quoted string vs raw JSON literal).
-// • Merges user _attrs + _meta[data-_…] into tag attributes; flags as bare tokens.
-// • Sorts children under _obj; preserves order under _elem; arrays render as « … ».
-// • One-liner rule requires: no attrs, no meta, single child that is _str/_val.
-//
-// Notes:
-// • _ii must never appear on HSON wire; if encountered, we unwrap its single child.
-// • _arr is a first-class cluster (no legacy {_obj: [_arr]}).
-// • _meta values are strings; only keys with "data-_" prefix are allowed.
-
 
 /* debug log */
 let _VERBOSE = false;
-const STYLE = 'color:dodgerblue;font-weight:400;padding:1px 3px;border-radius:4px';
 const _log = _VERBOSE
-    ? (...args: unknown[]) =>
-        console.log(
-            ['%c%s', ...args.map(() => '%c%o')].join(' '),
-            STYLE, '[serialize-hson_NEW] →',
-            ...args.flatMap(a => [STYLE, a]),
-        )
+    ?
+    console.log
     : () => { };
 
 function cycleGuard() {
@@ -45,7 +26,7 @@ function cycleGuard() {
     return {
         enter(node: object) {
             if (seen.has(node)) {
-                _throw_transform_err("serialize-hson: cycle detected in node graph", 'serialize_hson_NEW.cycleGuard.enter');
+                _throw_transform_err("serialize-hson: cycle detected in node graph", 'serialize_hson.cycleGuard.enter');
             }
             seen.add(node);
         },
@@ -126,7 +107,6 @@ function buildAttrString(attrs: HsonAttrs | undefined, meta: HsonMeta | undefine
 
 /* quoted text vs raw primitive one-liner probe (NEW shape only) */
 function getSelfCloseValueNEW(node: HsonNode): Primitive | undefined {
-    _log('getting value for self-closing Node (_NEW type)');
 
     // must not carry attrs or meta
     if (!isEmptyAttrs(node._attrs)) return undefined;
@@ -193,7 +173,7 @@ function emitNode(
         if (node._tag === STR_TAG || node._tag === VAL_TAG) {
             _log('leaf node detected: ', node._tag);
             if (!node._content || node._content.length !== 1) {
-                _throw_transform_err(`serialize-hson: ${node._tag} must contain exactly one primitive`, 'serialize_hson_NEW.cycleGuard.enter');
+                _throw_transform_err(`serialize-hson: ${node._tag} must contain exactly one primitive`, 'serialize_hson.cycleGuard.enter');
             }
             const v = node._content[0];
 
@@ -201,13 +181,13 @@ function emitNode(
                 if (typeof v !== "string") {
                     const v = node._content?.[0];
                     console.warn("STR payload not string:", v, node);
-                    _throw_transform_err(`serialize-hson: _str must contain a string`, 'serialize_hson_NEW.emitNode()')
+                    _throw_transform_err(`serialize-hson: _str must contain a string`, 'serialize_hson.emitNode()')
                 }
                 return pad + JSON.stringify(v);
             }
 
             if (!(typeof v === "number" || typeof v === "boolean" || v === null)) {
-                _throw_transform_err("serialize-hson: _val must contain number|boolean|null : ", 'serialize_hson_NEW.emitNode()', `${v}`);
+                _throw_transform_err("serialize-hson: _val must contain number|boolean|null : ", 'serialize_hson.emitNode()', `${v}`);
             }
             return pad + String(v);
         }
@@ -217,7 +197,7 @@ function emitNode(
             _log('index node detected');
             const c = node._content?.[0];
             if (!is_Node(c)) {
-                _throw_transform_err("serialize-hson: _ii must contain exactly one child node", 'serialize_hson_NEW.emitNode()');
+                _throw_transform_err("serialize-hson: _ii must contain exactly one child node", 'serialize_hson.emitNode()');
             }
             return emitNode(c, depth, parentCluster, guard);  // <-- same depth
         }
@@ -297,7 +277,7 @@ function emitNode(
         if (node._tag === OBJ_TAG || node._tag === ELEM_TAG) {
             _log('cluster node detected: ', node._tag);
             if (node._attrs && Object.keys(node._attrs).length) {
-                _throw_transform_err(`serialize-hson: ${node._tag} may not carry _attrs`, 'serialize_hson_NEW.emitNode()');
+                _throw_transform_err(`serialize-hson: ${node._tag} may not carry _attrs`, 'serialize_hson.emitNode()');
             }
 
             const kids = (node._content ?? []) as HsonNode[];
@@ -471,7 +451,7 @@ function emitNode(
 /* public API (NEW) */
 export function serialize_hson(root: HsonNode): string {
     if (!is_Node(root)) {
-        _throw_transform_err("serialize-hson: root must be a HsonNode_NEW", 'serialize-hson');
+        _throw_transform_err("serialize-hson: root must be a HsonNode", 'serialize-hson');
     }
     assert_invariants(root, 'serialize_hson');
     const guard = cycleGuard();

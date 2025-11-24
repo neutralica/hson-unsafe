@@ -3,8 +3,7 @@
 import { HsonNode, Primitive } from "../../types-consts";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
-import { is_Primitive } from "../../core/utils/guards.core.utils";
-import { is_string_NEW, is_indexed_NEW } from "../../utils/node-utils/node-guards.new.utils";
+import { is_Primitive, is_string } from "../../core/utils/guards.core.utils";
 import { _snip } from "../../utils/sys-utils/snip.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs.utils";
@@ -22,6 +21,7 @@ import { dedupe_attrs_html } from "../../safety/dedupe-attrs.html.utils";
 import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
 import { mangle_illegal_attrs } from "../../utils/html-preflights/mangle-illegal-attrs.utils";
 import { namespace_svg } from "../../utils/html-preflights/namespace-svg";
+import { is_indexed } from "../../utils/node-utils/node-guards.new.utils";
 
 export function parse_html($input: string | Element): HsonNode {
     let inputElement: Element;
@@ -164,7 +164,7 @@ function convert($el: Element): HsonNode {
 
     for (const child of children) {
         if (is_Primitive(child)) {
-            const tag = is_string_NEW(child) ? STR_TAG : VAL_TAG;
+            const tag = is_string(child) ? STR_TAG : VAL_TAG;
             childNodes.push(CREATE_NODE({ _tag: tag, _content: [child] }));
         } else {
             childNodes.push(child as HsonNode);
@@ -216,7 +216,7 @@ function convert($el: Element): HsonNode {
     }
 
     if (tagLower === ARR_TAG) {
-        if (!childNodes.every(node => is_indexed_NEW(node))) {
+        if (!childNodes.every(node => is_indexed(node))) {
             _throw_transform_err('_array children are not valid index tags', 'parse-html');
         }
         return CREATE_NODE({ _tag: ARR_TAG, _content: childNodes });
