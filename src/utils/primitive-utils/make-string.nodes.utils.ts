@@ -1,7 +1,7 @@
 // make-string.utils.ts
 
 import { is_Node } from "../node-utils/node-guards.new.utils";
-import { HsonNode, HsonAttrs, HsonMeta } from "../../types-consts/node.new.types";
+import { HsonNode, HsonAttrs, HsonMeta } from "../../types-consts/node.types";
 import { _DATA_INDEX, _DATA_QUID } from "../../types-consts/constants";
 
 /** Pretty-print any value with stable, node-friendly key order. */

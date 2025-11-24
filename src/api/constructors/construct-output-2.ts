@@ -1,22 +1,22 @@
-import { RenderFormats } from "../../core/types-consts/constructors.core.types";
+import { RenderFormats } from "../../types-consts/constructor-types";
 import { HsonNode } from "../../types-consts";
 import { $RENDER } from "../../types-consts/constants";
-import { FrameConstructor } from "../../core/types-consts/constructors.core.types"; 
+import { FrameConstructor } from "../../types-consts/constructor-types";
 import { LiveTree } from "../livetree";
 import { create_live_tree } from "../livetree/create-live-tree.tree";
 import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { serialize_hson } from "../serializers/serialize-hson.new.render";
 import { serialize_html } from "../serializers/serialize-html.new.render";
 import { serialize_json } from "../serializers/serialize-json.new.render";
-import { construct_options_3_NEW } from "./construct-options-3";
-import { construct_render_4_NEW } from "./construct-render-4";
-import { OutputConstructor_2_NEW, OptionsConstructor_3_NEW, RenderConstructor_4_NEW, LiveTreeConstructor_3_NEW, FrameRender_NEW } from "../../types-consts/new-types";
+import { construct_options_3 } from "./construct-options-3";
+import { construct_render_4 } from "./construct-render-4";
+import { OutputConstructor_2, OptionsConstructor_3, RenderConstructor_4, LiveTreeConstructor_3, FrameRender } from "../../types-consts/constructor-types";
 
 /**
  * HSON pipeline – stage 2: select output format.
  *
  * This takes a normalized HSON "frame" (Node + meta) produced by
- * `construct_source_NEW` and produces the format-selection surface:
+ * `construct_source` and produces the format-selection surface:
  *
  *   hson.fromJSON(data)
  *       .toHTML()        // ← this function
@@ -27,29 +27,29 @@ import { OutputConstructor_2_NEW, OptionsConstructor_3_NEW, RenderConstructor_4_
  * - serializes the current Node into the chosen format,
  * - stores that representation on the frame (`frame.html` / `frame.json` / `frame.hson`),
  * - and returns a merged object that supports both:
- *   - configuration (OptionsConstructor_3_NEW),
- *   - final actions (RenderConstructor_4_NEW).
+ *   - configuration (OptionsConstructor_3),
+ *   - final actions (RenderConstructor_4).
  * Given a normalized frame (Node + meta), this exposes:
  * - text outputs:  .toHTML() / .toJSON() / .toHSON()
  * - LiveTree:      .liveTree().asBranch()
  * - cross-format transform: .sanitizeBEWARE() (Node → HTML → DOMPurify → Node)
  */
-export function construct_output_2_NEW(frame: FrameConstructor): OutputConstructor_2_NEW {
+export function construct_output_2(frame: FrameConstructor): OutputConstructor_2 {
 
   function makeFinalizer<K extends RenderFormats>(
-    context: FrameRender_NEW<K>
-  ): OptionsConstructor_3_NEW<K> & RenderConstructor_4_NEW<K> {
+    context: FrameRender<K>
+  ): OptionsConstructor_3<K> & RenderConstructor_4<K> {
     return {
-      ...construct_options_3_NEW(context),
-      ...construct_render_4_NEW(context),
+      ...construct_options_3(context),
+      ...construct_render_4(context),
     };
   }
 
-  function makeBuilder(currentFrame: FrameConstructor): OutputConstructor_2_NEW {
+  function makeBuilder(currentFrame: FrameConstructor): OutputConstructor_2 {
     return {
       toHSON() {
         const hson = serialize_hson(currentFrame.node);
-        const ctx: FrameRender_NEW<(typeof $RENDER)["HSON"]> = {
+        const ctx: FrameRender<(typeof $RENDER)["HSON"]> = {
           frame: { ...currentFrame, hson },
           output: $RENDER.HSON,
         };
@@ -58,7 +58,7 @@ export function construct_output_2_NEW(frame: FrameConstructor): OutputConstruct
 
       toJSON() {
         const json = serialize_json(currentFrame.node);
-        const ctx: FrameRender_NEW<(typeof $RENDER)["JSON"]> = {
+        const ctx: FrameRender<(typeof $RENDER)["JSON"]> = {
           frame: { ...currentFrame, json },
           output: $RENDER.JSON,
         };
@@ -67,14 +67,14 @@ export function construct_output_2_NEW(frame: FrameConstructor): OutputConstruct
 
       toHTML(){
         const html = serialize_html(currentFrame.node);
-        const ctx: FrameRender_NEW<(typeof $RENDER)["HTML"]> = {
+        const ctx: FrameRender<(typeof $RENDER)["HTML"]> = {
           frame: { ...currentFrame, html },
           output: $RENDER.HTML,
         };
         return makeFinalizer(ctx);
       },
 
-      liveTree(): LiveTreeConstructor_3_NEW {
+      liveTree(): LiveTreeConstructor_3 {
         return {
           asBranch(): LiveTree {
             const node: HsonNode | undefined = currentFrame.node;
@@ -88,7 +88,7 @@ export function construct_output_2_NEW(frame: FrameConstructor): OutputConstruct
         };
       },
 
-      sanitizeBEWARE(): OutputConstructor_2_NEW {
+      sanitizeBEWARE(): OutputConstructor_2 {
         const node: HsonNode | undefined = currentFrame.node;
         if (!node) {
           throw new Error("sanitizeBEWARE(): frame is missing HSON node data");

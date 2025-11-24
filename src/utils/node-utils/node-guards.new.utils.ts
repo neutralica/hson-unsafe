@@ -4,7 +4,8 @@ import { II_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { BasicValue } from "../../core/types-consts/core.types";
 import { is_Primitive } from "../../core/utils/guards.core.utils"
 import { _DATA_INDEX } from "../../types-consts/constants";
-import { HsonNode, JsonValue } from "../../types-consts/node.new.types";
+import { HsonNode } from "../../types-consts/node.types";
+import { JsonValue } from "../../core/types-consts/core.types";
 
 /* identifies HsonNode (new structure) */
 export function is_Node(bit: unknown): bit is HsonNode {

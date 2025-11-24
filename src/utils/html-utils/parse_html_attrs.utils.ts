@@ -2,7 +2,7 @@
 
 
 import { _DATA_INDEX, _DATA_QUID, _TRANSIT_PREFIX } from "../../types-consts/constants";
-import { HsonAttrs, HsonMeta } from "../../types-consts/node.new.types";
+import { HsonAttrs, HsonMeta } from "../../types-consts/node.types";
 import { normalize_attr_ws } from "../attrs-utils/normalize_attrs_ws.utils";
 import { parse_style_string } from "../attrs-utils/parse-style.utils";
 

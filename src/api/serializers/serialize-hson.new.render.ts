@@ -8,7 +8,7 @@ import { serialize_primitive } from "../../utils/primitive-utils/serialize-primi
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
-import { HsonAttrs, HsonMeta, HsonNode } from "../../types-consts/node.new.types";
+import { HsonAttrs, HsonMeta, HsonNode } from "../../types-consts/node.types";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 

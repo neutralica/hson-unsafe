@@ -10,7 +10,7 @@
      else falls back to a small safe list. Types come from CSSStyleDeclaration.
    ========================================================================== */
 
-import { HsonNode } from "../../../types-consts/node.new.types";
+import { HsonNode } from "../../../types-consts/node.types";
 import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree } from "../live-tree-class.new.tree";
 

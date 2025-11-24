@@ -1,9 +1,7 @@
-import { RenderFormats } from "../../core/types-consts/constructors.core.types";
-import { HsonNode } from "../../types-consts";
+import { RenderFormats } from "../../types-consts/constructor-types";
 import { $RENDER } from "../../types-consts/constants";
-import { JsonValue } from "../../types-consts/node.new.types";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
-import { FrameRender_NEW, ParsedResult, RenderConstructor_4_NEW } from "../../types-consts/new-types";
+import { FrameRender, ParsedResult, RenderConstructor_4 } from "../../types-consts/constructor-types";
 
 /**
  * Stage 4 (NEW, terminal): serialize or project the final data.
@@ -22,9 +20,9 @@ import { FrameRender_NEW, ParsedResult, RenderConstructor_4_NEW } from "../../ty
  * - `parse()`     → structured value (JSON / Nodes),
  * - `asBranch()`  → LiveTree projection for DOM interaction.
  */
-export function construct_render_4_NEW<K extends RenderFormats>(
-  context: FrameRender_NEW<K>
-): RenderConstructor_4_NEW<K> {
+export function construct_render_4<K extends RenderFormats>(
+  context: FrameRender<K>
+): RenderConstructor_4<K> {
   const { frame, output } = context;
 
   return {

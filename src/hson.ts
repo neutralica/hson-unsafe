@@ -1,9 +1,9 @@
 import { construct_tree } from "./api/constructors/constructor-tree.api";
-import { construct_source_1_NEW } from "./api/constructors/construct-source-1";
-import { DomQueryLiveTreeConstructor, DomQuerySourceConstructor, OutputConstructor_2_NEW } from "./types-consts/new-types";
+import { construct_source_1 } from "./api/constructors/construct-source-1";
+import { DomQueryLiveTreeConstructor, DomQuerySourceConstructor, OutputConstructor_2 } from "./types-consts/constructor-types";
 import { LiveTree } from "./api/livetree";
 import { HsonNode } from "./types-consts";
-import { JsonValue } from "./types-consts/node.new.types";
+import { JsonValue } from "./core/types-consts/core.types";
 
 
 (globalThis as any)._test_ON = () => { (globalThis as any).test_new = true; location.reload(); };
@@ -23,21 +23,24 @@ import { JsonValue } from "./types-consts/node.new.types";
  *     - `hson.fromUntrustedHtml(html)`
  *     - `hson.fromTrustedHtml(html)`
  *     - `hson.fromJSON(json)`
- *     - `hson.fromHSON(text)`
+ *     - `hson.fromHSON(hson)`
  *     - `hson.fromNode(node)`
  *     - `hson.queryDOM(selector)`
  *     - `hson.queryBody()`
  *
  * [OUTPUT]
- * - Step 2: chain into the existing output pipeline returned by step 1:
- *   e.g. `.toHtml()`, `.toJson()`, `.toHson()`, `.branch()` (LiveTree), etc.
+ *  - Step 2: chain into the output builder returned by step 1:
+ *       .toHTML()  → HTML string
+ *       .toJSON()  → JSONValue
+ *       .toHSON()  → HSON string or underlying nodes
+ *       .liveTree() → create LiveTree
  *
  * * [OPTIONS]
  * - Step 3: optional formatting and rendering controls:
- *       .spaced()   // human-readable formatting
- *       .noBreak()  // single-line output
- *       .linted()   // canonical formatting
- *       .withOptions({...}) // fine-grained control
+ *       .spaced()            // human-readable formatting
+ *       .noBreak()           // single-line output
+ *       .linted()            // canonical formatting
+ *       .withOptions({...})  // fine-grained control
  *
  * [RENDER]
  * - Step 4: finalize the chain:
@@ -70,9 +73,25 @@ import { JsonValue } from "./types-consts/node.new.types";
  *   - No DOMPurify is applied here by default.
  *   - If these structures encode HTML AST and you need HTML-style sanitization,
  *     that should be done explicitly later (e.g. Nodes → HTML → DOMPurify → Nodes).
+ * 
+ * 
+ * [SECURITY / SANITIZATION]
+ * - HTML sources are *not* interchangeable:
+ *     • fromUntrustedHtml(html) → always sanitized, DOM-Purify pipeline
+ *     • fromTrustedHtml(html)   → raw parsing, no filtering
  *
+ * - The output builder exposes one explicit escape hatch:
+ *       .sanitizeBEWARE()
+ *   This forcibly re-sanitizes the current frame *even if the source
+ *   was declared trusted*. It is intended only for:
+ *       • ingesting JSON that may hide HTML payloads
+ *       • double-checking legacy or externally supplied data
+ *
+ *   Calling .sanitizeBEWARE() on non-HTML formats is allowed but may
+ *   destroy content (e.g., JSON becomes empty HTML). This is by design.
+ *   Treat the method as a last-resort “firewall pass,” not normal flow.
  */
-
+ 
 export const hson = {
   /**
    * External / untrusted HTML → sanitized HSON Nodes → (chained output).
@@ -90,8 +109,8 @@ export const hson = {
    *     - serialize (`.toHtml()`, `.toJson()`, `.toHson()`),
    *     - or project into a LiveTree (`.branch()`).
    */
-  fromUntrustedHtml(input: string | Element): OutputConstructor_2_NEW {
-    return construct_source_1_NEW({ unsafe: false }).fromHTML(input, {
+  fromUntrustedHtml(input: string | Element): OutputConstructor_2 {
+    return construct_source_1({ unsafe: false }).fromHTML(input, {
       sanitize: true,
     });
   },
@@ -112,8 +131,8 @@ export const hson = {
    *
    * Never feed untrusted / user-supplied HTML through this method.
    */
-  fromTrustedHtml(input: string | Element): OutputConstructor_2_NEW {
-    return construct_source_1_NEW({ unsafe: true }).fromHTML(input, {
+  fromTrustedHtml(input: string | Element): OutputConstructor_2 {
+    return construct_source_1({ unsafe: true }).fromHTML(input, {
       sanitize: false,
     });
   },
@@ -133,12 +152,12 @@ export const hson = {
    * - If your JSON encodes an HTML AST and you want HTML-style sanitization,
    *   you must handle that explicitly (e.g. Nodes → HTML → DOMPurify → Nodes).
    */
-  fromJSON(input: string | JsonValue): OutputConstructor_2_NEW {
+  fromJSON(input: string | JsonValue): OutputConstructor_2 {
     // You can choose `{ unsafe: true }` or `{ unsafe: false }` here; for JSON,
     // the "unsafe" flag only tags meta and affects follow-up HTML parsing
     // decisions, not this step itself. Using `unsafe: true` makes it explicit
     // that this pipeline is free to express everything internally.
-    return construct_source_1_NEW({ unsafe: true }).fromJSON(input);
+    return construct_source_1({ unsafe: true }).fromJSON(input);
   },
 
   /**
@@ -146,8 +165,8 @@ export const hson = {
    *
    * Parses HSON source text into Nodes. No DOMPurify is used here.
    */
-  fromHSON(input: string): OutputConstructor_2_NEW {
-    return construct_source_1_NEW({ unsafe: true }).fromHSON(input);
+  fromHSON(input: string): OutputConstructor_2 {
+    return construct_source_1({ unsafe: true }).fromHSON(input);
   },
 
   /**
@@ -156,8 +175,8 @@ export const hson = {
    * Initializes the pipeline from an already-constructed Node.
    * No sanitization is applied here.
    */
-  fromNode(node: HsonNode): OutputConstructor_2_NEW {
-    return construct_source_1_NEW({ unsafe: true }).fromNode(node);
+  fromNode(node: HsonNode): OutputConstructor_2 {
+    return construct_source_1({ unsafe: true }).fromNode(node);
   },
 
   // ────────────────────────────────────────────────────────────

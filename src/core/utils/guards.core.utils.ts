@@ -1,7 +1,7 @@
 // is-helpers.hson.util.ts
 
 
-import { BasicValue, JsonObj, JsonType, Primitive } from "../types-consts/core.types";
+import { BasicValue, JsonObj, JsonValue, Primitive } from "../types-consts/core.types";
 
 
 /* identifies JSON objects */
@@ -16,13 +16,13 @@ export function is_Primitive(x: any): x is Primitive {
 
 
 /* for filtering out strings */
-export function is_not_string(txt: JsonType): txt is BasicValue {
+export function is_not_string(txt: JsonValue): txt is BasicValue {
   return (typeof txt === 'number' ||
     txt === null ||
     typeof txt === 'boolean')
 }
 
-export function is_string(txt: JsonType): txt is string {
+export function is_string(txt: JsonValue): txt is string {
   return (typeof txt === 'string')
 }
 

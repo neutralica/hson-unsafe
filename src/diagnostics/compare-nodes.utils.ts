@@ -1,5 +1,5 @@
 // compare-nodes.utils.ts
-import type { HsonNode } from "../types-consts/node.new.types";
+import type { HsonNode } from "../types-consts/node.types";
 import { is_Node } from "../utils/node-utils/node-guards.new.utils";
 import { make_string } from "../utils/primitive-utils/make-string.nodes.utils";
 

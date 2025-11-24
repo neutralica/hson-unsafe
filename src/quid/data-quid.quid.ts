@@ -1,6 +1,6 @@
 // data-quid.quid.ts
 
-import { HsonNode } from '../types-consts/node.new.types';
+import { HsonNode } from '../types-consts/node.types';
 import { _DATA_QUID} from '../types-consts/constants';
 import { getElementForNode } from '../utils/tree-utils/node-map-helpers.utils';
 

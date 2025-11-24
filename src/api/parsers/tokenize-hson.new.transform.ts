@@ -2,8 +2,8 @@
 
 import { OBJ_TAG } from "../../types-consts/constants";
 import { CREATE_ARR_OPEN_TOKEN, CREATE_ARR_CLOSE_TOKEN, CREATE_EMPTY_OBJ_TOKEN, CREATE_END_TOKEN, CREATE_OPEN_TOKEN, CREATE_TEXT_TOKEN } from "../../types-consts/factories";
-import { CLOSE_KIND, ARR_SYMBOL, TOKEN_KIND } from "../../types-consts/tokens.new.types";
-import { Position, CloseKind, Tokens, RawAttr } from "../../types-consts/tokens.new.types";
+import { CLOSE_KIND, ARR_SYMBOL, TOKEN_KIND } from "../../types-consts/tokens.types";
+import { Position, CloseKind, Tokens, RawAttr } from "../../types-consts/tokens.types";
 import { lex_text_piece } from "../../utils/hson-utils/lex-text-piece.utils";
 import { slice_balanced_arr } from "../../utils/hson-utils/slice-balance.new.utils";
 import { split_top_level } from "../../utils/hson-utils/split-top-2.utils";

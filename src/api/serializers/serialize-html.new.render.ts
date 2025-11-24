@@ -8,7 +8,7 @@ import { _snip } from '../../utils/sys-utils/snip.utils';
 import { is_Node } from '../../utils/node-utils/node-guards.new.utils';
 import { assert_invariants } from '../../diagnostics/assert-invariants.utils';
 import { clone_node } from '../../utils/node-utils/clone-node.utils';
-import { HsonNode } from '../../types-consts/node.new.types';
+import { HsonNode } from '../../types-consts/node.types';
 import { _throw_transform_err } from '../../utils/sys-utils/throw-transform-err.utils';
 
   const RAWTEXT = new Set(["style", "script"]);

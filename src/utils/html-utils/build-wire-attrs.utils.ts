@@ -1,7 +1,7 @@
 
 
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
-import { HsonNode } from "../../types-consts/node.new.types";
+import { HsonNode } from "../../types-consts/node.types";
 import { serialize_style } from "../attrs-utils/serialize-css.utils";
 
 /* build wire attrs: user _attrs + selected _meta → data-_... */

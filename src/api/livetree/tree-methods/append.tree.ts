@@ -4,7 +4,7 @@
 import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
 import { STR_TAG, ELEM_TAG } from "../../../types-consts/constants";
-import { HsonNode } from "../../../types-consts/node.new.types";
+import { HsonNode } from "../../../types-consts/node.types";
 import { create_live_tree } from "../create-live-tree.tree";
 import { LiveTree } from "../live-tree-class.new.tree";
 import { CREATE_NODE } from "../../../types-consts/factories";

@@ -1,19 +1,13 @@
 // base.hson.types.ts
 
 
-import { Primitive } from "../core/types-consts/core.types";
+import { JsonValue, Primitive } from "../core/types-consts/core.types";
 import { _DATA_INDEX, _DATA_QUID } from "./constants";
-
-
-export type JsonValue =
-    | Primitive
-    | JsonObj
-    | JsonValue[];
 
 
 /** represents a standard javascript object, extended with an optional _meta property */
 
-export type JsonObj = { [key: string]: JsonValue } & { _meta?: HsonMeta, _attrs?: HsonAttrs };
+// export type JsonObj = { [key: string]: JsonValue } & { _meta?: HsonMeta, _attrs?: HsonAttrs };
 
 
 export interface HsonNode {

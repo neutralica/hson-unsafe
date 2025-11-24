@@ -1,11 +1,10 @@
 
-import { RenderFormats } from "../core/types-consts/constructors.core.types";
-import { $RENDER, } from "./constants";
-import { FrameConstructor } from "../core/types-consts/constructors.core.types";
-import { HsonNode, JsonValue } from "./node.new.types";
+import { $HSON_FRAME, $RENDER, } from "./constants";
+import { HsonNode } from "./node.types";
+import { JsonValue } from "../core/types-consts/core.types";
 import { LiveTree } from "../api/livetree";
 
-export interface FrameRender_NEW<K extends RenderFormats> {
+export interface FrameRender<K extends RenderFormats> {
   frame: FrameConstructor;
   output: K;
 }
@@ -23,12 +22,12 @@ export interface HtmlSourceOptions {
     sanitize?: boolean;
 }
 
-export interface SourceConstructor_1_NEW {
+export interface SourceConstructor_1 {
     /** HSON string → Node */
-    fromHSON(input: string): OutputConstructor_2_NEW;
+    fromHSON(input: string): OutputConstructor_2;
 
     /** JSON → Nodes */
-    fromJSON(input: string | JsonValue): OutputConstructor_2_NEW;
+    fromJSON(input: string | JsonValue): OutputConstructor_2;
 
     /** HTML → Nodes
      *
@@ -40,10 +39,10 @@ export interface SourceConstructor_1_NEW {
      *     - unsafe pipeline (`unsafe: true`):
      *         - always raw HTML parse (`parse_html`), flag is ignored.
      */
-    fromHTML(input: string | Element, options?: HtmlSourceOptions): OutputConstructor_2_NEW;
+    fromHTML(input: string | Element, options?: HtmlSourceOptions): OutputConstructor_2;
 
     /** Nodes → Nodes (identity entrypoint) */
-    fromNode(input: HsonNode): OutputConstructor_2_NEW;
+    fromNode(input: HsonNode): OutputConstructor_2;
 
     /** `document.querySelector(selector).innerHTML` → Nodes
      *
@@ -55,13 +54,13 @@ export interface SourceConstructor_1_NEW {
      *     - if someone wants a sanitized snapshot, they should use
      *       `hson.fromUntrustedHtml(element)` instead.
      */
-    queryDOM(selector: string): OutputConstructor_2_NEW;
+    queryDOM(selector: string): OutputConstructor_2;
 
     /** `document.body.innerHTML` → Nodes
      *
      * Same semantics as `queryDOM`, but for the whole document body.
      */
-    queryBody(): OutputConstructor_2_NEW;
+    queryBody(): OutputConstructor_2;
 }
 
 
@@ -84,18 +83,18 @@ export interface SourceConstructor_1_NEW {
  *       .spaced()        // step 3 – options (optional)
  *       .serialize();    // step 4 – final action
  */
-export interface OutputConstructor_2_NEW {
-    toJSON(): OptionsConstructor_3_NEW<(typeof $RENDER)["JSON"]> &
-        RenderConstructor_4_NEW<(typeof $RENDER)["JSON"]>;
+export interface OutputConstructor_2 {
+    toJSON(): OptionsConstructor_3<(typeof $RENDER)["JSON"]> &
+        RenderConstructor_4<(typeof $RENDER)["JSON"]>;
 
-    toHSON(): OptionsConstructor_3_NEW<(typeof $RENDER)["HSON"]> &
-        RenderConstructor_4_NEW<(typeof $RENDER)["HSON"]>;
+    toHSON(): OptionsConstructor_3<(typeof $RENDER)["HSON"]> &
+        RenderConstructor_4<(typeof $RENDER)["HSON"]>;
 
-    toHTML(): OptionsConstructor_3_NEW<(typeof $RENDER)["HTML"]> &
-        RenderConstructor_4_NEW<(typeof $RENDER)["HTML"]>;
+    toHTML(): OptionsConstructor_3<(typeof $RENDER)["HTML"]> &
+        RenderConstructor_4<(typeof $RENDER)["HTML"]>;
 
     // NEW: LiveTree output family
-    liveTree(): LiveTreeConstructor_3_NEW;
+    liveTree(): LiveTreeConstructor_3;
 
     /**
      * 🔥 HTML-style sanitization applied *after* source selection.
@@ -120,7 +119,7 @@ export interface OutputConstructor_2_NEW {
      * In other words: only call this when your Node is intended to represent
      * HTML-ish structure.
      */
-    sanitizeBEWARE(): OutputConstructor_2_NEW;
+    sanitizeBEWARE(): OutputConstructor_2;
 }
 // generic builder: no DOM mount target → no graft()
 // export interface OutputBuilder {
@@ -146,7 +145,7 @@ export interface OutputConstructor_2_NEW {
 //     graft(): LiveTree;   // uses the mount target captured by queryDOM/queryBody
 // }
 
-export interface LiveTreeConstructor_3_NEW {
+export interface LiveTreeConstructor_3 {
     asBranch(): LiveTree;
 }
 
@@ -161,7 +160,7 @@ export interface LiveTreeConstructor_3_NEW {
  *   // or
  *   hson.fromJSON(data).toHTML().spaced().linted().serialize();
  */
-export interface OptionsConstructor_3_NEW<K extends RenderFormats> {
+export interface OptionsConstructor_3<K extends RenderFormats> {
 
     /**
      * Attach a full options object.
@@ -170,17 +169,17 @@ export interface OptionsConstructor_3_NEW<K extends RenderFormats> {
      * helpers like `.noBreak()` and `.spaced()` are just shorthands that
      * call `withOptions` under the hood.
      */
-    withOptions(opts: Partial<FrameOptions>): RenderConstructor_4_NEW<K>;
+    withOptions(opts: Partial<FrameOptions>): RenderConstructor_4<K>;
 
 
     /** Convenience: set the `noBreak` flag (single-line render). */
-    noBreak(): RenderConstructor_4_NEW<K>;
+    noBreak(): RenderConstructor_4<K>;
 
     /** Convenience: enable "spaced" output (e.g. pretty-print JSON / HSON). */
-    spaced(): RenderConstructor_4_NEW<K>;
+    spaced(): RenderConstructor_4<K>;
 
     /** Convenience: enable linted / normalized output, if supported. */
-    linted(): RenderConstructor_4_NEW<K>;
+    linted(): RenderConstructor_4<K>;
 }
 
 /**
@@ -211,7 +210,7 @@ export interface FrameOptions {
  * - `parse()`     → structured representation (type depends on format),
  * - `asBranch()`  → LiveTree projection for DOM interaction.
  */
-export interface RenderConstructor_4_NEW<K extends RenderFormats> {
+export interface RenderConstructor_4<K extends RenderFormats> {
 
     /**
      * Render the current frame as a string in the chosen format.
@@ -272,4 +271,29 @@ export type ParsedResult<K extends RenderFormats> =
     : K extends (typeof $RENDER)["HSON"]
     ? HsonNode
     // HTML has no parseable “valueful” representation in this API
-    : never;
+    : never;export type FrameMode = (typeof $HSON_FRAME)[keyof typeof $HSON_FRAME];
+
+export interface FrameConstructor {
+    input: string | Element;
+    node: HsonNode;
+    hson?: string;
+    html?: string;
+    json?: JsonValue | string;
+    mode?: FrameMode;
+    meta?: Record<string, unknown>;
+    options?: FrameOptions;
+}
+;
+/* OptionsConstructor_3 depends on */
+
+
+export interface FrameOptions {
+    spaced?: boolean;
+    lineLength?: number;
+    linted?: boolean;
+    noBreak?: boolean;
+}
+;
+
+export type RenderFormats = (typeof $RENDER)[keyof typeof $RENDER];
+

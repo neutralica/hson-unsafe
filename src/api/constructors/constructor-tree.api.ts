@@ -1,9 +1,9 @@
 // src/api/livetree/construct-tree.new.api.hson.ts
 
-import { JsonType } from "../../core/types-consts/core.types";
+import { JsonValue } from "../../core/types-consts/core.types";
 import { HsonNode } from "../../types-consts";
 import { _ERROR } from "../../types-consts/constants";
-import { TreeConstructor_Source, BranchConstructor, GraftConstructor } from "../../types-consts/tree.new.types";
+import { TreeConstructor_Source, BranchConstructor, GraftConstructor } from "../../types-consts/tree.types";
 import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { LiveTree } from "../livetree";
@@ -66,7 +66,7 @@ export function construct_tree(
       };
     },
 
-    fromJSON($json: string | JsonType): BranchConstructor {
+    fromJSON($json: string | JsonValue): BranchConstructor {
       const rootNode = parse_json($json as string);
       const branch = createBranch(rootNode);
       return {

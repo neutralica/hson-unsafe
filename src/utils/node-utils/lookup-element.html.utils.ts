@@ -1,6 +1,6 @@
 // lookup-element.utils.ts
 
-import { HsonNode } from "../../types-consts/node.new.types";
+import { HsonNode } from "../../types-consts/node.types";
 
 
 // export function lookup_element(node: HsonNode): Element | undefined {

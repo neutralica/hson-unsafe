@@ -1,13 +1,13 @@
 import { HsonNode } from "../../types-consts";
-import { FrameConstructor } from "../../core/types-consts/constructors.core.types";
-import { JsonValue } from "../../types-consts/node.new.types";
+import { FrameConstructor } from "../../types-consts/constructor-types";
+import { JsonValue } from "../../core/types-consts/core.types";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
-import { construct_output_2_NEW } from "./construct-output-2";
-import { SourceConstructor_1_NEW, OutputConstructor_2_NEW } from "../../types-consts/new-types";
+import { construct_output_2 } from "./construct-output-2";
+import { SourceConstructor_1, OutputConstructor_2 } from "../../types-consts/constructor-types";
 
 // If not already declared elsewhere, keep this in a shared types file.
 export interface HtmlSourceOptions {
@@ -49,9 +49,9 @@ export interface HtmlSourceOptions {
  * - If they encode HTML AST and you want HTML-style sanitization, you must do
  *   that explicitly later (e.g. Node → HTML → DOMPurify → Node).
  */
-export function construct_source_1_NEW(
+export function construct_source_1(
   pipelineOptions: { unsafe: boolean } = { unsafe: false }
-): SourceConstructor_1_NEW {
+): SourceConstructor_1 {
   return {
     /**
      * HTML → HSON Node.
@@ -72,7 +72,7 @@ export function construct_source_1_NEW(
     fromHTML(
       input: string | Element,
       options: HtmlSourceOptions = { sanitize: true }
-    ): OutputConstructor_2_NEW {
+    ): OutputConstructor_2 {
       const raw: string =
         typeof input === "string" ? input : input.innerHTML;
 
@@ -91,7 +91,7 @@ export function construct_source_1_NEW(
       };
 
       const frame: FrameConstructor = { input: raw, node, meta };
-      return construct_output_2_NEW(frame);
+      return construct_output_2(frame);
     },
 
     /**
@@ -105,7 +105,7 @@ export function construct_source_1_NEW(
      * - If your JSON encodes an HTML-like AST and you want HTML-style
      *   sanitization, you must opt into that later (Node → HTML → DOMPurify → Node).
      */
-    fromJSON(input: string | JsonValue): OutputConstructor_2_NEW {
+    fromJSON(input: string | JsonValue): OutputConstructor_2 {
       const raw: string =
         typeof input === "string" ? input : JSON.stringify(input);
 
@@ -121,7 +121,7 @@ export function construct_source_1_NEW(
         },
       };
 
-      return construct_output_2_NEW(frame);
+      return construct_output_2(frame);
     },
 
     /**
@@ -135,7 +135,7 @@ export function construct_source_1_NEW(
      * - If your HSON ultimately encodes risky HTML, that must be handled
      *   at the HTML stage, not here.
      */
-    fromHSON(input: string): OutputConstructor_2_NEW {
+    fromHSON(input: string): OutputConstructor_2 {
       const node: HsonNode = parse_hson(input);
 
       const frame: FrameConstructor = {
@@ -148,7 +148,7 @@ export function construct_source_1_NEW(
         },
       };
 
-      return construct_output_2_NEW(frame);
+      return construct_output_2(frame);
     },
 
     /**
@@ -164,7 +164,7 @@ export function construct_source_1_NEW(
      * canonical Node form. If it originated from untrusted HTML, that choice
      * should already be reflected in how it was constructed.
      */
-    fromNode(input: HsonNode): OutputConstructor_2_NEW {
+    fromNode(input: HsonNode): OutputConstructor_2 {
       const frame: FrameConstructor = {
         input: JSON.stringify(input),
         node: input,
@@ -175,7 +175,7 @@ export function construct_source_1_NEW(
         },
       };
 
-      return construct_output_2_NEW(frame);
+      return construct_output_2(frame);
     },
 
     /**
@@ -194,7 +194,7 @@ export function construct_source_1_NEW(
      *
      * A missing selector throws a structured transform error.
      */
-    queryDOM(selector: string): OutputConstructor_2_NEW {
+    queryDOM(selector: string): OutputConstructor_2 {
       const element = document.querySelector<HTMLElement>(selector);
 
       if (!element) {
@@ -223,7 +223,7 @@ export function construct_source_1_NEW(
      * - `hson.queryBody()` uses `{ unsafe: true }`, so body snapshots are
      *   treated as trusted and never sanitized.
      */
-    queryBody(): OutputConstructor_2_NEW {
+    queryBody(): OutputConstructor_2 {
       const body = document.body as HTMLElement | null;
 
       if (!body) {

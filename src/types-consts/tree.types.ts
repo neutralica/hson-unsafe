@@ -1,6 +1,6 @@
 import { LiveTree } from "../api/livetree/live-tree-class.new.tree";
-import { JsonType } from "../core/types-consts/core.types";
-import { HsonAttrs, HsonMeta } from "./node.new.types";
+import { JsonValue } from "../core/types-consts/core.types";
+import { HsonAttrs, HsonMeta } from "./node.types";
 
 
 
@@ -26,7 +26,7 @@ export interface GraftConstructor {
 export interface TreeConstructor_Source {
   /* for creating new tree content from data */
   fromHTML(htmlString: string): BranchConstructor;
-  fromJSON(json: string | JsonType): BranchConstructor;
+  fromJSON(json: string | JsonValue): BranchConstructor;
   fromHSON(hsonString: string): BranchConstructor; 
 
 /* for targeting the existing DOM (not a LiveTree) and replcaing with graft() */
