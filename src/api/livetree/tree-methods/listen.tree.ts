@@ -1,59 +1,37 @@
-// listen.ts — v2 with auto-attach + validation
+// listen.ts
 
 import { LiveTree } from "../live-tree-class.new.tree";
+import { ListenerBuilder, ListenOpts, MissingPolicy, ListenerSub, EMap } from "../../../types-consts/listener-builder-types";
 
-type EMap = HTMLElementEventMap;
-
-export type ListenOpts = {
-  capture?: boolean;
-  once?: boolean;
-  passive?: boolean;
-  target?: "element" | "window" | "document";
-};
-
-export type MissingPolicy = "ignore" | "warn" | "throw";
-
-export interface ListenerSub {
-  off(): void;
-  /** number of concrete EventTarget attachments performed */
-  count: number;
-  /** true iff count > 0 */
-  ok: boolean;
-}
-
-export interface ListenerBuilder {
-  // typed events
-  on<K extends keyof EMap>(type: K, handler: (ev: EMap[K]) => void): ListenerBuilder;
-  onClick(h: (ev: MouseEvent) => void): ListenerBuilder;
-  onMouseMove(h: (ev: MouseEvent) => void): ListenerBuilder;
-  onMouseDown(h: (ev: MouseEvent) => void): ListenerBuilder;
-  onMouseUp(h: (ev: MouseEvent) => void): ListenerBuilder;
-  onKeyDown(h: (ev: KeyboardEvent) => void): ListenerBuilder;
-  onKeyUp(h: (ev: KeyboardEvent) => void): ListenerBuilder;
-
-  // options
-  once(): ListenerBuilder;
-  passive(): ListenerBuilder;
-  capture(): ListenerBuilder;
-  toWindow(): ListenerBuilder;
-  toDocument(): ListenerBuilder;
-  onEach(): ListenerBuilder;
-
-  // validation / scheduling
-  strict(policy?: MissingPolicy): ListenerBuilder; // default "warn"
-  defer(): ListenerBuilder;                        // cancel auto-attach for manual attach()
-
-  // explicit attach (returns handle). Auto-attach will also return a handle.
-  attach(): ListenerSub;
-  preventDefault(): ListenerBuilder;
-  stopProp(): ListenerBuilder;
-  stopImmediateProp(): ListenerBuilder;
-  stopAll(): ListenerBuilder;
-  clearStops(): ListenerBuilder;
-}
-
+/**
+ * Internal registry mapping EventTargets → Sets of "off" callbacks.
+ *
+ * LiveTree uses this to provide reliable teardown for any listeners it creates.
+ * Each target holds a Set of functions that, when called, remove exactly the
+ * listener that was added. This allows bulk-cleanup without needing to track
+ * the original handlers or options externally.
+ */
 const REG = new WeakMap<EventTarget, Set<() => void>>();
 
+
+/**
+ * Adds an event listener and returns an `off()` function that removes it.
+ *
+ * The returned callback is stored in a WeakMap registry keyed by the target.
+ * This enables:
+ *   • one-shot detaching of a specific listener (`off()`),
+ *   • or grouped teardown of *all* listeners for a target
+ *     via `_listeners_off_for_target()`.
+ *
+ * The target → off-callbacks relationship is ephemeral and garbage-collectable
+ * because the registry uses a WeakMap.
+ *
+ * @param target - The DOM EventTarget to attach to.
+ * @param type - Event type (e.g. `"click"`).
+ * @param handler - Listener function or object.
+ * @param opts - Standard `addEventListener` options.
+ * @returns A function that removes the registered listener.
+ */
 function addWithOff(
   target: EventTarget,
   type: string,
@@ -68,6 +46,20 @@ function addWithOff(
   return off;
 }
 
+/**
+ * Removes *all* listeners previously attached to a target via `addWithOff()`.
+ *
+ * This walks the stored off-callbacks for the given target, calls each one,
+ * and then clears the registry entry. If the target has no registered
+ * listeners, the function does nothing.
+ *
+ * This is the internal mechanism LiveTree uses when:
+ *   • cleaning up listeners during node removal,
+ *   • re-grafting,
+ *   • or explicitly flushing listeners created by the `.listen` builder.
+ *
+ * @param target - The EventTarget whose listeners should be removed.
+ */
 export function _listeners_off_for_target(target: EventTarget): void {
   const set = REG.get(target);
   if (!set) return;
@@ -75,6 +67,28 @@ export function _listeners_off_for_target(target: EventTarget): void {
   REG.delete(target);
 }
 
+/**
+ * Constructs a ListenerBuilder for a given LiveTree selection.
+ *
+ * The builder accumulates listener declarations (event type, handler,
+ * options) and attaches them either:
+ *   - automatically in a microtask (default), or
+ *   - manually via `.attach()`.
+ *
+ * Implementation details:
+ * - `queue`: holds pending listener specs until attachment.
+ * - `opts`: per-listener options (`{ capture, once, passive }`, etc.).
+ * - prevent / stop / stopImmediate: convenience flags that wrap the
+ *   handler to call `preventDefault()`, `stopPropagation()`,
+ *   or `stopImmediatePropagation()`.
+ * - Listeners always resolve their DOM targets lazily using the LiveTree’s
+ *   current selection and QUID → Element mapping.
+ * - `missingPolicy`: controls what happens if a selected node is not yet
+ *   mounted in the DOM (`'ignore' | 'warn' | 'throw'`).
+ *
+ * Returns a fluent API for describing one or many listeners and then
+ * attaching them in a controlled, predictable way.
+ */
 export function makeListenerBuilder(tree: LiveTree): ListenerBuilder {
   type Q = { type: string; handler: EventListener };
   const queue: Q[] = [];

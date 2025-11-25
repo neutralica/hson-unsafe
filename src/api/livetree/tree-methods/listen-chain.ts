@@ -1,148 +1,148 @@
-// add a small fluent builder with order-tolerant flags
-type ListenerFlags = {
-  // runtime-toggled controls (safe to flip before/after on*)
-  prevent: boolean;
-  stop: boolean;
-  stopImmediate: boolean;
-  once: boolean;
+// // add a small fluent builder with order-tolerant flags
+// type ListenerFlags = {
+//   // runtime-toggled controls (safe to flip before/after on*)
+//   prevent: boolean;
+//   stop: boolean;
+//   stopImmediate: boolean;
+//   once: boolean;
 
-  // binding-time options (must be true before the first on*)
-  capture: boolean;
-  passive: boolean;
-};
+//   // binding-time options (must be true before the first on*)
+//   capture: boolean;
+//   passive: boolean;
+// };
 
-type RemoveFn = () => void;
+// type RemoveFn = () => void;
 
-export class ListenChain {
-  // a single mutable state object; wrapper reads by reference
-  private readonly flags: ListenerFlags = {
-    prevent: false,
-    stop: false,
-    stopImmediate: false,
-    once: false,
-    capture: false,
-    passive: false,
-  };
+// export class ListenChain {
+//   // a single mutable state object; wrapper reads by reference
+//   private readonly flags: ListenerFlags = {
+//     prevent: false,
+//     stop: false,
+//     stopImmediate: false,
+//     once: false,
+//     capture: false,
+//     passive: false,
+//   };
 
-  // track removers to integrate with teardown registry
-  private readonly removers: RemoveFn[] = [];
+//   // track removers to integrate with teardown registry
+//   private readonly removers: RemoveFn[] = [];
 
-  // bind target explicitly; no `any`, no `as`
-  public constructor(private readonly target: EventTarget) {}
+//   // bind target explicitly; no `any`, no `as`
+//   public constructor(private readonly target: EventTarget) {}
 
-  // --- chainable modifiers (order-tolerant where possible) ---
+//   // --- chainable modifiers (order-tolerant where possible) ---
 
-  public preventDefault(): this {
-    this.flags.prevent = true;
-    return this;
-  }
+//   public preventDefault(): this {
+//     this.flags.prevent = true;
+//     return this;
+//   }
 
-  public stopProp(): this {
-    this.flags.stop = true;
-    return this;
-  }
+//   public stopProp(): this {
+//     this.flags.stop = true;
+//     return this;
+//   }
 
-  public stopImmediateProp(): this {
-    this.flags.stopImmediate = true;
-    return this;
-  }
+//   public stopImmediateProp(): this {
+//     this.flags.stopImmediate = true;
+//     return this;
+//   }
 
-  public once(): this {
-    this.flags.once = true; // runtime-enforced once (order-safe)
-    return this;
-  }
+//   public once(): this {
+//     this.flags.once = true; // runtime-enforced once (order-safe)
+//     return this;
+//   }
 
-  public capture(): this {
-    this.flags.capture = true; // must be set before first on*
-    return this;
-  }
+//   public capture(): this {
+//     this.flags.capture = true; // must be set before first on*
+//     return this;
+//   }
 
-  public passive(): this {
-    this.flags.passive = true; // must be set before first on*
-    return this;
-  }
+//   public passive(): this {
+//     this.flags.passive = true; // must be set before first on*
+//     return this;
+//   }
 
-  // --- event binders (return this for further chaining) ---
+//   // --- event binders (return this for further chaining) ---
 
-  public onClick(handler: (e: MouseEvent) => void): this {
-    return this.onTyped<"click", MouseEvent>("click", handler);
-  }
+//   public onClick(handler: (e: MouseEvent) => void): this {
+//     return this.onTyped<"click", MouseEvent>("click", handler);
+//   }
 
-  public onInput(handler: (e: InputEvent) => void): this {
-    return this.onTyped<"input", InputEvent>("input", handler);
-  }
+//   public onInput(handler: (e: InputEvent) => void): this {
+//     return this.onTyped<"input", InputEvent>("input", handler);
+//   }
 
-  public onChange(handler: (e: Event) => void): this {
-    return this.onTyped<"change", Event>("change", handler);
-  }
+//   public onChange(handler: (e: Event) => void): this {
+//     return this.onTyped<"change", Event>("change", handler);
+//   }
 
-  public onKeyDown(handler: (e: KeyboardEvent) => void): this {
-    return this.onTyped<"keydown", KeyboardEvent>("keydown", handler);
-  }
+//   public onKeyDown(handler: (e: KeyboardEvent) => void): this {
+//     return this.onTyped<"keydown", KeyboardEvent>("keydown", handler);
+//   }
 
-  // strongly-typed internal binder; no `as` assertions
-  private onTyped<TType extends string, TEvt extends Event>(
-    type: TType,
-    handler: (e: TEvt) => void
-  ): this {
-    // snapshot binding-time options once (capture/passive)
-    const useCapture: boolean = this.flags.capture;
-    const usePassive: boolean = this.flags.passive;
+//   // strongly-typed internal binder; no `as` assertions
+//   private onTyped<TType extends string, TEvt extends Event>(
+//     type: TType,
+//     handler: (e: TEvt) => void
+//   ): this {
+//     // snapshot binding-time options once (capture/passive)
+//     const useCapture: boolean = this.flags.capture;
+//     const usePassive: boolean = this.flags.passive;
 
-    // minimal state to support order-safe `.once()`
-    let fired: boolean = false;
+//     // minimal state to support order-safe `.once()`
+//     let fired: boolean = false;
 
-    const wrapped: EventListener = (e: Event): void => {
-      // apply live toggles *immediately*
-      if (this.flags.stopImmediate) {
-        e.stopImmediatePropagation();
-      }
-      if (this.flags.stop) {
-        e.stopPropagation();
-      }
-      if (this.flags.prevent && !usePassive) {
-        // preventDefault is illegal in passive listeners
-        e.preventDefault();
-      }
+//     const wrapped: EventListener = (e: Event): void => {
+//       // apply live toggles *immediately*
+//       if (this.flags.stopImmediate) {
+//         e.stopImmediatePropagation();
+//       }
+//       if (this.flags.stop) {
+//         e.stopPropagation();
+//       }
+//       if (this.flags.prevent && !usePassive) {
+//         // preventDefault is illegal in passive listeners
+//         e.preventDefault();
+//       }
 
-      handler(e as TEvt);
+//       handler(e as TEvt);
 
-      if (this.flags.once && !fired) {
-        fired = true;
-        this.removeOne(type, wrapped, useCapture);
-      }
-    };
+//       if (this.flags.once && !fired) {
+//         fired = true;
+//         this.removeOne(type, wrapped, useCapture);
+//       }
+//     };
 
-    this.target.addEventListener(type, wrapped, {
-      capture: useCapture,
-      passive: usePassive,
-      // NOTE: do not set DOM once; we enforce runtime once so order is flexible
-    });
+//     this.target.addEventListener(type, wrapped, {
+//       capture: useCapture,
+//       passive: usePassive,
+//       // NOTE: do not set DOM once; we enforce runtime once so order is flexible
+//     });
 
-    // track remover (capture must match)
-    this.removers.push(() => {
-      this.target.removeEventListener(type, wrapped, { capture: useCapture });
-    });
+//     // track remover (capture must match)
+//     this.removers.push(() => {
+//       this.target.removeEventListener(type, wrapped, { capture: useCapture });
+//     });
 
-    // OPTIONAL: register with owner/target registries here
-    // _register_listener_for_target(this.target, type, wrapped, useCapture);
-    // _register_listener_for_owner(this.target, ...);
+//     // OPTIONAL: register with owner/target registries here
+//     // _register_listener_for_target(this.target, type, wrapped, useCapture);
+//     // _register_listener_for_owner(this.target, ...);
 
-    return this;
-  }
+//     return this;
+//   }
 
-  private removeOne(type: string, listener: EventListener, capture: boolean): void {
-    this.target.removeEventListener(type, listener, { capture });
-    // also prune from local removers (optional; keeps things tidy)
-    for (let i = 0; i < this.removers.length; i++) {
-      // simple linear prune; can store structured tuples for exact matches
-    }
-  }
+//   private removeOne(type: string, listener: EventListener, capture: boolean): void {
+//     this.target.removeEventListener(type, listener, { capture });
+//     // also prune from local removers (optional; keeps things tidy)
+//     for (let i = 0; i < this.removers.length; i++) {
+//       // simple linear prune; can store structured tuples for exact matches
+//     }
+//   }
 
-  // expose an off() to align with teardown flow (optional)
-  public off(): void {
-    for (const rm of this.removers) {
-      rm();
-    }
-  }
-}
+//   // expose an off() to align with teardown flow (optional)
+//   public off(): void {
+//     for (const rm of this.removers) {
+//       rm();
+//     }
+//   }
+// }

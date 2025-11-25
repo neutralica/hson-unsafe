@@ -8,8 +8,8 @@ import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
 import { construct_output_2 } from "./construct-output-2";
 import { SourceConstructor_1, OutputConstructor_2 } from "../../types-consts/constructor-types";
+import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
 
-// If not already declared elsewhere, keep this in a shared types file.
 export interface HtmlSourceOptions {
   /** Per-call override for HTML sanitization.
    *
@@ -76,17 +76,43 @@ export function construct_source_1(
       const raw: string =
         typeof input === "string" ? input : input.innerHTML;
 
-      const shouldSanitize: boolean =
-        !pipelineOptions.unsafe && options.sanitize !== false;
+      const trimmed = raw.trimStart();
 
-      const node: HsonNode = shouldSanitize
-        ? parse_external_html(raw) // DOMPurify + HTML semantics
-        : parse_html(raw);         // raw HTML → Node, no DOMPurify
+      let node: HsonNode;
+      let sanitized = false;
+
+      // 1) SVG special case (UNSAFE only)
+      if (isSvgMarkup(trimmed)) {
+        if (!pipelineOptions.unsafe) {
+          _throw_transform_err(
+            "fromHTML(): external SVG is only allowed on the UNSAFE pipeline or via internal VSN→SVG nodes.",
+            "fromHTML",
+            raw.slice(0, 200)
+          );
+        }
+
+        // Match old behavior: parse SVG via XML + node_from_svg
+        const el = new DOMParser()
+          .parseFromString(raw, "image/svg+xml")
+          .documentElement;
+        node = node_from_svg(el);
+        sanitized = false; // no DOMPurify here
+      } else {
+        // 2) Normal HTML path: safe vs unsafe, with DOMPurify when appropriate
+        const shouldSanitize: boolean =
+          !pipelineOptions.unsafe && options.sanitize !== false;
+
+        node = shouldSanitize
+          ? parse_external_html(raw) // DOMPurify + HTML semantics
+          : parse_html(raw);         // raw HTML→Node, no DOMPurify
+
+        sanitized = shouldSanitize;
+      }
 
       const meta: Record<string, unknown> = {
-        origin: "html",
+        origin: isSvgMarkup(trimmed) ? "svg-html" : "html",
         unsafePipeline: pipelineOptions.unsafe,
-        sanitized: shouldSanitize,
+        sanitized,
         rawInput: raw,
       };
 

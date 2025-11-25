@@ -12,13 +12,25 @@ import { make_string } from "../../../utils/primitive-utils/make-string.nodes.ut
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
 import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
 
-/**
- * Parses content and appends it as a child to each node in the current selection.
- * This method ADDS to the end of the existing content, it does not replace it.
- *
- * @param $content The content to append.
- * @returns The current LiveTree instance for chaining.
- */
+  /**
+   * Finds the first descendant matching a query.
+   *
+   * @param q - Either:
+   *   - an HsonQuery object (shape-based match against nodes), or
+   *   - a string in HSON's selector syntax, which is parsed via
+   *     `parse_selector` (this is not full CSS; it is a smaller,
+   *     HSON-specific selector language).
+   *
+   * @returns A new LiveTree whose selection contains at most one node:
+   *   - the first match if found,
+   *   - or an empty selection if nothing matches.
+   *
+   * Notes:
+   * - Matching is done against the HSON node tree, not via DOM
+   *   querySelector.
+   * - The new LiveTree shares the same root and QUID/DOM mapping; only
+   *   `selectedNodes` differs.
+   */
 export function append(this: LiveTree, $content: Partial<HsonNode> | string | LiveTree): LiveTree {
   const selectedNodes = (this as any).selectedNodes as HsonNode[];
 
