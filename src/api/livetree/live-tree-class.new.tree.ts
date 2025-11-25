@@ -12,7 +12,7 @@ import { StyleManager } from "./tree-methods/style-manager-2.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { makeListenerBuilder } from "./tree-methods/listen.tree";
-import { ListenerBuilder } from "../../types-consts/listener-builder-types";
+import { ListenerBuilder } from "../../types-consts/listen.types";
 import { set_attrs_safe } from "../../safety/safe-mount.safe";
 import { make_leaf } from "../parsers/parse-tokens.new.transform";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";

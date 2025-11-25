@@ -1,7 +1,7 @@
 // listen.ts
 
 import { LiveTree } from "../live-tree-class.new.tree";
-import { ListenerBuilder, ListenOpts, MissingPolicy, ListenerSub, EMap } from "../../../types-consts/listener-builder-types";
+import { ListenerBuilder, ListenOpts, MissingPolicy, ListenerSub, EMap } from "../../../types-consts/listen.types";
 
 /**
  * Internal registry mapping EventTargets → Sets of "off" callbacks.

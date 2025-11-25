@@ -2,7 +2,7 @@
 
 
 import { HsonNode } from "./node.types";
-import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen, TokenClose, TokenArrayOpen, TokenArrayClose, TokenText, TokenEmptyObj, TOKEN_KIND } from "./tokens.types";
+import { TokenKind, ArraySymbol, CloseKind, RawAttr, Position, TokenOpen, TokenClose, TokenArrayOpen, TokenArrayClose, TokenText, TokenEmptyObj, TOKEN_KIND } from "./token.types";
 
 export const CREATE_NODE = (partial: Partial<HsonNode> = {}): HsonNode => ({
   _tag: partial._tag ?? '', 

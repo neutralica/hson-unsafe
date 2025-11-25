@@ -1,7 +1,7 @@
-import { RenderFormats } from "../../types-consts/constructor-types";
+import { RenderFormats } from "../../types-consts/constructor.types";
 import { HsonNode } from "../../types-consts";
 import { $RENDER } from "../../types-consts/constants";
-import { FrameConstructor } from "../../types-consts/constructor-types";
+import { FrameConstructor } from "../../types-consts/constructor.types";
 import { LiveTree } from "../livetree";
 import { create_live_tree } from "../livetree/create-live-tree.tree";
 import { parse_external_html } from "../parsers/parse-external-html.transform";
@@ -10,7 +10,7 @@ import { serialize_html } from "../serializers/serialize-html.new.render";
 import { serialize_json } from "../serializers/serialize-json.new.render";
 import { construct_options_3 } from "./construct-options-3";
 import { construct_render_4 } from "./construct-render-4";
-import { OutputConstructor_2, OptionsConstructor_3, RenderConstructor_4, LiveTreeConstructor_3, FrameRender } from "../../types-consts/constructor-types";
+import { OutputConstructor_2, OptionsConstructor_3, RenderConstructor_4, LiveTreeConstructor_3, FrameRender } from "../../types-consts/constructor.types";
 import { createBranchFromNode } from "../livetree/create-branch";
 
 /**
