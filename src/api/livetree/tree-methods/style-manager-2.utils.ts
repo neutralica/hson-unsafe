@@ -30,6 +30,11 @@ type KeysWithStringValues<T> = {
     [K in StringKeys<T>]: T[K] extends string ? K : never
 }[StringKeys<T>];
 type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>, "cssText">;
+type StyleKey =
+    | AllowedStyleKey
+    | `--${string}`          // CSS variables
+    | `${string}-${string}`; // kebab custom/unknown
+export type CssObject = Partial<Record<StyleKey, string | number | null | undefined>>;
 
 /* ------------------------------ RUNTIME KEYS -------------------------------- */
 // comment: Minimal fallback list used when no DOM is present (tests, Node).
@@ -75,16 +80,7 @@ function computeRuntimeKeys(): ReadonlyArray<AllowedStyleKey> {
 }
 
 /* --------------------------------- HELPERS ---------------------------------- */
-/* camelCase ↔ kebab-case conversion. */
-// function camelToKebab(input: string): string {
-//     return input.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
-// }
-// function kebabToCamel(input: string): string {
-//     if (input.startsWith("--")) return input;
-//     if (!input.includes("-")) return input;
-//     const [head, ...rest] = input.split("-");
-//     return head + rest.map((p) => (p ? p[0].toUpperCase() + p.slice(1) : "")).join("");
-// }
+
 
 // comment: Normalize style storage on node._attrs.style to an object (kebab keys).
 function ensureStyleObject(a: Record<string, unknown>): Record<string, string> {
@@ -362,21 +358,19 @@ export class StyleManager {
      * @param props - Map of property names to values.
      * @returns The underlying LiveTree.
      */
-    css(
-        props: Record<string, string | number | null | undefined>
-    ): LiveTree {
+    css(props: CssObject): LiveTree {
         // snapshot keys once; iteration order preserved
-        const keys = Object.keys(props);
+        const keys = Object.keys(props) as Array<keyof CssObject>;
         for (let i = 0; i < keys.length; i += 1) {
             const k = keys[i];
             const v = props[k];
             if (v === undefined) continue;        // skip holes
             if (v === null) {
                 // allow null to mean "remove this declaration"
-                this.remove(k);
+                this.remove(String(k));
             } else {
                 // delegate to existing single-prop pathway
-                this.setProperty(k, v);
+                this.setProperty(String(k), v);
             }
         }
         return this.tree;
@@ -410,16 +404,17 @@ export class StyleManager {
      * @returns The underlying LiveTree.
      */
     cssReplace(
-        props: Record<string, string | number | null | undefined>
+        props: CssObject
     ): LiveTree {
         // 1) Normalize the incoming prop names once (camelCase → kebab, except for --vars)
         const incoming: Record<string, string | number | null> = {};
-        const propNames = Object.keys(props);
+        const propNames = Object.keys(props) as Array<keyof CssObject>;
         for (let i = 0; i < propNames.length; i += 1) {
             const raw = propNames[i];
-            const norm = raw.startsWith("--")
-                ? raw
-                : raw.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
+            const rawStr = String(raw);
+            const norm = rawStr.startsWith("--")
+                ? rawStr
+                : rawStr.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
 
             const v = props[raw]; // type: string | number | null | undefined
 
