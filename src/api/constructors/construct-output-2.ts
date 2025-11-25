@@ -11,6 +11,7 @@ import { serialize_json } from "../serializers/serialize-json.new.render";
 import { construct_options_3 } from "./construct-options-3";
 import { construct_render_4 } from "./construct-render-4";
 import { OutputConstructor_2, OptionsConstructor_3, RenderConstructor_4, LiveTreeConstructor_3, FrameRender } from "../../types-consts/constructor-types";
+import { createBranchFromNode } from "../livetree/create-branch";
 
 /**
  * HSON pipeline – stage 2: select output format.
@@ -82,8 +83,8 @@ export function construct_output_2(frame: FrameConstructor): OutputConstructor_2
               throw new Error("liveTree().asBranch(): frame is missing HSON node data");
             }
             // Populate NODE_ELEMENT_MAP; actual attach happens later via graft/append.
-            create_live_tree(node);
-            return new LiveTree(node);
+            
+            return createBranchFromNode(node);
           },
         };
       },

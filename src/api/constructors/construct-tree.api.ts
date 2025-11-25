@@ -7,6 +7,7 @@ import { TreeConstructor_Source, BranchConstructor, GraftConstructor } from "../
 import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { LiveTree } from "../livetree";
+import { createBranchFromNode } from "../livetree/create-branch";
 import { create_live_tree } from "../livetree/create-live-tree.tree";
 import { graft } from "../livetree/graft.new.tree";
 import { parse_external_html } from "../parsers/parse-external-html.transform";
@@ -22,13 +23,6 @@ import { parse_json } from "../parsers/parse-json.new.transform";
 export function construct_tree(
   $options: { unsafe: boolean } = { unsafe: false }
 ): TreeConstructor_Source {
-
-  /* internal helper to create a detached branch from a root node
-      it builds the dom elements in memory but does not attach them */
-  const createBranch = ($rootNode: HsonNode): LiveTree => {
-    create_live_tree($rootNode); /* populate the NODE_ELEMENT_MAP */
-    return new LiveTree($rootNode);
-  };
 
   /* the main object returned by construct_tree */
   return {
@@ -60,7 +54,7 @@ export function construct_tree(
           : parse_external_html($html);
       }
 
-      const branch = createBranch(node);
+      const branch = createBranchFromNode(node);
       return {
         asBranch: () => branch,
       };
@@ -68,7 +62,7 @@ export function construct_tree(
 
     fromJSON($json: string | JsonValue): BranchConstructor {
       const rootNode = parse_json($json as string);
-      const branch = createBranch(rootNode);
+      const branch = createBranchFromNode(rootNode);
       return {
         asBranch: () => branch,
       };
@@ -78,7 +72,7 @@ export function construct_tree(
     fromHSON($hson: string): BranchConstructor {
       // assumes tokenize_hson and parse_tokens available
       const rootNode = parse_hson($hson);
-      const branch = createBranch(rootNode);
+      const branch = createBranchFromNode(rootNode);
       return {
         asBranch: () => branch,
       };

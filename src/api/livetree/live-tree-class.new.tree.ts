@@ -67,7 +67,7 @@ type NodeRef = {
 // finder methods (convert results → refs)
 type FindWithById = {
   (q: HsonQuery | string): LiveTree;
-  byId(id: string): LiveTree;
+  byId(id: string): LiveTree | undefined;
 };
 
 interface MultiResult {
@@ -90,9 +90,9 @@ interface MultiResult {
   at(i: number): LiveTree | undefined;
 }
 
-function makeMulti(found: HsonNode[]): MultiResult {
-  const branch = new LiveTree(found);            // batch target (all)
-  const arr = found.map(n => new LiveTree([n])); // single-node wrappers
+function makeMulti(found: HsonNode[], roots?: HsonNode[]): MultiResult {
+  const branch = new LiveTree(found, roots);            // batch target (all)
+  const arr = found.map(n => new LiveTree([n], roots)); // single-node wrappers
 
   function setAttrs(nameOrMap: any, val?: any) {
     // forward to LiveTree.setAttrs
@@ -137,6 +137,7 @@ function makeRef(n: HsonNode): NodeRef {
 
 export class LiveTree {
   private selected: NodeRef[] = [];
+  private rootRefs: HsonNode[] = [];
   /*   managers */
   private styleManager: StyleManager | undefined = undefined;
   private datasetManager: DatasetManager | undefined = undefined;
@@ -153,7 +154,8 @@ export class LiveTree {
    * - DOM lookup is lazy: an Element is retrieved only when needed,
    *   via QUID → NODE_ELEMENT_MAP.
    */
-  constructor($nodes?: HsonNode | HsonNode[] | LiveTree) {
+  constructor($nodes?: HsonNode | HsonNode[] | LiveTree, rootHint?: HsonNode | HsonNode[]) {
+    this.setRoots($nodes, rootHint);
     this.setSelected($nodes);
   }
 
@@ -182,11 +184,57 @@ export class LiveTree {
     }
   }
 
+  private setRoots(input?: HsonNode | HsonNode[] | LiveTree, hint?: HsonNode | HsonNode[]) {
+    if (input instanceof LiveTree) {
+      this.rootRefs = input.rootRefs.slice();
+      return;
+    }
+
+    if (hint) {
+      this.rootRefs = Array.isArray(hint) ? hint.filter(is_Node) : [hint];
+      return;
+    }
+
+    if (Array.isArray(input)) {
+      this.rootRefs = input.filter(is_Node);
+    } else if (input && is_Node(input)) {
+      this.rootRefs = [input];
+    } else {
+      this.rootRefs = [];
+    }
+  }
+
   /* helper to temporarily run legacy logic that expects nodes */
   private withNodes<T>(fn: (nodes: HsonNode[]) => T): T {
     return fn(this.selectedNodes);
   }
-  
+
+  // Remove references to nodes from any known root trees
+  private pruneFromRoots(targets: HsonNode[]): void {
+    if (!targets.length || !this.rootRefs.length) return;
+    const toDrop = new Set(targets);
+
+    const prune = (node: HsonNode): void => {
+      const kids = node._content;
+      if (!Array.isArray(kids) || kids.length === 0) return;
+
+      node._content = kids.filter(child => {
+        if (!is_Node(child)) return true;
+        if (toDrop.has(child)) return false;
+        prune(child);
+        return true;
+      });
+    };
+
+    for (const root of this.rootRefs) prune(root);
+  }
+
+  // internal: allow a branch to inherit host roots when grafted/appended
+  adoptRoots(roots: HsonNode[]): this {
+    this.rootRefs = roots;
+    return this;
+  }
+
   public async afterPaint(): Promise<this> {
     // comment: await a frame boundary without changing call sites that don’t need it
     await after_paint();
@@ -272,6 +320,7 @@ export class LiveTree {
   * @returns A new LiveTree whose selection contains at most one node:
   *   - the first match if found,
   *   - or an empty selection if nothing matches.
+  *   - `find.byId(...)` convenience returns `undefined` when not found.
   *
   * Notes:
   * - Matching is done against the HSON node tree, not via DOM
@@ -285,10 +334,13 @@ export class LiveTree {
     const base = ((q: HsonQuery | string): LiveTree => {
       const query = typeof q === "string" ? parse_selector(q) : q;
       const found = self.search(self.selectedNodes, query, { findFirst: true });
-      return new LiveTree(found);
+      return new LiveTree(found, self.rootRefs);
     }) as FindWithById; // localized, internal assertion
 
-    base.byId = (id: string): LiveTree => base({ attrs: { id } });
+    base.byId = (id: string): LiveTree | undefined => {
+      const tree = base({ attrs: { id } });
+      return tree.count() ? tree : undefined;
+    };
 
     return base;
   }
@@ -311,15 +363,15 @@ export class LiveTree {
 
     // if no matches, return an inert wrapper rather than throwing
     if (!found.length) {
-      return makeMulti([]);  // empty branch behaves safely
+      return makeMulti([], this.rootRefs);  // empty branch behaves safely
     }
 
-    return makeMulti(found);
+    return makeMulti(found, this.rootRefs);
   }
 
   at(index: number): LiveTree {
     const n = this.selectedNodes[index];
-    return new LiveTree(n ? [n] : undefined);
+    return new LiveTree(n ? [n] : undefined, this.rootRefs);
   }
 
   /**
@@ -434,16 +486,18 @@ export class LiveTree {
  * - Removing dynamically-created elements.
  */
   remove(): this {
-    for (const r of this.selected) {
-      const n = r.resolveNode();
-      if (!n) continue;
-
+    const nodes = this.selectedNodes;
+    for (const n of nodes) {
       // tear down subtree: listeners + DOM + map
       detach_node_deep(n);
 
       // drop quids (if invalid after removal)
       drop_quid(n);
     }
+
+    // prune from data model if we know the roots
+    this.pruneFromRoots(nodes);
+
     // clear selection
     this.selected = [];
     return this;
@@ -569,17 +623,19 @@ export class LiveTree {
     return (liveElement as HTMLInputElement | HTMLTextAreaElement)?.value ?? '';
   }
 
-
   asDomElement(): Element | undefined {
     const n = this.selectedNodes[0];
     if (!n) {
-      console.warn('[asDomElement] no nodes found in .selected');
+      console.warn('[asDomElement] no nodes in selection');
       return undefined;
     }
+
     const el = getElementForNode(n);
     if (!el) {
-      console.warn('[asDomElement] element not found for _quid:', n._meta?.[_DATA_QUID]);
+      console.warn('[asDomElement] element not found for selected node:', n);
+      return undefined;
     }
+
     return el;
   }
 
@@ -693,4 +749,3 @@ export class LiveTree {
   }
 
 }
-

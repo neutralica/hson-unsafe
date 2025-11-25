@@ -1,4 +1,4 @@
-import { construct_tree } from "./api/constructors/constructor-tree.api";
+import { construct_tree } from "./api/constructors/construct-tree.api";
 import { construct_source_1 } from "./api/constructors/construct-source-1";
 import { DomQueryLiveTreeConstructor, DomQuerySourceConstructor, OutputConstructor_2 } from "./types-consts/constructor-types";
 import { LiveTree } from "./api/livetree";

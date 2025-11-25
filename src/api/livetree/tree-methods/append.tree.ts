@@ -38,6 +38,8 @@ export function append(this: LiveTree, $content: Partial<HsonNode> | string | Li
   if (typeof $content === 'string') {
     nodesToAppend = [CREATE_NODE({ _tag: STR_TAG, _content: [$content] })];
   } else if ($content instanceof LiveTree) {
+    // inherit host roots so later remove() knows how to prune
+    $content.adoptRoots((this as any).rootRefs ?? []);
     const sourceNodes = $content.sourceNode(true) as HsonNode[];
     nodesToAppend = unwrap_root_elem(sourceNodes);
   } else if (is_Node($content)) {
