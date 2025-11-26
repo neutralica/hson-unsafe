@@ -9,9 +9,6 @@ import { JsonValue } from "./core/types-consts/core.types";
 (globalThis as any)._test_ON = () => { (globalThis as any).test = true; location.reload(); };
 (globalThis as any)._test_OFF = () => { (globalThis as any).test = false; location.reload(); };
 
-
-
-
 /**
  * HSON public facade (NEW 23NOV2025).
  *

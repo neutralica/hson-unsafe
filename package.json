@@ -16,6 +16,11 @@
   "type": "module",
   "types": "./dist/index.d.ts",
   "exports": {
+      "./hson": { 
+        "types": "./dist/hson.d.ts", 
+        "import": "./dist/hson.js" 
+      },
+ 
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
