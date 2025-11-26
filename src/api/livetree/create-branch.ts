@@ -29,5 +29,5 @@ export function createBranchFromNode(rootNode: HsonNode): LiveTree {
   const actualRoot = unwrapped[0];
 
   create_live_tree(actualRoot);   // populate NODE_ELEMENT_MAP for real element nodes
-  return new LiveTree(actualRoot, actualRoot);
+  return new LiveTree(actualRoot);
 }

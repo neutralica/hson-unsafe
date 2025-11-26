@@ -66,9 +66,12 @@ type NodeRef = {
 
 // finder methods (convert results → refs)
 type FindWithById = {
-  (q: HsonQuery | string): LiveTree;
+  // CHANGED: single-result find can be empty
+  (q: HsonQuery | string): LiveTree | undefined;
+  // CHANGED: byId can also fail
   byId(id: string): LiveTree | undefined;
 };
+
 
 interface MultiResult {
   // batch ops
@@ -91,8 +94,8 @@ interface MultiResult {
 }
 
 function makeMulti(found: HsonNode[], roots?: HsonNode[]): MultiResult {
-  const branch = new LiveTree(found, roots);            // batch target (all)
-  const arr = found.map(n => new LiveTree([n], roots)); // single-node wrappers
+  const branch = new LiveTree(found);            // batch target (all)
+  const arr = found.map(n => new LiveTree([n])); // single-node wrappers
 
   function setAttrs(nameOrMap: any, val?: any) {
     // forward to LiveTree.setAttrs
@@ -141,6 +144,8 @@ export class LiveTree {
   /*   managers */
   private styleManager: StyleManager | undefined = undefined;
   private datasetManager: DatasetManager | undefined = undefined;
+
+
   /**
    * Creates a LiveTree wrapper around a root HSON node.
    *
@@ -154,14 +159,21 @@ export class LiveTree {
    * - DOM lookup is lazy: an Element is retrieved only when needed,
    *   via QUID → NODE_ELEMENT_MAP.
    */
-  constructor($nodes?: HsonNode | HsonNode[] | LiveTree, rootHint?: HsonNode | HsonNode[]) {
-    this.setRoots($nodes, rootHint);
-    this.setSelected($nodes);
+
+  constructor(input?: HsonNode | HsonNode[] | LiveTree) {
+    this.setRoots(input);
+    this.setSelected(input);
   }
 
 
   /* nodes view (read-only) */
   private get selectedNodes(): HsonNode[] {
+    // if selection has gone empty but we have roots, default back to the first root
+    if (this.selected.length === 0 && this.rootRefs.length > 0) {
+      const root = this.rootRefs[0];
+      this.selected = [makeRef(root)];
+    }
+
     const out: HsonNode[] = [];
     for (const r of this.selected) {
       const n = r.resolveNode();
@@ -170,34 +182,31 @@ export class LiveTree {
     return out;
   }
 
-
-  private setSelected(input?: HsonNode | HsonNode[] | LiveTree) {
+  private setSelected(input?: HsonNode | HsonNode[] | LiveTree): void {
     if (input instanceof LiveTree) {
-      this.selected = input.selected.slice(); // copy refs
-      input.listen
+      // clone the other tree’s selection
+      this.selected = input.selected.slice();
     } else if (Array.isArray(input)) {
       this.selected = input.filter(is_Node).map(makeRef);
     } else if (input && is_Node(input)) {
       this.selected = [makeRef(input)];
+    } else if (this.rootRefs.length > 0) {
+      // NEW: default selection = first root
+      this.selected = [makeRef(this.rootRefs[0])];
     } else {
       this.selected = [];
     }
   }
 
-  private setRoots(input?: HsonNode | HsonNode[] | LiveTree, hint?: HsonNode | HsonNode[]) {
+  private setRoots(input?: HsonNode | HsonNode[] | LiveTree) {
     if (input instanceof LiveTree) {
       this.rootRefs = input.rootRefs.slice();
       return;
     }
 
-    if (hint) {
-      this.rootRefs = Array.isArray(hint) ? hint.filter(is_Node) : [hint];
-      return;
-    }
-
     if (Array.isArray(input)) {
-      this.rootRefs = input.filter(is_Node);
-    } else if (input && is_Node(input)) {
+      this.rootRefs = input;
+    } else if (input) {
       this.rootRefs = [input];
     } else {
       this.rootRefs = [];
@@ -331,15 +340,18 @@ export class LiveTree {
   get find(): FindWithById {
     const self = this;
 
-    const base = ((q: HsonQuery | string): LiveTree => {
+    const base = ((q: HsonQuery | string): LiveTree | undefined => {
       const query = typeof q === "string" ? parse_selector(q) : q;
       const found = self.search(self.selectedNodes, query, { findFirst: true });
-      return new LiveTree(found, self.rootRefs);
+      if (!found.length) {
+        return undefined;
+      }
+      return new LiveTree(found);
     }) as FindWithById; // localized, internal assertion
 
     base.byId = (id: string): LiveTree | undefined => {
-      const tree = base({ attrs: { id } });
-      return tree.count() ? tree : undefined;
+      const tree = base({ attrs: { id } }); // base is a query method
+      return tree;
     };
 
     return base;
@@ -371,7 +383,7 @@ export class LiveTree {
 
   at(index: number): LiveTree {
     const n = this.selectedNodes[index];
-    return new LiveTree(n ? [n] : undefined, this.rootRefs);
+    return new LiveTree(n ? [n] : undefined);
   }
 
   /**
@@ -413,7 +425,8 @@ export class LiveTree {
   setAttrs(map: Record<string, string | boolean | null>): this;
   setAttrs(a: string | Record<string, string | boolean | null>, v?: string | boolean | null): this {
     if (typeof a === "string") {
-      return this._setOne(a, v ?? "");
+      // DO NOT coalesce; let _setOne see null/false/true
+      return this._setOne(a, v as string | boolean | null);
     }
     for (const [k, val] of Object.entries(a)) this._setOne(k, val);
     return this;

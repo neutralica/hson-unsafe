@@ -49,5 +49,5 @@ export function graft(
   /* replace the DOM element with the new liveTree-controlled model */
   targetElement.replaceChildren(newDOMFragment)
   /* return queryable liveTree */
-  return new LiveTree(nodeToRender, nodeToRender);
+  return new LiveTree(nodeToRender);
 }

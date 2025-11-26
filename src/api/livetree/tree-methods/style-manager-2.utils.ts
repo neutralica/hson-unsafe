@@ -67,6 +67,37 @@ const FALLBACK_KEYS: ReadonlyArray<AllowedStyleKey> = Object.freeze([
     "transform",
 ]);
 
+function removeStyleFromNode(node: HsonNode, kebabName: string): void {
+    // update DOM
+    const el = getElementForNode(node);
+    if (el) {
+        (el as HTMLElement).style.removeProperty(kebabName);
+    }
+
+    // update node model in _attrs.style
+    const attrs = (node as any)._attrs as Record<string, string> | undefined;
+    if (!attrs || !attrs.style) return;
+
+    const before = attrs.style;
+    const rules = before
+        .split(";")
+        .map(s => s.trim())
+        .filter(Boolean)
+        .filter(rule => {
+            const idx = rule.indexOf(":");
+            if (idx <= 0) return true;
+            const key = rule.slice(0, idx).trim();
+            return key !== kebabName;
+        });
+
+    if (rules.length === 0) {
+        // no more declarations → drop style entirely
+        delete attrs.style;
+    } else {
+        attrs.style = rules.join("; ");
+    }
+}
+
 /* Probe <html>.style once to get the browser’s canonical keys. */
 function computeRuntimeKeys(): ReadonlyArray<AllowedStyleKey> {
     if (typeof document === "undefined" || !document.documentElement) {
@@ -268,23 +299,26 @@ export class StyleManager {
     }
 
     /**
- * Sets a single inline style property on all selected nodes.
- *
- * @param propertyName - CSS property name in camelCase or kebab-case.
- *   CamelCase names are normalized to kebab-case (except `--custom` vars).
- * @param value - New value for the property. `null` or `""` remove the
- *   declaration.
- *
- * Behavior:
- *   - Normalizes the property name via `camelToKebab`.
- *   - Converts `null` to empty string for removal.
- *   - Delegates to `applyStyleToNode` for each selected node, which
- *     updates both IR and DOM.
- *
- * Returns the original LiveTree to allow chaining.
- */
+     * Sets a single inline style property on all selected nodes.
+     *
+     * @param propertyName - CSS property name in camelCase or kebab-case.
+     *   CamelCase names are normalized to kebab-case (except `--custom` vars).
+     * @param value - New value for the property. `null` or `""` remove the
+     *   declaration.
+     *
+     * Behavior:
+     *   - Normalizes the property name via `camelToKebab`.
+     *   - Converts `null` to empty string for removal.
+     *   - Delegates to `applyStyleToNode` for each selected node, which
+     *     updates both IR and DOM.
+     *
+     * Returns the original LiveTree to allow chaining.
+     */
     setProperty(propertyName: string, value: string | number | null): LiveTree {
-        const kebab = camel_to_kebab(propertyName);
+        const kebab = propertyName.startsWith("--")
+            ? propertyName
+            : camel_to_kebab(propertyName);
+
         const val = value == null ? "" : String(value);
         const nodes = this.tree.getSelectedNodes();
         for (let i = 0; i < nodes.length; i += 1) {
@@ -320,8 +354,14 @@ export class StyleManager {
      *
      * This is equivalent to `setProperty(propertyName, "")`.
      */
+
     remove(propertyName: string): LiveTree {
-        return this.setProperty(propertyName, "");
+        const kebab = camel_to_kebab(propertyName);
+        const nodes = this.tree.getSelectedNodes();
+        for (let i = 0; i < nodes.length; i += 1) {
+            removeStyleFromNode(nodes[i], kebab);
+        }
+        return this.tree;
     }
 
     /**

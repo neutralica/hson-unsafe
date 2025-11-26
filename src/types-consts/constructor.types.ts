@@ -93,7 +93,7 @@ export interface OutputConstructor_2 {
     toHTML(): OptionsConstructor_3<(typeof $RENDER)["HTML"]> &
         RenderConstructor_4<(typeof $RENDER)["HTML"]>;
 
-    // NEW: LiveTree output family
+    // LiveTree output constructor
     liveTree(): LiveTreeConstructor_3;
 
     /**
