@@ -1,5 +1,7 @@
 // serialize-css.utils.hson.ts
 
+import { CssObject } from "../../types-consts";
+
 /**
  * converts a camelCase string to kebab-case
  * @param {string} $str "backgroundColor"
@@ -20,15 +22,12 @@ export function camel_to_kebab($str: string): string {
  * @param $style - a Dictionary-like object of CSS properties
  * @returns {string} a browser-compatible CSS string
  */
-export function serialize_style($style: Record<string, string>): string {
-  // CHANGE: early return for nullish or empty objects
-  if (!$style || !Object.keys($style).length) {
-    return "";
-  }
+export function serialize_style(style: CssObject | undefined): string {
+  if (!style || !Object.keys(style).length) { return ""; }
 
   // CHANGE: normalize entries BEFORE sorting/serializing
   const entries: Array<[string, string]> = [];
-  for (const [prop, raw] of Object.entries($style)) {
+  for (const [prop, raw] of Object.entries(style)) {
     if (raw == null) continue;                       // CHANGE: skip null/undefined
     let v = String(raw).trim();                      // CHANGE: trim values
     if (!v) continue;                                // CHANGE: skip empty values
