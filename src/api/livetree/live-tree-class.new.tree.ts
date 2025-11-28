@@ -260,6 +260,14 @@ export class LiveTree {
 
   /*  Finds the first descendant matching a query  */
   public append = append;
+  public appendMany(branches: readonly LiveTree[]): this {
+    for (const branch of branches) {
+      // reuse the single-branch semantics
+      this.append(branch);  // existing method
+    }
+    return this;
+  }
+
   public empty = empty;
   public removeChild = remove_child;
   public getContent = get_content;

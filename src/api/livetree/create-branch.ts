@@ -2,6 +2,7 @@
 
 import { HsonNode } from "../../types-consts";
 import { unwrap_root_elem } from "../../utils/html-utils/unwrap-root-elem.new.utils";
+import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { create_live_tree } from "./create-live-tree.tree";
 import { LiveTree } from "./live-tree-class.new.tree";
 
@@ -17,13 +18,16 @@ import { LiveTree } from "./live-tree-class.new.tree";
  * a LiveTree selection root or listener target.
  */
 export function createBranchFromNode(rootNode: HsonNode): LiveTree {
- const unwrapped = unwrap_root_elem(rootNode);
+  const unwrapped = unwrap_root_elem(rootNode);
   if (unwrapped.length === 0) {
     console.warn("createBranchFromNode: nothing to unwrap; falling back to rootNode");
     unwrapped.push(rootNode);
   }
-  if (unwrapped.length > 1) {
-    console.warn(`createBranchFromNode: expected a single root, got ${unwrapped.length}; using first`);
+  if (unwrap_root_elem.length !== 1) {
+    _throw_transform_err(
+      `createBranchFromNode: expected exactly 1 root for LiveTree.asBranch(), got ${unwrapped.length}`,
+      "createBranchFromNode",
+    );
   }
 
   const actualRoot = unwrapped[0];
