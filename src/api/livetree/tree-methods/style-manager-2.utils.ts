@@ -17,8 +17,8 @@
  *   - and sync to the DOM when the nodes are mounted.
  */
 
-import { HsonNode } from "../../../types-consts/node.types";
-import { camel_to_kebab } from "../../../utils/attrs-utils/serialize-css.utils";
+import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
+import { camel_to_kebab, serialize_style } from "../../../utils/attrs-utils/serialize-css.utils";
 import { kebab_to_camel } from "../../../utils/primitive-utils/kebab-to-camel.util";
 import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree } from "../live-tree-class.new.tree";
@@ -68,34 +68,38 @@ const FALLBACK_KEYS: ReadonlyArray<AllowedStyleKey> = Object.freeze([
 ]);
 
 function removeStyleFromNode(node: HsonNode, kebabName: string): void {
-    // update DOM
-    const el = getElementForNode(node);
-    if (el) {
-        (el as HTMLElement).style.removeProperty(kebabName);
+    // 1) Normalize internal key (HSON uses camelCase for normal props, verbatim for custom)
+    const internalKey =
+        kebabName.startsWith("--")
+            ? kebabName
+            : kebab_to_camel(kebabName); // you already have this alongside camel_to_kebab
+
+    // 2) Update node model (_attrs.style is CssObject now)
+    const attrs = (node as any)._attrs as HsonAttrs | undefined;
+    const styleObj = (attrs?.style as CssObject | undefined) ?? undefined;
+
+    if (styleObj) {
+        // drop from CssObject
+        delete (styleObj as any)[internalKey];
+
+        // if now empty, remove style entirely
+        if (!Object.keys(styleObj).length) {
+            if (attrs) {
+                delete (attrs as any).style;
+            }
+        } else {
+            if (attrs) {
+                (attrs as any).style = styleObj;
+            }
+        }
     }
 
-    // update node model in _attrs.style
-    const attrs = (node as any)._attrs as Record<string, string> | undefined;
-    if (!attrs || !attrs.style) return;
+    // 3) Update DOM
+    const el = getElementForNode(node) as HTMLElement | undefined;
+    if (!el) return;
 
-    const before = attrs.style;
-    const rules = before
-        .split(";")
-        .map(s => s.trim())
-        .filter(Boolean)
-        .filter(rule => {
-            const idx = rule.indexOf(":");
-            if (idx <= 0) return true;
-            const key = rule.slice(0, idx).trim();
-            return key !== kebabName;
-        });
-
-    if (rules.length === 0) {
-        // no more declarations → drop style entirely
-        delete attrs.style;
-    } else {
-        attrs.style = rules.join("; ");
-    }
+    // Use DOM’s own removeProperty for the kebab name
+    el.style.removeProperty(kebabName);
 }
 
 /* Probe <html>.style once to get the browser’s canonical keys. */
@@ -443,67 +447,51 @@ export class StyleManager {
      *   inline style with.
      * @returns The underlying LiveTree.
      */
-    cssReplace(
-        props: CssObject
-    ): LiveTree {
-        // 1) Normalize the incoming prop names once (camelCase → kebab, except for --vars)
-        const incoming: Record<string, string | number | null> = {};
-        const propNames = Object.keys(props) as Array<keyof CssObject>;
-        for (let i = 0; i < propNames.length; i += 1) {
-            const raw = propNames[i];
-            const rawStr = String(raw);
-            const norm = rawStr.startsWith("--")
-                ? rawStr
-                : rawStr.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
 
-            const v = props[raw]; // type: string | number | null | undefined
+    cssReplace(map: CssObject): LiveTree {
+        // Normalize incoming map once → CssObject with only non-null, trimmed strings.
+        const normalized: CssObject = {};
 
-            // NEW: skip undefined so assignment matches the declared map type
-            if (v === undefined) {
+        for (const key of Object.keys(map) as StyleKey[]) {
+            const raw = map[key];
+            if (raw == null) continue;
+
+            const v = String(raw).trim();
+            if (!v) continue;
+
+            normalized[key] = v;
+        }
+
+        const normKeys = Object.keys(normalized) as StyleKey[];
+
+        const nodes = this.tree.getSelectedNodes();
+        for (const node of nodes) {
+            if (!node._attrs) node._attrs = {};
+            const attrs = node._attrs as HsonAttrs;
+            const el = getElementForNode(node) as HTMLElement | undefined;
+
+            // If replacement set is empty, drop style entirely.
+            if (!normKeys.length) {
+                delete (attrs as any).style;
+                if (el) el.removeAttribute("style");
                 continue;
             }
 
-            // OK: v is now string | number | null
-            incoming[norm] = v;
-        }
-
-        // 2) For each selected node, remove any existing declarations not in `incoming`
-        const nodes = this.tree.getSelectedNodes();
-        for (let i = 0; i < nodes.length; i += 1) {
-            // read current inline style text directly from attrs if present
-            // (we avoid new helpers: stays local and harmless)
-            const n = nodes[i] as { _attrs?: Record<string, string> };
-            const styleText = n._attrs?.style ?? "";
-            if (styleText) {
-                const existingKeys = styleText
-                    .split(";")
-                    .map(s => s.trim())
-                    .filter(Boolean)
-                    .map(rule => {
-                        const idx = rule.indexOf(":");
-                        return idx > 0 ? rule.slice(0, idx).trim() : "";
-                    })
-                    .filter(Boolean);
-                for (let k = 0; k < existingKeys.length; k += 1) {
-                    const key = existingKeys[k];
-                    if (!(key in incoming)) {
-                        // remove keys not present in replacement set
-                        this.remove(key);
-                    }
-                }
+            // Build a fresh style object per node so they don't share references.
+            const next: CssObject = {};
+            for (const key of normKeys) {
+                const v = normalized[key];
+                if (v == null) continue;
+                next[key] = v;
             }
-        }
 
-        // 3) Apply the provided declarations
-        const keys = Object.keys(incoming);
-        for (let i = 0; i < keys.length; i += 1) {
-            const k = keys[i];
-            const v = incoming[k];
-            if (v === undefined) continue;  // skip holes
-            if (v === null) {
-                this.remove(k);               // explicit null means "remove this key"
-            } else {
-                this.setProperty(k, v);
+            (attrs as any).style = next;
+
+            if (el) {
+                // serialize_style already knows how to normalize keys/values;
+                // at runtime this is just a string->string-ish record.
+                const cssText = serialize_style(next as Record<string, string>);
+                el.setAttribute("style", cssText);
             }
         }
 

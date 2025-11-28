@@ -8,7 +8,7 @@ import { empty } from "./tree-methods/empty.tree.utils";
 import { get_content } from "./tree-methods/get-content.tree";
 import { remove_child } from "./tree-methods/remove-child.tree.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
-import { StyleManager } from "./tree-methods/style-manager-2.utils";
+import { CssObject, StyleManager } from "./tree-methods/style-manager-2.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { makeListenerBuilder } from "./tree-methods/listen.tree";
@@ -19,6 +19,8 @@ import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.
 import { detach_node_deep } from "../../utils/tree-utils/detach-node.tree.utils";
 import { parse_selector } from "../../utils/tree-utils/parse-selector.utils";
 import { getElementForNode } from "../../utils/tree-utils/node-map-helpers.utils";
+import { parse_style_string } from "../../utils/attrs-utils/parse-style.utils";
+import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
 
 
 /**
@@ -66,12 +68,18 @@ type NodeRef = {
 
 // finder methods (convert results → refs)
 type FindWithById = {
-  // CHANGED: single-result find can be empty
+  // soft single
   (q: HsonQuery | string): LiveTree | undefined;
-  // CHANGED: byId can also fail
-  byId(id: string): LiveTree | undefined;
-};
 
+  // soft single by id
+  byId(id: string): LiveTree | undefined;
+
+  // hard single
+  must(q: HsonQuery | string, label?: string): LiveTree;
+
+  // hard single by id
+  mustById(id: string, label?: string): LiveTree;
+};
 
 interface MultiResult {
   // batch ops
@@ -341,17 +349,42 @@ export class LiveTree {
     const self = this;
 
     const base = ((q: HsonQuery | string): LiveTree | undefined => {
-      const query = typeof q === "string" ? parse_selector(q) : q;
-      const found = self.search(self.selectedNodes, query, { findFirst: true });
-      if (!found.length) {
-        return undefined;
-      }
+      const query =
+        typeof q === "string" ? parse_selector(q) : q;
+
+      const found = self.search(self.selectedNodes, query, {
+        findFirst: true,
+      });
+
+      if (!found.length) return undefined;
       return new LiveTree(found);
-    }) as FindWithById; // localized, internal assertion
+    }) as FindWithById;
 
     base.byId = (id: string): LiveTree | undefined => {
-      const tree = base({ attrs: { id } }); // base is a query method
-      return tree;
+      return base({ attrs: { id } });
+    };
+
+    base.must = (q: HsonQuery | string, label?: string): LiveTree => {
+      const res = base(q);
+      if (!res) {
+        const desc =
+          label ?? (typeof q === "string" ? q : JSON.stringify(q));
+        throw new Error(
+          `[LiveTree.find.must] expected a match for query: ${desc}`,
+        );
+      }
+      return res;
+    };
+
+    base.mustById = (id: string, label?: string): LiveTree => {
+      const res = base.byId(id);
+      if (!res) {
+        const desc = label ?? `#${id}`;
+        throw new Error(
+          `[LiveTree.find.mustById] expected element with id ${desc}`,
+        );
+      }
+      return res;
     };
 
     return base;
@@ -370,14 +403,14 @@ export class LiveTree {
  *   methods become no-ops.
  */
   findAll(q: HsonQuery | string): MultiResult {
-    const query = typeof q === 'string' ? parse_selector(q) : q;
-    const found = this.search(this.selectedNodes, query, { findFirst: false });
+    const query =
+      typeof q === "string" ? parse_selector(q) : q;
 
-    // if no matches, return an inert wrapper rather than throwing
-    if (!found.length) {
-      return makeMulti([], this.rootRefs);  // empty branch behaves safely
-    }
+    const found = this.search(this.selectedNodes, query, {
+      findFirst: false,
+    });
 
+    // MultiResult is always defined. Empty is OK.
     return makeMulti(found, this.rootRefs);
   }
 
@@ -432,28 +465,65 @@ export class LiveTree {
     return this;
   }
 
+
   // tiny internal: single-attr write with ns awareness (works for both HTML and SVG)
   private _setOne(name: string, value: string | boolean | null): this {
     this.withNodes(nodes => {
       for (const node of nodes) {
         if (!node._attrs) node._attrs = {};
         const el = getElementForNode(node) as Element | undefined;
-        if (!el) _throw_transform_err(`[LiveTree] missing element for node`, 'getElementForNode');
+        if (!el) _throw_transform_err(`[LiveTree] missing element for node`, "getElementForNode");
 
+        // NEW: normalize attr name once
+        const key = name.toLowerCase();
+
+        // --- delete / remove cases ------------------------------------------
         if (value === false || value === null) {
-          delete node._attrs[name];
-          el.removeAttribute(name);
+          if (key === "style") {
+            // NEW: style is stored as CssObject; remove from attrs + DOM
+            delete (node._attrs as any).style;
+            el.removeAttribute("style");
+          } else {
+            delete (node._attrs as any)[key];
+            el.removeAttribute(key);
+          }
           continue;
         }
+
+        // --- boolean-present attribute --------------------------------------
         if (value === true || value === name) {
-          // boolean present attribute
-          delete node._attrs[name];
-          el.setAttribute(name, "");
+          // For style this makes no real sense; treat it as "no data but attr present".
+          if (key === "style") {
+            // NEW: clear stored style object, but leave an empty style attr on DOM
+            delete (node._attrs as any).style;
+            el.setAttribute("style", "");
+          } else {
+            delete (node._attrs as any)[key];
+            el.setAttribute(key, "");
+          }
           continue;
         }
+
+        // --- normal value cases ---------------------------------------------
         const s = String(value);
-        node._attrs[name] = s;
-        el.setAttribute(name, s);
+
+        if (key === "style") {
+          // NEW: style string -> CssObject on node, canonical CSS text on DOM
+          const cssObj: CssObject = parse_style_string(s) as CssObject;
+
+          (node._attrs as any).style = cssObj;                // NEW: store object, not string
+
+          const cssText = serialize_style(cssObj);            // NEW: object -> CSS string
+          if (cssText) {
+            el.setAttribute("style", cssText);
+          } else {
+            el.removeAttribute("style");
+          }
+        } else {
+          // OLD behavior, unchanged except for key normalization
+          (node._attrs as any)[key] = s;
+          el.setAttribute(key, s);
+        }
       }
     });
     return this;

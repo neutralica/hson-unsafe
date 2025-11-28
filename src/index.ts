@@ -1,10 +1,12 @@
 // index.ts
 
+import { serialize_style } from './utils/attrs-utils/serialize-css.utils.js';
+
 export * from './hson.js';
 
 // export { Primitive, BasicValue } from './types';
 
-
+export { serialize_style } from './utils/attrs-utils/serialize-css.utils.js'
 export { LiveTree } from './api/livetree';
 // export { HsonQuery } from './types-consts/tree.new.types';
 // export { HsonNode } from './types-consts/node.new.types';
@@ -18,3 +20,6 @@ export { serialize_html } from './api/serializers/serialize-html.new.render.js';
 export { serialize_hson } from './api/serializers/serialize-hson.new.render.js';
 
 export { is_Node } from './utils/node-utils/node-guards.new.utils.js';
+
+// temp: exposed for tests
+export {parse_style_string} from './utils/attrs-utils/parse-style.utils.js'
