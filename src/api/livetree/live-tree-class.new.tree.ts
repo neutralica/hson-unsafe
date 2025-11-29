@@ -2,16 +2,16 @@
 
 import { STR_TAG } from "../../types-consts/constants";
 import { _DATA_QUID } from "../../types-consts/constants";
-import { after_paint, append } from "./tree-methods/append.tree";
-import { DatasetManager } from "./tree-methods/dataset-manager.tree";
-import { empty } from "./tree-methods/empty.tree.utils";
-import { get_content } from "./tree-methods/get-content.tree";
-import { remove_child } from "./tree-methods/remove-child.tree.utils";
+import { after_paint, append } from "./livetree-methods/append.tree";
+import { DatasetManager } from "./livetree-methods/dataset-manager.tree";
+import { empty } from "./livetree-methods/empty.tree.utils";
+import { get_content } from "./livetree-methods/get-content.tree";
+import { remove_child } from "./livetree-methods/remove-child.tree.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
-import { CssObject, StyleManager } from "./tree-methods/style-manager-2.utils";
+import { CssObject, StyleManager } from "./livetree-methods/style-manager-2.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
-import { makeListenerBuilder } from "./tree-methods/listen.tree";
+import { makeListenerBuilder } from "./livetree-methods/listen.tree";
 import { ListenerBuilder } from "../../types-consts/listen.types";
 import { set_attrs_safe } from "../../safety/safe-mount.safe";
 import { make_leaf } from "../parsers/parse-tokens.new.transform";
@@ -21,6 +21,7 @@ import { parse_selector } from "../../utils/tree-utils/parse-selector.utils";
 import { getElementForNode } from "../../utils/tree-utils/node-map-helpers.utils";
 import { parse_style_string } from "../../utils/attrs-utils/parse-style.utils";
 import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
+import { CssManager } from "./livetree-methods/css-manager";
 
 
 /**
@@ -331,6 +332,10 @@ export class LiveTree {
   get dataset(): DatasetManager {
     if (!this.datasetManager) this.datasetManager = new DatasetManager(this);
     return this.datasetManager;
+  }
+
+  get css(): CssManager {
+    return CssManager.invoke();
   }
 
   /**

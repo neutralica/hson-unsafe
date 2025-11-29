@@ -1,9 +1,11 @@
 // src/utils/style-manager.utils.ts
 
-import { Primitive } from "../../../types-consts";
+import { BasicValue, Primitive } from "../../../types-consts";
+import { camel_to_kebab } from "../../../utils/attrs-utils/serialize-css.utils";
 import { LiveTree } from "../live-tree-class.new.tree";
 
-
+type DatasetValue = string | boolean | null | undefined;
+type DatasetObj = Record<string, DatasetValue>;
 
 /**
  * DatasetManager
@@ -44,6 +46,13 @@ export class DatasetManager {
         this.liveTree = liveTree;
     }
 
+    // normalize dataset key → data-* attribute name
+    private formatDataset(key: string): string {
+        // "userId" → "data-user-id"
+        const kebab = camel_to_kebab(key);   // you already have this
+        return `data-${kebab}`;
+    }
+
     /**
      * Sets or removes a `data-*` attribute on all selected nodes.
      *
@@ -62,9 +71,38 @@ export class DatasetManager {
      *   This uses the literal `"data-"` prefix — this is *not* the internal
      *   HSON metadata prefix and should not be renamed.
      */
-    set(key: string, value: string | null): LiveTree {
-        const dataAttrName = `data-${key}`;
-        this.liveTree.setAttrs(dataAttrName, value);
+    set(key: string, value: DatasetValue): LiveTree {
+        const attrName = this.formatDataset(key); // "state" → "data-state"
+
+        // null/undefined → remove the data-* attribute entirely
+        if (value === null || value === undefined) {
+            this.liveTree.setAttrs(attrName, null);
+            return this.liveTree;
+        }
+
+        // everything else → string
+        this.liveTree.setAttrs(attrName, String(value));
+        return this.liveTree;
+    }
+
+    // 2) Multiple keys at once
+    setMany(map: DatasetObj): LiveTree {
+        const patch: Record<string, string | null> = {};
+
+        for (const [key, value] of Object.entries(map)) {
+            const attrName = this.formatDataset(key);
+
+            if (value === null || value === undefined) {
+                patch[attrName] = null;          // remove this data-* attr
+            } else {
+                patch[attrName] = String(value); // write as string
+            }
+        }
+
+        if (Object.keys(patch).length > 0) {
+            this.liveTree.setAttrs(patch);
+        }
+
         return this.liveTree;
     }
 

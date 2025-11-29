@@ -1,14 +1,17 @@
 SVG handling--cleaned up one of the largest remaining seams between your HTML and SVG handling.
+
 Progress this session
 • SVG detection added to construct_tree.fromHTML()
 We now branch early if the input is SVG markup (isSvgMarkup). SVG skips parse_html entirely.
 • Implemented node_from_svg (formerly node_from_dom / hydrate_from_dom)
+
 Converts an SVG DOM element directly into a correct HSON node:
 – preserves namespace
 – preserves camel-cased SVG attributes (viewBox, preserveAspectRatio, etc.)
 – produces NEW-spec _attrs / _content / _tag nodes
 – bypasses the HTML-normalizing pipeline
 • Fixed the namespace handling
+
 SVGs maintain xmlns="http://www.w3.org/2000/svg" during both parsing and hydration.
 _meta.ns was removed in favor of serialized xmlns= attributes, matching NEW rules.
 • Unified hydration path: create_live_tree is now the single constructor
@@ -36,8 +39,10 @@ _meta.ns was removed in favor of serialized xmlns= attributes, matching NEW rule
 • Revised error handling around findAll
 – clarified the semantics of returning an empty selection
 – improved type guarantees on operations like at() and count()
-Net outcome
-You now have a fully working SVG pipeline inside HSON’s LiveTree system:
+
+
+ outcome
+I now have a fully working SVG pipeline inside HSON’s LiveTree system:
 SVG → DOM → HSON → LiveTree → DOM round-trip works
 SVG markup parses without HTML interference
 LiveTrees can represent, manipulate, and re-insert SVG into the document exactly as they do HTML
