@@ -1,7 +1,5 @@
 // index.ts
 
-import { ensure_quid } from './quid/data-quid.quid.js';
-import { serialize_style } from './utils/attrs-utils/serialize-css.utils.js';
 export * from './hson.js';
 
 // export { Primitive, BasicValue } from './types';

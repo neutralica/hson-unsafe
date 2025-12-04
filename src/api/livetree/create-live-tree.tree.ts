@@ -1,9 +1,10 @@
 // create-live-tree.new.ts
+import { ensure_quid } from "../../quid/data-quid.quid";
 
 import { create_el_safe, set_attrs_safe } from "../../safety/safe-mount.safe";
 import { HsonNode, Primitive } from "../../types-consts";
 import {
-  _DATA_QUID,  
+  _DATA_QUID,
   ARR_TAG,
   ELEM_TAG,
   OBJ_TAG,
@@ -14,6 +15,7 @@ import {
 import { SVG_NS } from "../../utils/node-utils/node-from-svg.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { linkNodeToElement } from "../../utils/tree-utils/node-map-helpers.utils";
+
 
 
 /**
@@ -80,8 +82,15 @@ export function create_live_tree(
 
   // single source of truth for mapping HsonNode -> Element
   linkNodeToElement(n, el);
+  const quid = ensure_quid(n); // uses meta if present, mints if not
 
-  // reflect ONLY _attrs
+  // reflect QUID onto DOM
+  if (ns === "svg") {
+    el.setAttribute(_DATA_QUID, quid);
+  } else {
+    set_attrs_safe(el as HTMLElement, _DATA_QUID, quid);
+  }
+  // reflect _attrs
   const a = n._attrs;
   if (a) {
     for (const [key, raw] of Object.entries(a)) {
@@ -124,6 +133,18 @@ export function create_live_tree(
       } else {
         set_attrs_safe(el as HTMLElement, key, str);
       }
+    }
+  }
+
+  const m = n._meta;
+  if (m && _DATA_QUID in m) {
+    const q = String(m[_DATA_QUID]);
+    if (ns === "svg") {
+      // SVG path: write raw attribute
+      el.setAttribute(_DATA_QUID, q);
+    } else {
+      // HTML path: keep using the safe setter
+      set_attrs_safe(el as HTMLElement, _DATA_QUID, q);
     }
   }
 
