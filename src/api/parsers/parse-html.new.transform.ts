@@ -48,6 +48,7 @@ export function parse_html($input: string | Element): HsonNode {
         // try raw (namespaced) XML first — no preflight yet
         let xmlSrc = ampSafe; // keep the "current" source in one variable
         let parsed = parser.parseFromString(xmlSrc, "application/xml");
+        
         let err = parsed.querySelector('parsererror');
 
         if (err) {

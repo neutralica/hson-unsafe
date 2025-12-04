@@ -8,7 +8,7 @@ import { empty } from "./livetree-methods/empty.tree.utils";
 import { get_content } from "./livetree-methods/get-content.tree";
 import { remove_child } from "./livetree-methods/remove-child.tree.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
-import { CssObject, StyleManager } from "./livetree-methods/style-manager-2.utils";
+import { StyleObject, StyleManager } from "./livetree-methods/style-manager-2.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { makeListenerBuilder } from "./livetree-methods/listen.tree";
@@ -21,7 +21,7 @@ import { parse_selector } from "../../utils/tree-utils/parse-selector.utils";
 import { getElementForNode } from "../../utils/tree-utils/node-map-helpers.utils";
 import { parse_style_string } from "../../utils/attrs-utils/parse-style.utils";
 import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
-import { CssManager } from "./livetree-methods/css-manager";
+import { cssForQuids, CssHandle, CssManager } from "./livetree-methods/css-manager";
 
 
 /**
@@ -190,6 +190,14 @@ export class LiveTree {
     }
     return out;
   }
+  // NEW: helper to read QUIDs from the current selection
+  private get selectedQuids(): string[] {
+    const out: string[] = [];
+    for (const ref of this.selected) {
+      out.push(ref.q);
+    }
+    return out;
+  }
 
   private setSelected(input?: HsonNode | HsonNode[] | LiveTree): void {
     if (input instanceof LiveTree) {
@@ -280,7 +288,7 @@ export class LiveTree {
    * Begins construction of an event-listener descriptor for the current selection.
    *
    * `.listen` returns a builder object that lets you declare:
-   *   - event type (`.on('click')`)
+   *   - event type (`.on('click')`, .onClick())
    *   - handler function
    *   - options such as `{ prevent, stop, once, capture }`
    *   - attachment strategy (auto-attach or manual)
@@ -334,8 +342,8 @@ export class LiveTree {
     return this.datasetManager;
   }
 
-  get css(): CssManager {
-    return CssManager.invoke();
+  get css(): CssHandle {
+    return cssForQuids(this.selectedQuids);
   }
 
   /**
@@ -522,7 +530,7 @@ export class LiveTree {
 
         if (key === "style") {
           // NEW: style string -> CssObject on node, canonical CSS text on DOM
-          const cssObj: CssObject = parse_style_string(s) as CssObject;
+          const cssObj: StyleObject = parse_style_string(s) as StyleObject;
 
           (node._attrs as any).style = cssObj;                // NEW: store object, not string
 
@@ -583,6 +591,36 @@ export class LiveTree {
  */
   remove(): this {
     const nodes = this.selectedNodes;
+    if (nodes.length === 0) return this;
+
+    // NEW: clear stylesheet rules for any QUIDs in the removed DOM subtree(s)
+    const mgr = CssManager.invoke();
+
+    for (const n of nodes) {
+      const rootEl = getElementForNode(n) as HTMLElement | undefined;
+      if (!rootEl) {
+        // node is not mounted → no data-_quid in DOM → nothing to clear
+        continue;
+      }
+
+      // include the root element itself plus any descendants with data-_quid
+      const elements: HTMLElement[] = [
+        rootEl,
+        ...Array.from(rootEl.querySelectorAll<HTMLElement>(`[${_DATA_QUID}]`)),
+      ];
+
+      const quids = new Set<string>();
+      for (const el of elements) {
+        const q = el.getAttribute(_DATA_QUID);
+        if (q) quids.add(q);
+      }
+
+      for (const q of quids) {
+        mgr.clearQuid(q);
+      }
+    }
+
+    // existing teardown logic
     for (const n of nodes) {
       // tear down subtree: listeners + DOM + map
       detach_node_deep(n);
@@ -744,9 +782,7 @@ export class LiveTree {
  *     `parse_selector` (this is not full CSS; it is a smaller,
  *     HSON-specific selector language).
  *
- * @returns A new LiveTree whose selection contains at most one node:
- *   - the first match if found,
- *   - or an empty selection if nothing matches.
+ * @returns a Hson Node or array of Nodes or undefined
  *
  * Notes:
  * - Matching is done against the HSON node tree, not via DOM

@@ -29,17 +29,18 @@ export function get_quid(n: HsonNode): string | undefined {
 }
 
 /** Ensure quid exists, persist in _meta, index both ways */
-export function ensure_quid(n: HsonNode, opts?: { persist?: boolean }): string {
-  const persist = !!opts?.persist;
+export function ensure_quid(
+  n: HsonNode,
+  opts?: { persist?: boolean },
+): string {
+  const persist = opts?.persist ?? true; // default true
 
   let q = get_quid(n);
   if (!q) q = mk_quid();
 
-  // Always keep fast O(1) mappings in memory
   QUID_TO_NODE.set(q, n);
   NODE_TO_QUID.set(n, q);
 
-  // Only decorate user data if asked
   if (persist) {
     (n._meta ??= {})[_DATA_QUID] = q;
   }

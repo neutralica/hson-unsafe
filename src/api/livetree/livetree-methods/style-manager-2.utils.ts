@@ -34,7 +34,7 @@ type StyleKey =
     | AllowedStyleKey
     | `--${string}`          // CSS variables
     | `${string}-${string}`; // kebab custom/unknown
-export type CssObject = Partial<Record<StyleKey, string | number | null | undefined>>;
+export type StyleObject = Partial<Record<StyleKey, string | number | null | undefined>>;
 
 /* ------------------------------ RUNTIME KEYS -------------------------------- */
 // comment: Minimal fallback list used when no DOM is present (tests, Node).
@@ -76,7 +76,7 @@ function removeStyleFromNode(node: HsonNode, kebabName: string): void {
 
     // 2) Update node model (_attrs.style is CssObject now)
     const attrs = (node as any)._attrs as HsonAttrs | undefined;
-    const styleObj = (attrs?.style as CssObject | undefined) ?? undefined;
+    const styleObj = (attrs?.style as StyleObject | undefined) ?? undefined;
 
     if (styleObj) {
         // drop from CssObject
@@ -402,9 +402,9 @@ export class StyleManager {
      * @param props - Map of property names to values.
      * @returns The underlying LiveTree.
      */
-    css(props: CssObject): LiveTree {
+    setObj(props: StyleObject): LiveTree {
         // snapshot keys once; iteration order preserved
-        const keys = Object.keys(props) as Array<keyof CssObject>;
+        const keys = Object.keys(props) as Array<keyof StyleObject>;
         for (let i = 0; i < keys.length; i += 1) {
             const k = keys[i];
             const v = props[k];
@@ -448,9 +448,9 @@ export class StyleManager {
      * @returns The underlying LiveTree.
      */
 
-    cssReplace(map: CssObject): LiveTree {
+    replaceObj(map: StyleObject): LiveTree {
         // Normalize incoming map once → CssObject with only non-null, trimmed strings.
-        const normalized: CssObject = {};
+        const normalized: StyleObject = {};
 
         for (const key of Object.keys(map) as StyleKey[]) {
             const raw = map[key];
@@ -478,7 +478,7 @@ export class StyleManager {
             }
 
             // Build a fresh style object per node so they don't share references.
-            const next: CssObject = {};
+            const next: StyleObject = {};
             for (const key of normKeys) {
                 const v = normalized[key];
                 if (v == null) continue;

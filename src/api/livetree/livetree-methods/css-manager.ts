@@ -1,215 +1,266 @@
-// css-manager.utils.ts
+import { _DATA_QUID } from "../../../types-consts/constants";
+import { CssValue, CssProp } from "../../../types-consts/css-manager-types";
 
-import { CssProp, CssRule, CssRuleBuilder, CssText, CssValue } from "../../../types-consts/css-manager-types";
+// NEW: public-facing handle for callers
+export interface CssHandle {
+  // apply to all bound QUIDs
+  set(property: string, value: CssValue): void;         // NEW
+  setMany(decls: CssProp): void;                        // NEW
+  unset(property: string): void;                        // NEW
+  clear(): void;                                        // NEW
+}
 
+// NEW: core helper – returns a handle bound to one or many QUIDs
+export function cssForQuids(quids: readonly string[]): CssHandle {
+  const mgr = CssManager.invoke();
+  const ids = quids.map(q => q.trim()).filter(Boolean);
 
+  // NEW: no-op handle if there’s no selection
+  if (ids.length === 0) {
+    return {
+      set() { /* no-op */ },
+      setMany() { /* no-op */ },
+      unset() { /* no-op */ },
+      clear() { /* no-op */ },
+    };
+  }
 
+  return {
+    // NEW: apply to all selected QUIDs
+    set(property: string, value: CssValue): void {
+      for (const quid of ids) {
+        mgr.setForQuid(quid, property, value);
+      }
+    },
 
+    setMany(decls: CssProp): void {
+      for (const quid of ids) {
+        mgr.setManyForQuid(quid, decls);
+      }
+    },
+
+    unset(property: string): void {
+      for (const quid of ids) {
+        mgr.unsetForQuid(quid, property);
+      }
+    },
+
+    clear(): void {
+      for (const quid of ids) {
+        mgr.clearQuid(quid);
+      }
+    },
+  };
+}
+
+// OPTIONAL: convenience for a single quid
+export function cssForQuid(quid: string): CssHandle {   // NEW
+  return cssForQuids([quid]);
+}
 function renderCssValue(v: CssValue): string {
-    if (typeof v === "string") {
-        return v.trim();
-    }
-    const unit = v.unit === "_" ? "" : v.unit;
-    return `${v.value}${unit}`;
+  // string → already a valid CSS literal
+  if (typeof v === "string") {
+    return v;
+  }
+
+  // object → { value, unit } → e.g. "12px", "1.5rem"
+  return `${v.value}${v.unit}`;
 }
 
-//  singleton CSS manager that owns the global HSON stylesheet
+function selectorForQuid(quid: string): string {
+  // SINGLE place where we define how a QUID maps to a CSS selector
+  return `[${_DATA_QUID}="${quid}"]`;
+}
+
+// singleton CSS manager that owns the global HSON stylesheet
 export class CssManager {
-    // singleton instance
-    private static instance: CssManager | null = null;
+  private static instance: CssManager | null = null;
 
-    // in-memory registry of rules keyed by id
-    private readonly rules: Map<string, CssText> = new Map();
+  // QUID → (property → rendered value)
+  private readonly rulesByQuid: Map<string, Map<string, string>> = new Map();
 
+  private styleEl: HTMLStyleElement | null = null;
 
-    // cached <style> element, once resolved/created
-    private styleEl: HTMLStyleElement | null = null;
+  private constructor() {}
 
-    // use CssManager.invoke() instead of `new`
-    private constructor() { }
+  public static invoke(): CssManager {
+    if (!CssManager.instance) {
+      CssManager.instance = new CssManager();
+    }
+    return CssManager.instance;
+  }
 
-    //  access the singleton instance
-    public static invoke(): CssManager {
-        if (!CssManager.instance) {
-            CssManager.instance = new CssManager();
-        }
-        return CssManager.instance;
+  private ensureStyleElement(): HTMLStyleElement {
+    if (this.styleEl) {
+      return this.styleEl;
     }
 
+    const doc: Document = document;
 
-    private ensureStyleElement(): HTMLStyleElement {
-        if (this.styleEl) {
-            return this.styleEl;
-        }
-
-        const doc: Document = document;
-
-        // find or create the host <hson-_style> container
-        let host = doc.querySelector("hson-_style#css-manager") as HTMLElement | null;
-        if (!host) {
-            host = doc.createElement("hson-_style") as HTMLElement;
-            host.id = "css-manager";
-            doc.body.appendChild(host);
-        }
-
-        // find or create the inner <style> tag
-        let styleEl = host.querySelector("style#_hson") as HTMLStyleElement | null;
-        if (!styleEl) {
-            styleEl = doc.createElement("style");
-            styleEl.setAttribute("id", "_hson");
-            host.appendChild(styleEl);
-        }
-
-        this.styleEl = styleEl;
-        return styleEl;
+    let host = doc.querySelector<HTMLElement>("hson_style#css-manager");
+    if (!host) {
+      host = doc.createElement("hson_style");
+      host.id = "css-manager";
+      doc.body.appendChild(host);
     }
 
-    //  define or update a rule; empty CSS is ... error? warning?
-    public defineRuleString(input: CssRule): void {
-        if (!input || typeof input !== "object") {
-            throw new Error("CssManager.defineRuleString: invalid input object");
-        }
-
-        const { id, selector, body } = input;
-
-        if (typeof id !== "string" || typeof selector !== "string" || typeof body !== "string") {
-            // This usually means you passed { id, css } or some other legacy shape
-            throw new Error(
-                "CssManager.defineRuleString: expected { id, selector, body } strings; " +
-                "did you pass { id, css } by accident?"
-            );
-        }
-
-        const trimmedId = id.trim();
-        const trimmedSelector = selector.trim();
-        const trimmedBody = body.trim();
-
-        if (!trimmedId) {
-            throw new Error("CssManager.defineRuleString: id must be non-empty");
-        }
-        if (!trimmedSelector) {
-            throw new Error(
-                `CssManager.defineRuleString(${trimmedId}): selector must be non-empty`,
-            );
-        }
-        if (!trimmedBody) {
-            throw new Error(
-                `CssManager.defineRuleString(${trimmedId}): body must be non-empty; use removeRule() to delete rules.`,
-            );
-        }
-
-        const css: string = `${trimmedSelector} { ${trimmedBody} }`;
-
-        this.rules.set(trimmedId, { id: trimmedId, css });
-        this.syncToDom();
+    let styleEl = host.querySelector<HTMLStyleElement>("style#_hson");
+    if (!styleEl) {
+      styleEl = doc.createElement("style");
+      styleEl.id = "_hson";
+      host.appendChild(styleEl);
     }
 
-    public defineRuleBlock(
-        id: string,
-        selector: string,
-        decls: CssProp,
-    ): void {
-        const parts: string[] = [];
-        for (const [prop, v] of Object.entries(decls)) {
-            parts.push(`${prop}: ${renderCssValue(v)};`);
-        }
-        const body: string = parts.join(" ");
-        this.defineRuleString({ id, selector, body });
+    this.styleEl = styleEl;
+    return styleEl;
+  }
+
+  // --- WRITE API (QUID-based) -------------------------------------------
+
+  // Set a single property for a QUID
+  public setForQuid(quid: string, property: string, value: CssValue): void {
+    const trimmedQuid = quid.trim();
+    const trimmedProp = property.trim();
+
+    if (!trimmedQuid) {
+      throw new Error("CssManager.setForQuid: quid must be non-empty");
+    }
+    if (!trimmedProp) {
+      throw new Error("CssManager.setForQuid: property must be non-empty");
     }
 
-    public defineAtomicRule(
-        id: string,
-        selector: string,
-        property: string,
-        value: CssValue,
-    ): void {
-        const body: string = `${property}: ${renderCssValue(value)};`;
-        this.defineRuleString({ id, selector, body });
+    const rendered: string = renderCssValue(value);
 
+    let props = this.rulesByQuid.get(trimmedQuid);
+    if (!props) {
+      props = new Map<string, string>();
+      this.rulesByQuid.set(trimmedQuid, props);
     }
 
-    // TODO not quite there yet with the api
+    props.set(trimmedProp, rendered);
+    this.syncToDom();
+  }
 
-    /* 
-    public beginRule(id: string, selector: string): CssRuleBuilder {
-        const mgr = this;
-        const decls: Record<string, CssValue> = {};
-
-        // tiny inner object that closes over mgr + decls
-        const builder: CssRuleBuilder = {
-            id,
-            selector,
-            
-            set(property: string, value: CssValue): CssRuleBuilder {
-                decls[property] = value;
-                // we *don’t* auto-commit here; you could, but explicit commit is clearer
-                return builder;
-            },
-
-            setMany(map: Record<string, CssValue>): CssRuleBuilder {
-                for (const [prop, v] of Object.entries(map)) {
-                    decls[prop] = v;
-                }
-                return builder;
-            },
-
-            commit(): void {
-                // delegate to your existing block API
-                mgr.defineRuleBlock(id, selector, decls);
-            },
-
-            remove(): void {
-                mgr.removeRule(id);
-            },
-        };
-
-        return builder;
-    }
- */
-    //  explicit deletion API
-    public removeRule(id: string): void {
-        // CHANGED: explicit remove instead of defineRule("") toggle
-        if (!this.rules.has(id)) {
-            return;
-        }
-        this.rules.delete(id);
-        this.syncToDom();
+  // Set multiple properties for a QUID at once
+  public setManyForQuid(quid: string, decls: CssProp): void {
+    const trimmedQuid = quid.trim();
+    if (!trimmedQuid) {
+      throw new Error("CssManager.setManyForQuid: quid must be non-empty");
     }
 
-    //  clear all managed rules
-    public clearAll(): void {
-        if (this.rules.size === 0) {
-            return;
-        }
-        this.rules.clear();
-        this.syncToDom();
+    let props = this.rulesByQuid.get(trimmedQuid);
+    if (!props) {
+      props = new Map<string, string>();
+      this.rulesByQuid.set(trimmedQuid, props);
     }
 
-    // OPTIONAL: read back current combined CSS text (for debugging/tests)
-    public getCombinedCss(): string {
-        return this.buildCombinedCss();
+    for (const [prop, v] of Object.entries(decls)) {
+      const trimmedProp = prop.trim();
+      if (!trimmedProp) {
+        continue;
+      }
+      props.set(trimmedProp, renderCssValue(v));
     }
 
-    // INTERNAL: build unified CSS string from current rules
-    private buildCombinedCss(): string {
-        const parts: string[] = [];
+    this.syncToDom();
+  }
 
-        for (const rule of this.rules.values()) {
-            const css = rule.css.trim();
-            if (!css) continue;
-            parts.push(css);
-        }
-
-        // separate rules with blank lines for readability
-        return parts.join("\n\n");
+  // Remove a single property for a QUID
+  public unsetForQuid(quid: string, property: string): void {
+    const props = this.rulesByQuid.get(quid);
+    if (!props) {
+      return;
     }
 
-    // INTERNAL: push in-memory rules down into the <style> tag
-    private syncToDom(): void {
-        const styleEl = this.ensureStyleElement();
-        styleEl.textContent = this.buildCombinedCss();
+    props.delete(property);
+
+    if (props.size === 0) {
+      this.rulesByQuid.delete(quid);
     }
+
+    this.syncToDom();
+  }
+
+  // Remove all properties for a QUID
+  public clearQuid(quid: string): void {
+    if (!this.rulesByQuid.has(quid)) {
+      return;
+    }
+    this.rulesByQuid.delete(quid);
+    this.syncToDom();
+  }
+
+  // Clear everything
+  public clearAll(): void {
+    if (this.rulesByQuid.size === 0) {
+      return;
+    }
+    this.rulesByQuid.clear();
+    this.syncToDom();
+  }
+
+  // --- READ / INTROSPECTION (QUID-based) --------------------------------
+
+  public hasQuid(quid: string): boolean {
+    return this.rulesByQuid.has(quid);
+  }
+
+  public hasPropForQuid(quid: string, property: string): boolean {
+    const props = this.rulesByQuid.get(quid);
+    return props ? props.has(property) : false;
+  }
+
+  public getPropForQuid(quid: string, property: string): string | undefined {
+    const props = this.rulesByQuid.get(quid);
+    return props ? props.get(property) : undefined;
+  }
+
+  // Debug helper: CSS block for this QUID as a string
+  public getQuidCss(quid: string): string | undefined {
+    const props = this.rulesByQuid.get(quid);
+    if (!props || props.size === 0) {
+      return undefined;
+    }
+
+    const decls: string[] = [];
+    for (const [prop, value] of props.entries()) {
+      decls.push(`${prop}: ${value};`);
+    }
+
+    const selector = selectorForQuid(quid);
+    return `${selector} { ${decls.join(" ")} }`;
+  }
+
+  // Full combined CSS for debugging/tests
+  public getCombinedCss(): string {
+    return this.buildCombinedCss();
+  }
+
+  // --- INTERNAL: BUILD + SYNC -------------------------------------------
+
+  private buildCombinedCss(): string {
+    const blocks: string[] = [];
+
+    for (const [quid, props] of this.rulesByQuid.entries()) {
+      if (props.size === 0) {
+        continue;
+      }
+
+      const decls: string[] = [];
+      for (const [prop, value] of props.entries()) {
+        decls.push(`${prop}: ${value};`);
+      }
+
+      const selector = selectorForQuid(quid);
+      const body = decls.join(" ");
+      blocks.push(`${selector} { ${body} }`);
+    }
+
+    return blocks.join("\n\n");
+  }
+
+  private syncToDom(): void {
+    const styleEl = this.ensureStyleElement();
+    styleEl.textContent = this.buildCombinedCss();
+  }
 }
-
-//  convenience export if you prefer a single shared instance
-// export const cssManager: CssManager = CssManager.invoke();
