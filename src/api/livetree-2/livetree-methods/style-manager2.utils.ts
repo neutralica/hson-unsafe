@@ -17,11 +17,11 @@
  *   - and sync to the DOM when the nodes are mounted.
  */
 
-import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
+import { HsonAttrs, HsonNode } from "../../../types-consts";
 import { camel_to_kebab, serialize_style } from "../../../utils/attrs-utils/serialize-css.utils";
 import { kebab_to_camel } from "../../../utils/primitive-utils/kebab-to-camel.util";
 import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
-import { LiveTree } from "../live-tree-class.new.tree";
+import { LiveTree2 } from "../livetree2";
 
 /* ------------------------------- TYPE HELPERS ------------------------------- */
 // comment: Derive style keys from CSSStyleDeclaration (type-level autocomplete).
@@ -34,7 +34,7 @@ type StyleKey =
     | AllowedStyleKey
     | `--${string}`          // CSS variables
     | `${string}-${string}`; // kebab custom/unknown
-export type StyleObject = Partial<Record<StyleKey, string | number | null | undefined>>;
+export type StyleObject2 = Partial<Record<StyleKey, string | number | null | undefined>>;
 
 /* ------------------------------ RUNTIME KEYS -------------------------------- */
 // comment: Minimal fallback list used when no DOM is present (tests, Node).
@@ -76,7 +76,7 @@ function removeStyleFromNode(node: HsonNode, kebabName: string): void {
 
     // 2) Update node model (_attrs.style is CssObject now)
     const attrs = (node as any)._attrs as HsonAttrs | undefined;
-    const styleObj = (attrs?.style as StyleObject | undefined) ?? undefined;
+    const styleObj = (attrs?.style as StyleObject2 | undefined) ?? undefined;
 
     if (styleObj) {
         // drop from CssObject
@@ -197,32 +197,29 @@ function readStyleFromNode(node: HsonNode, kebabName: string): string | undefine
 /* --------------------------- FACADE (Proxy-based) --------------------------- */
 type StyleSetterFacade = {
     // typed camelCase keys → setter(value: string)
-    [K in AllowedStyleKey]: (value: string) => LiveTree;
+    [K in AllowedStyleKey]: (value: string) => LiveTree2;
 } & {
     // bracket access allows kebab/custom ('--brand', 'background-color')
-    [custom: string]: (value: string) => LiveTree;
+    [custom: string]: (value: string) => LiveTree2;
 };
 
 // comment: Build the proxy once per manager using a stable key list.
-function buildSetFacade(tree: LiveTree, keys: ReadonlyArray<AllowedStyleKey>): StyleSetterFacade {
+function buildSetFacade(tree: LiveTree2, keys: ReadonlyArray<AllowedStyleKey>): StyleSetterFacade {
     const target: Record<string | symbol, unknown> = Object.create(null);
-    const cache = new Map<string, (value: string) => LiveTree>();
+    const cache = new Map<string, (value: string) => LiveTree2>();
 
     const hasKey: Record<string, true> = Object.create(null);
     for (let i = 0; i < keys.length; i += 1) hasKey[keys[i]] = true;
 
-    const ensureSetter = (name: string): ((value: string) => LiveTree) => {
+    const ensureSetter = (name: string): ((value: string) => LiveTree2) => {
         const hit = cache.get(name);
         if (hit) return hit;
 
-        const setter = (value: string): LiveTree => {
+        const setter = (value: string): LiveTree2 => {
             // write across all currently selected nodes
-            const nodes = tree.getSelectedNodes();
             const kebab = name.startsWith("--") || name.includes("-") ? name : camel_to_kebab(name);
             const val = value; // keep raw; empty string removes property
-            for (let i = 0; i < nodes.length; i += 1) {
-                applyStyleToNode(nodes[i], kebab, val);
-            }
+            applyStyleToNode(tree.node, kebab, val);
             return tree;
         };
 
@@ -265,9 +262,9 @@ function buildSetFacade(tree: LiveTree, keys: ReadonlyArray<AllowedStyleKey>): S
 }
 
 /* --------------------------------- MANAGER ---------------------------------- */
-export class StyleManager {
-    // accept the real LiveTree; do not reference private methods.
-    private readonly tree: LiveTree;
+export class StyleManager2 {
+    // accept the real LiveTree2; do not reference private methods.
+    private readonly tree: LiveTree2;
     private readonly runtimeKeys: ReadonlyArray<AllowedStyleKey>;
     private readonly _set: StyleSetterFacade;
 
@@ -280,7 +277,7 @@ export class StyleManager {
      *   - `_set` is a facade that exposes property-specific setters
      *     (e.g. `style.set.width(240)`), built from those keys.
      */
-    constructor(tree: LiveTree) {
+    constructor(tree: LiveTree2) {
         this.tree = tree;
         // compute keys once (DOM probe if available).
         this.runtimeKeys = computeRuntimeKeys();
@@ -318,16 +315,14 @@ export class StyleManager {
      *
      * Returns the original LiveTree to allow chaining.
      */
-    setProperty(propertyName: string, value: string | number | null): LiveTree {
+    setProperty(propertyName: string, value: string | number | null): LiveTree2 {
         const kebab = propertyName.startsWith("--")
             ? propertyName
             : camel_to_kebab(propertyName);
 
         const val = value == null ? "" : String(value);
-        const nodes = this.tree.getSelectedNodes();
-        for (let i = 0; i < nodes.length; i += 1) {
-            applyStyleToNode(nodes[i], kebab, val);
-        }
+        applyStyleToNode(this.tree.node, kebab, val);
+
         return this.tree;
     }
     /**
@@ -343,8 +338,7 @@ export class StyleManager {
        *     inline style depending on implementation.
        */
     get(propertyName: string): string | undefined {
-        const nodes = this.tree.getSelectedNodes();
-        const first = nodes[0];
+        const first = this.tree.node;
         if (!first) return undefined;
         const kebab = kebab_to_camel(propertyName);
         return readStyleFromNode(first, kebab);
@@ -359,12 +353,11 @@ export class StyleManager {
      * This is equivalent to `setProperty(propertyName, "")`.
      */
 
-    remove(propertyName: string): LiveTree {
+    remove(propertyName: string): LiveTree2 {
         const kebab = camel_to_kebab(propertyName);
-        const nodes = this.tree.getSelectedNodes();
-        for (let i = 0; i < nodes.length; i += 1) {
-            removeStyleFromNode(nodes[i], kebab);
-        }
+        const node = this.tree.node;
+        removeStyleFromNode(node, kebab);
+
         return this.tree;
     }
 
@@ -402,9 +395,9 @@ export class StyleManager {
      * @param props - Map of property names to values.
      * @returns The underlying LiveTree.
      */
-    setObj(props: StyleObject): LiveTree {
+    setObj(props: StyleObject2): LiveTree2 {
         // snapshot keys once; iteration order preserved
-        const keys = Object.keys(props) as Array<keyof StyleObject>;
+        const keys = Object.keys(props) as Array<keyof StyleObject2>;
         for (let i = 0; i < keys.length; i += 1) {
             const k = keys[i];
             const v = props[k];
@@ -448,9 +441,8 @@ export class StyleManager {
      * @returns The underlying LiveTree.
      */
 
-    replaceObj(map: StyleObject): LiveTree {
-        // Normalize incoming map once → CssObject with only non-null, trimmed strings.
-        const normalized: StyleObject = {};
+    replaceObj(map: StyleObject2): LiveTree2 {
+        const normalized: StyleObject2 = {};
 
         for (const key of Object.keys(map) as StyleKey[]) {
             const raw = map[key];
@@ -464,35 +456,29 @@ export class StyleManager {
 
         const normKeys = Object.keys(normalized) as StyleKey[];
 
-        const nodes = this.tree.getSelectedNodes();
-        for (const node of nodes) {
-            if (!node._attrs) node._attrs = {};
-            const attrs = node._attrs as HsonAttrs;
-            const el = getElementForNode(node) as HTMLElement | undefined;
+        const node = this.tree.node; // HsonNode
+        if (!node._attrs) node._attrs = {};
+        const attrs = node._attrs as HsonAttrs;
+        const el = getElementForNode(node) as HTMLElement | undefined;
 
-            // If replacement set is empty, drop style entirely.
-            if (!normKeys.length) {
-                delete (attrs as any).style;
-                if (el) el.removeAttribute("style");
-                continue;
-            }
+        if (!normKeys.length) {
+            delete (attrs as any).style;
+            if (el) el.removeAttribute("style");
+            return this.tree;           // 👈 was `continue`
+        }
 
-            // Build a fresh style object per node so they don't share references.
-            const next: StyleObject = {};
-            for (const key of normKeys) {
-                const v = normalized[key];
-                if (v == null) continue;
-                next[key] = v;
-            }
+        const next: StyleObject2 = {};
+        for (const key of normKeys) {
+            const v = normalized[key];
+            if (v == null) continue;
+            next[key] = v;
+        }
 
-            (attrs as any).style = next;
+        (attrs as any).style = next;
 
-            if (el) {
-                // serialize_style already knows how to normalize keys/values;
-                // at runtime this is just a string->string-ish record.
-                const cssText = serialize_style(next as Record<string, string>);
-                el.setAttribute("style", cssText);
-            }
+        if (el) {
+            const cssText = serialize_style(next as Record<string, string>);
+            el.setAttribute("style", cssText);
         }
 
         return this.tree;

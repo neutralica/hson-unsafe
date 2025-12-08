@@ -1,9 +1,13 @@
-import { construct_tree } from "./api/constructors/construct-tree.api";
+import { construct_tree } from "./api/constructors/construct-tree2";
 import { construct_source_1 } from "./api/constructors/construct-source-1";
-import { DomQueryLiveTreeConstructor, DomQuerySourceConstructor, OutputConstructor_2 } from "./types-consts/constructor.types";
+import { DomQueryLiveTreeConstructor } from "./types-consts/constructor.types";
+import { DomQueryLiveTreeConstructor2, OutputConstructor_2 } from "./api/livetree-2/livetree2.types";
+import { DomQuerySourceConstructor } from "./api/livetree-2/livetree2.types";
 import { LiveTree } from "./api/livetree";
 import { HsonNode } from "./types-consts";
 import { JsonValue } from "./core/types-consts/core.types";
+import { LiveTree2 } from "./api/livetree-2/livetree2";
+import { construct_tree2 } from "./api/livetree-2/construct-tree2";
 
 
 (globalThis as any)._test_ON = () => { (globalThis as any).test = true; location.reload(); };
@@ -203,6 +207,15 @@ export const hson = {
           },
         };
       },
+      liveTree2(): DomQueryLiveTreeConstructor2 {
+        return {
+          graft2(): LiveTree2 {
+            // reuse your existing construct_tree + graft logic
+            return construct_tree2({ unsafe: false }).queryDom(selector).graft2();
+            // or: graft(el, { unsafe: false }) if you have a direct helper
+          },
+        };
+      },
     };
   },
 
@@ -221,6 +234,13 @@ export const hson = {
         return {
           graft(): LiveTree {
             return construct_tree({ unsafe: false }).queryBody().graft();
+          },
+        };
+      },
+      liveTree2(): DomQueryLiveTreeConstructor2 {
+        return {
+          graft2(): LiveTree2 {
+            return construct_tree2({ unsafe: false }).queryBody().graft2();
           },
         };
       },

@@ -8,7 +8,7 @@ import { empty } from "./livetree-methods/empty.tree.utils";
 import { get_content } from "./livetree-methods/get-content.tree";
 import { remove_child } from "./livetree-methods/remove-child.tree.utils";
 import { drop_quid, ensure_quid, get_node_by_quid } from '../../quid/data-quid.quid'
-import { StyleObject, StyleManager } from "./livetree-methods/style-manager-2.utils";
+import { StyleObject, StyleManager } from "./livetree-methods/style-manager.utils";
 import { BasicValue, HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { makeListenerBuilder } from "./livetree-methods/listen.tree";
@@ -22,6 +22,9 @@ import { getElementForNode } from "../../utils/tree-utils/node-map-helpers.utils
 import { parse_style_string } from "../../utils/attrs-utils/parse-style.utils";
 import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
 import { cssForQuids, CssHandle, CssManager } from "./livetree-methods/css-manager";
+import { TagName } from "../../types-consts/tree.types";
+import { hson } from "../../hson";
+import { appendCreate, AppendCreateHelper, makeAppendCreateHelper } from "./livetree-methods/append-create";
 
 
 /**
@@ -153,6 +156,7 @@ export class LiveTree {
   /*   managers */
   private styleManager: StyleManager | undefined = undefined;
   private datasetManager: DatasetManager | undefined = undefined;
+  public appendCreate: AppendCreateHelper;
 
 
   /**
@@ -172,6 +176,8 @@ export class LiveTree {
   constructor(input?: HsonNode | HsonNode[] | LiveTree) {
     this.setRoots(input);
     this.setSelected(input);
+    this.appendCreate = makeAppendCreateHelper(this);
+
   }
 
 
@@ -262,14 +268,14 @@ export class LiveTree {
   }
 
   public async afterPaint(): Promise<this> {
-    // comment: await a frame boundary without changing call sites that don’t need it
+    //  await a frame boundary without changing call sites that don’t need it
     await after_paint();
     return this;
   }
 
   /*  Finds the first descendant matching a query  */
   public append = append;
-  public appendMany(branches: readonly LiveTree[]): this {
+  public appendMulti(branches: readonly LiveTree[]): this {
     for (const branch of branches) {
       // reuse the single-branch semantics
       this.append(branch);  // existing method
@@ -280,10 +286,12 @@ export class LiveTree {
   public empty = empty;
   public removeChild = remove_child;
   public getContent = get_content;
-  public getSelectedNodes(): HsonNode[] {
-    return this.selectedNodes;  // not a field; calls the getter above
+  // lowest-level primitive – always “all selected nodes, as they are”
+  public getSelection(): HsonNode[] {
+    // or directly return the underlying array if you like
+    return this.selectedNodes;
   }
-
+  
   /**
    * Begins construction of an event-listener descriptor for the current selection.
    *
@@ -337,7 +345,7 @@ export class LiveTree {
    * Keys are expected in *logical* form (e.g. `"userId"`), and are normalized
    * to `data-user-id`. This matches the DOM’s kebab-case convention.
    */
-  get dataset(): DatasetManager {
+  get data(): DatasetManager {
     if (!this.datasetManager) this.datasetManager = new DatasetManager(this);
     return this.datasetManager;
   }
@@ -549,6 +557,8 @@ export class LiveTree {
     });
     return this;
   }
+
+
 
   /**
    * Adds one or more boolean “flag” attributes to all selected nodes.
@@ -790,10 +800,17 @@ export class LiveTree {
  * - The new LiveTree shares the same root and QUID/DOM mapping; only
  *   `selectedNodes` differs.
  */
-  sourceNode(all = true, index?: number): HsonNode | HsonNode[] | undefined {
+  // CHANGED: removed overloads + boolean flag; always return all selected nodes
+  sourceNode(): HsonNode[] {
     const arr = this.selectedNodes;
-    if (arr.length === 0) return undefined;
-    return all ? arr : arr[index ?? 0];
+
+    if (arr.length === 0) {
+      // comment: this is still a logic error; LiveTree is supposed to always
+      //          have at least one selected node when you're calling sourceNode()
+      throw new Error("LiveTree.sourceNode(): no selected nodes");
+    }
+
+    return arr;
   }
 
   /**

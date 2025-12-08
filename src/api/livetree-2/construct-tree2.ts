@@ -3,31 +3,30 @@
 import { JsonValue } from "../../core/types-consts/core.types";
 import { HsonNode } from "../../types-consts";
 import { _ERROR } from "../../types-consts/constants";
-import { TreeConstructor_Source, BranchConstructor, GraftConstructor } from "../../types-consts/tree.types";
 import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
-import { LiveTree } from "../livetree";
-import { createBranchFromNode } from "../livetree/create-branch";
-import { create_live_tree } from "../livetree/create-live-tree.tree";
-import { graft } from "../livetree/graft.new.tree";
 import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
+import { createBranchFromNode2 } from "./create-branch2";
+import { graft2 } from "./graft2.tree";
+import { LiveTree2 } from "./livetree2";
+import { BranchConstructor2, GraftConstructor2, TreeConstructor_Source2 } from "./livetree2.types";
 
 /**
  * factory function that builds the entry-point for the liveTree pipeline
  * @param $options - an object to control behavior, e.g., { unsafe: boolean }
  * @returns an object with methods to define the source of the tree
  */
-export function construct_tree(
+export function construct_tree2(
   $options: { unsafe: boolean } = { unsafe: false }
-): TreeConstructor_Source {
+): TreeConstructor_Source2 {
 
   /* the main object returned by construct_tree */
   return {
     /* methods for creating detached branches from data */
-    fromHTML($html: string): BranchConstructor {
+    fromHTML($html: string): BranchConstructor2 {
       let node: HsonNode;
 
       const trimmed = $html.trimStart();
@@ -54,25 +53,25 @@ export function construct_tree(
           : parse_external_html($html);
       }
 
-      const branch = createBranchFromNode(node);
+      const branch = createBranchFromNode2(node);
       return {
         asBranch: () => branch,
       };
     },
 
-    fromJSON($json: string | JsonValue): BranchConstructor {
+    fromJSON($json: string | JsonValue): BranchConstructor2 {
       const rootNode = parse_json($json as string);
-      const branch = createBranchFromNode(rootNode);
+      const branch = createBranchFromNode2(rootNode);
       return {
         asBranch: () => branch,
       };
     },
 
 
-    fromHSON($hson: string): BranchConstructor {
+    fromHSON($hson: string): BranchConstructor2 {
       // assumes tokenize_hson and parse_tokens available
       const rootNode = parse_hson($hson);
-      const branch = createBranchFromNode(rootNode);
+      const branch = createBranchFromNode2(rootNode);
       return {
         asBranch: () => branch,
       };
@@ -80,31 +79,31 @@ export function construct_tree(
 
     /* --- methods for targeting and replacing live dom elements --- */
 
-    queryDom($selector: string): GraftConstructor {
+    queryDom($selector: string): GraftConstructor2 {
       const element = document.querySelector<HTMLElement>($selector);
 
       /* return the graft constructor object */
       return {
-        graft: (): LiveTree => {
+        graft2: (): LiveTree2 => {
           /* the null check here inside the final method call */
           if (!element) {
             console.warn(`hson.liveTree.queryDom: selector "${$selector}" not found.`);
-            /* return a new empty LiveTree to prevent errors and avoid the body default */
-            return new LiveTree({ _tag: _ERROR, _content: [], _meta: {} });
+            /* return a new empty LiveTree2 to prevent errors and avoid the body default */
+            return new LiveTree2({ _tag: _ERROR, _content: [], _meta: {} });
           }
           // only call the main graft function if the element was found
-          return graft(element, $options);
+          return graft2(element, $options);
         }
       };
     },
 
-    queryBody(): GraftConstructor {
+    queryBody(): GraftConstructor2 {
       const element = document.body;
 
       /* return the graft constructor object */
       return {
-        graft: (): LiveTree => {
-          return graft(element, $options);
+        graft2: (): LiveTree2 => {
+          return graft2(element, $options);
         }
       };
     },

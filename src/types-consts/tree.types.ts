@@ -33,6 +33,7 @@ export interface TreeConstructor_Source {
   queryDom(selector: string): GraftConstructor;
   queryBody(): GraftConstructor;
 }
+
 /*  defines the shape of the query object for find() and findAll() */
 
 export interface HsonQuery {
@@ -41,3 +42,5 @@ export interface HsonQuery {
   meta?: Partial<HsonMeta>;
   text?: string | RegExp;
 }
+
+export type TagName = keyof HTMLElementTagNameMap;
