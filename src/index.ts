@@ -2,7 +2,6 @@
 
 export * from './hson.js';
 
-// export { Primitive, BasicValue } from './types';
 
 export { serialize_style } from './utils/attrs-utils/serialize-css.utils.js'
 export { LiveTree2 } from './api/livetree-2/livetree2.js';

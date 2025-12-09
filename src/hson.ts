@@ -208,7 +208,7 @@ export const hson = {
       liveTree(): DomQueryLiveTreeConstructor2 {
         return {
           graft(): LiveTree2 {
-            return construct_tree2({ unsafe: false }).queryDom(selector).graft2();
+            return construct_tree2({ unsafe: false }).queryDom(selector).graft();
           },
         };
       },
@@ -236,7 +236,7 @@ export const hson = {
       liveTree(): DomQueryLiveTreeConstructor2 {
         return {
           graft(): LiveTree2 {
-            return construct_tree2({ unsafe: false }).queryBody().graft2();
+            return construct_tree2({ unsafe: false }).queryBody().graft();
           },
         };
       },

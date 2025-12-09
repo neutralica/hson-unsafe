@@ -5,7 +5,7 @@ import { camel_to_kebab } from "../../../utils/attrs-utils/serialize-css.utils";
 import { LiveTree2 } from "../livetree2";
 
 
-export type DatasetValue = string | boolean | null | undefined;
+export type DatasetValue = Primitive | undefined;
 export type DatasetObj = Record<string, DatasetValue>;
 
 /**

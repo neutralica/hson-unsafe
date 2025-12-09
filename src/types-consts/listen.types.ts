@@ -33,7 +33,6 @@ export interface ListenerBuilder {
   capture(): ListenerBuilder;
   toWindow(): ListenerBuilder;
   toDocument(): ListenerBuilder;
-  onEach(): ListenerBuilder;
 
   /*----- validation / scheduling */
   strict(policy?: MissingPolicy): ListenerBuilder; // default "warn"

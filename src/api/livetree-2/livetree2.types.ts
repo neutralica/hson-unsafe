@@ -4,7 +4,9 @@ import { JsonValue } from "../../core/types-consts/core.types";
 import { HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { $RENDER } from "../../types-consts/constants";
 import { OptionsConstructor_3, RenderConstructor_4, FrameConstructor, RenderFormats, HtmlSourceOptions } from "../../types-consts/constructor.types";
+import { TagName } from "../../types-consts/tree.types";
 import { LiveTree2 } from "./livetree2";
+import { TreeSelector } from "./tree-selector";
 // import existing helpers instead of re-implementing:
 // import { getElementForNode } from "../../node-element-map";
 // import { ensure_quid } from "../../utils/quid-utils";
@@ -24,24 +26,20 @@ export interface FindWithById2 {
 }
 
 
-// Helper type for the new createAppend on LiveTree2
-export interface CreateAppendResult {
-  // chainable index insertion:
-  at(index: number): LiveTree2;
-}
 
 // LiveTree2.createAppend call shape
 // export interface LiveTreeCreateAppend {
 //   (this: LiveTree2, tag: TagName | TagName[]): CreateAppendResult;
 //   (this: LiveTree2, tag: TagName | TagName[], index: number): LiveTree2;
 // }
-export type LiveTreeCreateAppend =
-  (this: LiveTree2,
-   tag: keyof HTMLElementTagNameMap | (keyof HTMLElementTagNameMap)[],
-   index?: number
-  ) => LiveTree2 | CreateAppendResult;
-/* main source constructor */
 
+export interface LiveTreeCreateAppend {
+  (tag: TagName, index?: number): LiveTree2;
+  (tags: TagName[], index?: number): TreeSelector;
+}
+
+
+/* main source constructor */
 export interface TreeConstructor_Source2 {
   /* for creating new tree content from data */
   fromHTML(htmlString: string): BranchConstructor2;
@@ -56,7 +54,7 @@ export interface TreeConstructor_Source2 {
 export interface GraftConstructor2 {
   /* replaces the target DOM element's content with the HSON-controlled version,
         and returns the interactive LiveTree */
-  graft2(): LiveTree2;
+  graft(): LiveTree2;
 }
 
 export interface BranchConstructor2 {

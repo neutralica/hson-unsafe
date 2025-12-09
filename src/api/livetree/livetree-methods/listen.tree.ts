@@ -211,7 +211,8 @@
 //     capture: () => { opts = { ...opts, capture: true }; return api; },
 //     toWindow: () => { opts = { ...opts, target: "window" }; return api; },
 //     toDocument: () => { opts = { ...opts, target: "document" }; return api; },
-//     onEach: () => { each = true; return api; },
+// deprecated:
+// //     onEach: () => { each = true; return api; },
 
 //     strict(policy: MissingPolicy = "warn") { missingPolicy = policy; return api; },
 //     defer() { autoEnabled = false; return api; },

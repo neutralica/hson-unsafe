@@ -84,7 +84,7 @@ export function construct_tree2(
 
       /* return the graft constructor object */
       return {
-        graft2: (): LiveTree2 => {
+        graft: (): LiveTree2 => {
           /* the null check here inside the final method call */
           if (!element) {
           throw new Error (`hson.liveTree.queryDom: selector "${$selector}" not found.`);
@@ -100,7 +100,7 @@ export function construct_tree2(
 
       /* return the graft constructor object */
       return {
-        graft2: (): LiveTree2 => {
+        graft: (): LiveTree2 => {
           return graft2(element, $options);
         }
       };

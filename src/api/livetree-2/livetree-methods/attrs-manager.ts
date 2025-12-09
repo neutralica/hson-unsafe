@@ -20,13 +20,18 @@ import { StyleObject2 } from "./style-manager2.utils";
 export function applyAttrToNode(
   node: HsonNode,
   name: string,
-  value: string | boolean | null,
+  value: Primitive | undefined,
 ): void {
   if (!node._attrs) node._attrs = {};
   const attrs = node._attrs as HsonAttrs & { style?: StyleObject2 };
 
   const key = name.toLowerCase();
   const el = element_for_node(node) as HTMLElement | undefined;
+
+  // normalize undefined -> null
+  if (value === undefined) {
+    value = null;
+  }
 
   // ---- remove / delete ----------------------------------------
   if (value === null || value === false) {
@@ -41,13 +46,15 @@ export function applyAttrToNode(
   }
 
   // ---- boolean-present attribute ------------------------------
-  if (value === true || value === name) {
+  if (value === true) {
     if (key === "style") {
+      // treat boolean style as "clear style"
       delete attrs.style;
-      if (el) el.setAttribute("style", "");
+      if (el) el.removeAttribute("style");
     } else {
-      delete (attrs as any)[key];
-      if (el) el.setAttribute(key, "");
+      // CANONICAL: store flag as key="key" in _attrs
+      (attrs as any)[key] = key;
+      if (el) el.setAttribute(key, key);
     }
     return;
   }
@@ -97,37 +104,47 @@ export function readAttrFromNode(
 
   return raw as Primitive;
 }
+
 export function setAttrsImpl(
-    tree: LiveTree2,
-    nameOrMap: string | Record<string, string | boolean | null>,
-    value?: string | boolean | null
+  tree: LiveTree2,
+  nameOrMap: string | Record<string, string | boolean | null>,
+  value?: Primitive
 ): LiveTree2 {
-    const node = tree.node; // mutators are allowed to throw if unbound
+  const node = tree.node; // mutators are allowed to throw if unbound
 
-    if (typeof nameOrMap === "string") {
-        applyAttrToNode(node, nameOrMap, (value as string | boolean | null) ?? null);
-        return tree;
-    }
-
-    for (const [k, v] of Object.entries(nameOrMap)) {
-        applyAttrToNode(node, k, (v as string | boolean | null) ?? null);
-    }
+  if (typeof nameOrMap === "string") {
+    applyAttrToNode(node, nameOrMap, (value) ?? null);
     return tree;
+  }
+
+  for (const [k, v] of Object.entries(nameOrMap)) {
+    applyAttrToNode(node, k, (v) ?? null);
+  }
+  return tree;
 }
 
 export function removeAttrImpl(tree: LiveTree2, name: string): LiveTree2 {
-    const node = tree.node;
-    applyAttrToNode(node, name, null);
-    return tree;
+  const node = tree.node;
+  applyAttrToNode(node, name, null);
+  return tree;
 }
 
 export function setFlagsImpl(tree: LiveTree2, ...names: string[]): LiveTree2 {
-    const node = tree.node;
-    for (const n of names) {
-        applyAttrToNode(node, n, true);
-    }
-    return tree;
+  const node = tree.node;
+  for (const n of names) {
+    applyAttrToNode(node, n, true);
+  }
+  return tree;
 }
+
+export function clearFlagsImpl(tree: LiveTree2, ...names: string[]): LiveTree2 {
+  const node = tree.node;
+  for (const n of names) {
+    applyAttrToNode(node, n, null);
+  }
+  return tree;
+}
+
 export function getAttrImpl(tree: LiveTree2, name: string): Primitive | undefined {
-    return readAttrFromNode(tree.node, name);
+  return readAttrFromNode(tree.node, name);
 }

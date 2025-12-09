@@ -6,19 +6,19 @@ import { ListenerBuilder } from "../../types-consts/listen.types";
 import { element_for_node } from "../../utils/tree-utils/node-map-helpers.utils";
 import { cssForQuids as manageCss, CssHandle } from "./livetree-methods/css-manager";
 import { remove2 } from "./livetree-methods/remove2";
-import { createAppend2 } from "./livetree-methods/append-create2";
-import { append2 } from "./livetree-methods/append2";
+import { createAppend2 } from "./livetree-methods/create-append";
 import { getNodeFormValue, getNodeText, setNodeContent, setNodeFormValue } from "./livetree-methods/content-manager";
 import { DataManager2 } from "./livetree-methods/data-manager2.tree";
 import { empty2 } from "./livetree-methods/empty2";
 import { buildListener } from "./livetree-methods/listen2";
 import { findAllFor, makeFindFor } from "./livetree-methods/find2";
-import { getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
+import { clearFlagsImpl, getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
 import { remove_child2 } from "./livetree-methods/remove-child2";
 import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
 import { FindWithById2, LiveTreeCreateAppend, NodeRef2 } from "./livetree2.types";
 import { TreeSelector } from "./tree-selector";
 import { appendBranch } from "./livetree-methods/append-worker";
+import { LiveTreeCreateHelper, makeCreateHelper } from "./livetree-methods/create-typed";
 
 
 function makeRef(node: HsonNode): NodeRef2 {
@@ -108,6 +108,11 @@ export class LiveTree2 {
   public findAll = (q: HsonQuery | string): TreeSelector => findAllFor(this, q);
   /*------ append a new HsonNode to the tree graph, populating the element on the DOM as well */
   public createAppend: LiveTreeCreateAppend = createAppend2;
+  /*------ like createAppend but extends a typed interface for native HTML tags: <div>, <span>, <etc> */
+  public get create(): LiveTreeCreateHelper {
+    return makeCreateHelper(this);
+  }
+
   /*------ returns the tree node's data-_quid UID */
   public get quid(): string {
     return this.nodeRef.q;
@@ -152,7 +157,7 @@ export class LiveTree2 {
   public get css(): CssHandle {
     return manageCss([this.quid]);
   }
-  
+
   /*------ add/remove event listeners (acts on node's HTMLElement) */
   public get listen(): ListenerBuilder {
     return buildListener(this);
@@ -170,8 +175,11 @@ export class LiveTree2 {
   public setFlags(...names: string[]): LiveTree2 {
     return setFlagsImpl(this, ...names);
   }
+  public removeFlags(...names: string[]): LiveTree2 { 
+    return clearFlagsImpl(this, ...names);
+  }
   // TODO TASK
-   toggleFlags(...names: string[]): LiveTree2{
+  toggleFlags(...names: string[]): LiveTree2 {
     console.warn('not built yet!');
     return this;
   }
