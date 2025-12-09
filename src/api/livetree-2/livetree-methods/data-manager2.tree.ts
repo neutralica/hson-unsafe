@@ -5,8 +5,8 @@ import { camel_to_kebab } from "../../../utils/attrs-utils/serialize-css.utils";
 import { LiveTree2 } from "../livetree2";
 
 
-type DatasetValue = string | boolean | null | undefined;
-type DatasetObj = Record<string, DatasetValue>;
+export type DatasetValue = string | boolean | null | undefined;
+export type DatasetObj = Record<string, DatasetValue>;
 
 /**
  * DataManager(2)
@@ -86,7 +86,7 @@ export class DataManager2 {
     }
 
     // 2) Multiple keys at once
-    setMany(map: DatasetObj): LiveTree2 {
+    setMulti(map: DatasetObj): LiveTree2 {
         const patch: Record<string, string | null> = {};
 
         for (const [key, value] of Object.entries(map)) {

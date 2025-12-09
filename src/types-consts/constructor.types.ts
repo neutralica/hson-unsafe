@@ -2,13 +2,6 @@
 import { $HSON_FRAME, $RENDER, } from "./constants";
 import { HsonNode } from "./node.types";
 import { JsonValue } from "../core/types-consts/core.types";
-import { LiveTree } from "../api/livetree";
-import { OutputConstructor_2 } from "../api/livetree-2/livetree2.types";
-
-export interface FrameRender<K extends RenderFormats> {
-  frame: FrameConstructor;
-  output: K;
-}
 
 export interface HtmlSourceOptions {
     /** Override per-call HTML sanitization.
@@ -23,51 +16,9 @@ export interface HtmlSourceOptions {
     sanitize?: boolean;
 }
 
-export interface SourceConstructor_1 {
-    /** HSON string → Node */
-    fromHSON(input: string): OutputConstructor_2;
-
-    /** JSON → Nodes */
-    fromJSON(input: string | JsonValue): OutputConstructor_2;
-
-    /** HTML → Nodes
-     *
-     * - `input` may be an HTML string or an Element (its `innerHTML` is used).
-     * - `options.sanitize` controls *per-call* behavior in the safe pipeline:
-     *     - safe pipeline (`unsafe: false`):
-     *         - `sanitize !== false` → DOMPurify (`parse_external_html`)
-     *         - `sanitize === false` → raw HTML parse (`parse_html`)
-     *     - unsafe pipeline (`unsafe: true`):
-     *         - always raw HTML parse (`parse_html`), flag is ignored.
-     */
-    fromHTML(input: string | Element, options?: HtmlSourceOptions): OutputConstructor_2;
-
-    /** Nodes → Nodes (identity entrypoint) */
-    fromNode(input: HsonNode): OutputConstructor_2;
-
-    /** `document.querySelector(selector).innerHTML` → Nodes
-     *
-     * - Uses `innerHTML` of the matched element as the HTML source.
-     * - In *practice* we only ever call this through a pipeline that has
-     *   chosen safe vs unsafe at construction time.
-     * - For your facade:
-     *     - `hson.queryDOM` uses `{ unsafe: true }` → no sanitization.
-     *     - if someone wants a sanitized snapshot, they should use
-     *       `hson.fromUntrustedHtml(element)` instead.
-     */
-    queryDOM(selector: string): OutputConstructor_2;
-
-    /** `document.body.innerHTML` → Nodes
-     *
-     * Same semantics as `queryDOM`, but for the whole document body.
-     */
-    queryBody(): OutputConstructor_2;
-}
-
-
-export interface LiveTreeConstructor_3 {
-    asBranch(): LiveTree;
-}
+// export interface LiveTreeConstructor_3 {
+//     asBranch(): LiveTree;
+// }
 
 /**
  *  Step 3 – optional configuration.
@@ -173,10 +124,10 @@ export interface RenderConstructor_4<K extends RenderFormats> {
     // asBranch(): LiveTree;
 }
 
-// what hson.queryDOM(...).liveTree() returns
-export interface DomQueryLiveTreeConstructor {
-    graft(): LiveTree;
-}
+// // what hson.queryDOM(...).liveTree() returns
+// export interface DomQueryLiveTreeConstructor {
+//     graft(): LiveTree;
+// }
 
 
 export type ParsedResult<K extends RenderFormats> =

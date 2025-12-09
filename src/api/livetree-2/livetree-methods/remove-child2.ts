@@ -3,7 +3,7 @@ import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.utils";
 import { parse_selector } from "../../../utils/tree-utils/parse-selector.utils";
 import { LiveTree2 } from "../livetree2";
-import { search_nodes } from "./node-search2";
+import { search_nodes } from "./search2";
 
 export function remove_child2(
   this: LiveTree2,

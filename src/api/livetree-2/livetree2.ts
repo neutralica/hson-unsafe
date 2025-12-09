@@ -1,23 +1,24 @@
 // livetree2.ts
 
-import { ensure_quid } from "../../quid/data-quid.quid";
+import { ensure_quid, get_node_by_quid } from "../../quid/data-quid.quid";
 import { HsonNode, Primitive, HsonQuery } from "../../types-consts";
 import { ListenerBuilder } from "../../types-consts/listen.types";
-import { TagName } from "../../types-consts/tree.types";
-import { getElementForNode } from "../../utils/tree-utils/node-map-helpers.utils";
-import { cssForQuids as manageCss, CssHandle } from "../livetree/livetree-methods/css-manager";
-import { remove2 } from "../livetree/livetree-methods/remove2";
+import { element_for_node } from "../../utils/tree-utils/node-map-helpers.utils";
+import { cssForQuids as manageCss, CssHandle } from "./livetree-methods/css-manager";
+import { remove2 } from "./livetree-methods/remove2";
 import { createAppend2 } from "./livetree-methods/append-create2";
 import { append2 } from "./livetree-methods/append2";
 import { getNodeFormValue, getNodeText, setNodeContent, setNodeFormValue } from "./livetree-methods/content-manager";
 import { DataManager2 } from "./livetree-methods/data-manager2.tree";
 import { empty2 } from "./livetree-methods/empty2";
-import { buildListener } from "./livetree-methods/listener-builder.tree";
-import { findAllFor, getAttrImpl, makeFindFor, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/livetree-find2";
+import { buildListener } from "./livetree-methods/listen2";
+import { findAllFor, makeFindFor } from "./livetree-methods/find2";
+import { getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
 import { remove_child2 } from "./livetree-methods/remove-child2";
 import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
 import { FindWithById2, LiveTreeCreateAppend, NodeRef2 } from "./livetree2.types";
 import { TreeSelector } from "./tree-selector";
+import { appendBranch } from "./livetree-methods/append-worker";
 
 
 function makeRef(node: HsonNode): NodeRef2 {
@@ -26,79 +27,95 @@ function makeRef(node: HsonNode): NodeRef2 {
 
   const ref: NodeRef2 = {
     q,
-    resolveNode(): HsonNode | undefined { /* close over the node itself */
+    resolveNode(): HsonNode { /* exposes the node itself */
       // if we later introduce a global QUID→node map,
       // this is where to switch to a lookup.
       return node;
     },
 
-    resolveElement(): Element | undefined { /* handle DOM resolution. */
-      return getElementForNode(node) ?? undefined;
+    resolveElement(): Element | undefined { /* exposes the DOM Element . */
+      return element_for_node(node) ?? undefined;
     },
   };
 
   return ref;
 }
+// function makeRef(node: HsonNode): NodeRef2 {
+//   const meta = node._meta ?? {};
+//   const qExisting = (meta as any)._quid as string | undefined;
+
+//   // If we already have a QUID, never change it.
+//   const q = qExisting ?? ensure_quid(node); // ensure_quid should *only* create when missing
+
+//   const ref: NodeRef2 = {
+//     q,
+//     resolveNode(): HsonNode | undefined {
+//       // ideally via NODE_ELEMENT_MAP’s inverse, not tree walk
+//       return get_node_by_quid(q);  // or your actual helper
+//     },
+//     resolveElement(): Element | undefined {
+//       return element_for_node(get_node_by_quid(q)!); // or whatever your DOM map helper is
+//     },
+//   };
+
+//   return ref;
+// }
 
 export class LiveTree2 {
+  /*---------- the HsonNode being referenced */
   private nodeRef!: NodeRef2;
+  /*---------- the root node or historic root node */
   private hostRoot!: HsonNode;
+  /*---------- inline style editor */
   private styleManagerInternal: StyleManager2 | undefined = undefined;
+  /*---------- .dataset editor */
   private datasetManagerInternal: DataManager2 | undefined = undefined;
+  /*----------  create quid, register node (NODE_ELEMENT_MAP), assign resolve*() methods */
+  private setRef(input: HsonNode | LiveTree2): void {
+    if (input instanceof LiveTree2) {
+      this.nodeRef = makeRef(input.node);
+      return;
+    }
+    this.nodeRef = makeRef(input);
+  }
+  /*----------  set legacy root node */
+  private setRoot(input: HsonNode | LiveTree2): void {
+    if (input instanceof LiveTree2) {
+      this.hostRoot = input.hostRoot;
+      if (!this.hostRoot) { throw new Error('could not set host root'); }
+      return;
+    }
+    this.hostRoot = input; /* HsonNode fallback */
+    if (!this.hostRoot) { throw new Error('could not set host root'); }
+  }
 
   constructor(input: HsonNode | LiveTree2) {
     this.setRoot(input);
     this.setRef(input);
   }
 
-  /*  attach child node(s) */
-  public append = append2;
-  /* clear all child nodes */
+  /*------  attach liveTree as child nodes */
+  public append = appendBranch;
+  /*------ clear all child nodes */
   public empty = empty2;
-  /*  remove a child node */
+  /*------  remove a child node */
   public removeChild = remove_child2;
-  /* remove self */
+  /*------ remove self */
   public remove = remove2;
-  /* find and return a LiveTree; with optional .byId(), .must [throw if undefined] */
+  /*------ find and return a LiveTree; with optional .byId(), .must [throw if undefined] */
   public find: FindWithById2 = makeFindFor(this);
-  /* find and return a TreeSelector (LiveTree[]) */
+  /*------ find and return a TreeSelector (LiveTree[]) */
   public findAll = (q: HsonQuery | string): TreeSelector => findAllFor(this, q);
-  /* append a new HsonNode to the tree graph, populating the element on the DOM as well */
+  /*------ append a new HsonNode to the tree graph, populating the element on the DOM as well */
   public createAppend: LiveTreeCreateAppend = createAppend2;
-
-
+  /*------ returns the tree node's data-_quid UID */
   public get quid(): string {
-    // if (!this.nodeRef) {
-    //   throw new Error("LiveTree2.quid(): no nodeRef bound");
-    // }
     return this.nodeRef.q;
   }
-  
-  private setRef(input: HsonNode | LiveTree2): void {
-    if (input instanceof LiveTree2) {
-      this.nodeRef = makeRef(input.node);
-      return;
-    }
 
-    this.nodeRef = makeRef(input);
-  }
-
-  private setRoot(input: HsonNode | LiveTree2): void {
-    if (input instanceof LiveTree2) {
-      // CHANGED: no nullish coalescing; hostRoot is always set on LiveTree2 instances
-      this.hostRoot = input.hostRoot;
-      if (!this.hostRoot) {throw new Error('could not set host root');}
-      return;
-    }
-
-    // HsonNode case
-    this.hostRoot = input;
-    if (!this.hostRoot) {throw new Error('could not set host root');}
-  }
-
-
+  /*---------- return legacy root */
   public getHostRoots(): HsonNode {
-    return this.hostRoot; /* return a safely mutable copy */
+    return this.hostRoot;
   }
 
   /* internal: allow a branch to inherit host roots when grafted/appended */
@@ -106,19 +123,16 @@ export class LiveTree2 {
     this.hostRoot = root;
     return this;
   }
+  /*---------- return LiveTree's referenced node */
   public get node(): HsonNode {
-    const ref = this.nodeRef;
-    if (!ref) {
-      throw new Error("LiveTree2.node: no node bound");
-    }
-    const n = ref.resolveNode();
+    const n = this.nodeRef.resolveNode();
     if (!n) {
       throw new Error("LiveTree2.node: ref did not resolve");
     }
     return n;
   }
 
-  // ---------- managers & adapters ----------
+  /*---------- managers & adapters ---------- */
 
   public get style(): StyleManager2 {
     if (!this.styleManagerInternal) {
@@ -133,14 +147,18 @@ export class LiveTree2 {
     }
     return this.datasetManagerInternal;
   }
+
+  /*------ css handling keyed to node's [data-_quid] selector */
   public get css(): CssHandle {
     return manageCss([this.quid]);
   }
+  
+  /*------ add/remove event listeners (acts on node's HTMLElement) */
   public get listen(): ListenerBuilder {
     return buildListener(this);
   }
 
-  // ---------- attribute / flags API ----------
+  /* ---------- attribute / flags API ---------- */
 
   public getAttr(name: string): Primitive | undefined {
     return getAttrImpl(this, name);
@@ -148,9 +166,17 @@ export class LiveTree2 {
   public removeAttr(name: string): LiveTree2 {
     return removeAttrImpl(this, name);
   }
+  /* flags are attributes where key="key" or true */
   public setFlags(...names: string[]): LiveTree2 {
     return setFlagsImpl(this, ...names);
   }
+  // TODO TASK
+   toggleFlags(...names: string[]): LiveTree2{
+    console.warn('not built yet!');
+    return this;
+  }
+
+  /* accepts a single property or a CSS object */
   public setAttrs(name: string, value: string | boolean | null): LiveTree2;
   public setAttrs(map: Record<string, string | boolean | null>): LiveTree2;
   public setAttrs(
@@ -160,7 +186,7 @@ export class LiveTree2 {
     return setAttrsImpl(this, nameOrMap, value);
   }
 
-  // ---------- content API ----------
+  /*  ---------- content API ---------- */
 
   public setText(value: Primitive): LiveTree2 {
     setNodeContent(this.node, value);
@@ -177,7 +203,7 @@ export class LiveTree2 {
     return getNodeFormValue(this.node);
   }
 
-  // ---------- DOM adapter ----------
+  /*  ---------- DOM adapter ---------- */
 
   public asDomElement(): Element | undefined {
     const firstRef = this.nodeRef;

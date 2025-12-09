@@ -1,8 +1,8 @@
 // base.hson.types.ts
 
 
-import { CssObject } from "../api/livetree";
-import { JsonValue, Primitive } from "../core/types-consts/core.types";
+import { StyleObject2 } from "../api/livetree-2/livetree-methods/style-manager2.utils";
+import {  Primitive } from "../core/types-consts/core.types";
 import { _DATA_INDEX, _DATA_QUID } from "./constants";
 
 
@@ -14,7 +14,7 @@ import { _DATA_INDEX, _DATA_QUID } from "./constants";
 export interface HsonNode {
     _tag: string;
     _meta: HsonMeta;
-    _attrs?: HsonAttrs;
+    _attrs: HsonAttrs;
     _content: NodeContent;
 }
 
@@ -27,7 +27,7 @@ export type NodeContent = (HsonNode | Primitive)[];
  * TODO: flags will be subsumed into this; any flag is an attribute where key=value
  * @property {string} [style] - for capturing parsed style when applicable.
  */
-export type HsonAttrs = {'style'?: CssObject } & Record<string, Primitive>;
+export type HsonAttrs = {'style'?: StyleObject2 } & Record<string, Primitive>;
 
 
 /**

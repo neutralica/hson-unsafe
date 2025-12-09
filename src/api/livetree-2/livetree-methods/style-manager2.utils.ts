@@ -20,7 +20,7 @@
 import { HsonAttrs, HsonNode } from "../../../types-consts";
 import { camel_to_kebab, serialize_style } from "../../../utils/attrs-utils/serialize-css.utils";
 import { kebab_to_camel } from "../../../utils/primitive-utils/kebab-to-camel.util";
-import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree2 } from "../livetree2";
 
 /* ------------------------------- TYPE HELPERS ------------------------------- */
@@ -95,7 +95,7 @@ function removeStyleFromNode(node: HsonNode, kebabName: string): void {
     }
 
     // 3) Update DOM
-    const el = getElementForNode(node) as HTMLElement | undefined;
+    const el = element_for_node(node) as HTMLElement | undefined;
     if (!el) return;
 
     // Use DOM’s own removeProperty for the kebab name
@@ -149,7 +149,7 @@ function ensureStyleObject(a: Record<string, unknown>): Record<string, string> {
 //  Write a single property (kebab) to DOM + node attrs.
 function applyStyleToNode(node: HsonNode, kebabName: string, value: string): void {
     // 1) push to DOM if element exists
-    const el = getElementForNode(node);
+    const el = element_for_node(node);
     if (el instanceof HTMLElement) {
         if (value === "") {
             el.style.removeProperty(kebabName);
@@ -172,7 +172,7 @@ function applyStyleToNode(node: HsonNode, kebabName: string, value: string): voi
 
 // Read a single property (kebab) from DOM (preferred) or node attrs.
 function readStyleFromNode(node: HsonNode, kebabName: string): string | undefined {
-    const el = getElementForNode(node);
+    const el = element_for_node(node);
     if (el instanceof HTMLElement) {
         const v = getComputedStyle(el).getPropertyValue(kebabName);
         const t = v.trim();
@@ -459,7 +459,7 @@ export class StyleManager2 {
         const node = this.tree.node; // HsonNode
         if (!node._attrs) node._attrs = {};
         const attrs = node._attrs as HsonAttrs;
-        const el = getElementForNode(node) as HTMLElement | undefined;
+        const el = element_for_node(node) as HTMLElement | undefined;
 
         if (!normKeys.length) {
             delete (attrs as any).style;

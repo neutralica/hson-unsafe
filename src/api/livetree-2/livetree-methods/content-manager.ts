@@ -3,7 +3,7 @@ import { STR_TAG } from "../../../types-consts/constants";
 import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { make_string } from "../../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
-import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { make_leaf } from "../../parsers/parse-tokens.new.transform";
 
 /**
@@ -17,7 +17,7 @@ export function setNodeContent(node: HsonNode, value: Primitive): void {
     const leaf = make_leaf(value);
     node._content = [leaf];
 
-    const el = getElementForNode(node);
+    const el = element_for_node(node);
     if (!el) {
         const quid = node._meta?._quid ?? "<no-quid>";
         _throw_transform_err(
@@ -38,7 +38,7 @@ export function setNodeContent(node: HsonNode, value: Primitive): void {
  */
 export function getNodeText(node: HsonNode): string {
     // Prefer DOM if present – it's the ground truth for rendered text.
-    const el = getElementForNode(node);
+    const el = element_for_node(node);
     if (el) {
         return el.textContent ?? "";
     }
@@ -86,7 +86,7 @@ export function setNodeFormValue(
 
     (node._attrs as HsonAttrs).value = value;
 
-    const el = getElementForNode(node);
+    const el = element_for_node(node);
     if (!el) {
         if (opts?.silent) return;
         const quid = node._meta?._quid ?? "<no-quid>";
@@ -113,7 +113,7 @@ export function setNodeFormValue(
  * - Otherwise, fall back to node._attrs.value, if present.
  */
 export function getNodeFormValue(node: HsonNode): string {
-    const el = getElementForNode(node);
+    const el = element_for_node(node);
     if (
         el &&
         (el instanceof HTMLInputElement ||

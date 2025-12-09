@@ -87,9 +87,7 @@ export function construct_tree2(
         graft2: (): LiveTree2 => {
           /* the null check here inside the final method call */
           if (!element) {
-            console.warn(`hson.liveTree.queryDom: selector "${$selector}" not found.`);
-            /* return a new empty LiveTree2 to prevent errors and avoid the body default */
-            return new LiveTree2({ _tag: _ERROR, _content: [], _meta: {} });
+          throw new Error (`hson.liveTree.queryDom: selector "${$selector}" not found.`);
           }
           // only call the main graft function if the element was found
           return graft2(element, $options);

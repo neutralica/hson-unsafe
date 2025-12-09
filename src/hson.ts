@@ -1,9 +1,7 @@
-import { construct_tree } from "./api/constructors/construct-tree2";
+
 import { construct_source_1 } from "./api/constructors/construct-source-1";
-import { DomQueryLiveTreeConstructor } from "./types-consts/constructor.types";
 import { DomQueryLiveTreeConstructor2, OutputConstructor_2 } from "./api/livetree-2/livetree2.types";
 import { DomQuerySourceConstructor } from "./api/livetree-2/livetree2.types";
-import { LiveTree } from "./api/livetree";
 import { HsonNode } from "./types-consts";
 import { JsonValue } from "./core/types-consts/core.types";
 import { LiveTree2 } from "./api/livetree-2/livetree2";
@@ -198,21 +196,19 @@ export const hson = {
   queryDOM(selector: string): DomQuerySourceConstructor {
     const el = document.querySelector<HTMLElement>(selector);
     return {
-      liveTree(): DomQueryLiveTreeConstructor {
+      // liveTree(): DomQueryLiveTreeConstructor {
+      //   return {
+      //     graft(): LiveTree {
+      //       // reuse your existing construct_tree + graft logic
+      //       return construct_tree({ unsafe: false }).queryDom(selector).graft();
+      //       // or: graft(el, { unsafe: false }) if you have a direct helper
+      //     },
+      //   };
+      // },
+      liveTree(): DomQueryLiveTreeConstructor2 {
         return {
-          graft(): LiveTree {
-            // reuse your existing construct_tree + graft logic
-            return construct_tree({ unsafe: false }).queryDom(selector).graft();
-            // or: graft(el, { unsafe: false }) if you have a direct helper
-          },
-        };
-      },
-      liveTree2(): DomQueryLiveTreeConstructor2 {
-        return {
-          graft2(): LiveTree2 {
-            // reuse your existing construct_tree + graft logic
+          graft(): LiveTree2 {
             return construct_tree2({ unsafe: false }).queryDom(selector).graft2();
-            // or: graft(el, { unsafe: false }) if you have a direct helper
           },
         };
       },
@@ -230,16 +226,16 @@ export const hson = {
 
   queryBody(): DomQuerySourceConstructor {
     return {
-      liveTree(): DomQueryLiveTreeConstructor {
+      // liveTree(): DomQueryLiveTreeConstructor {
+      //   return {
+      //     graft(): LiveTree {
+      //       return construct_tree({ unsafe: false }).queryBody().graft();
+      //     },
+      //   };
+      // },
+      liveTree(): DomQueryLiveTreeConstructor2 {
         return {
-          graft(): LiveTree {
-            return construct_tree({ unsafe: false }).queryBody().graft();
-          },
-        };
-      },
-      liveTree2(): DomQueryLiveTreeConstructor2 {
-        return {
-          graft2(): LiveTree2 {
+          graft(): LiveTree2 {
             return construct_tree2({ unsafe: false }).queryBody().graft2();
           },
         };

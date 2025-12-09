@@ -202,7 +202,7 @@ export function buildListener(tree: LiveTree2): ListenerBuilder {
 
     strict(policy: MissingPolicy = "warn") { missingPolicy = policy; return api; },
     defer() { autoEnabled = false; return api; },
-
+    attach() { autoEnabled = false; return attach(); },
     preventDefault(): ListenerBuilder { _prevent = true; return api; },
     stopProp(): ListenerBuilder { _stop = true; return api; },
     stopImmediateProp(): ListenerBuilder { _stopImmediate = true; return api; },

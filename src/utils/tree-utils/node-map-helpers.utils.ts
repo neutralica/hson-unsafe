@@ -10,7 +10,7 @@ export function linkNodeToElement(node: HsonNode, el: Element): void {
 }
 
 //  safe lookup with optional logging/guard
-export function getElementForNode(node: HsonNode): Element | undefined {
+export function element_for_node(node: HsonNode): Element | undefined {
   return NODE_ELEMENT_MAP.get(node);
 }
 

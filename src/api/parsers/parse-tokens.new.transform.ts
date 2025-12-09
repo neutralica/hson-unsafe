@@ -19,8 +19,8 @@ import { is_string } from "../../core/utils/guards.core.utils";
 
 export const make_leaf = (v: Primitive): HsonNode =>
 (is_string(v)
-    ? { _tag: STR_TAG, _meta: {}, _content: [v] }
-    : { _tag: VAL_TAG, _meta: {}, _content: [v] });
+    ? CREATE_NODE({ _tag: STR_TAG, _meta: {}, _content: [v] })
+    : CREATE_NODE({ _tag: VAL_TAG, _meta: {}, _content: [v] }));
 
 
 
@@ -108,7 +108,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         const open = tok as TokenOpen;
 
         const { attrs, meta } = split_attrs_meta(open.rawAttrs);
-        const node: HsonNode = { _tag: open.tag, _meta: meta, _content: [] };
+        const node = CREATE_NODE( { _tag: open.tag, _meta: meta});
 
         // VSNs carry no _attrs
         const isVSN =
@@ -175,7 +175,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
         if (open.tag === ROOT_TAG) {
             //  explicit "<>" under root => single empty _obj cluster
             if (sawEmptyObjShorthand) {
-                node._content = [{ _tag: OBJ_TAG, _meta: {}, _content: [] }];
+                node._content = [CREATE_NODE({ _tag: OBJ_TAG })];
                 if ($isTopLevel) topCloseKinds.push(closeKind);
                 return { node, closeKind };
             }
@@ -184,7 +184,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
                 node._content = kids; // passthrough array cluster
             } else if (kids.length > 0) {
                 const clusterTag = (closeKind === CLOSE_KIND.elem) ? ELEM_TAG : OBJ_TAG;
-                node._content = [{ _tag: clusterTag, _meta: {}, _content: kids }];
+                node._content = [CREATE_NODE({ _tag: clusterTag, _content: kids })];
             } else {
                 node._content = [];
             }
@@ -211,11 +211,10 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             if (kids.length === 1 && (kids[0]._tag === OBJ_TAG || kids[0]._tag === ARR_TAG)) {
                 node._content = [kids[0]]; // passthrough a single cluster
             } else {
-                node._content = [{
+                node._content = [CREATE_NODE({
                     _tag: OBJ_TAG,
-                    _meta: {},
                     _content: kids as NodeContent
-                }];
+                })];
             }
 
             // Guardrail: object mode must yield a single _obj/_arr
@@ -228,11 +227,10 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             if (kids.length === 1 && kids[0]._tag === ELEM_TAG) {
                 node._content = kids as NodeContent; // already clustered
             } else {
-                node._content = [{
+                node._content = [CREATE_NODE({
                     _tag: ELEM_TAG,
-                    _meta: {},
                     _content: kids as NodeContent
-                }];
+                })];
             }
 
             // Guardrail: element mode must yield a single _elem
@@ -290,11 +288,11 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
                 childNode = CREATE_NODE({ _tag: OBJ_TAG, _meta: {}, _content: [childNode] });
             }
             childNode = unwrap_root_obj(childNode);
-            items.push(({
+            items.push((CREATE_NODE({
                 _tag: II_TAG,
                 _meta: { [_DATA_INDEX]: String(idx) },
                 _content: [childNode],
-            }));
+            })));
             idx++;
         }
 

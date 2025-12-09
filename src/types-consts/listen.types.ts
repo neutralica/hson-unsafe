@@ -39,7 +39,8 @@ export interface ListenerBuilder {
   strict(policy?: MissingPolicy): ListenerBuilder; // default "warn"
   defer(): ListenerBuilder; // cancel auto-attach for manual attach()
 
-
+  // may remove some day, seeing if this ubreaks something
+ attach(): ListenerSub;
   /* Auto-attach will also return a handle. */
   preventDefault(): ListenerBuilder;
   stopProp(): ListenerBuilder;

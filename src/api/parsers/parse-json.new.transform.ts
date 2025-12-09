@@ -232,7 +232,7 @@ export function nodeFromJson(
                         tagKids = [kidNode];
                     }
 
-                    const elemNode: HsonNode = { _tag: tagName, _meta: {}, _content: tagKids };
+                    const elemNode = CREATE_NODE( { _tag: tagName, _content: tagKids });
                     if (hoistedAttrs && Object.keys(hoistedAttrs).length) elemNode._attrs = hoistedAttrs;  // ← preserve
                     if (hoistedMeta && Object.keys(hoistedMeta).length) elemNode._meta = { ...elemNode._meta, ...hoistedMeta };
 

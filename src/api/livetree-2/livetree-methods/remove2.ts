@@ -5,8 +5,8 @@ import { HsonNode } from "../../../types-consts";
 import { _DATA_QUID } from "../../../types-consts/constants";
 import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.utils";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
-import { LiveTree2 } from "../../livetree-2/livetree2";
-import { CssManager } from "../../livetree-2/livetree-methods/css-manager";
+import { LiveTree2 } from "../livetree2";
+import { CssManager } from "./css-manager";
 import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 
 /**

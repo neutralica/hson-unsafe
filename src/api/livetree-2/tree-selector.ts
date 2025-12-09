@@ -1,7 +1,10 @@
 // tree-selector.ts
 
+import { Primitive } from "../../types-consts";
 import { TagName } from "../../types-consts/tree.types";
-import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
+import { cssForQuids, CssHandle } from "./livetree-methods/css-manager";
+import { DataManager2, DatasetObj, DatasetValue } from "./livetree-methods/data-manager2.tree";
+import { StyleManager2, StyleObject2 } from "./livetree-methods/style-manager2.utils";
 import { LiveTree2 } from "./livetree2";
 
 
@@ -29,6 +32,8 @@ export interface TreeSelector {
 
   // style: proxied to the *first* tree; throws on empty
   readonly style: StyleManager2;
+  readonly css: CssHandle;
+  readonly data: DataManager2;
 
   // structural sugar: create children under each selected tree and
   // keep returning the same selector
@@ -52,7 +57,7 @@ export function makeTreeSelector(trees: LiveTree2[]): TreeSelector {
       }
     },
 
-    map<T>(fn: (tree: LiveTree2, index: number) => T): T[]{
+    map<T>(fn: (tree: LiveTree2, index: number) => T): T[] {
       const out: T[] = [];
       for (let i = 0; i < items.length; i += 1) {
         out.push(fn(items[i], i));
@@ -101,6 +106,25 @@ export function makeTreeSelector(trees: LiveTree2[]): TreeSelector {
       return first.style;
     },
 
+    // QUID-scoped stylesheet: aggregate all quids
+    get css(): CssHandle {
+      // empty selection → safe no-op handle
+      if (items.length === 0) {
+        return cssForQuids([]);
+      }
+
+      const quids: string[] = [];
+      for (const tree of items) {
+        const q = tree.quid;      // assumes LiveTree2 has a `quid` getter
+        if (q) quids.push(q);
+      }
+      return cssForQuids(quids);
+    },
+    // dataset – broadcast wrapper, same pattern as style
+    get data(): DataManager2 {
+      return makeMultiDataManager(items);
+    },
+
     //  broadcast createAppend across selection, then return selector
     // NOTE: assumes LiveTree2 has a `createAppend(tag)` method.
     createAppend(tag: TagName | TagName[]): TreeSelector {
@@ -112,4 +136,68 @@ export function makeTreeSelector(trees: LiveTree2[]): TreeSelector {
   };
 
   return result;
+}
+function makeMultiStyleManager(items: LiveTree2[]): StyleManager2 {
+  const firstTree = (): LiveTree2 => {
+    const t = items[0];
+    if (!t) {
+      throw new Error("TreeSelector.style: empty selection");
+    }
+    return t;
+  }
+
+  return {
+    // --- core example method ---
+    setProperty(name: string, value: string | number | null): LiveTree2 {
+      for (const t of items) {
+        t.style.setProperty(name, value);
+      }
+      // preserve StyleManager2’s “return LiveTree2 for chaining” contract
+      return firstTree();
+    },
+
+    replace(map: StyleObject2): LiveTree2 {
+      for (const t of items) {
+        t.style.replace(map);
+      }
+      return firstTree();
+    },
+
+
+  } as StyleManager2;
+}
+
+function makeMultiDataManager(items: LiveTree2[]): DataManager2 {
+  const firstTree = (): LiveTree2 => {
+    const t = items[0];
+    if (!t) {
+      throw new Error("TreeSelector.data: empty selection");
+    }
+    return t;
+  };
+
+  return {
+    // example assuming these exist on DataManager2:
+    set(key: string, value: DatasetValue): LiveTree2 {
+      for (const t of items) {
+        t.data.set(key, value);
+      }
+      return firstTree();
+    },
+
+    setMulti(map: DatasetObj): LiveTree2 {
+      for (const t of items) {
+        t.data.setMulti(map);
+      }
+      return firstTree();
+    },
+
+    get(key: string): Primitive | undefined {
+      // read semantics: first tree as canonical value
+      return firstTree().data.get(key);
+    },
+
+    // …extend with whatever else DataManager2 exposes,
+    // always broadcasting writes and reading from firstTree()
+  } as DataManager2;
 }

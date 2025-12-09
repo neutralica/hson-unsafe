@@ -1,6 +1,8 @@
 // serialize-css.utils.hson.ts
 
-import { CssObject } from "../../types-consts";
+import { StyleObject2 } from "../../api/livetree-2/livetree-methods/style-manager2.utils";
+
+
 
 /**
  * converts a camelCase string to kebab-case
@@ -22,7 +24,7 @@ export function camel_to_kebab($str: string): string {
  * @param $style - a Dictionary-like object of CSS properties
  * @returns {string} a browser-compatible CSS string
  */
-export function serialize_style(style: CssObject | undefined): string {
+export function serialize_style(style: StyleObject2 | undefined): string {
   if (!style || !Object.keys(style).length) { return ""; }
 
   // CHANGE: normalize entries BEFORE sorting/serializing

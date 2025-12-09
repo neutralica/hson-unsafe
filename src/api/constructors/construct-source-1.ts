@@ -8,7 +8,7 @@ import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
 import { construct_output_2 } from "./construct-output-2";
-import { SourceConstructor_1 } from "../../types-consts/constructor.types";
+import { SourceConstructor_1 } from "../livetree-2/livetree2.types";
 import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
 
 export interface HtmlSourceOptions {

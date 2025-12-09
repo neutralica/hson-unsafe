@@ -1,7 +1,8 @@
 import { HsonAttrs, HsonNode, Primitive } from "../../../types-consts";
 import { parse_style_string } from "../../../utils/attrs-utils/parse-style.utils";
 import { serialize_style } from "../../../utils/attrs-utils/serialize-css.utils";
-import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { LiveTree2 } from "../livetree2";
 import { StyleObject2 } from "./style-manager2.utils";
 
 /**
@@ -25,7 +26,7 @@ export function applyAttrToNode(
   const attrs = node._attrs as HsonAttrs & { style?: StyleObject2 };
 
   const key = name.toLowerCase();
-  const el = getElementForNode(node) as HTMLElement | undefined;
+  const el = element_for_node(node) as HTMLElement | undefined;
 
   // ---- remove / delete ----------------------------------------
   if (value === null || value === false) {
@@ -95,4 +96,38 @@ export function readAttrFromNode(
   }
 
   return raw as Primitive;
+}
+export function setAttrsImpl(
+    tree: LiveTree2,
+    nameOrMap: string | Record<string, string | boolean | null>,
+    value?: string | boolean | null
+): LiveTree2 {
+    const node = tree.node; // mutators are allowed to throw if unbound
+
+    if (typeof nameOrMap === "string") {
+        applyAttrToNode(node, nameOrMap, (value as string | boolean | null) ?? null);
+        return tree;
+    }
+
+    for (const [k, v] of Object.entries(nameOrMap)) {
+        applyAttrToNode(node, k, (v as string | boolean | null) ?? null);
+    }
+    return tree;
+}
+
+export function removeAttrImpl(tree: LiveTree2, name: string): LiveTree2 {
+    const node = tree.node;
+    applyAttrToNode(node, name, null);
+    return tree;
+}
+
+export function setFlagsImpl(tree: LiveTree2, ...names: string[]): LiveTree2 {
+    const node = tree.node;
+    for (const n of names) {
+        applyAttrToNode(node, n, true);
+    }
+    return tree;
+}
+export function getAttrImpl(tree: LiveTree2, name: string): Primitive | undefined {
+    return readAttrFromNode(tree.node, name);
 }

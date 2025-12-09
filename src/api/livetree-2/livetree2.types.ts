@@ -3,8 +3,7 @@
 import { JsonValue } from "../../core/types-consts/core.types";
 import { HsonNode, HsonQuery, Primitive } from "../../types-consts";
 import { $RENDER } from "../../types-consts/constants";
-import { OptionsConstructor_3, RenderConstructor_4, LiveTreeConstructor_3, DomQueryLiveTreeConstructor } from "../../types-consts/constructor.types";
-import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
+import { OptionsConstructor_3, RenderConstructor_4, FrameConstructor, RenderFormats, HtmlSourceOptions } from "../../types-consts/constructor.types";
 import { LiveTree2 } from "./livetree2";
 // import existing helpers instead of re-implementing:
 // import { getElementForNode } from "../../node-element-map";
@@ -66,20 +65,20 @@ export interface BranchConstructor2 {
   asBranch(): LiveTree2;
 }
 export interface LiveTreeConstructor_32 {
-    asBranch2(): LiveTree2;
+    asBranch(): LiveTree2;
 }
 // export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];
 // what hson.queryDOM/queryBody return
 
 export interface DomQuerySourceConstructor {
-    liveTree(): DomQueryLiveTreeConstructor;
-    liveTree2(): DomQueryLiveTreeConstructor2;
+    // liveTree(): DomQueryLiveTreeConstructor;
+    liveTree(): DomQueryLiveTreeConstructor2;
 }
 // what hson.queryDOM(...).liveTree() returns
 
 
 export interface DomQueryLiveTreeConstructor2 {
-    graft2(): LiveTree2;
+    graft(): LiveTree2;
 }
 /**
  * Step 2 – output format selection.
@@ -113,8 +112,7 @@ export interface OutputConstructor_2 {
         RenderConstructor_4<(typeof $RENDER)["HTML"]>;
 
     // LiveTree output constructor
-    liveTree(): LiveTreeConstructor_3;
-    liveTree2(): LiveTreeConstructor_32;
+    liveTree(): LiveTreeConstructor_32;
 
     /**
      * 🔥 HTML-style sanitization applied *after* source selection.
@@ -141,62 +139,49 @@ export interface OutputConstructor_2 {
      */
     sanitizeBEWARE(): OutputConstructor_2;
 }
-/**
- *  Step 2 – output format selection.
- *
- * This is the object you get back after choosing a *source* via
- * `construct_source(...).fromX(...)`.
- *
- * Each `to...` method:
- * - chooses an output *format* (HTML / JSON / HSON),
- * - materializes that representation into the frame,
- * - and returns an object that is both:
- *   - an optional configuration surface (step 3),
- *   - and the final action surface (step 4).
- *
- * In other words:
- *   hson.fromJSON(data)
- *       .toHTML()        // step 2 – format
- *       .spaced()        // step 3 – options (optional)
- *       .serialize();    // step 4 – final action
- */
-// deprecated in favor of expanding output constructor with liveTree2
-// export interface OutputConstructor_22 {
-//     toJSON(): OptionsConstructor_3<(typeof $RENDER)["JSON"]> &
-//         RenderConstructor_4<(typeof $RENDER)["JSON"]>;
 
-//     toHSON(): OptionsConstructor_3<(typeof $RENDER)["HSON"]> &
-//         RenderConstructor_4<(typeof $RENDER)["HSON"]>;
+export interface FrameRender<K extends RenderFormats> {
+    frame: FrameConstructor;
+    output: K;
+}
+export interface SourceConstructor_1 {
+    /** HSON string → Node */
+    fromHSON(input: string): OutputConstructor_2;
 
-//     toHTML(): OptionsConstructor_3<(typeof $RENDER)["HTML"]> &
-//         RenderConstructor_4<(typeof $RENDER)["HTML"]>;
+    /** JSON → Nodes */
+    fromJSON(input: string | JsonValue): OutputConstructor_2;
 
-//     // LiveTree output constructor
-//     liveTree2(): LiveTreeConstructor_32;
+    /** HTML → Nodes
+     *
+     * - `input` may be an HTML string or an Element (its `innerHTML` is used).
+     * - `options.sanitize` controls *per-call* behavior in the safe pipeline:
+     *     - safe pipeline (`unsafe: false`):
+     *         - `sanitize !== false` → DOMPurify (`parse_external_html`)
+     *         - `sanitize === false` → raw HTML parse (`parse_html`)
+     *     - unsafe pipeline (`unsafe: true`):
+     *         - always raw HTML parse (`parse_html`), flag is ignored.
+     */
+    fromHTML(input: string | Element, options?: HtmlSourceOptions): OutputConstructor_2;
 
-//     /**
-//      * 🔥 HTML-style sanitization applied *after* source selection.
-//      *
-//      * This:
-//      *   1) takes the current Node (frame.node),
-//      *   2) serializes it to HTML,
-//      *   3) runs that HTML through the *untrusted* HTML pipeline
-//      *      (DOMPurify via `parse_external_html` / 'sanitize_html'),
-//      *   4) parses the sanitized HTML back into Nodes,
-//      *   5) returns a NEW builder rooted at that sanitized Nodes.
-//      *
-//      * Use cases:
-//      * - unknown/untrusted JSON/HSON/Nodes that semantically encode HTML
-//      *   may need to be run through the HTML sanitizer before touching the DOM.
-//      *
-//      * Dangers:
-//      * - If your data is *not* HTML-shaped (e.g. is JSON, or nodes encoding same),
-//      *   this will return an empty string; the DOMPuriufy sees underscored tags
-//      *   as invalid markup and strips aggressively.
-//      *
-//      *  *** ONLY call this on HsonNodes that encode HTML ***
-//      *
-//      */
-//     sanitizeBEWARE(): OutputConstructor_22;
-// }
+    /** Nodes → Nodes (identity entrypoint) */
+    fromNode(input: HsonNode): OutputConstructor_2;
+
+    /** `document.querySelector(selector).innerHTML` → Nodes
+     *
+     * - Uses `innerHTML` of the matched element as the HTML source.
+     * - In *practice* we only ever call this through a pipeline that has
+     *   chosen safe vs unsafe at construction time.
+     * - For your facade:
+     *     - `hson.queryDOM` uses `{ unsafe: true }` → no sanitization.
+     *     - if someone wants a sanitized snapshot, they should use
+     *       `hson.fromUntrustedHtml(element)` instead.
+     */
+    queryDOM(selector: string): OutputConstructor_2;
+
+    /** `document.body.innerHTML` → Nodes
+     *
+     * Same semantics as `queryDOM`, but for the whole document body.
+     */
+    queryBody(): OutputConstructor_2;
+}
 

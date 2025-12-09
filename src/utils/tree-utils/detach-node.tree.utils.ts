@@ -1,10 +1,10 @@
 // detach.ts
 
-import { _listeners_off_for_target } from "../../api/livetree/livetree-methods/listen.tree";
+import { _listeners_off_for_target } from "../../api/livetree-2/livetree-methods/listen2";
 import { HsonNode } from "../../types-consts";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { is_Node } from "../node-utils/node-guards.new.utils";
-import { getElementForNode } from "./node-map-helpers.utils";
+import { element_for_node } from "./node-map-helpers.utils";
 
 
 
@@ -21,7 +21,7 @@ export function detach_node_deep(node: HsonNode): void {
   }
 
   // 2) drop listeners and element for this node
-  const el = getElementForNode(node);
+  const el = element_for_node(node);
   if (el) {
     _listeners_off_for_target(el);   // ← kill all listeners bound via builder
     // also drop listeners on all DOM descendants in case something attached there
