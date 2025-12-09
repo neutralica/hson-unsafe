@@ -4,9 +4,10 @@ import { drop_quid } from "../../../quid/data-quid.quid";
 import { HsonNode } from "../../../types-consts";
 import { _DATA_QUID } from "../../../types-consts/constants";
 import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.utils";
-import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree2 } from "../../livetree-2/livetree2";
-import { CssManager } from "./css-manager";
+import { CssManager } from "../../livetree-2/livetree-methods/css-manager";
+import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 
 /**
  * Collect all QUIDs for a node's DOM subtree:
@@ -14,7 +15,7 @@ import { CssManager } from "./css-manager";
  * - all descendants with data-_quid.
  */
 function collectQuidsForSubtree(rootNode: HsonNode): Set<string> {
-  const rootEl = getElementForNode(rootNode) as HTMLElement | undefined;
+  const rootEl = element_for_node(rootNode) as HTMLElement | undefined;
   if (!rootEl) return new Set(); // not mounted → nothing to clear
 
   const elements: HTMLElement[] = [
@@ -58,11 +59,34 @@ export function remove2(this: LiveTree2): LiveTree2 {
   // 3) Drop any QUID(s) on the root node itself (IR-side cleanup).
   drop_quid(node);
 
-  // NOTE:
-  // We *don't* null out this.nodeRef here. The tree still "points" at the
-  // now-detached node. That matches the old behavior where the selection
-  // survives remove(), but is no longer wired to DOM.
-  // If later you want stricter semantics, this is the place to flip it.
+  // 4) Remove this node from the HSON model under its host root
+  const root = this.getHostRoots(); // or getHostRoots(), depending on what you named it
+  if (root) {
+    pruneNodeFromRoot(root, node);
+  }
+
+  // optional: you *could* also null out nodeRef here if you ever want
+  // remove() to make the LiveTree "dead" in a stricter sense.
 
   return this;
+}
+
+function pruneNodeFromRoot(root: HsonNode, target: HsonNode): boolean {
+  const content = root._content;
+  if (!Array.isArray(content)) return false;
+
+  for (let i = 0; i < content.length; i += 1) {
+    const child = content[i];
+    if (!is_Node(child)) continue;
+
+    if (child === target) {
+      content.splice(i, 1);
+      return true;
+    }
+
+    if (pruneNodeFromRoot(child, target)) {
+      return true;
+    }
+  }
+  return false;
 }
