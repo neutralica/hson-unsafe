@@ -4,7 +4,7 @@ import { HsonNode } from "../../types-consts";
 import { unwrap_root_elem } from "../../utils/html-utils/unwrap-root-elem.new.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { create_live_tree } from "./create-live-tree.tree";
-import { LiveTree } from "./live-tree-class.new.tree";
+import { LiveTree } from "./live-tree-class.tree";
 
 /**
  * Normalize a root HSON node into a LiveTree root and populate the

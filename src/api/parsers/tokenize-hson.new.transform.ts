@@ -244,7 +244,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
                 if (item.startsWith('<') || item.startsWith('«') || item.startsWith('[')) {
                     finalTokens.push(...tokenize_hson(item, $depth + 1));
                 } else {
-                    // NEW: quote-aware, without endIx
+                    //  quote-aware, without endIx
                     const piece = ensureQuotedLiteral(item, 'array');
                     finalTokens.push(
                         CREATE_TEXT_TOKEN(piece.text, piece.quoted ? true : undefined, pOpen)
@@ -406,7 +406,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
                     }
                     const lit = parts[0].trim();
 
-                    // NEW: quote-aware, without endIx
+                    //  quote-aware, without endIx
                     const piece = ensureQuotedLiteral(lit, 'step f');
                     finalTokens.push(
                         CREATE_TEXT_TOKEN(piece.text, piece.quoted ? true : undefined, posOpen)

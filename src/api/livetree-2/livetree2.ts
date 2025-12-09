@@ -3,26 +3,16 @@
 import { HsonNode, Primitive, HsonQuery } from "../../types-consts";
 import { ListenerBuilder } from "../../types-consts/listen.types";
 import { TagName } from "../../types-consts/tree.types";
-import { parse_selector } from "../../utils/tree-utils/parse-selector.utils";
-import { CssHandle } from "../livetree/livetree-methods/css-manager";
-import { DatasetManager } from "../livetree/livetree-methods/dataset-manager.tree";
+import { cssForQuids, CssHandle } from "../livetree/livetree-methods/css-manager";
 import { createAppend2 } from "./livetree-methods/append-create2";
 import { append2 } from "./livetree-methods/append2";
 import { DataManager2 } from "./livetree-methods/data-manager2.tree";
-import { searchNodes } from "./livetree-methods/node-search2";
+import { buildListener } from "./livetree-methods/listener-builder.tree";
+import { findAllFor, getAttrImpl, makeFindFor, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/livetree-find2";
 import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
 import { FindWithById2, LiveTreeCreateAppend, NodeRef2 } from "./livetree2.types";
-import { makeTreeSelector, TreeSelector } from "./tree-selector";
+import {  TreeSelector } from "./tree-selector";
 
-
-// TODO: import from existing modules once you hook them up
-// import { cssForQuids } from "../css-manager";
-// import { makeListenerBuilder } from "../listener-manager";
-// import { makeFinder } from "./search-manager";
-// import { appendImpl } from "./content-append";
-// import { emptyImpl, removeChildImpl, removeImpl } from "./content-struct";
-// import { setAttrsImpl, removeAttrImpl, setFlagsImpl, getAttrImpl } from "./attrs-manager";
-// import { createAppendImpl } from "./create-append";
 
 function makeRef(node: HsonNode): NodeRef2 {
   // This should call your existing ensure_quid / NODE_ELEMENT_MAP logic.
@@ -53,8 +43,8 @@ function makeRef(node: HsonNode): NodeRef2 {
 }
 
 export class LiveTree2 {
-  private nodeRefs: NodeRef2[] = [];
-  private rootRefs: HsonNode[] = [];
+  private nodeRef: NodeRef2 | null = null;
+  private hostRoot: HsonNode[] = [];
 
   private styleManagerInternal: StyleManager2 | undefined = undefined;
   private datasetManagerInternal: DataManager2 | undefined = undefined;
@@ -64,13 +54,16 @@ export class LiveTree2 {
   public empty: () => LiveTree2;
   public removeChild: (query: string | HsonQuery) => LiveTree2;
   public remove: () => LiveTree2;
-
+  public find: FindWithById2 = makeFindFor(this);
+  public findAll = (q: HsonQuery | string): TreeSelector =>
+    findAllFor(this, q);
   // “create then append” helper with index / .at(...) sugar
   public createAppend: LiveTreeCreateAppend = createAppend2;
 
   constructor(input?: HsonNode | LiveTree2) {
     this.setRoots(input);
     this.setSelected(input);
+    if (!this.nodeRef) throw new Error('liveTree has no node ref');
 
     // wire method fields to implementations
 
@@ -125,68 +118,56 @@ export class LiveTree2 {
     };
   }
 
-  // ---------- root wiring ----------
-  public getRootRefs(): HsonNode[] {
-    return this.rootRefs;
+  public get quid(): string {
+    if (!this.nodeRef) {
+      throw new Error("LiveTree2.quid(): no nodeRef bound");
+    }
+    return this.nodeRef.q;
   }
 
-  private setRoots(input?: HsonNode | HsonNode[] | LiveTree2): void {
+  // ---------- root wiring ----------
+  public getRootRefs(): HsonNode[] {
+    return this.hostRoot;
+  }
+
+
+  private setRoots(input?: HsonNode | LiveTree2): void {
     if (!input) {
-      this.rootRefs = [];
+      this.hostRoot = [];
       return;
     }
 
     if (input instanceof LiveTree2) {
-      if (input.rootRefs.length > 0) {
-        // copy, don’t share the array
-        this.rootRefs = [...input.rootRefs];
-      } else {
-        // fall back to its anchor node
-        this.rootRefs = [input.node];
-      }
+      this.hostRoot = input.hostRoot.length > 0
+        ? input.hostRoot
+        : [input.node];            // fallback: self-rooted
       return;
     }
 
-    if (Array.isArray(input)) {
-      this.rootRefs = [...input]; // defensive copy
-      return;
-    }
+    this.hostRoot = [input];      // raw HsonNode entrypoint
+  }
 
-    // single HsonNode
-    this.rootRefs = [input];
+  public getHostRoots(): readonly HsonNode[] {
+    return this.hostRoot;
   }
 
   private setSelected(input?: HsonNode | LiveTree2): void {
     // empty tree state – allowed, but unusable until bound
     if (!input) {
-      this.nodeRefs = [];
-      return;
+      throw new Error('no input provided to LiveTree');
     }
 
     if (input instanceof LiveTree2) {
-      const refs = input.nodeRefs;
-
-      if (refs.length === 0) {
-        // propagate emptiness
-        this.nodeRefs = [];
-        return;
-      }
-
-      if (refs.length > 1) {
-        // this should never happen if we keep LiveTree2 “single-node” by design
-        throw new Error("LiveTree2.setSelected(): source LiveTree2 has multiple nodeRefs");
-      }
-
-      this.nodeRefs = [refs[0]];
+      this.nodeRef = makeRef(input.node);
       return;
     }
 
     // HsonNode case
-    this.nodeRefs = [makeRef(input)];
+    this.nodeRef = makeRef(input);
   }
 
   public get node(): HsonNode {
-    const ref = this.nodeRefs[0];
+    const ref = this.nodeRef;
     if (!ref) {
       throw new Error("LiveTree2.node: no node bound");
     }
@@ -196,22 +177,6 @@ export class LiveTree2 {
     }
     return n;
   }
-
-
-  /**
-   * Returns the single “root node” for this LiveTree.
-   * Throws if there are zero or multiple selected nodes.
-   */
-  public get rootNode(): HsonNode {
-    if (this.rootRefs.length === 0) {
-      throw new Error("LiveTree2.rootNode(): no rootRefs");
-    }
-    if (this.rootRefs.length > 1) {
-      throw new Error("LiveTree2.rootNode(): multiple roots; use rootRefs directly");
-    }
-    return this.rootRefs[0];
-  }
-
 
   // ---------- managers & adapters ----------
 
@@ -230,57 +195,14 @@ export class LiveTree2 {
   }
 
   public get css(): CssHandle {
-    // return cssForQuids(this.selectedQuids);
-    throw new Error("LiveTree2.css: CssHandle not wired yet");
+    return cssForQuids([this.quid]);
   }
 
   public get listen(): ListenerBuilder {
-    // return makeListenerBuilder(this.selectedQuids);
+    return buildListener(this);
     throw new Error("LiveTree2.listen: ListenerBuilder not wired yet");
   }
 
-  // ---------- search / find / findAll ----------
-
-  get find(): FindWithById2 {
-    const self = this;
-
-    const base = ((q: HsonQuery | string): LiveTree2 | undefined => {
-      const query = typeof q === "string" ? parse_selector(q) : q;
-      const found = searchNodes([self.node], query, { findFirst: true });
-      if (!found.length) return undefined;
-      return new LiveTree2(found[0]);
-    }) as FindWithById2;
-
-    base.byId = (id: string): LiveTree2 | undefined =>
-      base({ attrs: { id } });
-
-    base.must = (q: HsonQuery | string, label?: string): LiveTree2 => {
-      const res = base(q);
-      if (!res) {
-        const desc = label ?? (typeof q === "string" ? q : JSON.stringify(q));
-        throw new Error(`[LiveTree2.find.must] expected match for ${desc}`);
-      }
-      return res;
-    };
-
-    base.mustById = (id: string, label?: string): LiveTree2 => {
-      const res = base.byId(id);
-      if (!res) {
-        const desc = label ?? `#${id}`;
-        throw new Error(`[LiveTree2.find.mustById] expected element ${desc}`);
-      }
-      return res;
-    };
-
-    return base;
-  }
-
-  findAll(q: HsonQuery | string): TreeSelector {
-    const query = typeof q === "string" ? parse_selector(q) : q;
-    const found = searchNodes([this.node], query, { findFirst: false });
-    const trees = found.map(node => new LiveTree2(node));
-    return makeTreeSelector(trees);
-  }
 
   // move to TreeSelector
   // /**
@@ -302,38 +224,20 @@ export class LiveTree2 {
     nameOrMap: string | Record<string, string | boolean | null>,
     value?: string | boolean | null,
   ): LiveTree2 {
-    // TODO: delegate to attrs-manager, iterating this.selectedNodes
-    void nameOrMap;
-    void value;
-    // TODO
-    throw new Error('TODO')
-    return this;
+    return setAttrsImpl(this, nameOrMap, value);
   }
 
   public removeAttr(name: string): LiveTree2 {
-    // TODO
-    void name;
-    // TODO
-    throw new Error('TODO')
-    return this;
+    return removeAttrImpl(this, name);
   }
 
   public setFlags(...names: string[]): LiveTree2 {
-    // TODO
-    void names;
-    // TODO
-    throw new Error('TODO')
-    return this;
+    return setFlagsImpl(this, ...names);
   }
 
   public getAttr(name: string): Primitive | undefined {
-    // TODO
-    void name;
-    // TODO
-    throw new Error('TODO')
-    return undefined;
+    return getAttrImpl(this, name);
   }
-
   // ---------- content API ----------
 
   public setContent(value: Primitive): LiveTree2 {
@@ -379,14 +283,14 @@ export class LiveTree2 {
   // ---------- DOM adapter ----------
 
   public asDomElement(): Element | undefined {
-    const firstRef = this.nodeRefs[0];
+    const firstRef = this.nodeRef;
     if (!firstRef) return undefined;
     return firstRef.resolveElement();
   }
 
   // internal: allow a branch to inherit host roots when grafted/appended
   adoptRoots(roots: HsonNode[]): this {
-    this.rootRefs = roots;
+    this.hostRoot = roots;
     return this;
   }
 }

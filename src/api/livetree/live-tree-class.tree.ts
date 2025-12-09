@@ -196,7 +196,7 @@ export class LiveTree {
     }
     return out;
   }
-  // NEW: helper to read QUIDs from the current selection
+  //  helper to read QUIDs from the current selection
   private get selectedQuids(): string[] {
     const out: string[] = [];
     for (const ref of this.selected) {
@@ -214,7 +214,7 @@ export class LiveTree {
     } else if (input && is_Node(input)) {
       this.selected = [makeRef(input)];
     } else if (this.rootRefs.length > 0) {
-      // NEW: default selection = first root
+      //  default selection = first root
       this.selected = [makeRef(this.rootRefs[0])];
     } else {
       this.selected = [];
@@ -503,13 +503,13 @@ export class LiveTree {
         const el = getElementForNode(node) as Element | undefined;
         if (!el) _throw_transform_err(`[LiveTree] missing element for node`, "getElementForNode");
 
-        // NEW: normalize attr name once
+        //  normalize attr name once
         const key = name.toLowerCase();
 
         // --- delete / remove cases ------------------------------------------
         if (value === false || value === null) {
           if (key === "style") {
-            // NEW: style is stored as CssObject; remove from attrs + DOM
+            //  style is stored as CssObject; remove from attrs + DOM
             delete (node._attrs as any).style;
             el.removeAttribute("style");
           } else {
@@ -523,7 +523,7 @@ export class LiveTree {
         if (value === true || value === name) {
           // For style this makes no real sense; treat it as "no data but attr present".
           if (key === "style") {
-            // NEW: clear stored style object, but leave an empty style attr on DOM
+            //  clear stored style object, but leave an empty style attr on DOM
             delete (node._attrs as any).style;
             el.setAttribute("style", "");
           } else {
@@ -537,12 +537,12 @@ export class LiveTree {
         const s = String(value);
 
         if (key === "style") {
-          // NEW: style string -> CssObject on node, canonical CSS text on DOM
+          //  style string -> CssObject on node, canonical CSS text on DOM
           const cssObj: StyleObject = parse_style_string(s) as StyleObject;
 
-          (node._attrs as any).style = cssObj;                // NEW: store object, not string
+          (node._attrs as any).style = cssObj;                //  store object, not string
 
-          const cssText = serialize_style(cssObj);            // NEW: object -> CSS string
+          const cssText = serialize_style(cssObj);            //  object -> CSS string
           if (cssText) {
             el.setAttribute("style", cssText);
           } else {
@@ -603,7 +603,7 @@ export class LiveTree {
     const nodes = this.selectedNodes;
     if (nodes.length === 0) return this;
 
-    // NEW: clear stylesheet rules for any QUIDs in the removed DOM subtree(s)
+    //  clear stylesheet rules for any QUIDs in the removed DOM subtree(s)
     const mgr = CssManager.invoke();
 
     for (const n of nodes) {
@@ -805,7 +805,7 @@ export class LiveTree {
     const arr = this.selectedNodes;
 
     if (arr.length === 0) {
-      // comment: this is still a logic error; LiveTree is supposed to always
+      //  this is still a logic error; LiveTree is supposed to always
       //          have at least one selected node when you're calling sourceNode()
       throw new Error("LiveTree.sourceNode(): no selected nodes");
     }

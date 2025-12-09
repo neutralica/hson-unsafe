@@ -1,7 +1,7 @@
 import { _DATA_QUID } from "../../../types-consts/constants";
 import { CssValue, CssProp } from "../../../types-consts/css-manager-types";
 
-// NEW: public-facing handle for callers
+//  public-facing handle for callers
 export interface CssHandle {
   // apply to all bound QUIDs
   set(property: string, value: CssValue): void;         // NEW
@@ -10,12 +10,12 @@ export interface CssHandle {
   clear(): void;                                        // NEW
 }
 
-// NEW: core helper – returns a handle bound to one or many QUIDs
+//  core helper – returns a handle bound to one or many QUIDs
 export function cssForQuids(quids: readonly string[]): CssHandle {
   const mgr = CssManager.invoke();
   const ids = quids.map(q => q.trim()).filter(Boolean);
 
-  // NEW: no-op handle if there’s no selection
+  //  no-op handle if there’s no selection
   if (ids.length === 0) {
     return {
       set() { /* no-op */ },
@@ -26,7 +26,7 @@ export function cssForQuids(quids: readonly string[]): CssHandle {
   }
 
   return {
-    // NEW: apply to all selected QUIDs
+    //  apply to all selected QUIDs
     set(property: string, value: CssValue): void {
       for (const quid of ids) {
         mgr.setForQuid(quid, property, value);

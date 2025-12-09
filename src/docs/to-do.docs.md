@@ -18,7 +18,7 @@ export class StyleFacade {
   constructor(private readonly el: Element) {}
 
   setProperty(prop: string, value: string): this {
-    // --- NEW: special-case transform writes
+    // ---  special-case transform writes
     if (prop === 'transform') {
       // Parse the incoming string once into components.
       // Accept any order; if parse fails, fall back to raw string passthrough.

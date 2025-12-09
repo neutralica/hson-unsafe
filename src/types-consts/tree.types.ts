@@ -1,4 +1,4 @@
-import { LiveTree } from "../api/livetree/live-tree-class.new.tree";
+import { LiveTree } from "../api/livetree/live-tree-class.tree";
 import { JsonValue } from "../core/types-consts/core.types";
 import { HsonAttrs, HsonMeta } from "./node.types";
 

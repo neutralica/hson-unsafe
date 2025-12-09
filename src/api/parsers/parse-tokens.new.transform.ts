@@ -173,7 +173,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
 
         // ---------- <_root>: choose cluster by its own closer; never mix modes ----------
         if (open.tag === ROOT_TAG) {
-            // NEW: explicit "<>" under root => single empty _obj cluster
+            //  explicit "<>" under root => single empty _obj cluster
             if (sawEmptyObjShorthand) {
                 node._content = [{ _tag: OBJ_TAG, _meta: {}, _content: [] }];
                 if ($isTopLevel) topCloseKinds.push(closeKind);

@@ -7,7 +7,7 @@ import { normalize_attr_ws } from "../attrs-utils/normalize_attrs_ws.utils";
 import { parse_style_string } from "../attrs-utils/parse-style.utils";
 
 
-/* NEW: collect attrs + meta from an Element */
+/*  collect attrs + meta from an Element */
 export function parse_html_attrs($el: Element): {
   attrs: HsonAttrs;
   meta?: HsonMeta;

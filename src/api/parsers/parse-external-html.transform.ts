@@ -13,7 +13,7 @@ import { parse_html } from "./parse-html.new.transform";
 export function parse_external_html(raw: string): HsonNode {
   const safeHtml = sanitize_external(raw);
 
-  // NEW: if sanitizer nuked everything, fail with a clearer reason
+  //  if sanitizer nuked everything, fail with a clearer reason
   if (!safeHtml.trim()) {
     _throw_transform_err(
       "parse_external_html(): all content removed by sanitizer (forbidden tags/attrs only).",

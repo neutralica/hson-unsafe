@@ -14,7 +14,7 @@ export type CssUnit =
 export type CssValue = string | { value: number; unit: CssUnit };
 
 // 
-// NEW: this stays as the *stored* representation
+//  this stays as the *stored* representation
 export interface CssText {
   // stable identifier for this rule within CssManager
   id: string;
@@ -22,7 +22,7 @@ export interface CssText {
   css: string;
 }
 
-// NEW: structured input for string-based rules
+//  structured input for string-based rules
 export interface CssRule {
   id: string;
   selector: string; // e.g. "*", "body", "[_hson-flag]"

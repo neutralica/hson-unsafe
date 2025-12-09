@@ -2,7 +2,7 @@
 
 import { BasicValue, Primitive } from "../../../types-consts";
 import { camel_to_kebab } from "../../../utils/attrs-utils/serialize-css.utils";
-import { LiveTree } from "../live-tree-class.new.tree";
+import { LiveTree } from "../live-tree-class.tree";
 
 type DatasetValue = string | boolean | null | undefined;
 type DatasetObj = Record<string, DatasetValue>;

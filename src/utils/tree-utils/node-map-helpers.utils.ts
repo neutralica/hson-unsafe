@@ -4,17 +4,17 @@ import { HsonNode } from "../../types-consts";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 
 
-// NEW: single registration point
+//  single registration point
 export function linkNodeToElement(node: HsonNode, el: Element): void {
   NODE_ELEMENT_MAP.set(node, el);
 }
 
-// NEW: safe lookup with optional logging/guard
+//  safe lookup with optional logging/guard
 export function getElementForNode(node: HsonNode): Element | undefined {
   return NODE_ELEMENT_MAP.get(node);
 }
 
-// NEW: optional helpers
+//  optional helpers
 export function unlinkNode(node: HsonNode): void {
   NODE_ELEMENT_MAP.delete(node);
 }

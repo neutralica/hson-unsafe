@@ -81,7 +81,7 @@ function matchMeta(node: HsonNode, query: HsonQuery): boolean {
   return true;
 }
 
-export function searchNodes(
+export function search_nodes(
   nodes: HsonNode[],
   query: HsonQuery,
   options: { findFirst: boolean },

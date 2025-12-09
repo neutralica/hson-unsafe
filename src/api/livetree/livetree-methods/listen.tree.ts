@@ -1,6 +1,6 @@
 // listen.ts
 
-import { LiveTree } from "../live-tree-class.new.tree";
+import { LiveTree } from "../live-tree-class.tree";
 import { ListenerBuilder, ListenOpts, MissingPolicy, ListenerSub, EMap } from "../../../types-consts/listen.types";
 
 /**

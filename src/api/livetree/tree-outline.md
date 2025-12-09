@@ -132,7 +132,7 @@ export class LiveTree {
   private get selectedNodes(): HsonNode[] {
    // TreeSelector only?
   }
-  // NEW: helper to read QUIDs from the current selection
+  //  helper to read QUIDs from the current selection
   private get selectedQuids(): string[] {
    // also a TreeSelector-only method 
   }

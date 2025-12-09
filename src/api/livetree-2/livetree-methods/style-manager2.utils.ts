@@ -24,7 +24,7 @@ import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.ut
 import { LiveTree2 } from "../livetree2";
 
 /* ------------------------------- TYPE HELPERS ------------------------------- */
-// comment: Derive style keys from CSSStyleDeclaration (type-level autocomplete).
+//  Derive style keys from CSSStyleDeclaration (type-level autocomplete).
 type StringKeys<T> = Extract<keyof T, string>;
 type KeysWithStringValues<T> = {
     [K in StringKeys<T>]: T[K] extends string ? K : never
@@ -37,7 +37,7 @@ type StyleKey =
 export type StyleObject2 = Partial<Record<StyleKey, string | number | null | undefined>>;
 
 /* ------------------------------ RUNTIME KEYS -------------------------------- */
-// comment: Minimal fallback list used when no DOM is present (tests, Node).
+//  Minimal fallback list used when no DOM is present (tests, Node).
 const FALLBACK_KEYS: ReadonlyArray<AllowedStyleKey> = Object.freeze([
     "color",
     "backgroundColor",
@@ -117,7 +117,7 @@ function computeRuntimeKeys(): ReadonlyArray<AllowedStyleKey> {
 /* --------------------------------- HELPERS ---------------------------------- */
 
 
-// comment: Normalize style storage on node._attrs.style to an object (kebab keys).
+//  Normalize style storage on node._attrs.style to an object (kebab keys).
 function ensureStyleObject(a: Record<string, unknown>): Record<string, string> {
     // prefer object going forward; upgrade string-once if present.
     const prev = a.style;
@@ -146,7 +146,7 @@ function ensureStyleObject(a: Record<string, unknown>): Record<string, string> {
     return fresh;
 }
 
-// comment: Write a single property (kebab) to DOM + node attrs.
+//  Write a single property (kebab) to DOM + node attrs.
 function applyStyleToNode(node: HsonNode, kebabName: string, value: string): void {
     // 1) push to DOM if element exists
     const el = getElementForNode(node);
@@ -203,7 +203,7 @@ type StyleSetterFacade = {
     [custom: string]: (value: string) => LiveTree2;
 };
 
-// comment: Build the proxy once per manager using a stable key list.
+//  Build the proxy once per manager using a stable key list.
 function buildSetFacade(tree: LiveTree2, keys: ReadonlyArray<AllowedStyleKey>): StyleSetterFacade {
     const target: Record<string | symbol, unknown> = Object.create(null);
     const cache = new Map<string, (value: string) => LiveTree2>();

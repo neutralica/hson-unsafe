@@ -142,7 +142,7 @@ export interface OutputConstructor_2 {
     sanitizeBEWARE(): OutputConstructor_2;
 }
 /**
- * NEW: Step 2 – output format selection.
+ *  Step 2 – output format selection.
  *
  * This is the object you get back after choosing a *source* via
  * `construct_source(...).fromX(...)`.

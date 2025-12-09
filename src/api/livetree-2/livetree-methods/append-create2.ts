@@ -30,7 +30,7 @@ export interface AppendCreateFn {
 
 
 
-// comment: the tag list backing the chained sugar `appendCreate.div`, etc.
+//  the tag list backing the chained sugar `appendCreate.div`, etc.
 const HTML_TAGS: HtmlTag[] = [
   "div",
   "span",
@@ -44,7 +44,7 @@ const HTML_TAGS: HtmlTag[] = [
   "main",
 ];
 
-// comment: normalize whatever sourceNode() gives us into an array of HsonNode
+//  normalize whatever sourceNode() gives us into an array of HsonNode
 function normalizeRootNodes(root: HsonNode | HsonNode[] | undefined): HsonNode[] {
   if (!root) {
     return [];

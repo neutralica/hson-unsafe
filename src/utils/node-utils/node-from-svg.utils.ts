@@ -9,7 +9,7 @@ export const SVG_NS = "http://www.w3.org/2000/svg";
 export const HTML_NS = "http://www.w3.org/1999/xhtml";
 export const isSvgMarkup = (s: string) => /^<\s*svg[\s>]/i.test(s);
 
-// NEW: DOM → HSON (namespace-aware)
+//  DOM → HSON (namespace-aware)
 export function node_from_svg(el: Element): HsonNode {
   const tag = el.tagName; // keep case if engine expects exact; or `toLowerCase()`
   const attrs: Record<string, string> = {};

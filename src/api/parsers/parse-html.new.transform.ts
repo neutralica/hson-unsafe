@@ -138,7 +138,7 @@ function convert($el: Element): HsonNode {
     if (specialExceptions.includes(tagLower)) {
         let text_content = $el.textContent?.trim();
 
-        // NEW: handle <![CDATA[ ... ]]> safely
+        //  handle <![CDATA[ ... ]]> safely
         if (text_content?.startsWith("<![CDATA[")) {
             const end = text_content.indexOf("]]>");
             if (end === -1) {

@@ -70,7 +70,7 @@ export interface LiveTreeConstructor_3 {
 }
 
 /**
- * NEW: Step 3 – optional configuration.
+ *  Step 3 – optional configuration.
  *
  * These methods adjust how the chosen output format is *rendered*.
  * They always return the final action surface (step 4), so callers
@@ -117,7 +117,7 @@ export interface FrameOptions {
 }
 
 /**
- * NEW: Step 4 – final actions.
+ *  Step 4 – final actions.
  *
  * After you’ve:
  *   - chosen a source (`fromX`),

@@ -5,7 +5,7 @@ import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
 import { LiveTree2 } from "./livetree2";
 
 
-// comment: thin wrapper around an array of LiveTree2 with a limited,
+//  thin wrapper around an array of LiveTree2 with a limited,
 // broadcast-style API. This is the “multi”/selector type.
 export interface TreeSelector {
   // collection-ish surface
@@ -35,14 +35,14 @@ export interface TreeSelector {
   createAppend(tag: TagName | TagName[]): TreeSelector;
 }
 
-// comment: factory that builds a TreeSelector over a set of LiveTree2s
+//  factory that builds a TreeSelector over a set of LiveTree2s
 export function makeTreeSelector(trees: LiveTree2[]): TreeSelector {
-  // comment: defensive copy to avoid external mutation
+  //  defensive copy to avoid external mutation
   const items: LiveTree2[] = [...trees];
 
   const result: TreeSelector = {
     toArray(): LiveTree2[] {
-      // comment: return a fresh copy, keep internal array private
+      //  return a fresh copy, keep internal array private
       return [...items];
     },
 
@@ -71,7 +71,7 @@ export function makeTreeSelector(trees: LiveTree2[]): TreeSelector {
       return items[index];
     },
 
-    // comment: broadcast setAttrs over all selected trees
+    //  broadcast setAttrs over all selected trees
     setAttrs(
       nameOrMap: string | Record<string, string | boolean | null>,
       value?: string | boolean | null,
@@ -86,13 +86,13 @@ export function makeTreeSelector(trees: LiveTree2[]): TreeSelector {
       return result;
     },
 
-    // comment: broadcast flags
+    //  broadcast flags
     setFlags(...names: string[]): TreeSelector {
       items.forEach(tree => tree.setFlags(...names));
       return result;
     },
 
-    // comment: style proxy to the first item
+    //  style proxy to the first item
     get style(): StyleManager2 {
       const first = items[0];
       if (!first) {
@@ -101,7 +101,7 @@ export function makeTreeSelector(trees: LiveTree2[]): TreeSelector {
       return first.style;
     },
 
-    // comment: broadcast createAppend across selection, then return selector
+    //  broadcast createAppend across selection, then return selector
     // NOTE: assumes LiveTree2 has a `createAppend(tag)` method.
     createAppend(tag: TagName | TagName[]): TreeSelector {
       items.forEach(tree => {

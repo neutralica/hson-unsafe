@@ -4,7 +4,7 @@
 import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { ELEM_TAG } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.types";
-import { LiveTree } from "../live-tree-class.new.tree";
+import { LiveTree } from "../live-tree-class.tree";
 
 
 

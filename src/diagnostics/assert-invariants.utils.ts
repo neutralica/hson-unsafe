@@ -90,7 +90,7 @@ function walk(n: HsonNode, path: string, parentTag: string | null, cfg: Cfg, err
     return;
   }
 
-  // NEW: _elem validation — only element nodes (non-VSN) or _str/_val are allowed
+  //  _elem validation — only element nodes (non-VSN) or _str/_val are allowed
   if (n._tag === ELEM_TAG) {
     const kids = n._content;
     for (let i = 0; i < kids.length; i++) {
