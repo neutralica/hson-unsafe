@@ -11,6 +11,7 @@ import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-e
 import { LiveTree2 } from "../livetree2";
 import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { create_live_tree2 } from "../create-live-tree2.tree";
+import { clone_node } from "../../../utils/node-utils/clone-node.utils";
 
 export function append2(
   this: LiveTree2,
@@ -29,7 +30,7 @@ export function append2(
     ];
   } else if ($content instanceof LiveTree2) {
     // inherit host roots so later remove/prune knows the forest
-    $content.adoptRoots(this.getRootRefs());
+    $content.adoptRoots(this.getHostRoots());
 
     const srcNode = $content.node;           // 👈 single node now
     nodesToAppend = unwrap_root_elem(srcNode);

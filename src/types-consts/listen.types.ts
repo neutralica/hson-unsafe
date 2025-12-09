@@ -18,7 +18,7 @@ export interface ListenerSub {
 }
 
 export interface ListenerBuilder {
-  // typed events
+  /*----- typed events */
   on<K extends keyof EMap>(type: K, handler: (ev: EMap[K]) => void): ListenerBuilder;
   onClick(h: (ev: MouseEvent) => void): ListenerBuilder;
   onMouseMove(h: (ev: MouseEvent) => void): ListenerBuilder;
@@ -27,7 +27,7 @@ export interface ListenerBuilder {
   onKeyDown(h: (ev: KeyboardEvent) => void): ListenerBuilder;
   onKeyUp(h: (ev: KeyboardEvent) => void): ListenerBuilder;
 
-  // options
+  /*----- options */
   once(): ListenerBuilder;
   passive(): ListenerBuilder;
   capture(): ListenerBuilder;
@@ -35,13 +35,12 @@ export interface ListenerBuilder {
   toDocument(): ListenerBuilder;
   onEach(): ListenerBuilder;
 
-  // validation / scheduling
+  /*----- validation / scheduling */
   strict(policy?: MissingPolicy): ListenerBuilder; // default "warn"
   defer(): ListenerBuilder; // cancel auto-attach for manual attach()
 
 
-  // explicit attach (returns handle). Auto-attach will also return a handle.
-  attach(): ListenerSub;
+  /* Auto-attach will also return a handle. */
   preventDefault(): ListenerBuilder;
   stopProp(): ListenerBuilder;
   stopImmediateProp(): ListenerBuilder;

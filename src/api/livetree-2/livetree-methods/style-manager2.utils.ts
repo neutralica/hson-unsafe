@@ -395,7 +395,7 @@ export class StyleManager2 {
      * @param props - Map of property names to values.
      * @returns The underlying LiveTree.
      */
-    setObj(props: StyleObject2): LiveTree2 {
+    setMulti(props: StyleObject2): LiveTree2 {
         // snapshot keys once; iteration order preserved
         const keys = Object.keys(props) as Array<keyof StyleObject2>;
         for (let i = 0; i < keys.length; i += 1) {
@@ -441,7 +441,7 @@ export class StyleManager2 {
      * @returns The underlying LiveTree.
      */
 
-    replaceObj(map: StyleObject2): LiveTree2 {
+    replace(map: StyleObject2): LiveTree2 {
         const normalized: StyleObject2 = {};
 
         for (const key of Object.keys(map) as StyleKey[]) {

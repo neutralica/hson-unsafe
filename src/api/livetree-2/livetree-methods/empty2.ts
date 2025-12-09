@@ -1,10 +1,7 @@
-// empty.tree.utils.ts
+// empty.ts
 
-
-
+import { HsonNode } from "../../../types-consts";
 import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
-import { HsonNode } from "../../../types-consts/node.types";
-import { NODE_ELEMENT_MAP } from "../../../types-consts/constants";
 import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.utils";
 import { getElementForNode } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree2 } from "../livetree2";
