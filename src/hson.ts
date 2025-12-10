@@ -1,11 +1,11 @@
 
 import { construct_source_1 } from "./api/constructors/construct-source-1";
-import { DomQueryLiveTreeConstructor2, OutputConstructor_2 } from "./api/livetree-2/livetree2.types";
-import { DomQuerySourceConstructor } from "./api/livetree-2/livetree2.types";
+import { DomQueryLiveTreeConstructor2, OutputConstructor_2 } from "./types-consts/constructor.types";
+import { DomQuerySourceConstructor } from "./types-consts/constructor.types";
 import { HsonNode } from "./types-consts";
 import { JsonValue } from "./core/types-consts/core.types";
-import { LiveTree2 } from "./api/livetree-2/livetree2";
-import { construct_tree2 } from "./api/livetree-2/construct-tree2";
+import { LiveTree } from "./api/livetree/livetree";
+import { construct_tree2 } from "./api/livetree/construct-tree";
 
 
 (globalThis as any)._test_ON = () => { (globalThis as any).test = true; location.reload(); };
@@ -207,7 +207,7 @@ export const hson = {
       // },
       liveTree(): DomQueryLiveTreeConstructor2 {
         return {
-          graft(): LiveTree2 {
+          graft(): LiveTree {
             return construct_tree2({ unsafe: false }).queryDom(selector).graft();
           },
         };
@@ -235,7 +235,7 @@ export const hson = {
       // },
       liveTree(): DomQueryLiveTreeConstructor2 {
         return {
-          graft(): LiveTree2 {
+          graft(): LiveTree {
             return construct_tree2({ unsafe: false }).queryBody().graft();
           },
         };

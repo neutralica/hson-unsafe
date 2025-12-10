@@ -1,7 +1,9 @@
 {
-  "name": "hson-unsafe",
-  "version": "1.0.0",
-  "description": "Hypertext Structured Object Notation // pre-alpha demo // UNSAFE EXPERIMENTAL",
+  
+  "name": "hson",     
+  "version": "2.0.25",
+  "description": "HSON 2025",
+  "files": ["dist", "README.md", "LICENSE"],
   "author": "neutralica @ terminal_gothic",
   "license": "Parity-7.0.0",
   "keywords": [

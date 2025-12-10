@@ -8,7 +8,6 @@
         "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
         "skipLibCheck": true /* Skip type checking all .d.ts files. */,
         "lib": ["esnext","DOM", "DOM.Iterable"],
-        // "verbatimModuleSyntax": true,
 
         /* library output settings */
         "declaration": true /* Generate .d.ts files from TypeScript and JavaScript files in your project. */,
@@ -23,7 +22,7 @@
         "src/index.ts",
         "src/**/*"
     ],
-    "exclude": ["dist", "node_modules", "src/old/**/*", "src/_refactor/**/*"]
+    "exclude": ["dist", "node_modules", "src/_refactor/**/*"]
 }
 
 /* move to compilerOptions if implementing::: */

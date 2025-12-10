@@ -1,5 +1,5 @@
 import { RenderFormats } from "../../types-consts/constructor.types";
-import { OutputConstructor_2 } from "../livetree-2/livetree2.types";
+import { OutputConstructor_2 } from "../../types-consts/constructor.types";
 import { HsonNode } from "../../types-consts";
 import { $RENDER } from "../../types-consts/constants";
 import { FrameConstructor } from "../../types-consts/constructor.types";
@@ -10,10 +10,10 @@ import { serialize_json } from "../serializers/serialize-json.new.render";
 import { construct_options_3 } from "./construct-options-3";
 import { construct_render_4 } from "./construct-render-4";
 import { OptionsConstructor_3, RenderConstructor_4 } from "../../types-consts/constructor.types";
-import { FrameRender } from "../livetree-2/livetree2.types";
-import { LiveTree2 } from "../livetree-2/livetree2";
-import { LiveTreeConstructor_32 } from "../livetree-2/livetree2.types";
-import { createBranchFromNode2 } from "../livetree-2/create-branch2";
+import { FrameRender } from "../../types-consts/constructor.types";
+import { LiveTree } from "../livetree/livetree";
+import { LiveTreeConstructor_3 } from "../../types-consts/constructor.types";
+import { createBranchFromNode2 } from "../livetree/create-branch";
 
 /**
  * HSON pipeline – stage 2: select output format.
@@ -77,9 +77,9 @@ export function construct_output_2(frame: FrameConstructor): OutputConstructor_2
         return makeFinalizer(ctx);
       },
 
-      liveTree(): LiveTreeConstructor_32 {
+      liveTree(): LiveTreeConstructor_3 {
         return {
-          asBranch(): LiveTree2 {
+          asBranch(): LiveTree {
             const node: HsonNode | undefined = currentFrame.node;
             if (!node) {
               throw new Error("liveTree().asBranch(): frame is missing HSON node data");

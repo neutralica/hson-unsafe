@@ -2,7 +2,7 @@ import { RenderFormats } from "../../types-consts/constructor.types";
 import { $RENDER } from "../../types-consts/constants";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { ParsedResult, RenderConstructor_4 } from "../../types-consts/constructor.types";
-import { FrameRender } from "../livetree-2/livetree2.types";
+import { FrameRender } from "../../types-consts/constructor.types";
 
 /**
  * Stage 4 (NEW, terminal): serialize or project the final data.

@@ -1,6 +1,6 @@
 // serialize-css.utils.hson.ts
 
-import { StyleObject2 } from "../../api/livetree-2/livetree-methods/style-manager2.utils";
+import { StyleObject2 } from "../../api/livetree/livetree-methods/style-manager2.utils";
 
 
 

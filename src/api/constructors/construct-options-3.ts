@@ -1,7 +1,7 @@
 import { RenderFormats } from "../../types-consts/constructor.types";
 import { construct_render_4 } from "./construct-render-4"; 
 import { OptionsConstructor_3, FrameOptions, RenderConstructor_4 } from "../../types-consts/constructor.types";
-import { FrameRender } from "../livetree-2/livetree2.types";
+import { FrameRender } from "../../types-consts/constructor.types";
 
 /**
  * Stage 3 (NEW): applying output options.
