@@ -1,4 +1,4 @@
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { Patch, Path, Store } from "../livemap/types.livemap";
 import { Projector, ProjectorMode } from "./projector";
 

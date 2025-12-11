@@ -5,11 +5,10 @@ import { VAL_TAG, STR_TAG, ARR_TAG, OBJ_TAG,  II_TAG, ELEM_TAG, ROOT_TAG } from 
 import { CREATE_NODE } from "../../types-consts/factories";
 import { _DATA_INDEX, _META_DATA_PREFIX } from "../../types-consts/constants";
 import { HsonMeta,  HsonAttrs, HsonNode } from "../../types-consts/node.types";
-import { JsonObj, JsonValue } from "../../core/types-consts/core.types";
+import { JsonObj, JsonValue, Primitive } from "../../core/types-consts/core.types";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { _snip } from "../../utils/sys-utils/snip.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
-import { Primitive } from "../../types-consts";
 import { parse_style_string } from "../../utils/attrs-utils/parse-style.utils";
 import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";

@@ -1,7 +1,7 @@
 // detach.ts
 
 import { _listeners_off_for_target } from "../../api/livetree/livetree-methods/listen2";
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 import { is_Node } from "../node-utils/node-guards.new.utils";
 import { element_for_node } from "./node-map-helpers.utils";

@@ -1,3 +1,5 @@
+import { StyleKey } from "../api/livetree/livetree-methods/style-manager2.utils";
+
 // helper: a structured value we can do math on later
 export type CssUnit =
   | "px"
@@ -13,7 +15,7 @@ export type CssUnit =
 
 export type CssValue = string | { value: number; unit: CssUnit };
 
-// 
+
 //  this stays as the *stored* representation
 export interface CssText {
   // stable identifier for this rule within CssManager
@@ -50,15 +52,4 @@ export interface CssRuleBuilder {
   remove(): void;
 }
 
-type KeyframesBlock = {
-    name: string;
-    steps: Record<string, Record<string, string>>;
-    // "0%" -> { opacity: "0" }, "100%" -> { opacity: "1" }
-  };
-
-type PropertyBlock = {
-  name: string;  // "--foo"
-  syntax?: string;
-  inherits?: boolean;
-  initialValue?: string;
-};
+export type StyleObject = Partial<Record<StyleKey, string | number | null | undefined>>;

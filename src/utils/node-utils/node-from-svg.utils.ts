@@ -1,6 +1,6 @@
 // nodd-from-dom.utils.ts
 
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { STR_TAG } from "../../types-consts/constants";
 
 

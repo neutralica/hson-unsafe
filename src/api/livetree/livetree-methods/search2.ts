@@ -1,9 +1,10 @@
 // node-search.ts
 
-import { HsonNode, HsonQuery } from "../../../types-consts";
+import { HsonNode } from "../../../types-consts/node.types";
 import { STR_TAG } from "../../../types-consts/constants";
 import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { HsonQuery } from "../../../types-consts/livetree.types";
 
 const isRegExp = (v: unknown): v is RegExp =>
   Object.prototype.toString.call(v) === "[object RegExp]";

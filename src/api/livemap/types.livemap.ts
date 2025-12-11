@@ -1,4 +1,4 @@
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 
 // === Identity + addressing ===
 export type DataQuid = string;

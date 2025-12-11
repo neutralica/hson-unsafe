@@ -1,10 +1,11 @@
-import { HsonAttrs, HsonNode, Primitive } from "../../../types-consts";
+import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
 import { STR_TAG } from "../../../types-consts/constants";
 import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { make_string } from "../../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { make_leaf } from "../../parsers/parse-tokens.new.transform";
+import { Primitive } from "../../../core/types-consts/core.types";
 
 /**
  * Replace a node's content with a single leaf derived from `value`,
@@ -128,3 +129,5 @@ export function getNodeFormValue(node: HsonNode): string {
     const raw = (attrs as any).value;
     return raw == null ? "" : String(raw);
 }
+
+

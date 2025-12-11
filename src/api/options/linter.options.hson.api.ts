@@ -1,6 +1,6 @@
 // linter.options.hson.api.ts
 
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { escape_html } from "../../utils/html-utils/escape-html.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";

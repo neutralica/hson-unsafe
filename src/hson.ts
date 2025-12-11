@@ -2,7 +2,7 @@
 import { construct_source_1 } from "./api/constructors/construct-source-1";
 import { DomQueryLiveTreeConstructor2, OutputConstructor_2 } from "./types-consts/constructor.types";
 import { DomQuerySourceConstructor } from "./types-consts/constructor.types";
-import { HsonNode } from "./types-consts";
+import { HsonNode } from "./types-consts/node.types";
 import { JsonValue } from "./core/types-consts/core.types";
 import { LiveTree } from "./api/livetree/livetree";
 import { construct_tree2 } from "./api/livetree/construct-tree";
@@ -12,7 +12,7 @@ import { construct_tree2 } from "./api/livetree/construct-tree";
 (globalThis as any)._test_OFF = () => { (globalThis as any).test = false; location.reload(); };
 
 /**
- * HSON public facade (NEW 23NOV2025).
+ * HSON public facade 
  *
  * This is the primary entry point for all HSON operations.
  *

@@ -1,8 +1,8 @@
 // create-live-tree.new.ts
+import { Primitive } from "../../core/types-consts/core.types";
 import { ensure_quid } from "../../quid/data-quid.quid";
 
 import { create_el_safe, set_attrs_safe } from "../../safety/safe-mount.safe";
-import { HsonNode, Primitive } from "../../types-consts";
 import {
   _DATA_QUID,
   ARR_TAG,
@@ -12,6 +12,7 @@ import {
   STR_TAG,
   VAL_TAG,
 } from "../../types-consts/constants";
+import { HsonNode } from "../../types-consts/node.types";
 import { SVG_NS } from "../../utils/node-utils/node-from-svg.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { linkNodeToElement } from "../../utils/tree-utils/node-map-helpers.utils";

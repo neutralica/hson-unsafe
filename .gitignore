@@ -23,3 +23,6 @@ yarn-error.log*
 
 # archives or backup files
 _archive/
+
+# tarballs
+*.tgz

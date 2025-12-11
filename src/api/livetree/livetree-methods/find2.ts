@@ -1,8 +1,9 @@
-import { HsonNode, HsonQuery } from "../../../types-consts";
+import { HsonNode } from "../../../types-consts/node.types";
+import { FindWithById, HsonQuery } from "../../../types-consts/livetree.types";
 import { parse_selector } from "../../../utils/tree-utils/parse-selector.utils";
 import { LiveTree } from "../livetree";
-import { FindWithById2 } from "../livetree2.types";
-import { makeTreeSelector, TreeSelector } from "../tree-selector";
+import { makeTreeSelector } from "../tree-selector";
+import { TreeSelector } from "../../../types-consts/livetree.types";
 import { search_nodes } from "./search2";
 
 
@@ -11,13 +12,13 @@ function wrapInChildTree(parent: LiveTree, node: HsonNode): LiveTree {
     return new LiveTree(node).adoptRoots(parent.getHostRoots());
 }
 
-export function makeFindFor(tree: LiveTree): FindWithById2 {
+export function makeFindFor(tree: LiveTree): FindWithById {
     const base = ((q: HsonQuery | string): LiveTree | undefined => {
         const query = typeof q === "string" ? parse_selector(q) : q;
         const found = search_nodes([tree.node], query, { findFirst: true });
         if (!found.length) return undefined;
         return wrapInChildTree(tree, found[0]); // ← changed
-    }) as FindWithById2;
+    }) as FindWithById;
 
     base.byId = (id: string): LiveTree | undefined =>
         base({ attrs: { id } });

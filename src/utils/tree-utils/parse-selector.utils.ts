@@ -1,6 +1,7 @@
 // parse-selector.utils.ts
 
-import { HsonQuery } from "../../types-consts";
+import { HsonQuery } from "../../types-consts/livetree.types";
+
 
 /**
  * parses a simple CSS selector string into an HsonQuery object

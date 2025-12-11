@@ -1,4 +1,4 @@
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { Patch, Store, Path, PatchOp, PathSeg } from "../livemap/types.livemap";
 
 // subscribers are just functions that receive the full patch

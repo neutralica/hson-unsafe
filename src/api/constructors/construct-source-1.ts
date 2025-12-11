@@ -1,4 +1,4 @@
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { FrameConstructor } from "../../types-consts/constructor.types";
 import { OutputConstructor_2 } from "../../types-consts/constructor.types";
 import { JsonValue } from "../../core/types-consts/core.types";

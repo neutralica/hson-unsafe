@@ -17,7 +17,8 @@
  *   - and sync to the DOM when the nodes are mounted.
  */
 
-import { HsonAttrs, HsonNode } from "../../../types-consts";
+import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
+import { StyleObject } from "../../../types-consts/css.types";
 import { camel_to_kebab, serialize_style } from "../../../utils/attrs-utils/serialize-css.utils";
 import { kebab_to_camel } from "../../../utils/primitive-utils/kebab-to-camel.util";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
@@ -30,12 +31,10 @@ type KeysWithStringValues<T> = {
     [K in StringKeys<T>]: T[K] extends string ? K : never
 }[StringKeys<T>];
 type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>, "cssText">;
-type StyleKey =
+export type StyleKey =
     | AllowedStyleKey
     | `--${string}`          // CSS variables
     | `${string}-${string}`; // kebab custom/unknown
-export type StyleObject2 = Partial<Record<StyleKey, string | number | null | undefined>>;
-
 /* ------------------------------ RUNTIME KEYS -------------------------------- */
 //  Minimal fallback list used when no DOM is present (tests, Node).
 const FALLBACK_KEYS: ReadonlyArray<AllowedStyleKey> = Object.freeze([
@@ -76,7 +75,7 @@ function removeStyleFromNode(node: HsonNode, kebabName: string): void {
 
     // 2) Update node model (_attrs.style is CssObject now)
     const attrs = (node as any)._attrs as HsonAttrs | undefined;
-    const styleObj = (attrs?.style as StyleObject2 | undefined) ?? undefined;
+    const styleObj = (attrs?.style as StyleObject | undefined) ?? undefined;
 
     if (styleObj) {
         // drop from CssObject
@@ -395,9 +394,9 @@ export class StyleManager2 {
      * @param props - Map of property names to values.
      * @returns The underlying LiveTree.
      */
-    setMulti(props: StyleObject2): LiveTree {
+    setMulti(props: StyleObject): LiveTree {
         // snapshot keys once; iteration order preserved
-        const keys = Object.keys(props) as Array<keyof StyleObject2>;
+        const keys = Object.keys(props) as Array<keyof StyleObject>;
         for (let i = 0; i < keys.length; i += 1) {
             const k = keys[i];
             const v = props[k];
@@ -441,8 +440,8 @@ export class StyleManager2 {
      * @returns The underlying LiveTree.
      */
 
-    replace(map: StyleObject2): LiveTree {
-        const normalized: StyleObject2 = {};
+    replace(map: StyleObject): LiveTree {
+        const normalized: StyleObject = {};
 
         for (const key of Object.keys(map) as StyleKey[]) {
             const raw = map[key];
@@ -467,7 +466,7 @@ export class StyleManager2 {
             return this.tree;           // 👈 was `continue`
         }
 
-        const next: StyleObject2 = {};
+        const next: StyleObject = {};
         for (const key of normKeys) {
             const v = normalized[key];
             if (v == null) continue;

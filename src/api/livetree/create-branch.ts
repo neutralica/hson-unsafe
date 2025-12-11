@@ -1,6 +1,6 @@
 // live-tree-branch.utils.ts
 
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { unwrap_root_elem } from "../../utils/html-utils/unwrap-root-elem.new.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { create_live_tree2 } from "./create-live-tree";

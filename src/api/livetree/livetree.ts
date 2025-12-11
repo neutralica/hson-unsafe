@@ -1,7 +1,7 @@
 // livetree2.ts
 
 import { ensure_quid, get_node_by_quid } from "../../quid/data-quid.quid";
-import { HsonNode, Primitive, HsonQuery } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { ListenerBuilder } from "../../types-consts/listen.types";
 import { element_for_node } from "../../utils/tree-utils/node-map-helpers.utils";
 import { cssForQuids as manageCss, CssHandle } from "./livetree-methods/css-manager";
@@ -15,17 +15,18 @@ import { findAllFor, makeFindFor } from "./livetree-methods/find2";
 import { clearFlagsImpl, getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
 import { remove_child2 } from "./livetree-methods/remove-child2";
 import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
-import { FindWithById2, LiveTreeCreateAppend, NodeRef2 } from "./livetree2.types";
-import { TreeSelector } from "./tree-selector";
+import { HsonQuery, TreeSelector } from "../../types-consts/livetree.types";
 import { appendBranch } from "./livetree-methods/append-worker";
 import { LiveTreeCreateHelper, makeCreateHelper } from "./livetree-methods/create-typed";
+import { FindWithById, LiveTreeCreateAppend, NodeRef } from "../../types-consts/livetree.types";
+import { Primitive } from "../../core/types-consts/core.types";
 
 
-function makeRef(node: HsonNode): NodeRef2 {
+function makeRef(node: HsonNode): NodeRef {
   /*  Ensure the node has a stable QUID and keeps NODE_ELEMENT_MAP happy. */
   const q = ensure_quid(node);
 
-  const ref: NodeRef2 = {
+  const ref: NodeRef = {
     q,
     resolveNode(): HsonNode { /* exposes the node itself */
       // if we later introduce a global QUID→node map,
@@ -63,7 +64,7 @@ function makeRef(node: HsonNode): NodeRef2 {
 
 export class LiveTree {
   /*---------- the HsonNode being referenced */
-  private nodeRef!: NodeRef2;
+  private nodeRef!: NodeRef;
   /*---------- the root node or historic root node */
   private hostRoot!: HsonNode;
   /*---------- inline style editor */
@@ -103,7 +104,7 @@ export class LiveTree {
   /*------ remove self */
   public remove = remove2;
   /*------ find and return a LiveTree; with optional .byId(), .must [throw if undefined] */
-  public find: FindWithById2 = makeFindFor(this);
+  public find: FindWithById = makeFindFor(this);
   /*------ find and return a TreeSelector (LiveTree[]) */
   public findAll = (q: HsonQuery | string): TreeSelector => findAllFor(this, q);
   /*------ append a new HsonNode to the tree graph, populating the element on the DOM as well */

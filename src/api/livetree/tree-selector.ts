@@ -1,50 +1,16 @@
 // tree-selector.ts
 
-import { Primitive } from "../../types-consts";
 import { ListenerBuilder, ListenerSub } from "../../types-consts/listen.types";
-import { TagName } from "../../types-consts/tree.types";
+import { TagName } from "../../types-consts/livetree.types";
 import { cssForQuids, CssHandle } from "./livetree-methods/css-manager";
 import { DataManager2, DatasetObj, DatasetValue } from "./livetree-methods/data-manager2.tree";
 import { buildListener } from "./livetree-methods/listen2";
-import { StyleManager2, StyleObject2 } from "./livetree-methods/style-manager2.utils";
+import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
+import { StyleObject } from "../../types-consts/css.types";
 import { LiveTree } from "./livetree";
+import { TreeSelector } from "../../types-consts/livetree.types";
+import { Primitive } from "../../core/types-consts/core.types";
 
-
-//  thin wrapper around an array of LiveTree2 with a limited,
-// broadcast-style API. This is the “multi”/selector type.
-export interface TreeSelector {
-  // collection-ish surface
-  toArray(): LiveTree[];
-  forEach(fn: (tree: LiveTree, index: number) => void): void;
-  map<T>(fn: (tree: LiveTree, index: number) => T): T[];
-  count(): number;
-  at(index: number): LiveTree | undefined;
-
-  // attrs: broadcast to all trees, but keep the selector for chaining
-  setAttrs(
-    name: string,
-    value: string | boolean | null,
-  ): TreeSelector;
-  setAttrs(
-    map: Record<string, string | boolean | null>,
-  ): TreeSelector;
-  removeAttr(name: string): TreeSelector;
-
-  // flags: broadcast to all trees
-  setFlags(...names: string[]): TreeSelector;
-  removeFlags(...names: string[]): TreeSelector;
-
-  // style: proxied to the *first* tree; throws on empty
-  readonly style: StyleManager2;
-  readonly css: CssHandle;
-  readonly data: DataManager2;
-  readonly listen: ListenerBuilder;
-
-
-  // structural sugar: create children under each selected tree and
-  // keep returning the same selector
-  createTag(tag: TagName | TagName[]): TreeSelector;
-}
 
 //  factory that builds a TreeSelector over a set of LiveTree2s
 export function makeTreeSelector(trees: LiveTree[]): TreeSelector {
@@ -131,7 +97,7 @@ export function makeTreeSelector(trees: LiveTree[]): TreeSelector {
       const proxy = Object.create(base) as StyleManager2;
 
       // Override ONLY setMulti to broadcast
-      (proxy as any).setMulti = (block: StyleObject2): LiveTree => {
+      (proxy as any).setMulti = (block: StyleObject): LiveTree => {
         for (const t of items) {
           t.style.setMulti(block);
         }
@@ -196,7 +162,7 @@ function makeMultiStyleManager(items: LiveTree[]): StyleManager2 {
       return firstTree();
     },
 
-    replace(map: StyleObject2): LiveTree {
+    replace(map: StyleObject): LiveTree {
       for (const t of items) {
         t.style.replace(map);
       }

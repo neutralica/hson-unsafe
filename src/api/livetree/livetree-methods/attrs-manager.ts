@@ -1,9 +1,10 @@
-import { HsonAttrs, HsonNode, Primitive } from "../../../types-consts";
+import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
 import { parse_style_string } from "../../../utils/attrs-utils/parse-style.utils";
 import { serialize_style } from "../../../utils/attrs-utils/serialize-css.utils";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree } from "../livetree";
-import { StyleObject2 } from "./style-manager2.utils";
+import { StyleObject } from "../../../types-consts/css.types";
+import { Primitive } from "../../../core/types-consts/core.types";
 
 /**
  * Single-attr write for one node, with style-awareness and DOM sync.
@@ -23,7 +24,7 @@ export function applyAttrToNode(
   value: Primitive | undefined,
 ): void {
   if (!node._attrs) node._attrs = {};
-  const attrs = node._attrs as HsonAttrs & { style?: StyleObject2 };
+  const attrs = node._attrs as HsonAttrs & { style?: StyleObject };
 
   const key = name.toLowerCase();
   const el = element_for_node(node) as HTMLElement | undefined;
@@ -63,7 +64,7 @@ export function applyAttrToNode(
   const s = String(value);
 
   if (key === "style") {
-    const cssObj = parse_style_string(s) as StyleObject2;
+    const cssObj = parse_style_string(s) as StyleObject;
     attrs.style = cssObj;
 
     const cssText = serialize_style(cssObj);

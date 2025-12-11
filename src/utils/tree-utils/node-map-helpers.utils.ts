@@ -1,6 +1,6 @@
 // node-element-map.ts
 
-import { HsonNode } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 
 

@@ -1,5 +1,5 @@
 import { _DATA_QUID } from "../../../types-consts/constants";
-import { CssValue, CssProp } from "../../../types-consts/css-manager-types";
+import { CssValue, CssProp } from "../../../types-consts/css.types";
 
 //  public-facing handle for callers
 export interface CssHandle {

@@ -1,6 +1,6 @@
 // parse-html.new.transform.hson.ts (new)
 
-import { HsonNode, Primitive } from "../../types-consts";
+import { HsonNode } from "../../types-consts/node.types";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
 import { is_Primitive, is_string } from "../../core/utils/guards.core.utils";
@@ -22,6 +22,7 @@ import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquote
 import { mangle_illegal_attrs } from "../../utils/html-preflights/mangle-illegal-attrs.utils";
 import { namespace_svg } from "../../utils/html-preflights/namespace-svg";
 import { is_indexed } from "../../utils/node-utils/node-guards.new.utils";
+import { Primitive } from "../../core/types-consts/core.types";
 
 export function parse_html($input: string | Element): HsonNode {
     let inputElement: Element;

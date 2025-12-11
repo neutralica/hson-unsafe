@@ -1,9 +1,10 @@
 import { hson } from "../../../hson";
-import { HsonNode } from "../../../types-consts";
-import { TagName } from "../../../types-consts/tree.types";
+import { HsonNode } from "../../../types-consts/node.types";
+import { TagName } from "../../../types-consts/livetree.types";
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
 import { LiveTree } from "../livetree";
-import { makeTreeSelector, TreeSelector } from "../tree-selector";
+import { makeTreeSelector } from "../tree-selector";
+import { TreeSelector } from "../../../types-consts/livetree.types";
 
 // what `tree.create` looks like:
 export type LiveTreeCreateHelper = {
