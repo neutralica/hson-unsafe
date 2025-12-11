@@ -1,3 +1,5 @@
+// style-manager.ts
+
 /**
  * StyleManager
  * ------------
@@ -47,6 +49,7 @@ type StringKeys<T> = Extract<keyof T, string>;
 type KeysWithStringValues<T> = {
     [K in StringKeys<T>]: T[K] extends string ? K : never
 }[StringKeys<T>];
+
 /**
  * Subset of `CSSStyleDeclaration` keys that:
  * - are strings, and
@@ -58,6 +61,7 @@ type KeysWithStringValues<T> = {
  * `StyleSetterFacade` surface.
  */
 type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>, "cssText">;
+
 /**
  * Union of all style keys supported by the style system:
  * - `AllowedStyleKey` — canonical properties from `CSSStyleDeclaration`.
@@ -71,7 +75,10 @@ export type StyleKey =
     | AllowedStyleKey
     | `--${string}`          // CSS variables
     | `${string}-${string}`; // kebab custom/unknown
+
+
 /* ------------------------------ RUNTIME KEYS -------------------------------- */
+
 /**
  * Minimal fallback list of allowed style keys used when no DOM is present
  * (e.g. tests, server-side/Node environments).
@@ -80,6 +87,7 @@ export type StyleKey =
  * typography, and transform properties so that style APIs remain usable
  * even without runtime probing.
  */
+// TODO -- I am not sure I like this pattern
 const FALLBACK_KEYS: ReadonlyArray<AllowedStyleKey> = Object.freeze([
     "color",
     "backgroundColor",

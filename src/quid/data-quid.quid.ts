@@ -21,14 +21,42 @@ function mk_quid(): string {
   return `q-${Date.now().toString(36)}-${(_inc++).toString(36)}`;
 }
 
-/** Read quid from meta or registry */
+/***************************************
+ * get_quid
+ *
+ * Return the QUID (stable identity token)
+ * associated with a node, if any.
+ *
+ * Sources:
+ * - n._meta["data-_quid"] if present,
+ * - otherwise the NODE_TO_QUID registry.
+ *
+ * Returns `undefined` if the node has never
+ * been assigned a QUID.
+ ***************************************/
 export function get_quid(n: HsonNode): string | undefined {
   const q = n._meta?.[_DATA_QUID];
   if (typeof q === "string" && q) return q;
   return NODE_TO_QUID.get(n);
 }
 
-/** Ensure quid exists, persist in _meta, index both ways */
+/***************************************
+ * ensure_quid
+ *
+ * Ensure a node has a QUID.
+ *
+ * Behavior:
+ * - Reuses existing QUID if present.
+ * - Otherwise generates a new one via mk_quid().
+ * - Indexes both directions:
+ *     QUID → node  (Map)
+ *     node → QUID  (WeakMap)
+ * - If `persist` (default true), writes the QUID
+ *   into n._meta["data-_quid"] so it survives
+ *   serialization.
+ *
+ * Returns the node’s QUID.
+ ***************************************/
 export function ensure_quid(
   n: HsonNode,
   opts?: { persist?: boolean },
@@ -48,12 +76,33 @@ export function ensure_quid(
   return q;
 }
 
-/** O(1) lookup */
+/***************************************
+ * get_node_by_quid
+ *
+ * O(1) lookup:
+ * Given a QUID string, return the associated
+ * HsonNode if known. Returns undefined if the
+ * QUID is unregistered or the node was GC’d
+ * in the WeakMap.
+ ***************************************/
 export function get_node_by_quid(q: string): HsonNode | undefined {
   return QUID_TO_NODE.get(q);
 }
 
-/** Re-index a node that was structurally replaced */
+/***************************************
+ * reindex_quid
+ *
+ * Re-establish registry bindings after the
+ * caller structurally replaced a node but
+ * preserved the same QUID.
+ *
+ * Typical use:
+ *   - a transform clones/rebuilds a subtree,
+ *     but keeps logical identity.
+ *   - After replacement, call reindex_quid
+ *     on the new node so QUID → node resolves
+ *     correctly.
+ ***************************************/
 export function reindex_quid(n: HsonNode): void {
   const q = get_quid(n);
   if (!q) return;
@@ -63,7 +112,27 @@ export function reindex_quid(n: HsonNode): void {
 
 export { _DATA_QUID };
 
-// --- drop_quid (removes both registry entries, and optionally _meta) ---
+/***************************************
+ * drop_quid
+ *
+ * Remove a node’s QUID from both registries.
+ *
+ * Behavior:
+ * - Deletes:
+ *     QUID_TO_NODE[quid]
+ *     NODE_TO_QUID[node]
+ * - If `scrubMeta`, removes the QUID from
+ *   n._meta so future serialization does not
+ *   embed identity.
+ * - If `stripDomAttr`, removes the DOM-side
+ *   `[data-_quid]` attribute if the node is
+ *   currently mounted.
+ *
+ * Used when:
+ *   - removing a subtree,
+ *   - orphaning nodes,
+ *   - resetting identity.
+ ***************************************/
 export function drop_quid(n: HsonNode, opts?: { scrubMeta?: boolean; stripDomAttr?: boolean }) {
   const q = get_quid(n);
   if (!q) return;
@@ -84,7 +153,13 @@ export function drop_quid(n: HsonNode, opts?: { scrubMeta?: boolean; stripDomAtt
   }
 }
 
-// --- has_quid (fast check to avoid re-seeding) ---
+/***************************************
+ * has_quid
+ *
+ * Boolean check for whether a node already
+ * carries an identity token, either via meta
+ * or registry.
+ ***************************************/
 export function has_quid(n: HsonNode): boolean {
   return !!get_quid(n);
 }

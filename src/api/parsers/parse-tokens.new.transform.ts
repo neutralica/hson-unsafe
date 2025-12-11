@@ -11,8 +11,8 @@ import { _snip } from "../../utils/sys-utils/snip.utils";
 import { unwrap_root_obj } from "../../utils/json-utils/unwrap-root-obj.util";
 import { split_attrs_meta } from "../../utils/hson-utils/split-attrs-meta.new.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
-import { is_string } from "../../core/utils/guards.core.utils";
-import { Primitive } from "../../core/types-consts/core.types";
+import { is_string } from "../../utils/cote-utils/guards.core";
+import { Primitive } from "../../types-consts/core.types";
 
 
 

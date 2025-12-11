@@ -1,5 +1,10 @@
 import { HsonNode } from "../../types-consts/node.types";
 
+/*************************** 
+ * (CURRENTLY UNUSED, TBC)
+ ***************************/
+
+
 // === Identity + addressing ===
 export type DataQuid = string;
 

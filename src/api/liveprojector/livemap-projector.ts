@@ -1,6 +1,10 @@
 import { Patch, Path, PathStr, Store, toPointer, TxId } from "../livemap/types.livemap";
 import { Projector, ProjectorMode } from "./projector";
 
+/*************************** 
+ * (CURRENTLY UNUSED, TBC)
+ ***************************/
+
 export type LiveMapOptions = {
   // Schema hints by path pointer. Keep light for v1.
   schema?: Record<PathStr, SchemaNode>;

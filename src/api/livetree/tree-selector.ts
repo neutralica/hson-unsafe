@@ -6,11 +6,11 @@ import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
 import { DataManager, DatasetObj, DatasetValue } from "./livetree-methods/data-manager2.tree";
 import { build_listener } from "./livetree-methods/listen";
-import { StyleManager } from "./livetree-methods/style-manager2.utils";
+import { StyleManager } from "./livetree-methods/style-manager";
 import { StyleObject } from "../../types-consts/css.types";
 import { LiveTree } from "./livetree";
 import { TreeSelector } from "../../types-consts/livetree.types";
-import { Primitive } from "../../core/types-consts/core.types";
+import { Primitive } from "../../types-consts/core.types";
 import { make_selector_create, make_tree_create } from "./livetree-methods/create-typed";
 
 

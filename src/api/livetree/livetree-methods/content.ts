@@ -7,7 +7,7 @@ import { make_string } from "../../../utils/primitive-utils/make-string.nodes.ut
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { make_leaf } from "../../parsers/parse-tokens.new.transform";
-import { Primitive } from "../../../core/types-consts/core.types";
+import { Primitive } from "../../../types-consts/core.types";
 
 /**
  * Replace a node's content with a single text/leaf node derived from `value`

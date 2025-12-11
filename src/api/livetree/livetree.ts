@@ -14,12 +14,12 @@ import { build_listener } from "./livetree-methods/listen";
 import { find_all_in_tree, make_find_for } from "./livetree-methods/find";
 import { clearFlagsImpl, getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
 import { remove_child } from "./livetree-methods/remove-child2";
-import { StyleManager } from "./livetree-methods/style-manager2.utils";
+import { StyleManager } from "./livetree-methods/style-manager";
 import { HsonQuery, LiveTreeCreateHelper, TreeSelector } from "../../types-consts/livetree.types";
 import { append_branch } from "./livetree-methods/append-other";
 import { make_tree_create } from "./livetree-methods/create-typed";
 import { FindWithById, NodeRef } from "../../types-consts/livetree.types";
-import { Primitive } from "../../core/types-consts/core.types";
+import { Primitive } from "../../types-consts/core.types";
 
 /**
  * Create a stable `NodeRef` for a given `HsonNode`.

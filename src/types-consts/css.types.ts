@@ -1,5 +1,6 @@
+// css.types.ts
 
-import { StyleKey } from "../api/livetree/livetree-methods/style-manager2.utils";
+import { StyleKey } from "../api/livetree/livetree-methods/style-manager";
 
 
 

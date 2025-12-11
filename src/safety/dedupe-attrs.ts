@@ -1,5 +1,41 @@
-// preflight-dedupe-attrs.html.utils.ts
+// dedupe-attrs.ts
 
+/***********************************************
+ * dedupe_attrs_html
+ *
+ * Normalize and de-duplicate HTML attributes in
+ * a serialized HTML string.
+ *
+ * Behavior:
+ * - Walks every start/self-closing tag:
+ *     <tag ...attrs...> or <tag ...attrs... />
+ * - For each tag:
+ *   - Lowercases attribute names for comparison.
+ *   - Keeps only the *last* non-class value for
+ *     each attribute (e.g. `id="x" id="y"` → id="y").
+ *   - Treats flag-like attributes (no value or
+ *     value equal to the name) as boolean flags
+ *     and normalizes them to key="key".
+ *   - Special-cases `class`:
+ *       - Splits into tokens.
+ *       - Deduplicates token list.
+ *       - Rejoins as a single space-separated
+ *         `class="a b c"` string.
+ * - Rebuilds attributes in order of first
+ *   appearance per tag.
+ * - Always quotes attribute values on output.
+ *
+ * Notes:
+ * - This operates on raw HTML source, not on
+ *   the DOM.
+ * - Self-closing vs non-self-closing is
+ *   preserved based on the original closing
+ *   slash in the match.
+ *
+ * @param src  Serialized HTML markup to normalize.
+ * @returns    A new HTML string with attributes
+ *             deduplicated and normalized as above.
+ ***********************************************/
 export function dedupe_attrs_html(src: string): string {
   return src.replace(
   /<([a-zA-Z][^\s>/]*)([^>]*?)(\s*\/?)>/g,

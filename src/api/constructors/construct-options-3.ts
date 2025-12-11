@@ -4,7 +4,7 @@ import { OptionsConstructor_3, FrameOptions, RenderConstructor_4 } from "../../t
 import { FrameRender } from "../../types-consts/constructor.types";
 
 /**
- * Stage 3 (NEW): applying output options.
+ * Stage 3 : applying output options.
  *
  * These methods configure the final output's formatting.
  *
@@ -64,12 +64,12 @@ export function construct_options_3<K extends RenderFormats>(
     /**
      * Apply linting / canonicalization rules to the output.
      */
-    linted(): RenderConstructor_4<K> {
-      const updatedFrame: FrameRender<K>["frame"] = {
-        ...frame,
-        options: { ...frame.options, linted: true },
-      };
-      return construct_render_4({ frame: updatedFrame, output });
-    },
+    // linted(): RenderConstructor_4<K> {
+    //   const updatedFrame: FrameRender<K>["frame"] = {
+    //     ...frame,
+    //     options: { ...frame.options, linted: true },
+    //   };
+    //   return construct_render_4({ frame: updatedFrame, output });
+    // },
   };
 }

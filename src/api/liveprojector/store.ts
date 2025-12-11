@@ -1,7 +1,10 @@
 import { HsonNode } from "../../types-consts/node.types";
 import { Patch, Store, Path, PatchOp, PathSeg } from "../livemap/types.livemap";
 
-// subscribers are just functions that receive the full patch
+/*************************** 
+ * (CURRENTLY UNUSED, TBC)
+ ***************************/
+
 type Subscriber = ($patch: Patch) => void;
 
 export class InMemoryStore implements Store {

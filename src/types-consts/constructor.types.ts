@@ -1,235 +1,256 @@
 
 import { $HSON_FRAME, $RENDER, } from "./constants";
 import { HsonNode } from "./node.types";
-import { JsonValue } from "../core/types-consts/core.types";
+import { JsonValue } from "./core.types";
 import { LiveTree } from "../api/livetree/livetree";
 
+/**
+ * Controls per-call HTML sanitization for `fromHTML(...)`.
+ *
+ * In the safe pipeline:
+ *   - sanitize: true  → run HTML through DOMPurify (default).
+ *   - sanitize: false → treat HTML as trusted.
+ *
+ * In the unsafe pipeline (`unsafe: true`):
+ *   - this flag is ignored; HTML is always parsed raw.
+ *
+ * Use only to override sanitization on a specific call.
+ */
 export interface HtmlSourceOptions {
-    /** Override per-call HTML sanitization.
-     *
-     * - `true` (default in safe pipeline): sanitize via DOMPurify.
-     * - `false`: treat HTML as trusted/internal, even in safe pipeline.
-     *
-     * NOTE:
-     * - In the UNSAFE pipeline (`pipelineOptions.unsafe === true`),
-     *   this flag is ignored; HTML is never sanitized there.
-     */
-    sanitize?: boolean;
+  /** Override per-call HTML sanitization.
+   *
+   * - `true` (default in safe pipeline): sanitize via DOMPurify.
+   * - `false`: treat HTML as trusted/internal, even in safe pipeline.
+   *
+   * NOTE:
+   * - In the UNSAFE pipeline (`pipelineOptions.unsafe === true`),
+   *   this flag is ignored; HTML is never sanitized there.
+   */
+  sanitize?: boolean;
 }
 
-// export interface LiveTreeConstructor_3 {
-//     asBranch(): LiveTree;
-// }
-
-/**
- *  Step 3 – optional configuration.
+/***************
+ * ParsedResult<K>
  *
- * These methods adjust how the chosen output format is *rendered*.
- * They always return the final action surface (step 4), so callers
- * can either:
+ * Maps a chosen output format `K` to the result type of `parse()`:
  *
- *   hson.fromJSON(data).toHTML().serialize();
- *   // or
- *   hson.fromJSON(data).toHTML().spaced().linted().serialize();
- */
-export interface OptionsConstructor_3<K extends RenderFormats> {
-
-    /**
-     * Attach a full options object.
-     *
-     * This is the "escape hatch" for advanced configuration. Convenience
-     * helpers like `.noBreak()` and `.spaced()` are just shorthands that
-     * call `withOptions` under the hood.
-     */
-    withOptions(opts: Partial<FrameOptions>): RenderConstructor_4<K>;
-
-
-    /** Convenience: set the `noBreak` flag (single-line render). */
-    noBreak(): RenderConstructor_4<K>;
-
-    /** Convenience: enable "spaced" output (e.g. pretty-print JSON / HSON). */
-    spaced(): RenderConstructor_4<K>;
-
-    /** Convenience: enable linted / normalized output, if supported. */
-    linted(): RenderConstructor_4<K>;
-}
-
-/**
- * Rendering options for the final step.
+ *   - JSON → JsonValue
+ *   - HSON → HsonNode
+ *   - HTML → never   (HTML has no exposed AST in this API)
  *
- * These flags are interpreted by the lower-level serializers. Not every
- * flag is meaningful for every format, but they provide a common vocabulary
- * for "pretty / compact / linted" style choices.
- */
-export interface FrameOptions {
-    spaced?: boolean;
-    lineLength?: number;
-    linted?: boolean;
-    noBreak?: boolean;
-}
-
-/**
- *  Step 4 – final actions.
- *
- * After you’ve:
- *   - chosen a source (`fromX`),
- *   - chosen a format (`toX`),
- *   - optionally set options (`spaced()`, `withOptions(...)`),
- *
- * this interface provides the concrete outputs:
- *
- * - `serialize()` → string representation (HTML / JSON / HSON),
- * - `parse()`     → structured representation (type depends on format),
- * - `asBranch()`  → LiveTree projection for DOM interaction.
- */
-export interface RenderConstructor_4<K extends RenderFormats> {
-
-    /**
-     * Render the current frame as a string in the chosen format.
-     *
-     * Examples:
-     * - after `.toHTML()` → HTML string,
-     * - after `.toJSON()` → JSON string,
-     * - after `.toHSON()` → HSON source text.
-     */
-    serialize(): string;
-
-    /**
-     * Parse the current frame into a structured value appropriate to
-     * the chosen format.
-     *
-     * Examples:
-     * - after `.toJSON()` → parsed JSON value (object / array / primitive),
-     * - after `.toHTML()` → whatever HTML-level representation your
-     *   serializer defines (often just the same string, or a lightweight AST),
-     * - after `.toHSON()` → parsed HSON structure.
-     *
-     * Note:
-     * - The return type is `unknown` by design. Callers are expected to
-     *   narrow or cast based on which `toX()` they used.
-     */
-    parse(): ParsedResult<K>;
-
-    /**
-     * Project the current Nodes into a LiveTree branch.
-     *
-     * Behavior:
-     * - Builds a LiveTree tied to the current HsonNode frame.
-     * - Does **not** automatically attach anything to the DOM; mounting /
-     *   grafting remains a separate step on LiveTree (`graft`, `append`, etc.).
-     *
-     * This is the bridge between the stateless transform pipeline and the
-     * stateful DOM interaction layer.
-     */
-    // REMOVED TO ROUTE THROUGH .LIVETREE() PATH
-    // asBranch(): LiveTree;
-}
-
-// // what hson.queryDOM(...).liveTree() returns
-// export interface DomQueryLiveTreeConstructor {
-//     graft(): LiveTree;
-// }
-
-
+ * Callers know which `toX()` they chose and must narrow accordingly.
+ ***************/
 export type ParsedResult<K extends RenderFormats> =
-    K extends (typeof $RENDER)["JSON"]
-    ? JsonValue
-    : K extends (typeof $RENDER)["HSON"]
-    ? HsonNode
-    // HTML has no parseable “valueful” representation in this API
-    : never;export type FrameMode = (typeof $HSON_FRAME)[keyof typeof $HSON_FRAME];
+  K extends (typeof $RENDER)["JSON"]
+  ? JsonValue
+  : K extends (typeof $RENDER)["HSON"]
+  ? HsonNode
+  /* HTML is always returned as as string */
+  : never;
 
+/***************
+ * FrameMode
+ *
+ * Indicates the *semantic origin* of the frame. Backed by `$HSON_FRAME`,
+ * which typically distinguishes:
+ *
+ *   - "JSON"   → originally from JSON input
+ *   - "HSON"   → originally from HSON input
+ *   - "HTML"   → originally from HTML input
+ *   - "NODE"   → originally from an existing HsonNode
+ *
+ * Primarily used internally for dispatch and sanity checks.
+ ***************/
+export type FrameMode = (typeof $HSON_FRAME)[keyof typeof $HSON_FRAME];
+
+/***************
+ * FrameConstructor
+ *
+ * Internal representation of the current transformation “frame”.
+ *
+ *  - input   → original caller input (string or Element)
+ *  - node    → canonical HsonNode for this frame
+ *
+ *  - hson?   → cached HSON text (if materialized)
+ *  - html?   → cached HTML text (if materialized)
+ *  - json?   → cached JSON (value or string, depending on usage)
+ *
+ *  - mode?   → FrameMode describing origin
+ *  - meta?   → pipeline metadata (debugging, provenance, etc.)
+ *  - options?→ active FrameOptions (spacing, line length, linting, ...)
+ *
+ * The frame flows through the stages; each stage may update it but
+ * MUST leave it structurally coherent.
+ ***************/
 export interface FrameConstructor {
-    input: string | Element;
-    node: HsonNode;
-    hson?: string;
-    html?: string;
-    json?: JsonValue | string;
-    mode?: FrameMode;
-    meta?: Record<string, unknown>;
-    options?: FrameOptions;
+  input: string | Element;
+  node: HsonNode;
+  hson?: string;
+  html?: string;
+  json?: JsonValue | string;
+  mode?: FrameMode;
+  meta?: Record<string, unknown>;
+  options?: FrameOptions;
 }
-;
-/* OptionsConstructor_3 depends on */
 
-
-export interface FrameOptions {
-    spaced?: boolean;
-    lineLength?: number;
-    linted?: boolean;
-    noBreak?: boolean;
-}
-;
-
+/***************
+ * RenderFormats
+ *
+ * Discriminated union of supported output formats. Backed by the
+ * `$RENDER` constant:
+ *
+ *   $RENDER = {
+ *     JSON: "JSON",
+ *     HSON: "HSON",
+ *     HTML: "HTML",
+ *   } as const;
+ *
+ * Used to drive `ParsedResult<K>` and to type the `toX()` methods.
+ ***************/
 export type RenderFormats = (typeof $RENDER)[keyof typeof $RENDER];
-/* main source constructor */
 
 
+/******************************************************************************
+ * LiveTree & DOM query surfaces
+******************************************************************************/
+
+
+/******************************************************************************
+ * Source Constructor – Step 1 of Pipeline
+ ******************************************************************************/
+
+/***************
+ * SourceConstructor_1
+ *
+ * Lowest-level “step 1” builder: given some input, produce a frame
+ * and move to the *output selection* stage (OutputConstructor_2).
+ *
+ *  - fromHSON(input)
+ *      HSON string → Nodes.
+ *
+ *  - fromJSON(input)
+ *      JSON value or string → Nodes.
+ *
+ *  - fromHTML(input, options?)
+ *      HTML string or HTMLElement → Nodes.
+ *      Per-call sanitization controlled by HtmlSourceOptions in
+ *      the SAFE pipeline; ignored for UNSAFE pipelines.
+ *
+ *  - fromNode(input)
+ *      Identity entrypoint: an existing HsonNode becomes the frame.
+ *
+ *  - queryDOM(selector)
+ *      Use `document.querySelector(selector).innerHTML` as HTML
+ *      source. Pipeline configuration (safe vs unsafe) decides
+ *      whether to sanitize.
+ *
+ *  - queryBody()
+ *      Same as queryDOM, but for `document.body.innerHTML`.
+ ***************/
+export interface SourceConstructor_1 {
+  fromHSON(input: string): OutputConstructor_2;
+  fromJSON(input: string | JsonValue): OutputConstructor_2;
+  fromHTML(input: string | Element, options?: HtmlSourceOptions): OutputConstructor_2;
+  fromNode(input: HsonNode): OutputConstructor_2;
+  queryDOM(selector: string): OutputConstructor_2;
+  queryBody(): OutputConstructor_2;
+}
+
+/***************
+ * TreeConstructor_Source
+ *
+ * High-level façade for choosing a *source* and then immediately
+ * getting either a LiveTree branch or graft handle.
+ *
+ * Creation flows:
+ *
+ *  - fromHTML(html)
+ *      Parse HTML/HSON-HTML into nodes, return BranchConstructor.
+ *
+ *  - fromJSON(json)
+ *      Parse JSON into nodes, return BranchConstructor.
+ *
+ *  - fromHSON(hson)
+ *      Parse HSON text into nodes, return BranchConstructor.
+ *
+ *  - queryDom(selector)
+ *      Use `document.querySelector(selector).innerHTML` as HTML
+ *      source; return a GraftConstructor for replacement.
+ *
+ *  - queryBody()
+ *      Use `document.body.innerHTML` as HTML source; same semantics
+ *      as queryDom, but for the whole document body.
+ ***************/
 export interface TreeConstructor_Source {
-  /* for creating new tree content from data */
   fromHTML(htmlString: string): BranchConstructor;
   fromJSON(json: string | JsonValue): BranchConstructor;
   fromHSON(hsonString: string): BranchConstructor;
-
-  /* for targeting the existing DOM (not a LiveTree) and replcaing with graft() */
   queryDom(selector: string): GraftConstructor;
   queryBody(): GraftConstructor;
 }
 
-export interface GraftConstructor {
-  /* replaces the target DOM element's content with the HSON-controlled version,
-        and returns the interactive LiveTree */
-  graft(): LiveTree;
-}
-
-export interface BranchConstructor {
-  /* returns the created LiveTree instance as a detached "branch"
-         ready to be appended to another tree */
-  asBranch(): LiveTree;
-}
-export interface LiveTreeConstructor_3 {
-  asBranch(): LiveTree;
-}
-// export type FrameMode = (typeof HSON_FrameΔ)[keyof typeof HSON_FrameΔ];
-// what hson.queryDOM/queryBody return
+/***************
+ * DomQuerySourceConstructor
+ *
+ * Source constructor using legacy DOM query methods. Typically used by
+ * `hson.queryDOM(...)` and friends.
+ *
+ *  - liveTree()
+ *      Returns a DomQueryLiveTreeConstructor2 for performing the
+ *      actual graft into the DOM.
+ ***************/
 export interface DomQuerySourceConstructor {
-  // liveTree(): DomQueryLiveTreeConstructor;
-  liveTree(): DomQueryLiveTreeConstructor2;
+  liveTree(): DomQueryLiveTreeConstructor;
 }
-// what hson.queryDOM(...).liveTree() returns
-export interface DomQueryLiveTreeConstructor2 {
-  graft(): LiveTree;
-}
-/**
- * Step 2 – output format selection.
+
+/******************************************************************************
+ * Output Selection – Step 2
+ ******************************************************************************/
+
+/***************
+ * OutputConstructor_2
  *
- * This is the object you get back after choosing a *source* via
- * `construct_source(...).fromX(...)`.
+ * “Step 2” of the pipeline: choose the *output* representation for
+ * the current frame. Each `toX()`:
  *
- * Each `to...` method:
- * - chooses an output *format* (HTML / JSON / HSON),
- * - materializes that representation into the frame,
- * - and returns an object that is both:
- *   - an optional configuration surface (step 3),
- *   - and the final action surface (step 4).
+ *   1) selects a render format (JSON / HSON / HTML),
+ *   2) ensures that representation is materialized in the frame,
+ *   3) returns a merged type that exposes:
+ *        - step 3: OptionsConstructor_3<K>
+ *        - step 4: RenderConstructor_4<K>
  *
- * In other words:
- *   hson.fromJSON(data)
- *       .toHTML()        // step 2 – format
- *       .spaced()        // step 3 – options (optional)
- *       .serialize();    // step 4 – final action
- */
+ * Methods:
+ *
+ *  - toJSON()
+ *      Choose JSON output. parse() will yield a JsonValue.
+ *
+ *  - toHSON()
+ *      Choose HSON text output. parse() will yield a HsonNode.
+ *
+ *  - toHTML()
+ *      Choose HTML output. parse() is currently `never`.
+ *
+ *  - liveTree()
+ *      Project directly into a LiveTree constructor instead of
+ *      serializing. Returns LiveTreeConstructor_3.
+ *
+ *  - sanitizeBEWARE()
+ *      Special case: take the current frame.node:
+ *
+ *        1. serialize it to HTML (unsafe/raw),
+ *        2. run that HTML through the *untrusted* HTML sanitizer
+ *           (DOMPurify via parse_external_html / sanitize_html),
+ *        3. parse the sanitized HTML back into nodes,
+ *        4. return a *new* OutputConstructor_2 rooted at those nodes.
+ *
+ *      This only makes sense when the frame encodes HTML semantics.
+ *      If used on non-HTML-shaped trees, the sanitizer will happily
+ *      delete underscored tags and may return nothing.
+ ***************/
 export interface OutputConstructor_2 {
-  toJSON(): OptionsConstructor_3<(typeof $RENDER)["JSON"]> &
-    RenderConstructor_4<(typeof $RENDER)["JSON"]>;
-
-  toHSON(): OptionsConstructor_3<(typeof $RENDER)["HSON"]> &
-    RenderConstructor_4<(typeof $RENDER)["HSON"]>;
-
-  toHTML(): OptionsConstructor_3<(typeof $RENDER)["HTML"]> &
-    RenderConstructor_4<(typeof $RENDER)["HTML"]>;
-
-  // LiveTree output constructor
+  toJSON(): OptionsConstructor_3<(typeof $RENDER)["JSON"]> & RenderConstructor_4<(typeof $RENDER)["JSON"]>;
+  toHSON(): OptionsConstructor_3<(typeof $RENDER)["HSON"]> & RenderConstructor_4<(typeof $RENDER)["HSON"]>;
+  toHTML(): OptionsConstructor_3<(typeof $RENDER)["HTML"]> & RenderConstructor_4<(typeof $RENDER)["HTML"]>;
   liveTree(): LiveTreeConstructor_3;
 
   /**
@@ -258,48 +279,146 @@ export interface OutputConstructor_2 {
   sanitizeBEWARE(): OutputConstructor_2;
 }
 
+/**
+ * Bundles:
+ *   - frame  → FrameConstructor
+ *   - output → selected render format
+ *
+ * Used internally for dispatch and debugging.
+ */
 export interface FrameRender<K extends RenderFormats> {
   frame: FrameConstructor;
   output: K;
 }
-export interface SourceConstructor_1 {
-  /** HSON string → Node */
-  fromHSON(input: string): OutputConstructor_2;
 
-  /** JSON → Nodes */
-  fromJSON(input: string | JsonValue): OutputConstructor_2;
 
-  /** HTML → Nodes
-   *
-   * - `input` may be an HTML string or an Element (its `innerHTML` is used).
-   * - `options.sanitize` controls *per-call* behavior in the safe pipeline:
-   *     - safe pipeline (`unsafe: false`):
-   *         - `sanitize !== false` → DOMPurify (`parse_external_html`)
-   *         - `sanitize === false` → raw HTML parse (`parse_html`)
-   *     - unsafe pipeline (`unsafe: true`):
-   *         - always raw HTML parse (`parse_html`), flag is ignored.
-   */
-  fromHTML(input: string | Element, options?: HtmlSourceOptions): OutputConstructor_2;
-
-  /** Nodes → Nodes (identity entrypoint) */
-  fromNode(input: HsonNode): OutputConstructor_2;
-
-  /** `document.querySelector(selector).innerHTML` → Nodes
-   *
-   * - Uses `innerHTML` of the matched element as the HTML source.
-   * - In *practice* we only ever call this through a pipeline that has
-   *   chosen safe vs unsafe at construction time.
-   * - For your facade:
-   *     - `hson.queryDOM` uses `{ unsafe: true }` → no sanitization.
-   *     - if someone wants a sanitized snapshot, they should use
-   *       `hson.fromUntrustedHtml(element)` instead.
-   */
-  queryDOM(selector: string): OutputConstructor_2;
-
-  /** `document.body.innerHTML` → Nodes
-   *
-   * Same semantics as `queryDOM`, but for the whole document body.
-   */
-  queryBody(): OutputConstructor_2;
+/***************
+ * GraftConstructor
+ *
+ * Returned by DOM-targeteing source constructors (`queryDom`, `queryBody`).
+ *
+ *  - graft()
+ *      Parses the target DOM element’s content into a HsonNode tree,
+ *      replaces that element’s contents with the HSON-controlled view,
+ *      and returns the controlling LiveTree instance.
+ ***************/
+export interface GraftConstructor {
+  graft(): LiveTree;
 }
 
+/***************
+ * BranchConstructor
+ *
+ * Returned by data-based source constructors (`fromJSON`, `fromHSON`,
+ * `fromHTML`, `fromNode`).
+ *
+ *  - asBranch()
+ *      Creates and returns a *detached* LiveTree rooted at the frame’s
+ *      nodes. The caller is responsible for grafting / appending it
+ *      into some host LiveTree or DOM.
+ ***************/
+export interface BranchConstructor {
+  asBranch(): LiveTree;
+}
+
+/***************
+ * LiveTreeConstructor_3
+ *
+ * Returned by `OutputConstructor_2.liveTree()` when the caller wants
+ * to bypass string serialization and go straight to LiveTree.
+ *
+ *  - asBranch()
+ *      Builds a LiveTree projection rooted at the current frame’s node.
+ ***************/
+export interface LiveTreeConstructor_3 {
+  asBranch(): LiveTree;
+}
+
+
+/***************
+ * DomQueryLiveTreeConstructor
+ *
+ * Result of `DomQuerySourceConstructor.liveTree()`.
+ *
+ *  - graft()
+ *      Performs the DOM replacement and returns the LiveTree that
+ *      now controls that DOM subtree.
+ ***************/
+export interface DomQueryLiveTreeConstructor {
+  graft(): LiveTree;
+}
+
+/******************************************************************************
+ * Options – Step 3
+ ******************************************************************************/
+
+/***************
+ * OptionsConstructor_3<K>
+ *
+ * Optional “step 3” configuration layer for the chosen format `K`.
+ * All methods return the final RenderConstructor_4<K>, so callers
+ * can chain or skip them as desired.
+ *
+ *  - withOptions(opts)
+ *      Attach a partial FrameOptions object to the frame. This is the
+ *      escape hatch for advanced formatting.
+ *
+ *  - noBreak()
+ *      Shorthand for withOptions({ noBreak: true }).
+ *
+ *  - spaced()
+ *      Shorthand for withOptions({ spaced: true }).
+ ***************/
+export interface OptionsConstructor_3<K extends RenderFormats> {
+  withOptions(opts: Partial<FrameOptions>): RenderConstructor_4<K>;
+  noBreak(): RenderConstructor_4<K>;
+  spaced(): RenderConstructor_4<K>;
+  /* (linter deprecated) */
+  // linted(): RenderConstructor_4<K>;
+}
+
+/**
+ * Shared formatting preferences for serialization:
+ *
+ * - spaced     → pretty-printed, multi-line output
+ * - lineLength → advisory max width for inline candidates
+ * - linted     → request normalized output (serializer-dependent)
+ * - noBreak    → force single-line output when possible
+ *
+ * Not all serializers honor every flag, but this is the common vocabulary.
+ */
+export interface FrameOptions {
+  spaced?: boolean;
+  lineLength?: number;
+  linted?: boolean;
+  noBreak?: boolean;
+}
+
+
+/******************************************************************************
+ * Final Actions – Step 4
+ ******************************************************************************/
+
+/***************
+ * RenderConstructor_4<K>
+ *
+ * Final “commit” surface for a chosen format `K`.
+ *
+ *  - serialize()
+ *      Return a string representation in the selected format:
+ *        JSON → JSON string
+ *        HSON → HSON text
+ *        HTML → HTML string
+ *
+ *  - parse()
+ *      Return a structured representation of the rendered form:
+ *        JSON → JsonValue
+ *        HSON → HsonNode
+ *        HTML → never
+ *
+ *      The caller is responsible for narrowing based on `toX()`.
+ ***************/
+export interface RenderConstructor_4<K extends RenderFormats> {
+  serialize(): string;
+  parse(): ParsedResult<K>;
+}

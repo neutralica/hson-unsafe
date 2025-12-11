@@ -1,5 +1,9 @@
 import { Patch, Path } from "../livemap/types.livemap";
 
+/*************************** 
+ * (CURRENTLY UNUSED, TBC)
+ ***************************/
+
 export type ProjectorMode = "snapshot" | "dashboard" | "control";
 
 export interface Projector {

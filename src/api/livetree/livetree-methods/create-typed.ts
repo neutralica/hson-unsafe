@@ -21,7 +21,6 @@ export type HtmlTag = keyof HTMLElementTagNameMap;
  * Each entry corresponds to a method added to the helper at runtime
  * (e.g., `helper.div()`, `helper.span()`, etc.).
  */
-
 const HTML_TAGS: HtmlTag[] = [
   "div",
   "span",
@@ -34,6 +33,7 @@ const HTML_TAGS: HtmlTag[] = [
   "footer",
   "main",
 ];
+
 /**
  * Construct the `.create` helper for a single `LiveTree` instance.
  *

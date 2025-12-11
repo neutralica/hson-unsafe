@@ -9,7 +9,7 @@ import { _META_DATA_PREFIX } from "../../types-consts/constants";
 import { RawAttr } from "../../types-consts/token.types";
 import { parse_style_string } from "../attrs-utils/parse-style";
 import { unescape_hson_string } from "./unescape-hson.utils";
-import { Primitive } from "../../core/types-consts/core.types";
+import { Primitive } from "../../types-consts/core.types";
 
 // Helper: decode HSON token text iff it was quoted.
 function decode_hson_value(text: string, quoted: boolean | undefined): string {

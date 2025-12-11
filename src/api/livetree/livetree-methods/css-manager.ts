@@ -121,7 +121,7 @@ export class CssManager {
 
   private constructor() { }
 
-  public static invoke(): CssManager {
+  public static invoke(): CssManager { /* (= getInstance) */
     if (!CssManager.instance) {
       CssManager.instance = new CssManager();
     }

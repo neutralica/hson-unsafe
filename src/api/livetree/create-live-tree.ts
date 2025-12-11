@@ -1,5 +1,5 @@
 // create-live-tree.new.ts
-import { Primitive } from "../../core/types-consts/core.types";
+import { Primitive } from "../../types-consts/core.types";
 import { ensure_quid } from "../../quid/data-quid.quid";
 
 import { create_el_safe, set_attrs_safe } from "../../safety/safe-mount.safe";

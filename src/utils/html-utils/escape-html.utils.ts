@@ -1,6 +1,6 @@
 // escape-html.util.ts
 
-import { is_Primitive } from "../../core/utils/guards.core.utils.js";
+import { is_Primitive } from "../cote-utils/guards.core.js";
 import { _throw_transform_err } from "../sys-utils/throw-transform-err.utils.js";
 
 /* basic escape helper to be used pre-serialization of HTML */

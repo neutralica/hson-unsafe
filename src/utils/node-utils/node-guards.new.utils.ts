@@ -1,11 +1,11 @@
 // is-helpers.util.ts
 
 import { II_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
-import { BasicValue } from "../../core/types-consts/core.types";
-import { is_Primitive } from "../../core/utils/guards.core.utils"
+import { BasicValue } from "../../types-consts/core.types";
+import { is_Primitive } from "../cote-utils/guards.core"
 import { _DATA_INDEX } from "../../types-consts/constants";
 import { HsonNode } from "../../types-consts/node.types";
-import { JsonValue } from "../../core/types-consts/core.types";
+import { JsonValue } from "../../types-consts/core.types";
 
 /* identifies HsonNode (new structure) */
 export function is_Node(bit: unknown): bit is HsonNode {

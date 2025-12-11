@@ -1,11 +1,11 @@
 // serialize-json.render.ts
 
-import { JsonObj, Primitive } from "../../core/types-consts/core.types";
+import { JsonObj, Primitive } from "../../types-consts/core.types";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { is_indexed } from "../../utils/node-utils/node-guards.new.utils";
 import { ROOT_TAG, EVERY_VSN, ARR_TAG, OBJ_TAG, STR_TAG, VAL_TAG, ELEM_TAG, II_TAG } from "../../types-consts/constants";
 import {  HsonNode } from "../../types-consts/node.types";
-import { JsonValue } from "../../core/types-consts/core.types";
+import { JsonValue } from "../../types-consts/core.types";
 import { clone_node } from "../../utils/node-utils/clone-node.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";

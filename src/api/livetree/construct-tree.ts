@@ -1,6 +1,6 @@
 // src/api/livetree/construct-tree.new.api.hson.ts
 
-import { JsonValue } from "../../core/types-consts/core.types";
+import { JsonValue } from "../../types-consts/core.types";
 import { HsonNode } from "../../types-consts/node.types";
 import { _ERROR } from "../../types-consts/constants";
 import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";

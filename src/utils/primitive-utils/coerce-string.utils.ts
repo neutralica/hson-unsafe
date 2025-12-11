@@ -1,6 +1,6 @@
 // coerce-string.util.ts
 
-import { Primitive } from "../../core/types-consts/core.types.js";
+import { Primitive } from "../../types-consts/core.types.js";
 import { _throw_transform_err } from "../sys-utils/throw-transform-err.utils.js";
 /**
  * parses a string value into its valueful primitive type and reports

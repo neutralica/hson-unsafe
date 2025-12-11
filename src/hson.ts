@@ -1,9 +1,9 @@
 
 import { construct_source_1 } from "./api/constructors/construct-source-1";
-import { DomQueryLiveTreeConstructor2, OutputConstructor_2 } from "./types-consts/constructor.types";
+import { DomQueryLiveTreeConstructor, OutputConstructor_2 } from "./types-consts/constructor.types";
 import { DomQuerySourceConstructor } from "./types-consts/constructor.types";
 import { HsonNode } from "./types-consts/node.types";
-import { JsonValue } from "./core/types-consts/core.types";
+import { JsonValue } from "./types-consts/core.types";
 import { LiveTree } from "./api/livetree/livetree";
 import { construct_tree } from "./api/livetree/construct-tree";
 
@@ -205,7 +205,7 @@ export const hson = {
       //     },
       //   };
       // },
-      liveTree(): DomQueryLiveTreeConstructor2 {
+      liveTree(): DomQueryLiveTreeConstructor {
         return {
           graft(): LiveTree {
             return construct_tree({ unsafe: false }).queryDom(selector).graft();
@@ -233,7 +233,7 @@ export const hson = {
       //     },
       //   };
       // },
-      liveTree(): DomQueryLiveTreeConstructor2 {
+      liveTree(): DomQueryLiveTreeConstructor {
         return {
           graft(): LiveTree {
             return construct_tree({ unsafe: false }).queryBody().graft();

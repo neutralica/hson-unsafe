@@ -1,6 +1,6 @@
 // all-css-props.consts.hson.ts
 
-export const all_Css_Properties = [
+export const ALL_CSS_PROPS = [
     "accent-color",
     "align-content",
     "align-items",

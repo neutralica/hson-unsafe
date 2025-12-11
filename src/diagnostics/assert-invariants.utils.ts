@@ -1,4 +1,4 @@
-import { Primitive } from "../core/types-consts/core.types";
+import { Primitive } from "../types-consts/core.types";
 import { STR_TAG, VAL_TAG, II_TAG, ARR_TAG, ROOT_TAG, OBJ_TAG, ELEM_TAG, VSN_TAGS, EVERY_VSN, ELEM_OBJ_ARR } from "../types-consts/constants";
 import { _META_DATA_PREFIX, _DATA_INDEX } from "../types-consts/constants";
 import { HsonNode, HsonMeta, HsonAttrs, NodeContent } from "../types-consts/node.types";
@@ -8,14 +8,38 @@ import { _throw_transform_err } from "../utils/sys-utils/throw-transform-err.uti
 
 
 /* 
-   TODO - add 'alreadyAsserted' flag or similar to prevent multiple tree walks 
-   TODO - add 'dev mode' flag to trigger assert_invariants or not
+   TODO - add 'alreadyAsserted' flag or similar to prevent multiple tree walks ?
+   TODO - add 'dev mode' flag to trigger assert_invariants or not?
 */
 
 
-type Cfg = { throwOnFirst?: boolean };
+type DevCfg = { throwOnFirst?: boolean };
 
-export function assert_invariants(root: HsonNode, fn = '[source fn not given]', cfg: Cfg = { throwOnFirst: true }): void {
+/**********************************************************
+ * Validate a complete HSON tree against the “NEW” node shape.
+ *
+ * Responsibilities:
+ *   - Runs a fast structural sanity check (`assertNewShapeQuick`),
+ *   - Walks the tree with `walk`, enforcing all VSN invariants:
+ *       • meta keys are `data-_*` only,
+ *       • VSNs (_str/_val/_obj/_arr/_elem/_root/_ii) have no `_attrs`,
+ *       • `_ii` shape and placement rules,
+ *       • `_arr` / `_obj` / `_elem` containment rules,
+ *       • `_root` cluster rules,
+ *       • primitives never appear outside _str/_val.
+ *
+ * Behavior:
+ *   - Collects errors into `errs`.
+ *   - If any are found, throws a single `_throw_transform_err` containing
+ *     up to the first 12 messages plus a stringified snapshot of `root`.
+ *
+ * Parameters:
+ *   - root: HsonNode to validate.
+ *   - fn:   Label for the calling function, used in error messages.
+ *   - cfg:  Optional config:
+ *       • throwOnFirst (default: true) – stop at first error vs aggregate.
+ **********************************************************/
+export function assert_invariants(root: HsonNode, fn = '[source fn not given]', cfg: DevCfg = { throwOnFirst: true }): void {
   const errs: string[] = [];
   assertNewShapeQuick(root, fn);
   walk(root, '', root._tag, cfg, errs);
@@ -25,9 +49,50 @@ export function assert_invariants(root: HsonNode, fn = '[source fn not given]', 
   }
 }
 
-// ---------- core ----------
-
-function walk(n: HsonNode, path: string, parentTag: string | null, cfg: Cfg, errs: string[]): void {
+ /* ---------- core ---------- */
+/**********************************************************
+ * Recursive invariant checker over a HSON tree.
+ *
+ * Called by `assert_invariants` after the quick shape pass.
+ *
+ * Per-tag responsibilities:
+ *   - All nodes:
+ *       • meta keys must be `data-_*`.
+ *       • VSNs may not carry `_attrs`.
+ *   - _str / _val:
+ *       • exactly one primitive child,
+ *       • `_str` payload is string,
+ *       • `_val` payload is non-string primitive.
+ *   - _ii:
+ *       • must appear directly under `_arr`,
+ *       • no `_attrs`,
+ *       • carries `data-_index` (or `data-__index` alias) as string in `_meta`,
+ *       • exactly one child node.
+ *   - _arr:
+ *       • content is `_ii` nodes only, no bare primitives.
+ *   - _elem:
+ *       • content is normal element tags or _str/_val only,
+ *       • no `_obj`, `_arr`, `_ii` directly inside.
+ *   - _root:
+ *       • at most one child,
+ *       • if present, child is `_obj`, `_elem`, or `_arr`.
+ *   - _obj:
+ *       • children are nodes only,
+ *       • children have no `_attrs`,
+ *       • no `_elem` directly under `_obj`,
+ *       • no duplicate non-VSN property tags.
+ *   - default (normal tag):
+ *       • recursively validates children,
+ *       • primitives directly in `_content` are illegal.
+ *
+ * Path tracking:
+ *   - Builds a human-readable `path` (e.g. "/_obj/[0]/tag:div") to
+ *     include in each error.
+ *
+ * Config:
+ *   - If `cfg.throwOnFirst` is true, returns early on first push to `errs`.
+ **********************************************************/
+function walk(n: HsonNode, path: string, parentTag: string | null, cfg: DevCfg, errs: string[]): void {
   const here = path + seg(n._tag);
 
   // meta keys: only data-_*
@@ -183,15 +248,72 @@ function walk(n: HsonNode, path: string, parentTag: string | null, cfg: Cfg, err
   }
 }
 
-// ---------- helpers ----------
+/*  ---------- helpers ---------- */
+/**********************************************************
+ * Predicate for determining whether a tag name is a “VSN”
+ * (Virtual Structural Node) in the NEW HSON model.
+ *
+ * VSN set:
+ *   - _str, _val, _arr, _obj, _elem, _root, _ii
+ *
+ * Used by:
+ *   - `walk` and `assertNewShapeQuick` to enforce:
+ *       • VSNs never carry `_attrs`,
+ *       • certain placement rules (e.g., `_ii` under `_arr` only).
+ **********************************************************/
 function isVSN(t: string) {
   return t === STR_TAG || t === VAL_TAG || t === ARR_TAG || t === OBJ_TAG || t === ELEM_TAG || t === ROOT_TAG || t === II_TAG;
 }
 
+/**********************************************************
+ * Build a human-readable path segment for an invariant path.
+ *
+ * Behavior:
+ *   - VSN-like tags (starting with "_") → `"/_tag"`,
+ *   - normal tags → `"/tag:<name>"`.
+ *
+ * Used in:
+ *   - `walk`’s `path` tracking to make error messages easier to
+ *     interpret when debugging malformed trees.
+ **********************************************************/
 function seg(t: string) { return t.startsWith('_') ? `/${t}` : `/tag:${t}`; }
-function push(errs: string[], cfg: Cfg, s: string) { errs.push(s); }
 
+/**********************************************************
+ * Append a diagnostic string to the current error list.
+ *
+ * Notes:
+ *   - Currently does not inspect `cfg`; the decision to stop early
+ *     is handled by the caller immediately after `push`.
+ *   - Kept as a dedicated helper so later logic (e.g., logging,
+ *     deduplication, severity levels) can be centralized here.
+ **********************************************************/
+function push(errs: string[], cfg: DevCfg, s: string) { errs.push(s); }
 
+/**********************************************************
+ * Fast, non-recursive “NEW-shape” guard for HSON nodes.
+ *
+ * Purpose:
+ *   - Detect legacy or mixed-shape trees *before* running the
+ *     heavier `walk` invariant checker.
+ *
+ * Checks:
+ *   1) Legacy meta shape:
+ *        - Fails if `_meta.attrs` or `_meta.flags` is present.
+ *   2) Meta key domain:
+ *        - All keys in `_meta` must start with `data-_`.
+ *   3) VSN + attrs:
+ *        - Any VSN (_str/_val/_arr/_obj/_elem/_root/_ii) that carries
+ *          non-empty `_attrs` is rejected.
+ *   4) Traversal:
+ *        - Uses an explicit stack to walk nodes (no recursion).
+ *        - Only descends into `_content` entries that are nodes;
+ *          primitives are left for `walk` to validate (e.g. “primitive
+ *          outside _str/_val”).
+ *
+ * Errors:
+ *   - Throws immediately on the first violation; this is a hard gate
+ *     separating “old” and “new” representations.
+ **********************************************************/
 export function assertNewShapeQuick(n: any, where: string): void {
   const stack: any[] = [n];
 

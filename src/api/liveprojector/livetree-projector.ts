@@ -2,6 +2,12 @@ import { HsonNode } from "../../types-consts/node.types";
 import { Patch, Path, Store } from "../livemap/types.livemap";
 import { Projector, ProjectorMode } from "./projector";
 
+
+/*************************** 
+ * (CURRENTLY UNUSED, TBC)
+ ***************************/
+
+
 export type LiveTreeOptions = {
   // Future: hydration flags, virtualization thresholds, etc.
 };

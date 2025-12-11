@@ -1,10 +1,10 @@
 // strip-vsns.utils.ts
 
-import { is_Primitive } from "../../core/utils/guards.core.utils";
+import { is_Primitive } from "../cote-utils/guards.core";
 import { HsonNode} from "../../types-consts/node.types";
 import { STR_TAG, VAL_TAG, VSN_TAGS, II_TAG, ROOT_TAG } from "../../types-consts/constants";
 import { is_Node } from "../node-utils/node-guards.new.utils";
-import { Primitive } from "../../core/types-consts/core.types";
+import { Primitive } from "../../types-consts/core.types";
 
 
 /**

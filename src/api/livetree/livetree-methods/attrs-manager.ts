@@ -4,7 +4,7 @@ import { serialize_style } from "../../../utils/attrs-utils/serialize-style";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree } from "../livetree";
 import { StyleObject } from "../../../types-consts/css.types";
-import { Primitive } from "../../../core/types-consts/core.types";
+import { Primitive } from "../../../types-consts/core.types";
 
 /**
  * Apply a single attribute to a HSON node and keep the corresponding DOM

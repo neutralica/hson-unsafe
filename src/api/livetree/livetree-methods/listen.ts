@@ -1,6 +1,6 @@
 // listener-builder.ts
 
-import { ListenerBuilder, ListenOpts, MissingPolicy, ListenerSub, EMap } from "../../../types-consts/listen.types";
+import { ListenerBuilder, ListenOpts, MissingPolicy, ListenerSub, ElemMap } from "../../../types-consts/listen.types";
 import { LiveTree } from "../livetree";
 
 /**
@@ -124,9 +124,9 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     const el = tree.asDomElement();
     return el ? [el] : [];
   };
-  const on = <K extends keyof EMap>(
+  const on = <K extends keyof ElemMap>(
     type: K,
-    handler: (ev: EMap[K]) => void
+    handler: (ev: ElemMap[K]) => void
   ): ListenerBuilder => {
     // wrap once, read flags at dispatch so end-of-chain calls work
     const wrapped: EventListener = (ev: Event) => {
@@ -135,7 +135,7 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
       if (_stop) ev.stopPropagation();
       if (_prevent && !opts.passive) ev.preventDefault(); // passive forbids preventDefault()
 
-      handler(ev as EMap[K]);
+      handler(ev as ElemMap[K]);
 
       // optional: belt-and-suspenders once — harmless if DOM once already removed it
       if (opts.once) {

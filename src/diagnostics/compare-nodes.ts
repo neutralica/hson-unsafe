@@ -1,4 +1,5 @@
-// compare-nodes.utils.ts
+// compare-nodes.ts
+
 import type { HsonNode } from "../types-consts/node.types";
 import { is_Node } from "../utils/node-utils/node-guards.new.utils";
 import { make_string } from "../utils/primitive-utils/make-string.nodes.utils";
@@ -173,7 +174,103 @@ function compareAny(a: any, b: any, path: string): string[] {
     return comparePlainObjects(a as Record<string, unknown>, b as Record<string, unknown>, path);
 }
 
-// Public API
+/**********************************************************
+ * Deep semantic comparator for two HSON node trees.
+ *
+ * Purpose:
+ *   - Compare two HsonNode graphs (A vs B) and produce a list
+ *     of human-readable difference strings.
+ *   - Treats certain shapes (like trivial `_elem` wrappers) as
+ *     equivalent to keep comparisons aligned with NEW semantics.
+ *
+ * Comparison rules:
+ *   - Tag:
+ *       • `_tag` must match (`_tag mismatch @ path: "A" vs "B"`).
+ *
+ *   - Leaf nodes:
+ *       • `_str` and `_val` are treated as leaf VSNs.
+ *       • If both sides are leaves, compare their single payload;
+ *         mismatch → `Leaf mismatch @ path: "va" vs "vb"`.
+ *
+ *   - `_elem` semantics:
+ *       • `collapseTrivial` unwraps `_elem` if it contains exactly
+ *         one `_str` or `_val`, so:
+ *             <_elem>[_str("x")] ≡ _str("x")
+ *         for the purposes of comparison.
+ *       • `semanticChildren` treats a single `_elem` child as
+ *         transparent, comparing its content instead.
+ *
+ *   - Attributes (`_attrs`):
+ *       • Keys must match on both sides; missing keys produce:
+ *           `Missing attr in A/B @ path["key"]`.
+ *       • For `style` when both values are plain objects, keys
+ *         are sorted and compared via `stableStringify` so order
+ *         differences do not matter:
+ *           `Style mismatch @ path["style"]`.
+ *       • For other object-valued attrs, compare stable JSON.
+ *       • Primitive attrs use strict equality:
+ *           `Attr value mismatch @ path["key"]: va vs vb`.
+ *
+ *   - Content (`_content`):
+ *       • Length mismatches produce:
+ *           `_content length mismatch @ path: lenA vs lenB`.
+ *       • Elements compared pairwise with recursive `compareAny`.
+ *
+ *   - `_obj` nodes:
+ *       • Children are grouped by tag (property name).
+ *       • Keys missing on either side produce:
+ *           `Key missing in A/B @ path.key`.
+ *       • Matching keys recurse via `compare(...)` at `path.key`.
+ *
+ *   - `_arr` nodes:
+ *       • Children are compared by index:
+ *           `Child count mismatch @ path: lenA vs lenB`.
+ *       • Matching indices recurse at `path._content[i]`.
+ *
+ *   - Plain JS objects (non-node):
+ *       • Keys merged and compared recursively via `compareAny`,
+ *         reporting `Key missing in A/B @ path.key` or primitive
+ *         mismatches.
+ *
+ *   - Arrays (non-node):
+ *       • Length and element-by-element comparison via
+ *         `compareContent`.
+ *
+ *   - Type mismatches:
+ *       • If the runtime types differ (including “node vs plain
+ *         object”), the first difference is:
+ *           `Type mismatch @ path: typeA vs typeB`.
+ *
+ * API:
+ *   - compare_nodes(a, b, verbose = true): string[]
+ *
+ * Parameters:
+ *   - a, b:
+ *       • HsonNode roots to compare.
+ *       • Must be distinct references; identical refs throw, since
+ *         comparing a node against itself is usually a bug.
+ *   - verbose (default: true):
+ *       • When true:
+ *           - Logs a collapsed console group indicating success
+ *             or failure.
+ *           - Logs snipped JSON-ish views of A and B.
+ *           - Logs up to 20 diff lines, then a summary if there
+ *             are more.
+ *           - Emits a loud `console.error` with the first diff.
+ *       • When false:
+ *           - Returns the `diffs` array silently, with no logging.
+ *
+ * Returns:
+ *   - Array of diff descriptions (possibly empty).
+ *       • `[]` → trees compare equal under these semantics.
+ *       • Non-empty → structural or value mismatches found.
+ *
+ * Usage:
+ *   - Asserts strong semantic equivalence between:
+ *       • pre- and post-transform HSON trees,
+ *       • JSON→HSON→JSON or HTML→HSON→HTML round-trips,
+ *       • different parsers/serializers meant to be equivalent.
+ **********************************************************/
 export function compare_nodes(a: HsonNode, b: HsonNode, verbose = true): string[] {
     if (!a || !b) throw new Error(`compare_nodes: missing input (a:${JSON.stringify(a)}, b:${JSON.stringify(b)})`);
     if (a === b) {

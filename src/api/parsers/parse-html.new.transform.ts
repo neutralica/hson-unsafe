@@ -3,7 +3,7 @@
 import { HsonNode } from "../../types-consts/node.types";
 import { ROOT_TAG, ELEM_TAG, STR_TAG, EVERY_VSN, VAL_TAG, OBJ_TAG, ARR_TAG, II_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";
-import { is_Primitive, is_string } from "../../core/utils/guards.core.utils";
+import { is_Primitive, is_string } from "../../utils/cote-utils/guards.core";
 import { _snip } from "../../utils/sys-utils/snip.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs.utils";
@@ -14,15 +14,15 @@ import { expand_flags } from "../../utils/html-preflights/expand-flags.utils";
 import { expand_void_tags } from "../../utils/html-preflights/expand-self-closing.utils";
 import { escape_text } from "../../utils/html-preflights/escape-text.new.utils";
 import { strip_html_comments } from "../../utils/html-preflights/strip-html-comments.new.utils";
-import { wrap_cdata } from "../../safety/wrap-cdata.utils";
+import { wrap_cdata } from "../../safety/wrap-cdata";
 import { optional_endtag_preflight } from "../../utils/html-preflights/optional-endtag.html.utils";
-import { escape_attr_angles } from "../../safety/escape_angles.html.utils";
-import { dedupe_attrs_html } from "../../safety/dedupe-attrs.html.utils";
+import { escape_attr_angles } from "../../safety/escape_angles";
+import { dedupe_attrs_html } from "../../safety/dedupe-attrs";
 import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
 import { mangle_illegal_attrs } from "../../utils/html-preflights/mangle-illegal-attrs.utils";
 import { namespace_svg } from "../../utils/html-preflights/namespace-svg";
 import { is_indexed } from "../../utils/node-utils/node-guards.new.utils";
-import { Primitive } from "../../core/types-consts/core.types";
+import { Primitive } from "../../types-consts/core.types";
 
 /**
  * Parse HTML/XML (trusted or pre-sanitized) into a rooted `HsonNode` tree.

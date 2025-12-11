@@ -6,6 +6,34 @@ import { parse_selector } from "../../../utils/tree-utils/parse-selector.utils";
 import { LiveTree } from "../livetree";
 import { search_nodes } from "./search2";
 
+/**
+ * Removes one or more *direct child nodes* from this LiveTree’s underlying
+ * HSON model, and detaches their corresponding DOM subtrees and listeners.
+ *
+ * Behavior:
+ *   • Only **direct children** of the current node are considered.
+ *   • `query` may be a selector string or an `HsonQuery` object.
+ *   • Matching children are:
+ *       – fully detached from the DOM,
+ *       – removed from `NODE_ELEMENT_MAP`,
+ *       – recursively stripped of listeners and QUID scopes,
+ *       – pruned from the parent node’s `_content` array.
+ *   • If nothing matches, the LiveTree is left unchanged.
+ *
+ * Guarantees:
+ *   • Does not recurse through grandchildren unless they are reached by
+ *     `detach_node_deep` during teardown.
+ *   • Returns `this` to allow method chaining.
+ *
+ * Notes:
+ *   • This is a structural *mutation* of the HSON model.
+ *   • The LiveTree instance remains valid after removal, still pointing
+ *     to the same parent node.
+ *
+ * @param query  A selector string or `HsonQuery` describing which direct
+ *               children should be removed.
+ * @returns      The same `LiveTree` instance, after mutation.
+ */
 export function remove_child(
   this: LiveTree,
   query: HsonQuery | string,
