@@ -1,7 +1,5 @@
 // readme.hson.md
 
-### DEPRECATED - see `hson` for current version ###
-
 
 ```
 ▗▖ ▗▖ ▗▄▄▖ ▗▄▖ ▗▖  ▗▖
