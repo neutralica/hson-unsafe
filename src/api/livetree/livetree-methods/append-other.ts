@@ -29,7 +29,7 @@ import { normalize_ix } from "./append";
  *                used for both HSON and DOM insertion; otherwise nodes
  *                are appended to the end.
  */
-export function appendNodesToTree(
+export function append_nodes(
   targetNode: HsonNode,
   nodesToAppend: HsonNode[],
   index?: number,
@@ -112,7 +112,7 @@ export function append_branch(
   // preserve host root for pruning / removal
   branch.adoptRoots(this.getHostRoots());
 
-  appendNodesToTree(targetNode, nodesToAppend, index);
+  append_nodes(targetNode, nodesToAppend, index);
   return this;
 }
 
@@ -132,7 +132,7 @@ export function append_branch(
  *                where the combined branch nodes will be inserted.
  * @returns The receiver `LiveTree` (for chaining).
  */
-export function appendMulti(
+export function append_multi(
   this: LiveTree,
   branches: TreeSelector | LiveTree[],
   index?: number,
@@ -150,6 +150,6 @@ export function appendMulti(
     b.adoptRoots(this.getHostRoots());
   }
 
-  appendNodesToTree(targetNode, nodesToAppend, index);
+  append_nodes(targetNode, nodesToAppend, index);
   return this;
 }

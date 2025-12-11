@@ -15,27 +15,72 @@ import { is_string } from "../../core/utils/guards.core.utils";
 import { Primitive } from "../../core/types-consts/core.types";
 
 
-/* debug log */
 
+/**
+ * Create a canonical HSON leaf node from a primitive value.
+ *
+ * Rules:
+ * - `string`  → `<_str>` node with `_content: [value]`.
+ * - non-string primitive (`number | boolean | null`) → `<_val>` node with `_content: [value]`.
+ *
+ * Notes:
+ * - `_meta` is always initialized to an empty object for leaf nodes created here.
+ * - This is the preferred constructor for primitive payloads to keep string vs non-string
+ *   semantics explicit in the IR.
+ *
+ * @param v - Primitive value to wrap as a leaf node.
+ * @returns A new `HsonNode` using `_str` or `_val` depending on the runtime type of `v`.
+ */
 export const make_leaf = (v: Primitive): HsonNode =>
 (is_string(v)
     ? CREATE_NODE({ _tag: STR_TAG, _meta: {}, _content: [v] })
     : CREATE_NODE({ _tag: VAL_TAG, _meta: {}, _content: [v] }));
 
 
-
-
 /**
- * assembles a flat array of hson tokens into a hierarchical hsonnode tree.
+ * Assemble a flat token stream into a hierarchical `HsonNode` tree.
  *
- * this function acts as the second stage of the hson parser, consuming the
- * output of the tokenizer. it uses a stack to build the nested structure of
- * the final data tree, correctly handling open, close, and self-closing tokens.
+ * This is the second stage of the HSON parser: it consumes the output of
+ * `tokenize_hson` and builds the final IR, enforcing the HSON clustering
+ * and close-mode rules.
  *
- * @param {AllTokens[]} $tokens - an array of token objects produced by the `tokenize_hson` function.
- * @returns {HsonNode} the fully constructed, hierarchical root hsonnode.
+ * High-level behavior:
+ * - Walks the token array once, maintaining an index (`ix`) into `$tokens`.
+ * - Uses `readTag` to parse element/VSN tags (`OPEN`…`CLOSE`) into nodes,
+ *   shaping content into `_elem` or `_obj` clusters based on the tag’s
+ *   close kind (`CLOSE_KIND.elem` vs `CLOSE_KIND.obj`).
+ * - Uses `readArray` to parse `ARR_OPEN`…`ARR_CLOSE` sequences into
+ *   `_arr` nodes full of `_ii` children, each tagged with `_data-index`.
+ * - Handles shorthand empty objects (`EMPTY_OBJ`, i.e. `<>`) both at
+ *   top-level and inside arrays.
+ * - Converts `TEXT` tokens into primitive leaves via `coerce`, or via
+ *   `decode_json_string_literal` when quoted, wrapping them with
+ *   `make_leaf`.
+ * - Tracks the close kind for each top-level construct in `topCloseKinds`
+ *   so that implicit roots can be shaped correctly later.
+ *
+ * Root synthesis:
+ * - If the sole top-level node is already `<_root>`, return it directly.
+ * - Otherwise, synthesize a `_root` node according to the top-level shape:
+ *   - A single cluster node (`_obj`, `_arr`, `_elem`) is wrapped as-is.
+ *   - A single standard tag is wrapped in `_obj` or `_elem` depending on
+ *     its recorded close kind.
+ *   - No nodes at all produce a `_root` with an empty `_obj` cluster.
+ *   - Multiple top-level nodes are wrapped in `_obj` or `_elem` if the
+ *     close kinds are unanimous; mixed modes default to `_elem`.
+ *
+ * Error handling:
+ * - Any unexpected token kind in a given context (inside tags, arrays,
+ *   or at the top level) results in a transform error.
+ * - Missing closing tokens, malformed `_root` / VSN shapes, or invalid
+ *   payloads for special tags (e.g. `<_val>`) also throw.
+ *
+ * @param $tokens - Token array produced by `tokenize_hson`.
+ * @returns A `_root`-wrapped `HsonNode` representing the parsed HSON tree.
+ * @see tokenize_hson
+ * @see make_leaf
+ * @see unwrap_root_obj
  */
-
 export function parse_tokens($tokens: Tokens[]): HsonNode {
     const nodes: HsonNode[] = [];
     const topCloseKinds: CloseKind[] = [];

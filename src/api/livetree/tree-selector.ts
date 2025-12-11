@@ -6,12 +6,17 @@ import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
 import { DataManager, DatasetObj, DatasetValue } from "./livetree-methods/data-manager2.tree";
 import { build_listener } from "./livetree-methods/listen";
-import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
+import { StyleManager } from "./livetree-methods/style-manager2.utils";
 import { StyleObject } from "../../types-consts/css.types";
 import { LiveTree } from "./livetree";
 import { TreeSelector } from "../../types-consts/livetree.types";
 import { Primitive } from "../../core/types-consts/core.types";
 import { make_selector_create, make_tree_create } from "./livetree-methods/create-typed";
+
+
+/* ***TYPES ARE DUPLICATES OF TREESELECTOR INTERFACE
+  TODO decide which to keep
+ */
 
 /**
  * Construct a `TreeSelector` over a set of `LiveTree` instances.
@@ -105,7 +110,6 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
       }
       return items[index];
     },
-
     /**
      * Set one or more attributes on every `LiveTree` in this selector.
      *
@@ -203,9 +207,9 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
      * `setMulti` are applied to every selected tree.
      *
      * @returns A `StyleManager2`-compatible proxy for the selection.
-     * @see StyleManager2
+     * @see StyleManager
      */
-    get style(): StyleManager2 {
+    get style(): StyleManager {
       // CHANGED: inline "first tree" lookup instead of calling firstTree()
       const first = items[0];
       if (!first) {
@@ -215,7 +219,7 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
       const base = first.style;
 
       // Clone the StyleManager surface
-      const proxy = Object.create(base) as StyleManager2;
+      const proxy = Object.create(base) as StyleManager;
 
       // Override ONLY setMulti to broadcast
       (proxy as any).setMulti = (block: StyleObject): LiveTree => {
@@ -378,7 +382,7 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
  * `firstTree()` in a predictable way.
  *
  * @param items - The `LiveTree` instances whose datasets will be managed.
- * @returns A `DataManager2` facade that broadcasts writes and reads
+ * @returns A `DataManager` facade that broadcasts writes and reads
  *          from the first tree.
  * @see DataManager
  */

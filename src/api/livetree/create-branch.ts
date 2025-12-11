@@ -6,17 +6,30 @@ import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.
 import { create_live_tree2 } from "./create-live-tree";
 import { LiveTree } from "./livetree";
 
-
 /**
- * Normalize a root HSON node into a LiveTree root and populate the
- * NODE_ELEMENT_MAP via create_live_tree.
+ * Convert a raw HSON node into a `LiveTree` branch and eagerly construct
+ * its corresponding DOM subtree.
  *
- * Rules:
- *  - If the node is `_root` with a single child, unwrap to that child.
- *  - Otherwise, use the node as-is.
+ * Behavior:
+ * - Calls `unwrap_root_elem(rootNode)` to remove structural wrappers such
+ *   as `_root` or `_elem`, ensuring that only a real element node is used
+ *   as the branch root.
+ * - If unwrapping yields no element nodes, logs a warning and falls back
+ *   to using `rootNode` directly.
+ * - If unwrapping yields more than one node, throws, since a `LiveTree`
+ *   branch must have exactly one concrete root.
+ * - For the resulting root element, calls `create_live_tree2` to build the
+ *   DOM subtree and populate `NODE_ELEMENT_MAP`.
  *
- * This keeps `_root` as a purely structural wrapper that never becomes
- * a LiveTree selection root or listener target.
+ * This function makes structural VSNs invisible to callers, guaranteeing
+ * that the returned `LiveTree` always references a single, concrete,
+ * DOM-backed element node.
+ *
+ * @param rootNode - The raw HSON node to normalize into a `LiveTree` root.
+ * @returns A new `LiveTree` instance rooted at the unwrapped element node.
+ * @see unwrap_root_elem
+ * @see create_live_tree2
+ * @see LiveTree
  */
 export function make_branch_from_node(rootNode: HsonNode): LiveTree {
   const unwrapped = unwrap_root_elem(rootNode);

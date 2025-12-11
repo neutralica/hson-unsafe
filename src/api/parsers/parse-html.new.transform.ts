@@ -24,6 +24,43 @@ import { namespace_svg } from "../../utils/html-preflights/namespace-svg";
 import { is_indexed } from "../../utils/node-utils/node-guards.new.utils";
 import { Primitive } from "../../core/types-consts/core.types";
 
+/**
+ * Parse HTML/XML (trusted or pre-sanitized) into a rooted `HsonNode` tree.
+ *
+ * Input forms:
+ * - `string`:
+ *     - Runs the full preflight pipeline to coerce HTML into
+ *       XML-safe markup before parsing.
+ * - `Element`:
+ *     - Skips string preprocessing and converts the element subtree
+ *       directly via `convert`.
+ *
+ * String pipeline (high level):
+ * 1. Strip HTML comments (`strip_html_comments`).
+ * 2. Expand boolean/flag attributes (`expand_flags`).
+ * 3. Escape text and attribute content (`escape_text`, `expand_entities`,
+ *    `quote_unquoted_attrs`, `escape_attr_angles`, `mangle_illegal_attrs`).
+ * 4. Normalize void tags (`expand_void_tags`).
+ * 5. Handle CDATA and SVG namespacing (`wrap_cdata`, `namespace_svg`).
+ * 6. Patch bare ampersands to XML-safe form.
+ * 7. Attempt XML parse via `DOMParser("application/xml")`.
+ *    - On parse errors, progressively:
+ *        - Deduplicate attributes (`dedupe_attrs_html`).
+ *        - Re-quote/unquote attributes as needed.
+ *        - Escape unescaped `<` in attributes.
+ *        - Run `optional_endtag_preflight` to balance optional end tags.
+ *        - As a last resort, wrap in `<_root>…</_root>` and retry.
+ *    - If parsing still fails, throw a transform error.
+ * 8. Take `documentElement` as the root element and pass it to `convert`.
+ * 9. Wrap the converted tree via `wrap_as_root` to ensure a `_root` node.
+ * 10. Validate invariants with `assert_invariants`.
+ *
+ * @param $input - Raw HTML/XML string or an existing `Element` subtree.
+ * @returns A `_root`-wrapped `HsonNode` tree ready for downstream use.
+ * @see convert
+ * @see wrap_as_root
+ * @see assert_invariants
+ */
 export function parse_html($input: string | Element): HsonNode {
     let inputElement: Element;
 
@@ -117,7 +154,47 @@ export function parse_html($input: string | Element): HsonNode {
 }
 
 // --- recursive conversion function ---
-
+/**
+ * Recursively convert a DOM `Element` subtree into a `HsonNode` subtree.
+ *
+ * Responsibilities:
+ * - Validate tag semantics and VSN usage:
+ *   - Reject literal `<_str>` elements.
+ *   - Reject unknown tags starting with `_` that are not recognized VSNs.
+ * - Parse attributes and meta via `parse_html_attrs`.
+ * - Handle special raw-text elements (`<style>`, `<script>`):
+ *   - Treat their entire (optionally CDATA-wrapped) text content as a
+ *     single `_str` child.
+ * - Convert children:
+ *   - Calls `elementToNode` to transform child DOM nodes into a mix of
+ *     primitives and `HsonNode`s.
+ *   - Wrap primitives into `_str` or `_val` nodes as appropriate.
+ * - Handle VSN tags explicitly:
+ *   - `<_val>`:
+ *       - Enforce exactly one payload value.
+ *       - Coerce strings to non-string primitives via `coerce`.
+ *       - Reject any payload that still resolves to a string.
+ *   - `<_obj>`:
+ *       - Children treated as property nodes, returned as `_obj`.
+ *   - `<_arr>`:
+ *       - Children must be valid index tags, returned as `_arr`.
+ *   - `<_ii>`:
+ *       - Must have exactly one child, returned as `_ii` with optional meta.
+ *   - `<_elem>`:
+ *       - Disallowed in incoming HTML (internal-only wrapper).
+ * - Default HTML element path:
+ *   - For zero children:
+ *       - Produce an element with an empty `_elem` cluster.
+ *   - For a single cluster child (`_obj`, `_arr`, `_elem`):
+ *       - Pass through the cluster unchanged.
+ *   - For mixed/multiple non-cluster children:
+ *       - Wrap once in `_elem` to form a pure element-mode cluster.
+ *
+ * @param $el - DOM element to convert.
+ * @returns A `HsonNode` representing the converted subtree.
+ * @see elementToNode
+ * @see parse_html_attrs
+ */
 function convert($el: Element): HsonNode {
     if (!($el instanceof Element)) {
         _throw_transform_err('input to convert function is not Element', '[(parse-html): convert()]', $el);
@@ -283,7 +360,25 @@ function convert($el: Element): HsonNode {
     });
 }
 
-// Wrap the result at _root correctly (no blanket _elem around clusters)
+/**
+ * Ensure a `HsonNode` tree is rooted at `_root` with correct clustering.
+ *
+ * Rules:
+ * - If `node._tag === ROOT_TAG`:
+ *     - Return the node as-is (already rooted).
+ * - If `node` is a cluster node (`_obj`, `_arr`, `_elem`):
+ *     - Wrap directly under a new `_root`:
+ *       `{ _tag: _root, _content: [node] }`.
+ * - Otherwise (normal HTML-ish element/leaf):
+ *     - Wrap in an `_elem` cluster, then under `_root`:
+ *       `{ _tag: _root, _content: [ { _tag: _elem, _content: [node] } ] }`.
+ *
+ * This keeps `_root` as a pure structural top-level wrapper while
+ * preserving the intended element vs. cluster semantics.
+ *
+ * @param node - The `HsonNode` to normalize as a root.
+ * @returns A `_root`-tagged `HsonNode` tree.
+ */
 function wrap_as_root(node: HsonNode): HsonNode {
     if (node._tag === ROOT_TAG) return node; // already rooted
     if (node._tag === OBJ_TAG || node._tag === ARR_TAG || node._tag === ELEM_TAG) {
@@ -295,11 +390,26 @@ function wrap_as_root(node: HsonNode): HsonNode {
     });
 }
 
-/** 
- * parses child DOM nodes and returns an array of HsonNodes.
- *  - recursively calls `convert` for element children and creates VSNs for BasicValue children. 
- * @param {NodeListOf<ChildNode>} $els - the nodes in question
- * @returns {(HsonNode | Primitive)[]} - either a finished Node or a primitive value
+/**
+ * Convert a DOM child node list into a sequence of HSON children.
+ *
+ * Behavior:
+ * - Iterates over the given `ChildNode`s:
+ *   - `ELEMENT_NODE`:
+ *       - Recursively converted via `convert`, returning a `HsonNode`.
+ *   - `TEXT_NODE`:
+ *       - Takes `textContent`, trims it, and then:
+ *         - If the trimmed text is exactly `""` (two quote chars):
+ *             - Emits an explicit `_str` node with an empty string payload.
+ *         - If the trimmed text has non-whitespace content:
+ *             - Emits the trimmed string as a primitive (to be wrapped
+ *               later by callers such as `convert`).
+ *         - Pure layout whitespace is ignored.
+ *   - Other node types are ignored.
+ *
+ * @param $els - The DOM child nodes to transform.
+ * @returns An array of `HsonNode | Primitive` representing the converted children.
+ * @see convert
  */
 function elementToNode($els: NodeListOf<ChildNode>): (HsonNode | Primitive)[] {
     const children: (HsonNode | Primitive)[] = [];

@@ -10,6 +10,43 @@ import { clone_node } from "../../utils/node-utils/clone-node.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
+/**
+ * Serialize a well-formed HSON tree to JSON text.
+ *
+ * Pipeline:
+ * 1. Clone & validate:
+ *    - `clone_node($node)` creates a defensive copy so the original IR is not
+ *      mutated by any downstream fixes or assertions.
+ *    - `assert_invariants(clone, "serialize_json")` guarantees the node
+ *      satisfies all structural invariants expected of HSON 2.0 before
+ *      attempting to emit JSON.
+ *
+ * 2. Structural conversion:
+ *    - Delegates to `jsonFromNode(clone)` to convert the HSON tree into a
+ *      plain `JsonValue` (object/array/primitive), resolving:
+ *        - VSNs (`_root`, `_obj`, `_arr`, `_elem`, `_ii`, `_str`, `_val`)
+ *        - Standard tags (HTML-like and user-defined)
+ *      into standard JS shapes.
+ *
+ * 3. Stringification:
+ *    - Uses `make_string(serializedJson)` (a thin wrapper over
+ *      `JSON.stringify` with project-level defaults) to produce the final
+ *      JSON string.
+ *
+ * 4. Error handling:
+ *    - Any failure during the stringify step is caught and wrapped in
+ *      `_throw_transform_err` with a clear origin `"serialize-json"`.
+ *
+ * Guarantees:
+ * - Input must be a valid `HsonNode` that passes invariants, or an error is
+ *   thrown.
+ * - Output is a JSON string representing the same logical data that produced
+ *   the HSON tree (modulo the HSON-to-JSON mapping rules in `jsonFromNode`).
+ *
+ * @param $node - The root HSON node to serialize.
+ * @returns A JSON string representation of the node.
+ * @throws If invariants fail or if `make_string` throws during stringify.
+ */
 export function serialize_json($node: HsonNode): string {
     const clone = clone_node($node)
     assert_invariants(clone, 'serialize_json')
@@ -23,17 +60,81 @@ export function serialize_json($node: HsonNode): string {
 }
 
 /**
- * recursive splitter runs nodes through until they terminate in a JSON-shaped endpoint, 
- * then returns that after some VSN processing
+ * Recursively convert a HSON node into a JSON-shaped `JsonValue`.
  *
- * this is the core recursive helper for the `serialize_json` function. it
- * translates the hson node structure, including vsns like '_obj' and '_array',
- * back into its equivalent javascript representation.
+ * This is the core structural converter behind `serialize_json`. It walks
+ * the HSON IR, interprets VSN tags, and reconstructs the nearest equivalent
+ * JavaScript value (object, array, or primitive).
  *
- * @param {HsonNode} $node - the hsonnode to convert
- * @returns {JsonValue} the resulting javascript object, array, or primitive value
+ * Tag-by-tag semantics:
+ *
+ * - `_root`:
+ *   - Must have exactly one child.
+ *   - That child is taken as the true data cluster; `_root` itself is not
+ *     reflected in the JSON surface.
+ *
+ * - `_arr`:
+ *   - Expects `_content` to be a list of `_ii` index nodes.
+ *   - Each `_ii` is unwrapped and converted; the resulting array preserves
+ *     element order and ignores the index metadata.
+ *
+ * - `_obj`:
+ *   - If `_content` has a single child that is one of:
+ *       `_str`, `_val`, `_arr`, `_obj`, `_elem`
+ *     then this wrapper is treated as transparent and the child’s JSON
+ *     representation is returned directly. This mirrors the “cluster”
+ *     behavior in the rest of the system.
+ *   - Otherwise:
+ *     - Each child is treated as a property node:
+ *       - The tag name (`propNode._tag`) becomes the object key.
+ *       - The first child of that property node is converted recursively
+ *         and used as the value.
+ *     - Produces a plain `JsonObj` whose keys correspond to these tag names.
+ *
+ * - `_str` / `_val`:
+ *   - Return their single primitive payload directly:
+ *     - `_str` → string
+ *     - `_val` → number | boolean | null
+ *
+ * - `_elem`:
+ *   - Represents “element cluster” semantics in JSON form.
+ *   - Each child in `_content` is converted recursively.
+ *   - The result is wrapped as `{ "_elem": [ ...items ] }`, so that element
+ *     mode remains distinguishable at the JSON layer.
+ *
+ * - `_ii`:
+ *   - Index wrapper used inside `_arr`.
+ *   - Must contain exactly one child node.
+ *   - Unwrapped and converted directly via `jsonFromNode` on that child.
+ *
+ * - Default branch (standard or user-defined tag, e.g. `"div"`, `"recipe"`):
+ *   - Build a property object of the shape:
+ *       `{ [tag]: <payload>, _attrs?, _meta? }`
+ *   - Content:
+ *       - No children  → `{ [tag]: "" }` (empty string payload)
+ *       - One child    → `{ [tag]: jsonFromNode(child) }`
+ *       - Multiple children → error (a standard tag is not allowed to have
+ *         multiple content clusters at this stage).
+ *   - Attributes:
+ *       - If `_attrs` is present and non-empty, it is attached as `_attrs`
+ *         on the same object, merged with any existing `_attrs`.
+ *   - Meta:
+ *       - If `_meta` is present and non-empty, it is attached as `_meta`
+ *         without further filtering; meta is preserved as-is in JSON mode.
+ *
+ * Safety / guardrails:
+ * - Rejects any tag that starts with `_` but is not a known VSN
+ *   (`EVERY_VSN`), to avoid leaking unknown control tags into JSON.
+ * - For `_root`, `_arr`, `_ii`, `_elem`, and cluster shapes, checks that
+ *   structural expectations are met (e.g., `_root` has exactly one child,
+ *   `_ii` has exactly one child, etc.).
+ *
+ * @param $node - The HSON node to convert.
+ * @returns A `JsonValue` (object, array, or primitive) suitable for
+ *   `JSON.stringify`.
+ * @throws If the node shape violates HSON invariants or contains unknown
+ *   VSN-like tags.
  */
-
 function jsonFromNode($node: HsonNode): JsonValue {
 
     if (!$node || (typeof $node._tag !== 'string')) {

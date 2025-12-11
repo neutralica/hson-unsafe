@@ -13,22 +13,24 @@ import { parse_style_string } from "../../utils/attrs-utils/parse-style";
 import { serialize_style } from "../../utils/attrs-utils/serialize-style";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
-
-
-function dataOnlyMeta(meta: unknown): HsonMeta {
-    const rec = (meta && typeof meta === "object" && !Array.isArray(meta))
-        ? (meta as Record<string, unknown>)
-        : undefined;
-
-    const out: HsonMeta = {};
-    if (!rec) return out;
-
-    for (const [k, v] of Object.entries(rec)) {
-        if (k.startsWith(_META_DATA_PREFIX)) out[k] = v == null ? "" : String(v);
-    }
-    return out;
-}
-
+/**
+ * Infer the appropriate HSON VSN tag for a JSON value.
+ *
+ * Mapping rules:
+ * - Arrays → `_arr`
+ * - Plain objects → `_obj`
+ * - Strings → `_str`
+ * - `null`, numbers, booleans → `_val`
+ *
+ * Anything that does not fit these categories triggers a transform error.
+ *
+ * This function is used by JSON→HSON transforms to choose the correct
+ * structural tag for each JSON value.
+ *
+ * @param $value - Arbitrary JSON value to classify.
+ * @returns One of `ARR_TAG`, `OBJ_TAG`, `STR_TAG`, or `VAL_TAG`.
+ * @throws If the value cannot be classified.
+ */
 function getTag($value: JsonValue): string {
     // 1) Collections first (so they aren't misclassified as "not string")
     if (Array.isArray($value)) return ARR_TAG;            // _arr
@@ -49,14 +51,37 @@ const FORBIDDEN_JSON_VSN = new Set([
     '_obj', '_arr', '_ii', '_str', '_val',
 ]); // _attrs is HTML-source only
 
-function firstNonUnderscoreKey(obj: Record<string, unknown>): string | undefined {
-    return Object.keys(obj).find(k => !k.startsWith('_'));
-}
-
+/**
+ * Return the keys of an object that do not start with `"_"`.
+ *
+ * Intended for separating user-facing JSON properties from reserved
+ * HSON/VSN metadata, which conventionally use underscore-prefixed keys.
+ *
+ * @param obj - Object whose keys should be filtered.
+ * @returns An array of keys that do not begin with `"_"`.
+ */
 function nonUnderscoreKeys(obj: Record<string, unknown>): string[] {
     return Object.keys(obj).filter(k => !k.startsWith('_'));
 }
 
+/**
+ * Assert that a JSON object does not use reserved HSON/VSN keys.
+ *
+ * Reserved keys:
+ * - `_obj`, `_arr`, `_ii`, `_str`, `_val`
+ *
+ * These are reserved for HSON/HTML internal structures and must not
+ * appear directly in user-provided JSON. If any such key is found,
+ * a transform error is thrown with contextual information.
+ *
+ * @param obj - The JSON object to validate.
+ * @param where - Human-readable context string describing the location
+ *                of this object in the overall JSON structure, used
+ *                to enrich the error message.
+ * @throws If `obj` contains any reserved key listed in `FORBIDDEN_JSON_VSN`.
+ * @see FORBIDDEN_JSON_VSN
+ * @see _throw_transform_err
+ */
 function assertNoForbiddenVSNKeysInJSON(obj: Record<string, unknown>, where: string) {
     for (const k of Object.keys(obj)) {
         if (FORBIDDEN_JSON_VSN.has(k)) {
@@ -70,18 +95,90 @@ function assertNoForbiddenVSNKeysInJSON(obj: Record<string, unknown>, where: str
 }
 
 /**
- * recursively parses a json string or a javascript object into the
- * canonical hson node structure.
+ * Convert a JSON value into an `HsonNode` subtree, using a parent tag
+ * to decide which HSON shape to build (`_str`, `_val`, `_arr`, `_obj`,
+ * `_elem`, `_root`).
  *
- * all parsers adhere to the "always wrap" principle 
- * the properties of a json object will be contained within a single '_obj'
- *  vsn 
- * 
- * (the items of a json array will be contained within an '_array' vsn, which behaves differently)
+ * Dispatch rules (by `$parentTag`):
  *
- * @param {string | JsonValue} $srcJson - the json data to parse, either as a raw string or a pre-parsed javascript object/array.
- * @param {string} $parentTag - the parent tag, usually necessary for determining which VSN to create 
- * @returns {HsonNode} the root hsonnode of the resulting data structure.
+ * 1. Primitive branch (`STR_TAG` / `VAL_TAG`)
+ *    - `STR_TAG`:
+ *      - Requires `$srcJson` to be a string, including `""`.
+ *      - Returns `<_str>` with `_content: [string]`.
+ *    - `VAL_TAG`:
+ *      - Requires `$srcJson` to be a non-string primitive
+ *        (`number | boolean | null`).
+ *      - Returns `<_val>` with `_content: [primitive]`.
+ *
+ * 2. Array branch (`ARR_TAG`)
+ *    - Requires `$srcJson` to be an array.
+ *    - For each item:
+ *      - Computes the child tag with `getTag(val)`.
+ *      - Recursively calls `nodeFromJson(val, childTag)` to get a child node.
+ *      - Wraps the child in an `<_ii>` node with `_meta.data-_index` equal
+ *        to the array index.
+ *    - Returns `<_arr>` containing the `_ii` children.
+ *
+ * 3. Object branch (`OBJ_TAG`)
+ *    - Requires `$srcJson` to be a non-array object.
+ *    - Applies one of three mutually exclusive paths:
+ *
+ *    A) Root form: `{ "_root": <payload>, ... }`
+ *       - Forbids non-underscore siblings alongside `_root`.
+ *       - Recursively parses `<payload>` via `nodeFromJson`.
+ *       - Ensures the `_root` child is a cluster:
+ *         - Scalar children (`_str` / `_val`) are wrapped in `<_elem>`.
+ *       - Returns `<_root>` containing a single cluster child.
+ *
+ *    B) Element form: `{ "_elem": [ ... ] }`
+ *       - Requires `_elem` value to be an array.
+ *       - Each item must be one of:
+ *         - `string` → `<_str>` child,
+ *         - `number | boolean | null` → `<_val>` child,
+ *         - element-object:
+ *           `{ tagName: payload, _attrs?, _meta? }`
+ *           - Rejects reserved VSN keys via
+ *             `assertNoForbiddenVSNKeysInJSON`.
+ *           - Requires exactly one non-underscore tag key.
+ *           - Hoists `_attrs` and `_meta` onto the created element node.
+ *           - Normalizes `_attrs.style`, accepting:
+ *             - style object → `serialize_style` → `parse_style_string`,
+ *             - style string → `parse_style_string`,
+ *             - null/undefined → dropped.
+ *           - Recursively builds the child subtree from `payload` using
+ *             `nodeFromJson(...)`.
+ *       - Returns a single `<_elem>` node with these children.
+ *
+ *    C) Generic object form (plain JSON object)
+ *       - Forbids reserved VSN keys via
+ *         `assertNoForbiddenVSNKeysInJSON`.
+ *       - For each own key:
+ *         - Builds a value node:
+ *           - `string` → `<_str>`,
+ *           - `number | boolean | null` → `<_val>`,
+ *           - array → recurse with parent `_arr`,
+ *           - object → recurse with parent `_obj`.
+ *         - Wraps non-cluster children in an `<_obj>` to enforce JSON-mode
+ *           “object cluster” semantics.
+ *         - Wraps that in a property node `<key>` whose `_content` is the
+ *           cluster payload.
+ *       - Returns a single `<_obj>` node containing all property nodes.
+ *
+ * Errors:
+ * - Throws via `_throw_transform_err` when:
+ *   - `$srcJson` type does not match the expected parent tag.
+ *   - `_root` objects have illegal siblings.
+ *   - `_elem` is not an array or has invalid items.
+ *   - A generic object contains reserved VSN keys.
+ *   - A value is not representable as a supported HSON shape.
+ *
+ * @param $srcJson - The JSON value to convert (already parsed).
+ * @param $parentTag - The HSON tag that dictates how `$srcJson` is interpreted
+ *   (`STR_TAG`, `VAL_TAG`, `ARR_TAG`, `OBJ_TAG`, etc).
+ * @returns An object containing the constructed `node` subtree.
+ * @see parse_json
+ * @see getTag
+ * @see assertNoForbiddenVSNKeysInJSON
  */
 export function nodeFromJson(
     $srcJson: JsonValue,
@@ -313,9 +410,42 @@ export function nodeFromJson(
     _throw_transform_err(`unhandled parentTag ${$parentTag}`, 'nodeFromJson.dispatch');
 }
 
-
-/* --- main exported function; parses the JSON (if string) and sends in to loop --- */
-
+/**
+ * Parse JSON into a rooted `HsonNode` tree.
+ *
+ * Input handling:
+ * - If `$input` is a string, it is parsed with `JSON.parse`. Any parse
+ *   error is wrapped and rethrown via `_throw_transform_err`.
+ * - If `$input` is already a `JsonValue`, it is used as-is.
+ *
+ * Legacy `_root` unwrapping:
+ * - If the top-level value is an object of the form:
+ *     `{ "_root": <payload>, "_meta"?: { ... } }`
+ *   then:
+ *   - `jsonToProcess` is set to `<payload>`.
+ *   - Any `_meta` entries whose keys begin with the data-meta prefix
+ *     (`_data-*`) are copied into `rootMeta` and attached to the final
+ *     `_root` node.
+ * - All other keys (including non-`_data-*` meta) are ignored for the
+ *   purposes of root metadata.
+ *
+ * Conversion:
+ * - Delegates to `nodeFromJson(jsonToProcess, getTag(jsonToProcess))`
+ *   to build the main HSON subtree.
+ * - Wraps the resulting node in a `_root` wrapper:
+ *   - `_tag: ROOT_TAG`
+ *   - `_meta: rootMeta` (if any data-meta was preserved)
+ *   - `_content: [node]`
+ * - Runs `assert_invariants` on the final root to ensure structural
+ *   correctness.
+ *
+ * @param $input - JSON string or already-parsed `JsonValue`.
+ * @returns A `_root`-wrapped `HsonNode` representing the JSON payload.
+ * @throws If JSON parsing fails or invariants are violated.
+ * @see nodeFromJson
+ * @see getTag
+ * @see assert_invariants
+ */
 export function parse_json($input: string | JsonValue): HsonNode {
   let parsed: JsonValue;
   try {

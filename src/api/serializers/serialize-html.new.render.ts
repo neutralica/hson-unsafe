@@ -13,7 +13,30 @@ import { _throw_transform_err } from '../../utils/sys-utils/throw-transform-err.
 
   const RAWTEXT = new Set(["style", "script"]);
 
-// Collects verbatim text from a subtree (no escaping, no trim)
+/**
+ * Collect raw textual content from a subtree without trimming or escaping.
+ *
+ * Behavior:
+ * - Walks a mixed list of `HsonNode | Primitive`.
+ * - For `_str` nodes:
+ *   - Takes the first `_content` entry (if any),
+ *   - Uses it as a string if already a string, otherwise stringifies it.
+ * - For other node types:
+ *   - Recursively descends into their `_content`.
+ * - For primitive leaves:
+ *   - Appends `String(primitive)` directly.
+ *
+ * Notes:
+ * - Does not perform any HTML/XML escaping.
+ * - Does not collapse whitespace or remove newlines.
+ *
+ * Intended use:
+ * - Raw-text serialization for RAWTEXT elements like `<style>` and `<script>`
+ *   where content should be preserved verbatim as much as possible.
+ *
+ * @param nodes - The mixed child list to traverse.
+ * @returns Concatenated raw text content.
+ */
 function collect_raw_text(nodes: (HsonNode | Primitive)[] | undefined): string {
   if (!nodes || !nodes.length) return "";
   let out = "";
@@ -34,17 +57,102 @@ function collect_raw_text(nodes: (HsonNode | Primitive)[] | undefined): string {
   return out;
 }
 
+/**
+ * Escape a string for safe use inside a double-quoted XML/HTML attribute.
+ *
+ * Escapes the following:
+ * - `&` → `&amp;`
+ * - `"` → `&quot;`
+ * - `<` → `&lt;`
+ *
+ * Does *not* escape `'` or `>`; sufficient for the attribute formats this
+ * serializer emits (`key="value"`).
+ *
+ * @param v - Raw attribute value.
+ * @returns Escaped attribute-safe string.
+ */
 function escape_attr(v: string): string {
   return v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
-
+/**
+ * Serialize a primitive value into escaped XML text.
+ *
+ * Rules:
+ * - If `p` is a string:
+ *   - Return `escape_html(p)` directly (text-escaped string).
+ * - For non-string primitives (number, boolean, null):
+ *   - Convert to string with `String(p)` and then escape via `escape_html`.
+ *
+ * This is the primitive-level counterpart to `serialize_xml`, ensuring
+ * consistent escaping for bare primitive nodes and text children.
+ *
+ * @param p - Primitive value to serialize.
+ * @returns Escaped XML-safe text representation.
+ */
 function primitive_to_xml(p: Primitive): string {
   //  strings escape as text, others stringify+escape
   if (typeof p === 'string') return escape_html(p);
   return escape_html(String(p));
 }
 
+/**
+ * Low-level XML serializer for HSON nodes.
+ *
+ * Role:
+ * - Convert a `HsonNode | Primitive` tree to an XML-like string that is
+ *   *structurally faithful* to the HSON IR, suitable as an intermediate
+ *   for later HTML normalization (`serialize_html`).
+ *
+ * Special cases:
+ * - Primitive input:
+ *   - Delegated to `primitive_to_xml(p)`.
+ *
+ * - `_str`:
+ *   - Must have exactly one string in `_content`.
+ *   - Empty string is rendered as `""` (two quotes) so that the parser
+ *     can distinguish “empty” from “missing”.
+ *   - Non-empty strings are rendered as bare escaped text.
+ *
+ * - `_val`:
+ *   - Must have exactly one primitive in `_content`.
+ *   - Rendered as `<_val>…</_val>` with escaped contents to preserve
+ *     type boundaries on round trip.
+ *
+ * - `_elem`:
+ *   - Flattened away; serializes each child in `_content` and joins with
+ *     newlines. No explicit `<_elem>` tag appears in the XML.
+ *
+ * - `_root`:
+ *   - Must contain exactly one child.
+ *   - That child is serialized directly; `<_root>` is melted and does not
+ *     appear in the XML surface.
+ *
+ * - `_obj`:
+ *   - Serialized as a literal `<_obj>…</_obj>` wrapper, where each
+ *     property child is serialized recursively. This preserves object
+ *     structure in the XML form.
+ *
+ * Default path (all other tags, including `_arr`, `_ii`, and normal HTML):
+ * - Builds an opening tag `<tag ...>`:
+ *   - Attributes come from `build_wire_attrs(node)`; for `<svg>`,
+ *     ensures `xmlns` is set if missing.
+ *   - Attribute values are escaped via `escape_attr`.
+ * - Children:
+ *   - RAWTEXT tags (`style`, `script`) use `collect_raw_text` with a
+ *     guard against `</style` / `</script` sequences.
+ *   - Others map children to either:
+ *       - recursive `serialize_xml` for nodes, or
+ *       - `primitive_to_xml` for primitives.
+ *   - Concatenate children without extra whitespace by default.
+ *
+ * Invariants:
+ * - Throws on unknown VSN-like tags (`_<something>` not in `EVERY_VSN`).
+ * - Throws when `_str` / `_val` shape is invalid.
+ *
+ * @param node - Node or primitive to serialize.
+ * @returns XML string representation of the node.
+ */
 export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   if (is_Primitive(node)) return primitive_to_xml(node);
   if (node === undefined) {
@@ -135,15 +243,46 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
   return `${openAttrs}>${inner}</${tag}>`;
 }
 
-
-/* serialize_xml + serialize_html (2.0) — with fixes
-- _str melts to bare text
-- _val is literal (<_val>…</_val>)
-- _elem flattens; _root melts its single cluster
-- _obj property loop is total; no silent self-closing when a child exists
-- self-close only when computed inner === ""
-- consistent primitive escaping via primitive_to_xml
----------------------------------------------------------------------------
+/**
+ * Public HTML serializer for HSON trees (2.0 surface).
+ *
+ * Pipeline:
+ * 1. Clone & guard:
+ *    - `clone_node($node)` to avoid mutating the original IR.
+ *    - Require that the clone is a valid `HsonNode`, otherwise throw.
+ *
+ * 2. Invariant check:
+ *    - `assert_invariants(clone, "serialize_html")` ensures that the
+ *      internal HSON structure is well-formed before any emission.
+ *
+ * 3. XML stage:
+ *    - Delegates to `serialize_xml(clone)` to produce an XML-like string
+ *      that faithfully represents HSON semantics (including `_val`, `_obj`,
+ *      `_arr`, `_ii`, etc.).
+ *
+ * 4. HTML normalization:
+ *    - Converts boolean attributes from `key="key"` to `key` using a regex
+ *      replacement; this matches standard HTML boolean attribute semantics.
+ *
+ * 5. Safety guard:
+ *    - Asserts that no literal `<_str>` tag leaks into the final HTML.
+ *      If such a tag is present, throws a transform error; `_str` must
+ *      always be melted into text at the serialization boundary.
+ *
+ * 6. Finalization:
+ *    - Returns `htmlString.trim()` to remove leading/trailing whitespace.
+ *
+ * Characteristics:
+ * - `_str` appears only as escaped text in the output.
+ * - `_val` uses a `<_val>…</_val>` literal representation.
+ * - `_elem` and `_root` are structure-only and never appear as tags.
+ * - `_obj` and other clusters remain visible where necessary to preserve
+ *   HSON’s JSON-mode structure.
+ *
+ * @param $node - Root HSON node or primitive to serialize as HTML.
+ * @returns A trimmed HTML string ready for DOM insertion or inspection.
+ * @throws If invariants fail, if `_str` leaks as a literal tag, or if the
+ *   input is not a valid HsonNode.
  */
 export function serialize_html($node: HsonNode | Primitive): string {
 

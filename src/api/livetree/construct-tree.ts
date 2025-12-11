@@ -15,9 +15,45 @@ import { LiveTree } from "./livetree";
 import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../../types-consts/constructor.types";
 
 /**
- * factory function that builds the entry-point for the liveTree pipeline
- * @param options - an object to control behavior, e.g., { unsafe: boolean }
- * @returns an object with methods to define the source of the tree
+ * Build the entry point for the LiveTree creation and grafting pipeline.
+ *
+ * The returned object provides a uniform API for constructing `LiveTree`
+ * branches from multiple input formats (HTML, JSON, HSON) and for grafting
+ * into existing DOM elements.
+ *
+ * Behavior:
+ * - The `options` parameter controls safety rules, notably whether
+ *   external SVG markup may be parsed (`unsafe: true`) or must be rejected.
+ *
+ * Branch constructors:
+ * - `fromHTML(html)`:
+ *     - Detects whether input is SVG or HTML.
+ *     - SVG parsing is allowed only when `unsafe: true`; otherwise a
+ *       transform error is thrown.
+ *     - Non-SVG HTML is routed through either the safe external parser
+ *       (`parse_external_html`) or the raw parser (`parse_html`).
+ *     - Produces a detached `LiveTree` branch via `make_branch_from_node`.
+ * - `fromJSON(json)` and `fromHSON(hson)`:
+ *     - Parse into an HSON root node and normalize through
+ *       `make_branch_from_node`.
+ *
+ * Grafting helpers:
+ * - `queryDom(selector)`:
+ *     - Returns a lightweight object whose `graft()` method binds the
+ *       selected DOM element into the LiveTree pipeline.
+ *     - Throws at graft-time if the selector matches no element.
+ * - `queryBody()`:
+ *     - Convenience form targeting `document.body`.
+ *
+ * All constructors return small wrapper objects whose `.asBranch()` or
+ * `.graft()` methods finalize the creation of a `LiveTree` rooted at
+ * either newly parsed content or an existing DOM element.
+ *
+ * @param options - Configuration flags, e.g. `{ unsafe: boolean }`,
+ *                  controlling parsing and sanitization behavior.
+ * @returns An object exposing the LiveTree construction and grafting API.
+ * @see make_branch_from_node
+ * @see graft
  */
 export function construct_tree(
   options: { unsafe: boolean } = { unsafe: false }

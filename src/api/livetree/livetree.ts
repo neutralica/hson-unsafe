@@ -11,10 +11,10 @@ import { get_node_form_value, get_node_text, set_node_content, set_node_form_val
 import { DataManager } from "./livetree-methods/data-manager2.tree";
 import { empty_contents } from "./livetree-methods/empty2";
 import { build_listener } from "./livetree-methods/listen";
-import { find_all_in_tree, makeFindFor } from "./livetree-methods/find";
+import { find_all_in_tree, make_find_for } from "./livetree-methods/find";
 import { clearFlagsImpl, getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
 import { remove_child } from "./livetree-methods/remove-child2";
-import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
+import { StyleManager } from "./livetree-methods/style-manager2.utils";
 import { HsonQuery, LiveTreeCreateHelper, TreeSelector } from "../../types-consts/livetree.types";
 import { append_branch } from "./livetree-methods/append-other";
 import { make_tree_create } from "./livetree-methods/create-typed";
@@ -89,7 +89,7 @@ export class LiveTree {
   /*---------- the root node or historic root node */
   private hostRoot!: HsonNode;
   /*---------- inline style editor */
-  private styleManagerInternal: StyleManager2 | undefined = undefined;
+  private styleManagerInternal: StyleManager | undefined = undefined;
   /*---------- .dataset editor */
   private datasetManagerInternal: DataManager | undefined = undefined;
   /**
@@ -221,9 +221,9 @@ export class LiveTree {
    * Exact query semantics are defined by `makeFindFor`, but this method
    * always scopes searches to the subtree rooted at this `LiveTree`.
    *
-   * @see makeFindFor
+   * @see make_find_for
    */
-  public find: FindWithById = makeFindFor(this);
+  public find: FindWithById = make_find_for(this);
 
   /**
    * Find all descendant subtrees matching a query, relative to this tree.
@@ -322,11 +322,11 @@ export class LiveTree {
    * and HSON-backed style objects while keeping DOM and HSON in sync.
    *
    * @returns A `StyleManager2` instance bound to this tree.
-   * @see StyleManager2
+   * @see StyleManager
    */
-  public get style(): StyleManager2 {
+  public get style(): StyleManager {
     if (!this.styleManagerInternal) {
-      this.styleManagerInternal = new StyleManager2(this);
+      this.styleManagerInternal = new StyleManager(this);
     }
     return this.styleManagerInternal;
   }

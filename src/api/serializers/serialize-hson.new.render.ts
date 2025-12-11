@@ -9,10 +9,8 @@ import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
 import { HsonAttrs, HsonMeta, HsonNode } from "../../types-consts/node.types";
-import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
-// --- serialize-hson.render.ts ---
 
 /* debug log */
 let _VERBOSE = false;
@@ -21,6 +19,25 @@ const _log = _VERBOSE
     console.log
     : () => { };
 
+/**
+ * Build a per-traversal cycle guard for HSON serialization.
+ *
+ * Behavior:
+ * - Internally holds a `WeakSet<object>` of visited nodes.
+ * - `enter(node)`:
+ *    - Throws a transform error if `node` has already been seen, indicating
+ *      a cycle in the graph (`serialize-hson: cycle detected in node graph`).
+ *    - Otherwise records the node as seen.
+ * - `leave(node)`:
+ *    - Removes `node` from the `WeakSet` to avoid unbounded memory growth
+ *      across large trees (optional, but kept here for long-lived traversals).
+ *
+ * Intended usage:
+ * - Construct once at the start of serialization and pass it down the
+ *   recursive `emitNode` calls to detect structural cycles early.
+ *
+ * @returns An object with `enter` and `leave` methods implementing cycle guards.
+ */
 function cycleGuard() {
     const seen = new WeakSet<object>();
     return {
@@ -37,14 +54,49 @@ function cycleGuard() {
     };
 }
 
-/* attrs considered empty if absent or has no own keys (style:"" counts as present) */
+/**
+ * Determine whether an `_attrs` object should be treated as “empty” for
+ * serialization purposes.
+ *
+ * Rules:
+ * - `undefined` or `null` → considered empty.
+ * - An object with *no own enumerable keys* → considered empty.
+ * - A `style: ""` entry still counts as *present* (i.e. not empty) because
+ *   it represents an explicitly set style attribute on the wire.
+ *
+ * This predicate is used to decide when attribute clusters can be elided
+ * or when certain shorthand forms (e.g. self-close value) are allowed.
+ *
+ * @param attrs - The HSON `_attrs` object to inspect.
+ * @returns `true` if there are no own keys, `false` otherwise.
+ */
 function isEmptyAttrs(attrs?: HsonAttrs): boolean {
     if (!attrs) return true;
     for (const _k in attrs) return false;
     return true;
 }
 
-/*  meta must only contain data-_* keys and string values */
+/**
+ * Validate and normalize a `_meta` object for on-wire serialization.
+ *
+ * Constraints enforced:
+ * - Only keys starting with the `data-` meta prefix (`_META_DATA_PREFIX`)
+ *   are permitted. Any other key causes a transform error.
+ * - All values must be strings; non-string values cause a transform error.
+ *
+ * Behavior:
+ * - `undefined` or empty input → returns an empty object `{}`.
+ * - Valid entries are copied into a fresh `{ [key: string]: string }` object,
+ *   which is safe for direct string interpolation in attribute lists.
+ *
+ * This function makes the `_meta` contract explicit and prevents accidental
+ * leakage of internal bookkeeping fields into serialized HSON.
+ *
+ * @param meta - The HSON `_meta` object to validate.
+ * @returns A plain `{ [key: string]: string }` object containing only
+ *   allowed `data-*` meta keys.
+ * @throws On illegal keys or non-string values.
+ */
 function assertAndReturnMeta(meta?: HsonMeta): Record<string, string> {
     _log('assert & return _meta')
     if (!meta) return {};
@@ -62,7 +114,33 @@ function assertAndReturnMeta(meta?: HsonMeta): Record<string, string> {
     return out;
 }
 
-/* durable: stringify NEW attrs (incl. style object and flags as bare tokens) */
+/**
+ * Render a HSON `_attrs` object into a canonical HTML-style attribute string.
+ *
+ * Behavior:
+ * - Early exits for `undefined` or empty objects, returning `""`.
+ * - Partitions entries into:
+ *   - non-flag attributes: `value !== key`
+ *   - flag attributes: `value === key` (e.g. `{ disabled: "disabled" }`)
+ * - For non-flags:
+ *   - Special-cases `style`:
+ *     - If the value is an object, renders it via `serialize_style` to a
+ *       canonical CSS string (sorted/normalized) and quotes it.
+ *   - String values:
+ *     - Escapes double quotes (`" → \"`) and renders as ` key="value"`.
+ *   - Non-string primitives:
+ *     - Rendered as ` key=value` with no quotes.
+ * - For flags:
+ *   - Rendered as bare tokens: ` key` (no `=value`).
+ *
+ * Output format:
+ * - Each attribute is prefixed with a leading space.
+ * - Order is “non-flags first, then flags”, preserving relative order
+ *   within each group.
+ *
+ * @param attrs - The HSON `_attrs` to render.
+ * @returns A space-prefixed attribute string suitable for `<tag${attrs}>`.
+ */
 function formatAttrsNEW(attrs: HsonAttrs | undefined): string {
     if (!attrs) return "";
     const entries = Object.entries(attrs);
@@ -92,7 +170,26 @@ function formatAttrsNEW(attrs: HsonAttrs | undefined): string {
     return parts.join("");
 }
 
-/* merge user _attrs and meta(data-_) into a single on-wire attrs string */
+/**
+ * Merge user `_attrs` and `_meta` into a single attribute string for HSON tags.
+ *
+ * Composition:
+ * - User attributes:
+ *   - Rendered via `formatAttrsNEW(attrs)` (style, flags, etc.).
+ * - System/meta attributes:
+ *   - Filtered and validated via `assertAndReturnMeta(meta)`.
+ *   - Sorted by key and rendered as:
+ *       ` data-foo="..." data-bar="..."`
+ *     with inner quotes escaped.
+ *
+ * Behavior:
+ * - Each component may be empty; the final string is just `user + sys`.
+ * - Always returns a string that can be spliced directly into `<tag${attrsStr}>`.
+ *
+ * @param attrs - User-facing `_attrs` from the node.
+ * @param meta - `_meta` payload (usually `data-*` keys) from the node.
+ * @returns A combined attribute string including both user and meta attrs.
+ */
 function buildAttrString(attrs: HsonAttrs | undefined, meta: HsonMeta | undefined): string {
     _log('building attrs string');
     const user = formatAttrsNEW(attrs);
@@ -105,7 +202,32 @@ function buildAttrString(attrs: HsonAttrs | undefined, meta: HsonMeta | undefine
     return `${user}${sys}`;
 }
 
-/* quoted text vs raw primitive one-liner probe (NEW shape only) */
+/**
+ * Probe whether a node can be rendered as a compact “self-close with value”
+ * HSON form, and return that primitive value if so.
+ *
+ * Conditions for success:
+ * - Node has *no* `_attrs` (or only an empty `_attrs`) and *no* `_meta`.
+ * - `_content` exists and contains exactly one child, which is a node.
+ * - That child is either:
+ *   - a leaf `_str` or `_val`, or
+ *   - a single `_obj` wrapper around such a leaf.
+ * - The leaf has exactly one primitive payload.
+ *
+ * Return semantics:
+ * - `<_str>` leaf → returns a `string` (including `""`).
+ * - `<_val>` leaf → returns a `number | boolean | null`.
+ * - Any mismatch or structural deviation → returns `undefined`.
+ *
+ * Callers:
+ * - Used by `emitNode` to decide whether a tag can be emitted as:
+ *     `<tag value />`
+ *   (element semantics) or as a compact value-bearing form in object
+ *   semantics, instead of a multi-line block.
+ *
+ * @param node - Candidate `HsonNode` to inspect.
+ * @returns The primitive value if a valid self-close shape, otherwise `undefined`.
+ */
 function getSelfCloseValueNEW(node: HsonNode): Primitive | undefined {
 
     // must not carry attrs or meta
@@ -148,12 +270,95 @@ function getSelfCloseValueNEW(node: HsonNode): Primitive | undefined {
 /* core serializer                                                      */
 /* -------------------------------------------------------------------------- */
 
-
+/**
+ * Marker type for the “cluster semantics” of a node’s parent during
+ * serialization.
+ *
+ * Values:
+ * - `OBJ_TAG`  - Parent is in object mode; children typically serialize as
+ *                property bodies (e.g. `<key ...>` blocks).
+ * - `ELEM_TAG` - Parent is in element mode; children behave like HTML nodes.
+ * - `ARR_TAG`  - Parent is array-like; children are `_ii`-wrapped items.
+ *
+ * `emitNode` uses this context to:
+ * - Pick appropriate closers (`>` vs `/>`) in ambiguous cases.
+ * - Decide when primitive children should be emitted as inline values
+ *   vs object blocks.
+ */
 export type ParentCluster = typeof OBJ_TAG | typeof ELEM_TAG | typeof ARR_TAG;
 
 
-/* recursively serialize a NEW node into HSON wire */
-
+/**
+ * Recursively serialize a single `HsonNode` into HSON wire format.
+ *
+ * Responsibilities:
+ * - Enforce invariants on all VSNs (`_str`, `_val`, `_root`, `_obj`, `_arr`,
+ *   `_elem`, `_ii`) and throw structured errors on violations.
+ * - Encode structural semantics (object vs element vs array) into the
+ *   chosen HSON surface syntax (closers, clusters, shorthands).
+ * - Respect parent cluster context (`parentCluster`) to avoid accidental
+ *   drift between JSON-mode and HTML-mode semantics.
+ * - Cooperate with `cycleGuard` to detect and prevent graph cycles.
+ *
+ * Key behaviors:
+ * 1. Primitive leaves (`_str`, `_val`):
+ *    - Require exactly one primitive in `_content`.
+ *    - `_str` → `JSON.stringify(value)` to preserve quoting and escapes.
+ *    - `_val` → raw `number | boolean | null` literal.
+ *
+ * 2. `_ii` index nodes:
+ *    - Should not appear on the HSON wire; if encountered, unwrap once and
+ *      serialize the child at the same depth.
+ *
+ * 3. `_arr` clusters:
+ *    - Rendered as `« ... »` blocks.
+ *    - Each array item is normalized such that:
+ *      - Empty object item → `<>` shorthand.
+ *      - Non-object items are serialized directly or wrapped in objects
+ *        depending on their shape.
+ *
+ * 4. `_root`:
+ *    - Expects a single cluster child (`_obj | _elem | _arr`).
+ *    - Emits only the child cluster (no `<_root>` tag on wire).
+ *    - Special-cases empty `_obj` cluster as `<>` shorthand.
+ *
+ * 5. `_obj` / `_elem` clusters:
+ *    - Never serialized with their own tag names (“melted” on the wire).
+ *    - `_obj`:
+ *      - Empty → `<>`.
+ *      - Properties become `<key ...>` blocks with nested content.
+ *    - `_elem`:
+ *      - Children are serialized as peers at the same depth.
+ *
+ * 6. Standard tags (“normal” HTML-like elements):
+ *    - Attribute/meta handling via `buildAttrString`.
+ *    - Attempts compact representations in this order:
+ *      - `inlineShape(...)` → one-line primitive or void forms.
+ *      - `getSelfCloseValueNEW(...)` → compact value-bearing form.
+ *    - When in `OBJ_TAG` parent context:
+ *      - Prefers block forms (with inner lines) over one-liners to
+ *        keep JSON-mode visually distinct.
+ *    - Otherwise:
+ *      - Uses HTML-like self-closing or multi-line `<tag ...>\n...\n</>` forms.
+ *
+ * 7. Whitespace & padding:
+ *    - Indentation is controlled by `depth` using two spaces per level.
+ *    - Children are joined with `\\n` and trailing pure-whitespace strings
+ *      are filtered out.
+ *
+ * Error handling:
+ * - Any structural anomaly (unknown VSN, illegal attrs on clusters,
+ *   malformed leaf payloads, inconsistent `_root` shape, etc.) results in
+ *   `_throw_transform_err` with a descriptive label and source tag.
+ *
+ * @param node - The current `HsonNode` to serialize.
+ * @param depth - Current indentation depth (0-based).
+ * @param parentCluster - Parent cluster context (`_obj`, `_elem`, `_arr`), or
+ *   `undefined` at the top.
+ * @param guard - Cycle guard instance from `cycleGuard()`, used to detect
+ *   revisiting the same object graph node.
+ * @returns The HSON string representation of `node`, including indentation.
+ */
 function emitNode(
     node: HsonNode,
     depth: number,
@@ -448,7 +653,38 @@ function emitNode(
     }
 }
 
-/* public API (NEW) */
+/**
+ * Public entry point for serializing a HSON tree to HSON wire format.
+ *
+ * Pipeline:
+ * 1. Validate the root:
+ *    - Root must be a valid `HsonNode` (`is_Node(root)`).
+ *    - `assert_invariants(root, "serialize_hson")` enforces internal IR
+ *      constraints before any serialization is attempted.
+ *
+ * 2. Initialize a cycle guard:
+ *    - `cycleGuard()` is used to detect structural cycles in the node graph
+ *      during recursive traversal (defensive against pathological inputs).
+ *
+ * 3. Delegate serialization:
+ *    - Calls `emitNode(root, 0, undefined, guard)` to produce the full
+ *      HSON representation.
+ *
+ * 4. Trim:
+ *    - Leading/trailing whitespace is removed from the final string via
+ *      `.trim()`, yielding a clean top-level HSON document.
+ *
+ * Contracts:
+ * - Accepts only well-formed `HsonNode` trees.
+ * - Throws `_throw_transform_err` when invariants are violated or cycles
+ *   are detected.
+ *
+ * @param root - The root `HsonNode` to serialize.
+ * @returns A trimmed HSON string representing the full tree.
+ * @throws If `root` is not a node, invariants fail, or a cycle is detected.
+ * @see emitNode
+ * @see cycleGuard
+ */
 export function serialize_hson(root: HsonNode): string {
     if (!is_Node(root)) {
         _throw_transform_err("serialize-hson: root must be a HsonNode", 'serialize-hson');
