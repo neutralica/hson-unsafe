@@ -1,8 +1,9 @@
 // tree-selector.ts
 
 import { ListenerBuilder, ListenerSub } from "../../types-consts/listen.types";
-import { TagName } from "../../types-consts/livetree.types";
-import { cssForQuids, CssHandle } from "./livetree-methods/css-manager";
+import { LiveTreeCreateHelper, TagName, TreeSelectorCreateHelper } from "../../types-consts/livetree.types";
+import { css_for_quids } from "./livetree-methods/css-manager";
+import { CssHandle } from "../../types-consts/css.types";
 import { DataManager2, DatasetObj, DatasetValue } from "./livetree-methods/data-manager2.tree";
 import { buildListener } from "./livetree-methods/listen2";
 import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
@@ -10,10 +11,11 @@ import { StyleObject } from "../../types-consts/css.types";
 import { LiveTree } from "./livetree";
 import { TreeSelector } from "../../types-consts/livetree.types";
 import { Primitive } from "../../core/types-consts/core.types";
+import { make_selector_create, make_tree_create } from "./livetree-methods/create-typed";
 
 
 //  factory that builds a TreeSelector over a set of LiveTree2s
-export function makeTreeSelector(trees: LiveTree[]): TreeSelector {
+export function make_tree_selector(trees: LiveTree[]): TreeSelector {
   //  defensive copy to avoid external mutation
   const firstTree = (): LiveTree => {
     if (!items.length) {
@@ -112,7 +114,7 @@ export function makeTreeSelector(trees: LiveTree[]): TreeSelector {
     get css(): CssHandle {
       // empty selection → safe no-op handle
       if (items.length === 0) {
-        return cssForQuids([]);
+        return css_for_quids([]);
       }
 
       const quids: string[] = [];
@@ -120,7 +122,7 @@ export function makeTreeSelector(trees: LiveTree[]): TreeSelector {
         const q = tree.quid;      // assumes LiveTree2 has a `quid` getter
         if (q) quids.push(q);
       }
-      return cssForQuids(quids);
+      return css_for_quids(quids);
     },
     // dataset – broadcast wrapper, same pattern as style
     get data(): DataManager2 {
@@ -131,18 +133,22 @@ export function makeTreeSelector(trees: LiveTree[]): TreeSelector {
     },
     //  broadcast createAppend across selection, then return selector
     // NOTE: assumes LiveTree2 has a `createAppend(tag)` method.
-    createTag(tag: TagName | TagName[]): TreeSelector {
-      if (Array.isArray(tag)) {
-        items.forEach(tree => tree.createAppend(tag as TagName[]));
-      } else {
-        items.forEach(tree => tree.createAppend(tag as TagName));
-      }
-      return result;
+    // createTag(tag: TagName | TagName[]): TreeSelector {
+    //   if (Array.isArray(tag)) {
+    //     items.forEach(tree => tree.createAppend(tag as TagName[]));
+    //   } else {
+    //     items.forEach(tree => tree.createAppend(tag as TagName));
+    //   }
+    //   return result;
+    // }
+    get create(): TreeSelectorCreateHelper {
+      return make_selector_create(items);
     }
   };
 
   return result;
 }
+
 function makeMultiStyleManager(items: LiveTree[]): StyleManager2 {
   const firstTree = (): LiveTree => {
     const t = items[0];

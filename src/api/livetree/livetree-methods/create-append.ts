@@ -3,14 +3,49 @@ import { HsonNode } from "../../../types-consts/node.types";
 import { TagName } from "../../../types-consts/livetree.types";
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
 import { LiveTree } from "../livetree";
-import { makeTreeSelector } from "../tree-selector";
+import { make_tree_selector } from "../make-tree-selx";
 import { TreeSelector } from "../../../types-consts/livetree.types";
 
- /* overloads  */
-export function createAppend2(this: LiveTree, tag: TagName, index?: number): LiveTree;
-export function createAppend2(this: LiveTree, tags: TagName[], index?: number): TreeSelector;
+/**
+ * Create one or more new element nodes as children of this `LiveTree`'s node
+ * and return handles to the created subtrees.
+ *
+ * Overloads:
+ * - When called with a single `TagName`, returns a `LiveTree` anchored at
+ *   the newly created element.
+ * - When called with an array of `TagName`, returns a `TreeSelector`
+ *   containing a `LiveTree` for each created element.
+ *
+ * Implementation details:
+ * - Ensures `this.node` exists (throws if the tree is unbound).
+ * - For each tag:
+ *   - Builds a minimal HTML string (`<tag></tag>`).
+ *   - Parses it through `hson.fromTrustedHtml(...).toHSON().parse()` to get
+ *     an HSON subtree.
+ *   - Wraps the parsed root in a temporary `LiveTree` and appends it via
+ *     `this.append(...)`, which performs graph + DOM mutation.
+ *   - Unwraps the `_elem` wrapper with `unwrap_root_elem` to obtain the
+ *     “real” children that were attached.
+ *   - Wraps each appended child in a `LiveTree`, calls `adoptRoots` so it
+ *     shares the same host roots as `this`, and collects these trees.
+ * - If `index` is provided, it is used as the initial insertion index and
+ *   incremented by the number of appended children so that subsequent tags
+ *   are inserted after previous ones.
+ *
+ * @this LiveTree - The anchor tree whose node will receive the new elements.
+ * @param tagOrTags - A single tag name or an array of tag names to create.
+ * @param index - Optional insertion index among the anchor node's children;
+ *                applied to the first created element and advanced for each
+ *                subsequent element when multiple tags are provided.
+ * @returns A `LiveTree` when a single tag is created, or a `TreeSelector`
+ *          wrapping all created `LiveTree` instances when multiple tags are
+ *          created.
+ */ 
+/* overloads  */
+export function createAppend(this: LiveTree, tag: TagName, index?: number): LiveTree;
+export function createAppend(this: LiveTree, tags: TagName[], index?: number): TreeSelector;
 /*  implementation */
-export function createAppend2(
+export function createAppend(
   this: LiveTree,
   tagOrTags: TagName | TagName[],
   index?: number,
@@ -56,5 +91,5 @@ export function createAppend2(
   if (created.length === 1) {
     return created[0];           // matches overload #1
   }
-  return makeTreeSelector(created); // matches overload #2
+  return make_tree_selector(created); // matches overload #2
 }

@@ -3,7 +3,7 @@
 import { Primitive } from "../../core/types-consts/core.types";
 import { ARR_TAG, ELEM_OBJ_ARR, ELEM_TAG, EVERY_VSN, II_TAG, OBJ_TAG, ROOT_TAG, STR_TAG, VAL_TAG } from "../../types-consts/constants";
 import { _snip } from "../../utils/sys-utils/snip.utils";
-import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
+import { serialize_style } from "../../utils/attrs-utils/serialize-style";
 import { serialize_primitive } from "../../utils/primitive-utils/serialize-primitive.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new.utils";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";

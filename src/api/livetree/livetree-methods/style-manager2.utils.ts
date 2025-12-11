@@ -19,7 +19,7 @@
 
 import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
 import { StyleObject } from "../../../types-consts/css.types";
-import { camel_to_kebab, serialize_style } from "../../../utils/attrs-utils/serialize-css.utils";
+import { camel_to_kebab, serialize_style } from "../../../utils/attrs-utils/serialize-style";
 import { kebab_to_camel } from "../../../utils/primitive-utils/kebab-to-camel.util";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree } from "../livetree";

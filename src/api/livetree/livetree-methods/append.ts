@@ -1,5 +1,4 @@
-// append.tree.ts
-
+// append.ts
 
 import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
@@ -11,8 +10,19 @@ import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-e
 import { LiveTree } from "../livetree";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { create_live_tree2 } from "../create-live-tree";
-import { clone_node } from "../../../utils/node-utils/clone-node.utils";
 
+/**
+ * Normalize an insertion index for an array of a given length.
+ *
+ * Positive indexes are clamped to the range `[0, length]`, so values
+ * larger than `length` insert at the end. Negative indexes are treated
+ * as offsets from the end (like `Array.prototype.at`), and are clamped
+ * to `0` if they go past the start.
+ *
+ * @param index - Requested insertion index (may be negative to count from the end).
+ * @param length - Current length of the array being indexed into.
+ * @returns A safe insertion index in the range `[0, length]`.
+ */
 export function normalize_ix(index: number, length: number): number {
   if (length <= 0) return 0;
 
@@ -25,7 +35,29 @@ export function normalize_ix(index: number, length: number): number {
   return fromEnd;
 }
 
-export function append2(
+/**
+ * Append a `LiveTree` branch as children of this `LiveTree`'s node,
+ * updating both the HSON structure and the bound DOM subtree.
+ *
+ * The incoming `$content` branch is normalized to a list of HSON nodes
+ * via `unwrap_root_elem`, so its root `_elem` wrapper is not appended.
+ * The nodes are then inserted into the target node's `_elem` container,
+ * creating that container if needed. Insertion position is controlled
+ * by `index` (normalized by `normalize_ix`); omitted `index` appends at
+ * the end.
+ *
+ * If a live DOM element is associated with the target node, each new
+ * HSON node is rendered with `create_live_tree2` and inserted into the
+ * DOM at the corresponding position, keeping HSON and DOM in sync.
+ *
+ * @this LiveTree - The anchor tree whose node will receive the new children.
+ * @param $content - The `LiveTree` branch to append into this tree.
+ * @param index - Optional insertion index in the `_elem` container;
+ *                negative values index from the end, and values outside
+ *                the range are clamped.
+ * @returns The receiver `LiveTree` for chaining.
+ */
+export function append(
   this: LiveTree,
   $content: LiveTree,
   index?: number,
@@ -45,8 +77,6 @@ export function append2(
     );
   }
 
-  // ensure parent has a _content array
-  // if (!targetNode._content) targetNode._content = [];
 
   // find or create the `_elem` container
   let containerNode: HsonNode;

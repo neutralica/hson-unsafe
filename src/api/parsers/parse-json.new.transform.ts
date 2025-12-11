@@ -9,8 +9,8 @@ import { JsonObj, JsonValue, Primitive } from "../../core/types-consts/core.type
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
 import { _snip } from "../../utils/sys-utils/snip.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
-import { parse_style_string } from "../../utils/attrs-utils/parse-style.utils";
-import { serialize_style } from "../../utils/attrs-utils/serialize-css.utils";
+import { parse_style_string } from "../../utils/attrs-utils/parse-style";
+import { serialize_style } from "../../utils/attrs-utils/serialize-style";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
 

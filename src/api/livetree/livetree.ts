@@ -4,10 +4,11 @@ import { ensure_quid, get_node_by_quid } from "../../quid/data-quid.quid";
 import { HsonNode } from "../../types-consts/node.types";
 import { ListenerBuilder } from "../../types-consts/listen.types";
 import { element_for_node } from "../../utils/tree-utils/node-map-helpers.utils";
-import { cssForQuids as manageCss, CssHandle } from "./livetree-methods/css-manager";
+import { css_for_quids as manageCss } from "./livetree-methods/css-manager";
+import { CssHandle } from "../../types-consts/css.types";
 import { remove2 } from "./livetree-methods/remove2";
-import { createAppend2 } from "./livetree-methods/create-append";
-import { getNodeFormValue, getNodeText, setNodeContent, setNodeFormValue } from "./livetree-methods/content-manager";
+import { createAppend } from "./livetree-methods/create-append";
+import { getNodeFormValue, getNodeText, setNodeContent, setNodeFormValue } from "./livetree-methods/content";
 import { DataManager2 } from "./livetree-methods/data-manager2.tree";
 import { empty2 } from "./livetree-methods/empty2";
 import { buildListener } from "./livetree-methods/listen2";
@@ -15,9 +16,9 @@ import { findAllFor, makeFindFor } from "./livetree-methods/find2";
 import { clearFlagsImpl, getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
 import { remove_child2 } from "./livetree-methods/remove-child2";
 import { StyleManager2 } from "./livetree-methods/style-manager2.utils";
-import { HsonQuery, TreeSelector } from "../../types-consts/livetree.types";
-import { appendBranch } from "./livetree-methods/append-worker";
-import { LiveTreeCreateHelper, makeCreateHelper } from "./livetree-methods/create-typed";
+import { HsonQuery, LiveTreeCreateHelper, TreeSelector } from "../../types-consts/livetree.types";
+import { appendBranch } from "./livetree-methods/append-other";
+import {  make_tree_create } from "./livetree-methods/create-typed";
 import { FindWithById, LiveTreeCreateAppend, NodeRef } from "../../types-consts/livetree.types";
 import { Primitive } from "../../core/types-consts/core.types";
 
@@ -107,11 +108,12 @@ export class LiveTree {
   public find: FindWithById = makeFindFor(this);
   /*------ find and return a TreeSelector (LiveTree[]) */
   public findAll = (q: HsonQuery | string): TreeSelector => findAllFor(this, q);
-  /*------ append a new HsonNode to the tree graph, populating the element on the DOM as well */
-  public createAppend: LiveTreeCreateAppend = createAppend2;
+  // /*------ append a new HsonNode to the tree graph, populating the element on the DOM as well */
+  // public createAppend: LiveTreeCreateAppend = createAppend;           
+  // deprecated in favor of:
   /*------ like createAppend but extends a typed interface for native HTML tags: <div>, <span>, <etc> */
   public get create(): LiveTreeCreateHelper {
-    return makeCreateHelper(this);
+    return make_tree_create(this);
   }
 
   /*------ returns the tree node's data-_quid UID */

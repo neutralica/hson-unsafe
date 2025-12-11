@@ -1,17 +1,8 @@
 import { _DATA_QUID } from "../../../types-consts/constants";
-import { CssValue, CssProp } from "../../../types-consts/css.types";
-
-//  public-facing handle for callers
-export interface CssHandle {
-  // apply to all bound QUIDs
-  set(property: string, value: CssValue): void;         // NEW
-  setMany(decls: CssProp): void;                        // NEW
-  unset(property: string): void;                        // NEW
-  clear(): void;                                        // NEW
-}
+import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
 
 //  core helper – returns a handle bound to one or many QUIDs
-export function cssForQuids(quids: readonly string[]): CssHandle {
+export function css_for_quids(quids: readonly string[]): CssHandle {
   const mgr = CssManager.invoke();
   const ids = quids.map(q => q.trim()).filter(Boolean);
 
@@ -54,9 +45,10 @@ export function cssForQuids(quids: readonly string[]): CssHandle {
 }
 
 // OPTIONAL: convenience for a single quid
-export function cssForQuid(quid: string): CssHandle {   // NEW
-  return cssForQuids([quid]);
+export function css_for_quid(quid: string): CssHandle {   // NEW
+  return css_for_quids([quid]);
 }
+
 function renderCssValue(v: CssValue): string {
   // string → already a valid CSS literal
   if (typeof v === "string") {

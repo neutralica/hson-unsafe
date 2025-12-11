@@ -1,3 +1,5 @@
+// append-other.ts
+
 import { HsonNode } from "../../../types-consts/node.types";
 import { ELEM_TAG } from "../../../types-consts/constants";
 import { CREATE_NODE } from "../../../types-consts/factories";
@@ -6,8 +8,27 @@ import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.uti
 import { create_live_tree2 } from "../create-live-tree";
 import { LiveTree } from "../livetree";
 import { TreeSelector } from "../../../types-consts/livetree.types";
-import { normalize_ix } from "./append2";
+import { normalize_ix } from "./append";
 
+/**
+ * Append one or more HSON nodes into a target node's `_elem` container
+ * and mirror the change into the corresponding live DOM subtree.
+ *
+ * If the first child of `targetNode._content` is not an `_elem` container,
+ * this function will create one and insert it as the first child. All
+ * appended nodes are then placed inside that container.
+ *
+ * When a bound live DOM element exists for `targetNode`, the same nodes
+ * are rendered via `create_live_tree2` and inserted into the DOM at the
+ * corresponding position, keeping HSON and DOM in sync.
+ *
+ * @param targetNode - The HSON node that will receive the new children.
+ * @param nodesToAppend - The HSON nodes to append into the `_elem` container.
+ * @param index - Optional insertion index within the `_elem` content.
+ *                If provided, it is normalized via `normalize_ix` and
+ *                used for both HSON and DOM insertion; otherwise nodes
+ *                are appended to the end.
+ */
 export function appendNodesToTree(
   targetNode: HsonNode,
   nodesToAppend: HsonNode[],
@@ -60,7 +81,21 @@ export function appendNodesToTree(
   }
 }
 
-
+/**
+ * Append a single `LiveTree` branch as children of the current `LiveTree`'s node,
+ * preserving HSON → DOM linkage.
+ *
+ * The source branch's root `_elem` wrapper is unwrapped via `unwrap_root_elem`,
+ * so that only its meaningful children are appended. The source branch then
+ * "adopts" the host roots from the current tree so subsequent operations
+ * on the branch stay connected to the same host DOM.
+ *
+ * @this LiveTree
+ * @param branch - The `LiveTree` branch whose node subtree will be appended.
+ * @param index - Optional insertion index within the `_elem` container of
+ *                the target node; normalized consistently with `appendNodesToTree`.
+ * @returns The receiver `LiveTree` (for chaining).
+ */
 export function appendBranch(
   this: LiveTree,
   branch: LiveTree,
@@ -81,7 +116,22 @@ export function appendBranch(
   return this;
 }
 
-
+/**
+ * Append multiple `LiveTree` branches as children of the current `LiveTree`'s node.
+ *
+ * Accepts either an explicit array of `LiveTree` instances or a `TreeSelector`
+ * that can be converted to such an array. Each branch is unwrapped via
+ * `unwrap_root_elem` to strip its root `_elem` wrapper, and its roots are
+ * re-bound to the current tree via `adoptRoots`. All resulting HSON nodes
+ * are batched and inserted through `appendNodesToTree`, which also updates
+ * the DOM.
+ *
+ * @this LiveTree
+ * @param branches - A `TreeSelector` or array of `LiveTree` branches to append.
+ * @param index - Optional insertion index within the target `_elem` container
+ *                where the combined branch nodes will be inserted.
+ * @returns The receiver `LiveTree` (for chaining).
+ */
 export function appendMulti(
   this: LiveTree,
   branches: TreeSelector | LiveTree[],
@@ -96,7 +146,6 @@ export function appendMulti(
   const nodesToAppend: HsonNode[] = [];
   for (const b of branchList) {
     const src = b.node;
-    // assert_htmlish_subtree(src); // optional guard
     nodesToAppend.push(...unwrap_root_elem(src));
     b.adoptRoots(this.getHostRoots());
   }

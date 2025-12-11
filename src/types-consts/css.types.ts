@@ -1,4 +1,7 @@
+
 import { StyleKey } from "../api/livetree/livetree-methods/style-manager2.utils";
+
+
 
 // helper: a structured value we can do math on later
 export type CssUnit =
@@ -14,7 +17,6 @@ export type CssUnit =
   | "_"; // unitless
 
 export type CssValue = string | { value: number; unit: CssUnit };
-
 
 //  this stays as the *stored* representation
 export interface CssText {
@@ -53,3 +55,12 @@ export interface CssRuleBuilder {
 }
 
 export type StyleObject = Partial<Record<StyleKey, string | number | null | undefined>>;
+//  public-facing handle for callers
+
+export interface CssHandle {
+  // apply to all bound QUIDs
+  set(property: string, value: CssValue): void; // NEW
+  setMany(decls: CssProp): void; // NEW
+  unset(property: string): void; // NEW
+  clear(): void; // NEW
+}
