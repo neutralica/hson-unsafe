@@ -96,7 +96,7 @@ export function appendNodesToTree(
  *                the target node; normalized consistently with `appendNodesToTree`.
  * @returns The receiver `LiveTree` (for chaining).
  */
-export function appendBranch(
+export function append_branch(
   this: LiveTree,
   branch: LiveTree,
   index?: number,

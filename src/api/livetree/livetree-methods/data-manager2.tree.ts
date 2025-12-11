@@ -33,7 +33,7 @@ export type DatasetObj = Record<string, DatasetValue>;
  *   - No attempt is made to coerce to/from numbers; everything is stored
  *     as strings, matching real HTML.
  */
-export class DataManager2 {
+export class DataManager {
     private liveTree: LiveTree;
 
     /**

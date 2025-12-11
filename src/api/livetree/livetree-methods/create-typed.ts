@@ -3,35 +3,17 @@ import { HsonNode } from "../../../types-consts/node.types";
 import { LiveTreeCreateHelper, TagName, TreeSelectorCreateHelper } from "../../../types-consts/livetree.types";
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
 import { LiveTree } from "../livetree";
-import { make_tree_selector } from "../make-tree-selx";
+import { make_tree_selector } from "../tree-selector";
 import { TreeSelector } from "../../../types-consts/livetree.types";
 
 
-// export type LiveTreeCreateHelper = {
-//   // per-tag sugar: tree.create.div(index?)
-//   [K in HtmlTag]: (index?: number) => LiveTree;
-// } & {
-//   // batch version: tree.create.tags(["div","span"], index?)
-//   tags(tags: TagName[], index?: number): TreeSelector;
-// };
 /**
  * Supported HTML tag names for the built-in `tree.create.<tag>()` sugar.
  *
  * These tags are chosen to keep the helper small, predictable, and in line
  * with the subset of structural elements LiveTree tends to operate on.
  */
-export type HtmlTag =
-  "div" |
-  "span" |
-  "p" |
-  "section" |
-  "ul" |
-  "li" |
-  "button" |
-  "header" |
-  "footer" |
-  "main";
-
+export type HtmlTag = keyof HTMLElementTagNameMap;
 /**
  * Canonical list backing the dot-sugar creation functions on
  * `LiveTreeCreateHelper`.

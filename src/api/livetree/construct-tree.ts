@@ -9,18 +9,18 @@ import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
 import { parse_html } from "../parsers/parse-html.new.transform";
 import { parse_json } from "../parsers/parse-json.new.transform";
-import { createBranchFromNode2 } from "./create-branch";
-import { graft2 } from "./graft";
+import { make_branch_from_node } from "./create-branch";
+import { graft } from "./graft";
 import { LiveTree } from "./livetree";
 import { BranchConstructor, GraftConstructor, TreeConstructor_Source } from "../../types-consts/constructor.types";
 
 /**
  * factory function that builds the entry-point for the liveTree pipeline
- * @param $options - an object to control behavior, e.g., { unsafe: boolean }
+ * @param options - an object to control behavior, e.g., { unsafe: boolean }
  * @returns an object with methods to define the source of the tree
  */
-export function construct_tree2(
-  $options: { unsafe: boolean } = { unsafe: false }
+export function construct_tree(
+  options: { unsafe: boolean } = { unsafe: false }
 ): TreeConstructor_Source {
 
   /* the main object returned by construct_tree */
@@ -32,7 +32,7 @@ export function construct_tree2(
       const trimmed = $html.trimStart();
 
       if (isSvgMarkup(trimmed)) {
-        if (!$options.unsafe) {
+        if (!options.unsafe) {
           // SAFE pipeline: SVG from external HTML is not allowed
           _throw_transform_err(
             "liveTree.fromHTML(): SVG markup is only allowed on UNSAFE pipeline or via internal node_from_svg.",
@@ -48,12 +48,12 @@ export function construct_tree2(
         node = node_from_svg(el);
       } else {
         // NON-SVG HTML: safe pipeline → sanitized; unsafe → raw
-        node = $options.unsafe
+        node = options.unsafe
           ? parse_html($html)
           : parse_external_html($html);
       }
 
-      const branch = createBranchFromNode2(node);
+      const branch = make_branch_from_node(node);
       return {
         asBranch: () => branch,
       };
@@ -61,7 +61,7 @@ export function construct_tree2(
 
     fromJSON($json: string | JsonValue): BranchConstructor {
       const rootNode = parse_json($json as string);
-      const branch = createBranchFromNode2(rootNode);
+      const branch = make_branch_from_node(rootNode);
       return {
         asBranch: () => branch,
       };
@@ -71,7 +71,7 @@ export function construct_tree2(
     fromHSON($hson: string): BranchConstructor {
       // assumes tokenize_hson and parse_tokens available
       const rootNode = parse_hson($hson);
-      const branch = createBranchFromNode2(rootNode);
+      const branch = make_branch_from_node(rootNode);
       return {
         asBranch: () => branch,
       };
@@ -90,7 +90,7 @@ export function construct_tree2(
           throw new Error (`hson.liveTree.queryDom: selector "${$selector}" not found.`);
           }
           // only call the main graft function if the element was found
-          return graft2(element, $options);
+          return graft(element, options);
         }
       };
     },
@@ -101,7 +101,7 @@ export function construct_tree2(
       /* return the graft constructor object */
       return {
         graft: (): LiveTree => {
-          return graft2(element, $options);
+          return graft(element, options);
         }
       };
     },

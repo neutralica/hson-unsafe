@@ -5,7 +5,7 @@ import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.uti
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
 import { LiveTree } from "../livetree";
 
-export function empty2(this: LiveTree): LiveTree {
+export function empty_contents(this: LiveTree): LiveTree {
     const node = this.node;
 
     const kids = node._content;

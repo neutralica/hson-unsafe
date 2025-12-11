@@ -1,4 +1,4 @@
-import { make_tree_selector } from "./api/livetree/make-tree-selx"
+import { make_tree_selector } from "./api/livetree/tree-selector"
 import { LiveTree } from "./types-consts"
 import { CREATE_NODE } from "./types-consts/factories"
 

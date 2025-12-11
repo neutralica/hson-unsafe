@@ -6,7 +6,7 @@ import { parse_selector } from "../../../utils/tree-utils/parse-selector.utils";
 import { LiveTree } from "../livetree";
 import { search_nodes } from "./search2";
 
-export function remove_child2(
+export function remove_child(
   this: LiveTree,
   query: HsonQuery | string,
 ): LiveTree {

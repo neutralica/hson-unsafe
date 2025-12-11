@@ -29,7 +29,7 @@ import { Primitive } from "../../../core/types-consts/core.types";
  * @param node - The HSON node whose content and mapped element text are updated.
  * @param value - The primitive value to store as a leaf and render as text.
  */
-export function setNodeContent(node: HsonNode, value: Primitive): void {
+export function set_node_content(node: HsonNode, value: Primitive): void {
     const leaf = make_leaf(value);
     node._content = [leaf];
 
@@ -63,7 +63,7 @@ export function setNodeContent(node: HsonNode, value: Primitive): void {
  * @param node - The HSON node whose textual content is being read.
  * @returns The concatenated text from either the DOM or the HSON tree.
  */
-export function getNodeText(node: HsonNode): string {
+export function get_node_text(node: HsonNode): string {
     // Prefer DOM if present – it's the ground truth for rendered text.
     const el = element_for_node(node);
     if (el) {
@@ -119,7 +119,7 @@ export function getNodeText(node: HsonNode): string {
  * @param opts.silent - When true, suppresses the error if no DOM element
  *                      is currently associated with the node.
  */
-export function setNodeFormValue(
+export function set_node_form_value(
     node: HsonNode,
     value: string,
     opts?: { silent?: boolean },
@@ -169,7 +169,7 @@ export function setNodeFormValue(
  * @param node - The HSON node from which to read the form value.
  * @returns The form value as a string, or `""` when no value is present.
  */
-export function getNodeFormValue(node: HsonNode): string {
+export function get_node_form_value(node: HsonNode): string {
     const el = element_for_node(node);
     if (
         el &&

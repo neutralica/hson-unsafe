@@ -2,7 +2,7 @@ import { HsonNode } from "../../../types-consts/node.types";
 import { FindWithById, HsonQuery } from "../../../types-consts/livetree.types";
 import { parse_selector } from "../../../utils/tree-utils/parse-selector.utils";
 import { LiveTree } from "../livetree";
-import { make_tree_selector } from "../make-tree-selx";
+import { make_tree_selector } from "../tree-selector";
 import { TreeSelector } from "../../../types-consts/livetree.types";
 import { search_nodes } from "./search2";
 
@@ -44,7 +44,7 @@ export function makeFindFor(tree: LiveTree): FindWithById {
     return base;
 }
 
-export function findAllFor(tree: LiveTree, q: HsonQuery | string): TreeSelector {
+export function find_all_in_tree(tree: LiveTree, q: HsonQuery | string): TreeSelector {
     const query = typeof q === "string" ? parse_selector(q) : q;
     const found = search_nodes([tree.node], query, { findFirst: false });
 

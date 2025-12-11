@@ -3,7 +3,7 @@ import { HsonNode } from "../../../types-consts/node.types";
 import { TagName } from "../../../types-consts/livetree.types";
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
 import { LiveTree } from "../livetree";
-import { make_tree_selector } from "../make-tree-selx";
+import { make_tree_selector } from "../tree-selector";
 import { TreeSelector } from "../../../types-consts/livetree.types";
 
 /**

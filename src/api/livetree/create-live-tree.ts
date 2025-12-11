@@ -20,10 +20,40 @@ import { linkNodeToElement } from "../../utils/tree-utils/node-map-helpers.utils
 
 
 /**
- * Render NEW nodes directly to DOM.
- * VSNs (_root/_obj/_arr/_elem) are virtual and never become DOM elements.
+ * Materialize a new DOM subtree from a given HSON node or primitive.
  *
- * IMPORTANT: no quid logic here; LiveTree is responsible for quids.
+ * Behavior:
+ * - When `node` is a primitive (not an `HsonNode`), returns a
+ *   `Text` node whose content is `String(node ?? "")`.
+ * - When `node` is an `HsonNode`:
+ *   - Interprets virtual structural nodes (VSNs) such as `_root`,
+ *     `_obj`, `_arr`, `_elem` as *non-rendered* containers:
+ *     they never become real DOM elements, but their children are
+ *     recursively rendered.
+ *   - Creates real DOM `Element` nodes for concrete HSON element tags,
+ *     wiring attributes and content according to the HSON structure.
+ *   - Recursively renders children, attaching them under the newly
+ *     created element or, for VSNs, under the nearest real ancestor.
+ *
+ * Namespace handling:
+ * - Uses the `parentNs` argument (`"html"` or `"svg"`) as the current
+ *   namespace context.
+ * - When creating elements in SVG context, uses the correct SVG
+ *   namespace; HTML context uses regular `document.createElement`.
+ * - Namespace context is updated when descending into SVG/HTML roots,
+ *   ensuring nested SVG-in-HTML and HTML-in-SVG patterns render
+ *   correctly.
+ *
+ * IMPORTANT:
+ * - This function is purely about DOM materialization. It does *not*
+ *   assign QUIDs, update `NODE_ELEMENT_MAP`, or otherwise manage
+ *   identity; that responsibility lives with `LiveTree` and related
+ *   helpers.
+ *
+ * @param node - The HSON node or primitive value to render.
+ * @param parentNs - The current namespace context (`"html"` or `"svg"`),
+ *                   used to choose the appropriate element factory.
+ * @returns The root DOM `Node` of the newly created subtree.
  */
 export function create_live_tree2(
   node: HsonNode | Primitive,

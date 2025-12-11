@@ -18,13 +18,13 @@ import { LiveTree } from "./livetree";
  * This keeps `_root` as a purely structural wrapper that never becomes
  * a LiveTree selection root or listener target.
  */
-export function createBranchFromNode2(rootNode: HsonNode): LiveTree {
+export function make_branch_from_node(rootNode: HsonNode): LiveTree {
   const unwrapped = unwrap_root_elem(rootNode);
   if (unwrapped.length === 0) {
     console.warn("createBranchFromNode: nothing to unwrap; falling back to rootNode");
     unwrapped.push(rootNode);
   }
-  if (unwrap_root_elem.length !== 1) {
+  if (unwrapped.length !== 1) {
     _throw_transform_err(
       `createBranchFromNode: expected exactly 1 root for LiveTree.asBranch(), got ${unwrapped.length}`,
       "createBranchFromNode",

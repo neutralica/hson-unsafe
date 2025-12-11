@@ -43,7 +43,7 @@ function collectQuidsForSubtree(rootNode: HsonNode): Set<string> {
  * - Leaves the LiveTree2 pointing at the (now detached) node; further
  *   mutations will only affect the orphaned model, not the DOM.
  */
-export function remove2(this: LiveTree): LiveTree {
+export function remove_self(this: LiveTree): LiveTree {
   const node = this.node; // single-node invariant
 
   // 1) Clear QUID-scoped CSS for the DOM subtree (if any).

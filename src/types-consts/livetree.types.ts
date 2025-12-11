@@ -2,11 +2,12 @@
 
 import { LiveTree } from "../api/livetree/livetree";
 import { CssHandle } from "./css.types";
-import { DataManager2 } from "../api/livetree/livetree-methods/data-manager2.tree";
+import { DataManager } from "../api/livetree/livetree-methods/data-manager2.tree";
 import { StyleManager2 } from "../api/livetree/livetree-methods/style-manager2.utils";
 import { ListenerBuilder } from "./listen.types";
 import { HsonAttrs, HsonMeta, HsonNode } from "./node.types";
 import { HtmlTag } from "../api/livetree/livetree-methods/create-typed";
+import { Primitive } from "../core/types-consts/core.types";
 
 export interface HsonQuery {
   tag?: string;
@@ -64,19 +65,34 @@ export interface TreeSelector {
   // style: proxied to the *first* tree; throws on empty
   readonly style: StyleManager2;
   readonly css: CssHandle;
-  readonly data: DataManager2;
+  readonly data: DataManager;
   readonly listen: ListenerBuilder;
   create: TreeSelectorCreateHelper;
-
+  /**
+   * Set the text content of every `LiveTree` in this selector.
+   *
+   * Semantics:
+   * - Iterates over the internal list of trees and calls `t.setText(value)`
+   *   on each one, so each selected node is updated via the same HSON +
+   *   DOM sync path as a single-tree call.
+   * - The selection itself is not changed: after this call, the selector
+   *   still refers to the same `LiveTree` instances, now with updated text.
+   *
+   * This is a broadcast side-effect: it performs a write operation on
+   * each subtree and then returns the same selector for further chaining.
+   *
+   * @param value - The primitive text value to apply to each selected node.
+   * @returns This `TreeSelector` instance, for chaining.
+   */
+  setText(value: Primitive): TreeSelector;
 }
 
-
 export type CreateHelper<Single, Many> = {
-  // per-tag sugar: .create.div()
-  [K in HtmlTag]: () => Single;
+  // per-tag sugar: .create.div(index?)
+  [K in HtmlTag]: (index?: number) => Single;
 } & {
-  // batch: .create.tags(["div", "span"])
-  tags(tags: TagName[]): Many;
+  // batch: .create.tags(["div", "span"], index?)
+  tags(tags: TagName[], index?: number): Many;
 };
 
 /**

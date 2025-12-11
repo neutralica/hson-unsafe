@@ -13,7 +13,7 @@ import { OptionsConstructor_3, RenderConstructor_4 } from "../../types-consts/co
 import { FrameRender } from "../../types-consts/constructor.types";
 import { LiveTree } from "../livetree/livetree";
 import { LiveTreeConstructor_3 } from "../../types-consts/constructor.types";
-import { createBranchFromNode2 } from "../livetree/create-branch";
+import { make_branch_from_node } from "../livetree/create-branch";
 
 /**
  * HSON pipeline – stage 2: select output format.
@@ -86,7 +86,7 @@ export function construct_output_2(frame: FrameConstructor): OutputConstructor_2
             }
             // Populate NODE_ELEMENT_MAP; actual attach happens later via graft/append.
             
-            return createBranchFromNode2(node);
+            return make_branch_from_node(node);
           },
         };
       },

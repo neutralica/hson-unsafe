@@ -89,7 +89,7 @@ export function _listeners_off_for_target(target: EventTarget): void {
  * Returns a fluent API for describing one or many listeners and then
  * attaching them in a controlled, predictable way.
  */
-export function buildListener(tree: LiveTree): ListenerBuilder {
+export function build_listener(tree: LiveTree): ListenerBuilder {
   type Q = { type: string; handler: EventListener };
   const queue: Q[] = [];
 
