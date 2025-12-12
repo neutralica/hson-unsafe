@@ -1,8 +1,8 @@
 
 import { HsonQuery } from "../../../types-consts/livetree.types";
-import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
-import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.utils";
-import { parse_selector } from "../../../utils/tree-utils/parse-selector.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new";
+import { detach_node_deep } from "../../../utils/tree-utils/detach-node";
+import { parse_selector } from "../../../utils/tree-utils/parse-selector";
 import { LiveTree } from "../livetree";
 import { search_nodes } from "./search2";
 

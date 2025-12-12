@@ -4,10 +4,10 @@ import { OBJ_TAG } from "../../types-consts/constants";
 import { CREATE_ARR_OPEN_TOKEN, CREATE_ARR_CLOSE_TOKEN, CREATE_EMPTY_OBJ_TOKEN, CREATE_END_TOKEN, CREATE_OPEN_TOKEN, CREATE_TEXT_TOKEN } from "../../types-consts/factories";
 import { CLOSE_KIND, ARR_SYMBOL, TOKEN_KIND } from "../../types-consts/token.types";
 import { Position, CloseKind, Tokens, RawAttr } from "../../types-consts/token.types";
-import { lex_text_piece } from "../../utils/hson-utils/lex-text-piece.utils";
-import { slice_balanced_arr } from "../../utils/hson-utils/slice-balance.new.utils";
-import { split_top_level } from "../../utils/hson-utils/split-top-2.utils";
-import { is_quote, scan_quoted_block } from "../../utils/hson-utils/tokenize-full-string.utils";
+import { lex_text_piece } from "../../utils/hson-utils/lex-text-piece";
+import { slice_balanced_arr } from "../../utils/hson-utils/slice-balance";
+import { split_top_level } from "../../utils/hson-utils/split-top-2";
+import { is_quote, scan_quoted_block } from "../../utils/hson-utils/tokenize-full-string";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 
 
@@ -130,36 +130,36 @@ let tokenFirst: boolean = true;
  *   overflow, impossible token transitions), throws via `_throw_transform_err`
  *   with contextual information about where the failure occurred.
  *
- * @param $hson - Full HSON source string to be tokenized.
- * @param $depth - Internal recursion depth guard (callers normally omit).
+ * @param hson - Full HSON source string to be tokenized.
+ * @param depth - Internal recursion depth guard (callers normally omit).
  * @returns An ordered array of `Tokens` representing the token stream for
  *   the parser.
  * @see parse_tokens
  * @see readAttrs
  */
-export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
+export function tokenize_hson(hson: string, depth = 0): Tokens[] {
 
     const maxDepth = 50;
-    _log(`[token_from_hson called with depth=${$depth}]`);
+    _log(`[token_from_hson called with depth=${depth}]`);
     if (tokenFirst) {
         if (_VERBOSE) {
             console.groupCollapsed('---> tokenizing hson')
             console.log('input hson string')
-            console.log($hson);
+            console.log(hson);
             console.groupEnd();
             tokenFirst = false;
         }
     }
-    if ($depth >= maxDepth) {
+    if (depth >= maxDepth) {
         _throw_transform_err(`stopping potentially infinite loop (depth >= ${maxDepth})`, 'tokenize_hson');
     }
 
     const finalTokens: Tokens[] = [];
     const contextStack: ContextStackItem[] = [];
-    const splitLines = $hson.split(/\r\n|\r|\n/);
+    const splitLines = hson.split(/\r\n|\r|\n/);
     let ix = 0;
 
-    _log(`[token_from_hson depth=${$depth}]; total lines: ${splitLines.length}`);
+    _log(`[token_from_hson depth=${depth}]; total lines: ${splitLines.length}`);
 
 /**
  * Verify and normalize a candidate string literal segment in tag headers.
@@ -205,11 +205,11 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
  * explicit `=`. If it passes this check, the tokenizer treats it as
  * a bare value rather than as a boolean/flag attribute.
  *
- * @param $s - Raw token text.
+ * @param string - Raw token text.
  * @returns `true` if the token represents a primitive literal, `false` otherwise.
  */
-    function isPrimitiveLex($s: string): boolean {
-        const t = $s.trim();
+    function isPrimitiveLex(string: string): boolean {
+        const t = string.trim();
         if (!t) return false;
         if (t === 'true' || t === 'false' || t === 'null') return true;
         // number-ish (int, float, sci). no +/- signs for attrs; fine to accept here
@@ -228,33 +228,33 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
  * This helper keeps all line-advance logic centralized so that position
  * tracking remains consistent.
  *
- * @param $line - The current line string being consumed.
+ * @param line - The current line string being consumed.
  */
-    function _bump_line($line: string) { _offset += $line.length + 1; ix++; }
+    function _bump_line(line: string) { _offset += line.length + 1; ix++; }
 
     /**
  * Advance the tokenizer’s line/offset cursors by a fixed number of
  * subsequent lines starting at the current index.
  *
- * For each of the next `$count` lines:
+ * For each of the next `count` lines:
  * - Adds `line.length + 1` to the global `_offset`.
  * - Skips forward in `splitLines`.
  *
  * After the loop:
- * - Increments `ix` by `$count`, effectively jumping ahead by that many
+ * - Increments `ix` by `count`, effectively jumping ahead by that many
  *   logical lines in the tokenization process.
  *
  * Used when multi-line constructs can be skipped in bulk once they have
  * been structurally accounted for.
  *
- * @param $count - How many following lines to advance over.
+ * @param count - How many following lines to advance over.
  */
-    function _bump_array($count: number) {
-        for (let n = 0; n < $count; n++) {
+    function _bump_array(count: number) {
+        for (let n = 0; n < count; n++) {
             const L = splitLines[ix + n] ?? '';
             _offset += L.length + 1;
         }
-        ix += $count;
+        ix += count;
     }
 
     /**
@@ -288,69 +288,69 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
  * - `endIx`: the index of the first unconsumed character in `trimLine`
  *   after attribute scanning, for the caller to continue scanning.
  *
- * @param $trimLine - The trimmed header line containing the tag and attrs.
- * @param $startIx - Index (in `$trimLine`) where attribute parsing begins.
- * @param $endIx - Index (in `$trimLine`) where attribute parsing must stop.
- * @param $lineNo - 1-based line number for position metadata.
- * @param $leadCol - Column of the first non-space character in the line.
+ * @param trimLine - The trimmed header line containing the tag and attrs.
+ * @param startIx - Index (in `$trimLine`) where attribute parsing begins.
+ * @param endIx - Index (in `$trimLine`) where attribute parsing must stop.
+ * @param lineNo - 1-based line number for position metadata.
+ * @param leadCol - Column of the first non-space character in the line.
  * @returns An object with `{ attrs, endIx }` for downstream tokenization.
  */
     function readAttrs(
-        $trimLine: string,
-        $startIx: number,                /* first char after tag name */
-        $endIx: number,                  /* start index of the trailing closer in trimLine */
-        $lineNo: number,
-        $leadCol: number                 /* first non-space col in currentLine (1-based) */
+        trimLine: string,
+        startIx: number,                /* first char after tag name */
+        endIx: number,                  /* start index of the trailing closer in trimLine */
+        lineNo: number,
+        leadCol: number                 /* first non-space col in currentLine (1-based) */
     ): { attrs: RawAttr[]; endIx: number } {
         const out: RawAttr[] = [];
-        let ix = $startIx;
-        const end = $endIx;
+        let ix = startIx;
+        const end = endIx;
 
         let inQuote: '"' | "'" | null = null;
         let escaped = false;
 
-        const _col = (relIx: number) => $leadCol + relIx;                 /* 1-based col */
+        const _col = (relIx: number) => leadCol + relIx;                 /* 1-based col */
         const _mkpos = (relIx: number): Position => {
             const col = _col(relIx);
-            return { line: $lineNo, col, index: _offset + col - 1 };
+            return { line: lineNo, col, index: _offset + col - 1 };
         };
 
-        const _skip_whitespace = () => { while (ix < end && /\s/.test($trimLine[ix])) ix++; };
+        const _skip_whitespace = () => { while (ix < end && /\s/.test(trimLine[ix])) ix++; };
 
         while (ix < end) {
             _skip_whitespace();
             if (ix >= end) break;
 
             /* attr name must start with letter/_/: */
-            if (!/[A-Za-z_:]/.test($trimLine[ix])) break;
+            if (!/[A-Za-z_:]/.test(trimLine[ix])) break;
 
             const nameStart = ix;
-            ix++; while (ix < end && /[\w:.\-]/.test($trimLine[ix])) ix++;
-            const name = $trimLine.slice(nameStart, ix);
+            ix++; while (ix < end && /[\w:.\-]/.test(trimLine[ix])) ix++;
+            const name = trimLine.slice(nameStart, ix);
             const startPos = _mkpos(nameStart);
 
             _skip_whitespace();
 
-            if (ix < end && $trimLine[ix] === '=') {
+            if (ix < end && trimLine[ix] === '=') {
                 ix++; _skip_whitespace();
                 let valStart = ix;
 
-                if (ix < end && ($trimLine[ix] === '"' || $trimLine[ix] === "'")) {
-                    inQuote = $trimLine[ix] as '"' | "'"; ix++; valStart = ix;
+                if (ix < end && (trimLine[ix] === '"' || trimLine[ix] === "'")) {
+                    inQuote = trimLine[ix] as '"' | "'"; ix++; valStart = ix;
                     while (ix < end) {
-                        const ch = $trimLine[ix];
+                        const ch = trimLine[ix];
                         if (escaped) { escaped = false; ix++; continue; }
                         if (ch === '\\') { escaped = true; ix++; continue; }
                         if (ch === inQuote) break;
                         ix++;
                     }
-                    const text = $trimLine.slice(valStart, ix);
-                    if (ix < end && $trimLine[ix] === inQuote) ix++;
+                    const text = trimLine.slice(valStart, ix);
+                    if (ix < end && trimLine[ix] === inQuote) ix++;
                     const endPos = _mkpos(ix);
                     out.push({ name, value: { text, quoted: true }, start: startPos, end: endPos });
                 } else {
-                    while (ix < end && !/\s/.test($trimLine[ix])) ix++;
-                    const text = $trimLine.slice(valStart, ix);
+                    while (ix < end && !/\s/.test(trimLine[ix])) ix++;
+                    const text = trimLine.slice(valStart, ix);
                     const endPos = _mkpos(ix);
                     out.push({ name, value: { text, quoted: false }, start: startPos, end: endPos });
                 }
@@ -374,19 +374,19 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
         // near tokenizer setup (top of function/file)
         const getLine = (n: number) => splitLines[n] ?? '';
 
-        _log(`[token_from_hson depth=${$depth} L=${currentIx + 1}/${splitLines.length}]: processing: "${trimLine}" (Original: "${currentLine}")`);
+        _log(`[token_from_hson depth=${depth} L=${currentIx + 1}/${splitLines.length}]: processing: "${trimLine}" (Original: "${currentLine}")`);
 
         /* Step A */
         /* skip empty/comment lines */
         if (!trimLine || trimLine.startsWith('//')) {
-            _log(`[token_from_hson depth=${$depth} L=${currentIx + 1}] skipping comment/empty`);
+            _log(`[token_from_hson depth=${depth} L=${currentIx + 1}] skipping comment/empty`);
             _bump_line(currentLine);
             continue;
         }
 
         /* Step B: lone '<' implicit object trigger */
         if (LONE_OPEN_ANGLE_REGEX.test(currentLine)) {
-            _log(`[tokenize_hson depth=${$depth} L=${currentIx + 1}] lone '<' detected`);
+            _log(`[tokenize_hson depth=${depth} L=${currentIx + 1}] lone '<' detected`);
 
             contextStack.push({ type: 'IMPLICIT_OBJECT' });
             contextStack.push({ type: 'CLUSTER', close: CLOSE_KIND.obj, implicit: true });
@@ -450,7 +450,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
                 if (!item) continue;
 
                 if (item.startsWith('<') || item.startsWith('«') || item.startsWith('[')) {
-                    finalTokens.push(...tokenize_hson(item, $depth + 1));
+                    finalTokens.push(...tokenize_hson(item, depth + 1));
                 } else {
                     //  quote-aware, without endIx
                     const piece = ensureQuotedLiteral(item, 'array');
@@ -532,14 +532,14 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
 
             /* f.1 implicit object opener "< <...": accept preamble, no tokens, structure only */
             if (IMPLICIT_OBJECT_START_REGEX.test(trimLine)) {
-                _log(`[step f depth=${$depth} L=${currentIx + 1}] implicit object opener`);
+                _log(`[step f depth=${depth} L=${currentIx + 1}] implicit object opener`);
                 contextStack.push({ type: 'IMPLICIT_OBJECT' });
                 contextStack.push({ type: 'CLUSTER' });/* pending close kind */
 
                 const secondIx = trimLine.indexOf('<', trimLine.indexOf('<') + 1);
                 const inner = secondIx >= 0 ? trimLine.substring(secondIx).trim() : '';
                 if (inner) {
-                    const innerTokens = tokenize_hson(inner, $depth + 1);
+                    const innerTokens = tokenize_hson(inner, depth + 1);
                     finalTokens.push(...innerTokens);
                 }
                 _bump_line(currentLine);
@@ -554,7 +554,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
             const tagNameStartIx = ixHeader;
             while (ixHeader < lineLen && /[A-Za-z0-9:._-]/.test(trimLine[ixHeader])) ixHeader++;
             const tag = trimLine.slice(tagNameStartIx, ixHeader);
-            if (!tag) _throw_transform_err(`[step f depth=${$depth} L=${currentIx + 1}] malformed tag in "${trimLine}"`, 'tokenize-hson');
+            if (!tag) _throw_transform_err(`[step f depth=${depth} L=${currentIx + 1}] malformed tag in "${trimLine}"`, 'tokenize-hson');
 
             const lineNo = currentIx + 1;
             const leadCol = currentLine.search(/\S|$/) + 1;          /* first non-space col */
@@ -603,7 +603,7 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
             /* inline tail (if any) */
             if (tailRaw) {
                 if (tailRaw.startsWith('<') || tailRaw.startsWith('«') || tailRaw.startsWith('[')) {
-                    finalTokens.push(...tokenize_hson(tailRaw, $depth + 1));
+                    finalTokens.push(...tokenize_hson(tailRaw, depth + 1));
                 } else {
                     const parts = split_top_level(tailRaw, ',');
                     if (parts.length > 1) {
@@ -689,13 +689,13 @@ export function tokenize_hson($hson: string, $depth = 0): Tokens[] {
 
     /* end-of-file stats */
     _log(
-        `[tokenize_hson depth=${$depth}] processed all lines\n` +
+        `[tokenize_hson depth=${depth}] processed all lines\n` +
         `  contextStack size: ${contextStack.length}\n` +
         `  total tokens: ${finalTokens.length}`
     );
 
     /* final check — only at top level */
-    if ($depth === 0 && contextStack.length > 0) {
+    if (depth === 0 && contextStack.length > 0) {
         const residual = contextStack.map((c) => {
             if (c.type === 'CLUSTER') return `<cluster ${c.close ?? 'pending'}>`;
             if (c.type === 'IMPLICIT_OBJECT') return '< < (implicit object)';

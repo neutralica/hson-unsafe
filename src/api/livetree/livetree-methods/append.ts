@@ -1,6 +1,6 @@
 // append.ts
 
-import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new";
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
 import { STR_TAG, ELEM_TAG } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.types";
@@ -8,7 +8,7 @@ import { CREATE_NODE } from "../../../types-consts/factories";
 import { make_string } from "../../../utils/primitive-utils/make-string.nodes.utils";
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
 import { LiveTree } from "../livetree";
-import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { create_live_tree2 } from "../create-live-tree";
 
 /**
@@ -39,7 +39,7 @@ export function normalize_ix(index: number, length: number): number {
  * Append a `LiveTree` branch as children of this `LiveTree`'s node,
  * updating both the HSON structure and the bound DOM subtree.
  *
- * The incoming `$content` branch is normalized to a list of HSON nodes
+ * The incoming `content` branch is normalized to a list of HSON nodes
  * via `unwrap_root_elem`, so its root `_elem` wrapper is not appended.
  * The nodes are then inserted into the target node's `_elem` container,
  * creating that container if needed. Insertion position is controlled
@@ -51,7 +51,7 @@ export function normalize_ix(index: number, length: number): number {
  * DOM at the corresponding position, keeping HSON and DOM in sync.
  *
  * @this LiveTree - The anchor tree whose node will receive the new children.
- * @param $content - The `LiveTree` branch to append into this tree.
+ * @param content - The `LiveTree` branch to append into this tree.
  * @param index - Optional insertion index in the `_elem` container;
  *                negative values index from the end, and values outside
  *                the range are clamped.
@@ -59,7 +59,7 @@ export function normalize_ix(index: number, length: number): number {
  */
 export function append(
   this: LiveTree,
-  $content: LiveTree,
+  content: LiveTree,
   index?: number,
 ): LiveTree {
   // Single-node anchor; throws if there is no node.
@@ -67,13 +67,13 @@ export function append(
 
   // --- normalize content into HsonNode[] -------------------------------
   let nodesToAppend: HsonNode[];
-  if (is_Node($content)) {
-    nodesToAppend = unwrap_root_elem($content);
+  if (is_Node(content)) {
+    nodesToAppend = unwrap_root_elem(content);
   } else {
     _throw_transform_err(
       "[ERR] invalid content provided",
       "append",
-      make_string($content),
+      make_string(content),
     );
   }
 

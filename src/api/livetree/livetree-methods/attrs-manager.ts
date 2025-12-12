@@ -1,7 +1,7 @@
 import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
 import { parse_style_string } from "../../../utils/attrs-utils/parse-style";
 import { serialize_style } from "../../../utils/attrs-utils/serialize-style";
-import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { LiveTree } from "../livetree";
 import { StyleObject } from "../../../types-consts/css.types";
 import { Primitive } from "../../../types-consts/core.types";

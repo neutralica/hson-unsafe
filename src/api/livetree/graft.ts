@@ -12,17 +12,17 @@ import { LiveTree } from "./livetree";
  * grafts the hson model onto a DOM element, making it live and interactive
  *  - parses the element's existing HTML, rebuilds it as an HSON-managed
  *     DOM tree, and returns a queryable HsonTree instance that auto-updates
- * @param $element the target HTMLElement to graft onto (default = document.body)
+ * @param element the target HTMLElement to graft onto (default = document.body)
  * @returns a LiveTree for querying and manipulating the grafted DOM element and its children
  */
 
 export function graft(
-  $element?: HTMLElement,
-  $options: { unsafe: boolean } = { unsafe: false }
+  element?: HTMLElement,
+  options: { unsafe: boolean } = { unsafe: false }
 ): LiveTree {
-  const targetElement = $element;
+  const targetElement = element;
   if (!targetElement) {
-    _throw_transform_err('error getting target element', 'graft', $element);
+    _throw_transform_err('error getting target element', 'graft', element);
   }
 
   /* copy current HTML content of target & parse to nodes */

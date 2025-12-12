@@ -1,6 +1,30 @@
-// HTML allows: data-flag=  → empty string. XML requires quotes.
-// This quotes ANY unquoted attr value, including empty-before-terminator.
-export function quote_unquoted_attrs(src: string): string {
+// quote-unquoted.ts
+
+/*********
+ * Quote unquoted HTML attribute values so the result is XML-friendly.
+ *
+ * HTML permits unquoted attribute values (including empty values like `data-x=`),
+ * but XML requires attribute values to be quoted.
+ *
+ * This function scans the input and rewrites only *start tags* (`<tag ...>`):
+ * - End tags (`</...>`), comments (`<!--...-->`), doctypes (`<!...>`), and
+ *   processing instructions (`<?...?>`) are passed through unchanged.
+ * - Quoted attribute values (`name="..."` / `name='...'`) are preserved verbatim.
+ * - Unquoted values (`name=value`) become `name="value"`.
+ * - Empty-before-terminator forms (`name=` followed by whitespace or `>`) become
+ *   `name=""`.
+ * - Boolean attributes with no `=` (e.g. `disabled`) are left as-is (they are
+ *   handled separately by flag/boolean expansion if desired).
+ *
+ * Design notes:
+ * - Single-pass, quote-aware walk (no regex): safer around embedded `>` in quotes,
+ *   mixed quoting, and unusual whitespace.
+ * - Does not entity-escape `&`, `<`, or `>` inside values; keep this function’s
+ *   job narrowly “add quotes”. Perform escaping in a later dedicated pass.
+ *
+ * @param src - Raw HTML-ish markup.
+ * @returns The same markup, but with all unquoted attribute values quoted.
+ *********/export function quote_unquoted_attrs(src: string): string {
   let out = "";
   let i = 0;
 

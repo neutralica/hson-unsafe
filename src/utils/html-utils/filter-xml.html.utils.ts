@@ -73,10 +73,33 @@ function escape_attr_amps(src: string): string {
   return out;
 }
 
-/* ──────────────────────────────────────────────────────────────
-   3) Single entry: HTML-ish → XML-safe string
-   Order matters: first convert known named entities, then fix raw & in attrs.
-   ────────────────────────────────────────────────────────────── */
+/**
+ * Convert “HTML-ish” markup into an XML-safe string for strict XML parsing.
+ *
+ * This is a *preflight filter* for inputs that may contain:
+ * - Named HTML entities that XML parsers won’t recognize (e.g. `&nbsp;`, `&mdash;`).
+ * - Raw `&` characters inside quoted attribute values that would break XML.
+ *
+ * Pipeline (order is intentional):
+ * 1) Replace *known* named entities `&name;` with numeric references `&#NNNN;`.
+ *    - Unknown names are left untouched so the XML parse will fail loudly,
+ *      making unsupported entities visible during debugging.
+ *    - XML’s 5 built-in entities (`&lt;`, `&gt;`, `&amp;`, `&apos;`, `&quot;`)
+ *      are already legal and do not need conversion.
+ *
+ * 2) Escape raw `&` characters *only inside quoted attribute values* unless they
+ *    already start a valid entity (`&#...;`, `&#x...;`, or `&name;`).
+ *    - Text nodes and tag markup are not modified here (use a separate text
+ *      escaper if you need that behavior).
+ *
+ * Intended use:
+ * - Run immediately before feeding markup into an XML parser (or any strict
+ *   consumer that rejects HTML-isms).
+ * - Not a sanitizer: it does not remove unsafe tags/attrs or validate URLs.
+ *
+ * @param input - Markup string that may contain HTML-style entities and raw `&` in attributes.
+ * @returns A string that is more likely to be accepted by strict XML parsers.
+ */
 export function filter_xml(input: string): string {
   let s = input;
   s = replace_name_w_numeric(s);

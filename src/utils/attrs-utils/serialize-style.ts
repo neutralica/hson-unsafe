@@ -1,17 +1,31 @@
-// serialize-css.utils.hson.ts
+// serialize-css.ts
 
 import { StyleObject } from "../../types-consts/css.types";
 
-
-
-/**
- * converts a camelCase string to kebab-case
- * @param {string} $str "backgroundColor"
- * @returns {string} "background-color"
- */
-export function camel_to_kebab($str: string): string {
+/*******
+ * Convert a camelCase (or mixed) property name into kebab-case.
+ *
+ * Purpose:
+ * - Primarily used to convert JS-style property names (e.g. `backgroundColor`)
+ *   into CSS-style property names (e.g. `background-color`).
+ *
+ * Rules:
+ * - Collapses underscores and whitespace into `-`.
+ * - Inserts a `-` between a lowercase/digit and a following uppercase letter.
+ * - Collapses repeated hyphens into a single `-`.
+ * - Lowercases the final output.
+ *
+ * Notes:
+ * - This is intended for standard (non-custom) CSS properties.
+ * - Custom properties (`--foo`) should typically be preserved verbatim instead
+ *   of being passed through this function.
+ *
+ * @param str - Input property name (e.g. `"backgroundColor"`).
+ * @returns The kebab-cased property name (e.g. `"background-color"`).
+ *******/
+export function camel_to_kebab(str: string): string {
   // find all uppercase letters; replace them with a hyphen and their lowercase version
-  return $str.replace(/[_\s]+/g, "-")               // underscores/spaces → hyphen
+  return str.replace(/[_\s]+/g, "-")               // underscores/spaces → hyphen
     .replace(/[_\s]+/g, "-")
     .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .replace(/-+/g, "-")
@@ -19,11 +33,37 @@ export function camel_to_kebab($str: string): string {
 }
 
 
-/**
- * takes a style object and converts it back into a CSS string
- * @param $style - a Dictionary-like object of CSS properties
- * @returns {string} a browser-compatible CSS string
- */
+/*******
+ * Serialize a style object into a CSS declaration list string.
+ *
+ * Purpose:
+ * - Converts an internal `StyleObject` (dictionary of properties → values)
+ *   into a browser-compatible declaration list suitable for `style=""`
+ *   or for emitting inline styles.
+ *
+ * Output format:
+ * - Uses `kebab-case` property names for non-custom properties.
+ * - Preserves custom properties (`--foo`) verbatim as keys.
+ * - Produces declarations in a deterministic order (sorted by final key).
+ * - Produces a compact string with:
+ *   - one space after `:`
+ *   - declarations separated by `"; "`
+ *   - no trailing semicolon at the end
+ *
+ * Normalization:
+ * - Skips null/undefined values.
+ * - Trims stringified values.
+ * - Skips empty values after trimming.
+ * - Strips any trailing semicolons from values to avoid `;;` output.
+ *
+ * Caveats:
+ * - Does not validate property names or values.
+ * - Coerces values via `String(...)`, so non-string values are serialized by
+ *   their string representation.
+ *
+ * @param style - Style object mapping property names to values (or undefined).
+ * @returns A CSS declaration list string, or `""` when there is nothing to emit.
+ *******/
 export function serialize_style(style: StyleObject | undefined): string {
   if (!style || !Object.keys(style).length) { return ""; }
 

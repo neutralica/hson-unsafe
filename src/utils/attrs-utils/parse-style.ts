@@ -1,8 +1,38 @@
-// parse-css.utils.ts
+// parse-style.ts
 
 import { kebab_to_camel } from "../primitive-utils/kebab-to-camel.util";
 
-/** Parse a CSS declaration list safely (handles quotes/parentheses). */
+/*******
+ * Parse a CSS declaration list string into a key/value record.
+ *
+ * Purpose:
+ * - Converts a raw `style=""` string (e.g. `color: red; --x: 1;`) into a
+ *   plain object mapping properties to their raw value strings.
+ *
+ * Parsing rules:
+ * - Splits declarations on `;` only when not inside quotes and not inside
+ *   parentheses (so `url(...)` and quoted strings are preserved).
+ * - Within each declaration, splits on the first `:` that is outside quotes
+ *   and parentheses.
+ * - Ignores empty/whitespace-only fragments and fragments without a `:`.
+ *
+ * Key normalization:
+ * - Custom properties (`--foo`) are preserved verbatim as keys.
+ * - Non-custom properties are lowercased and converted from kebab-case to
+ *   camelCase via `kebab_to_camel` (e.g. `background-color` → `backgroundColor`).
+ *
+ * Value handling:
+ * - Values are returned trimmed, but otherwise unchanged (no unquoting,
+ *   no escaping, no validation).
+ *
+ * Caveats:
+ * - Does not attempt to parse nested CSS, comments, or malformed strings
+ *   beyond the safe delimiter logic described above.
+ * - Duplicate keys are overwritten by the last occurrence.
+ *
+ * @param input - Raw CSS declaration list, typically from an HTML `style` attribute.
+ * @returns Record of parsed CSS properties to raw value strings.
+ *******/
 export function parse_style_string(input: string): Record<string, string> {
   const out: Record<string, string> = {};
   if (!input) return out;

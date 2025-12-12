@@ -2,16 +2,25 @@
 
 import { ROOT_TAG, ELEM_TAG } from "../../types-consts/constants";
 import { HsonNode } from "../../types-consts/node.types";
-import { is_Node } from "../node-utils/node-guards.new.utils";
+import { is_Node } from "../node-utils/node-guards.new";
 
 
 /**
- * takes one or more HsonNodes and pops them out of <_root<_elem< structure
- * @param $content the HsonNode or array of HsonNodes to unwrap
- * @returns a clean array of the actual content nodes sans _root or _elem
+ * Unwrap a parsed HSON container shape (`_root` → `_elem`) into its concrete child nodes.
+ *
+ * This normalizes inputs that may be wrapped by the parser (or produced by transforms)
+ * so downstream mutators can operate on “real” nodes rather than structural wrappers.
+ *
+ * Behavior:
+ * - If a node is `_root` whose first child is an `_elem`, returns the `_elem`’s child nodes.
+ * - Otherwise, returns the node itself.
+ * - Always returns an array.
+ *
+ * @param content - A single node or list of nodes that may include `_root`/`_elem` wrappers.
+ * @returns The unwrapped concrete child nodes (no `_root`/`_elem` wrapper nodes).
  */
-export function unwrap_root_elem($content: HsonNode | HsonNode[]): HsonNode[] {
-    const nodes = Array.isArray($content) ? $content : [$content];
+export function unwrap_root_elem(content: HsonNode | HsonNode[]): HsonNode[] {
+    const nodes = Array.isArray(content) ? content : [content];
     
     /* use flatMap to handle nodes that might expand into multiple children */
     return nodes.flatMap(node => {

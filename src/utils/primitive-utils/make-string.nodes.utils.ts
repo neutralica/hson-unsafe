@@ -1,10 +1,33 @@
 // make-string.utils.ts
 
-import { is_Node } from "../node-utils/node-guards.new.utils";
+import { is_Node } from "../node-utils/node-guards.new";
 import { HsonNode, HsonAttrs, HsonMeta } from "../../types-consts/node.types";
 import { _DATA_INDEX, _DATA_QUID } from "../../types-consts/constants";
 
-/** Pretty-print any value with stable, node-friendly key order. */
+/**
+ * Deterministically stringify arbitrary values for debugging and snapshots.
+ *
+ * Produces stable JSON output by canonicalizing key order and normalizing
+ * known HSON shapes before calling `JSON.stringify`.
+ *
+ * Features:
+ * - Stable key ordering for plain objects (sorted keys).
+ * - HSON-aware ordering for nodes:
+ *   - `_tag` first
+ *   - `_attrs` next (sorted; `style` objects sorted too)
+ *   - `_meta` next (prioritizes `data-_quid` and `data-_index`)
+ *   - `_content` last (recursively canonicalized)
+ * - Handles arrays recursively.
+ * - Detects circular references and replaces repeats with the string `"[[Circular]]"`.
+ *
+ * Notes:
+ * - This is a debug/diagnostic utility, not a serializer for persistence.
+ * - Functions, symbols, and other non-JSON values will stringify per JSON rules.
+ *
+ * @param value - Any value to stringify.
+ * @param indent - `JSON.stringify` indentation (default `2`).
+ * @returns A pretty-printed JSON string with stable ordering.
+ */
 export function make_string_pretty(value: unknown, indent = 2): string {
   return JSON.stringify(canon(value), null, indent);
 }

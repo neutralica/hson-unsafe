@@ -1,6 +1,6 @@
 import { HsonNode } from "../../../types-consts/node.types";
 import { FindWithById, HsonQuery } from "../../../types-consts/livetree.types";
-import { parse_selector } from "../../../utils/tree-utils/parse-selector.utils";
+import { parse_selector } from "../../../utils/tree-utils/parse-selector";
 import { LiveTree } from "../livetree";
 import { make_tree_selector } from "../tree-selector";
 import { TreeSelector } from "../../../types-consts/livetree.types";

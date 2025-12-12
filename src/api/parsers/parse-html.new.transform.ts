@@ -9,19 +9,19 @@ import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.
 import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs.utils";
 import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
 import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
-import { expand_entities } from "../../utils/html-preflights/expand-entities.utils";
-import { expand_flags } from "../../utils/html-preflights/expand-flags.utils";
-import { expand_void_tags } from "../../utils/html-preflights/expand-self-closing.utils";
-import { escape_text } from "../../utils/html-preflights/escape-text.new.utils";
-import { strip_html_comments } from "../../utils/html-preflights/strip-html-comments.new.utils";
+import { expand_entities } from "../../utils/html-preflights/expand-entities";
+import { expand_flags } from "../../utils/html-preflights/expand-flags";
+import { expand_void_tags } from "../../utils/html-preflights/expand-self-closing";
+import { escape_text } from "../../utils/html-preflights/escape-text.new";
+import { strip_html_comments } from "../../utils/html-preflights/strip-html-comments";
 import { wrap_cdata } from "../../safety/wrap-cdata";
-import { optional_endtag_preflight } from "../../utils/html-preflights/optional-endtag.html.utils";
+import { optional_endtag_preflight } from "../../utils/html-preflights/optional-endtag";
 import { escape_attr_angles } from "../../safety/escape_angles";
 import { dedupe_attrs_html } from "../../safety/dedupe-attrs";
-import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted.utils";
-import { mangle_illegal_attrs } from "../../utils/html-preflights/mangle-illegal-attrs.utils";
+import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted";
+import { mangle_illegal_attrs } from "../../utils/html-preflights/mangle-illegal-attrs";
 import { namespace_svg } from "../../utils/html-preflights/namespace-svg";
-import { is_indexed } from "../../utils/node-utils/node-guards.new.utils";
+import { is_indexed } from "../../utils/node-utils/node-guards.new";
 import { Primitive } from "../../types-consts/core.types";
 
 /**
@@ -55,17 +55,17 @@ import { Primitive } from "../../types-consts/core.types";
  * 9. Wrap the converted tree via `wrap_as_root` to ensure a `_root` node.
  * 10. Validate invariants with `assert_invariants`.
  *
- * @param $input - Raw HTML/XML string or an existing `Element` subtree.
+ * @param input - Raw HTML/XML string or an existing `Element` subtree.
  * @returns A `_root`-wrapped `HsonNode` tree ready for downstream use.
  * @see convert
  * @see wrap_as_root
  * @see assert_invariants
  */
-export function parse_html($input: string | Element): HsonNode {
+export function parse_html(input: string | Element): HsonNode {
     let inputElement: Element;
 
-    if (typeof $input === "string") {
-        const stripped = strip_html_comments($input);
+    if (typeof input === "string") {
+        const stripped = strip_html_comments(input);
         const bools = expand_flags(stripped);
         const safe = escape_text(bools);
         const ents = expand_entities(safe);
@@ -144,7 +144,7 @@ export function parse_html($input: string | Element): HsonNode {
 
         inputElement = parsed.documentElement!;
     } else {
-        inputElement = $input;
+        inputElement = input;
     }
     const actualContentRootNode = convert(inputElement);
     const final = wrap_as_root(actualContentRootNode);
@@ -190,19 +190,19 @@ export function parse_html($input: string | Element): HsonNode {
  *   - For mixed/multiple non-cluster children:
  *       - Wrap once in `_elem` to form a pure element-mode cluster.
  *
- * @param $el - DOM element to convert.
+ * @param el - DOM element to convert.
  * @returns A `HsonNode` representing the converted subtree.
  * @see elementToNode
  * @see parse_html_attrs
  */
-function convert($el: Element): HsonNode {
-    if (!($el instanceof Element)) {
-        _throw_transform_err('input to convert function is not Element', '[(parse-html): convert()]', $el);
+function convert(el: Element): HsonNode {
+    if (!(el instanceof Element)) {
+        _throw_transform_err('input to convert function is not Element', '[(parse-html): convert()]', el);
     }
 
-    const baseTag = $el.tagName;
+    const baseTag = el.tagName;
     const tagLower = baseTag.toLowerCase();
-    const { attrs: sortedAcc, meta: metaAcc } = parse_html_attrs($el);
+    const { attrs: sortedAcc, meta: metaAcc } = parse_html_attrs(el);
 
     if (tagLower === STR_TAG) {
         _throw_transform_err('literal <_str> is not allowed in input HTML', 'parse-html');
@@ -214,7 +214,7 @@ function convert($el: Element): HsonNode {
     // Raw text elements: treat their textContent as a single string node
     const specialExceptions = ['style', 'script'];
     if (specialExceptions.includes(tagLower)) {
-        let text_content = $el.textContent?.trim();
+        let text_content = el.textContent?.trim();
 
         //  handle <![CDATA[ ... ]]> safely
         if (text_content?.startsWith("<![CDATA[")) {
@@ -239,7 +239,7 @@ function convert($el: Element): HsonNode {
 
     // Build children (DOM → HSON)
     const childNodes: HsonNode[] = [];
-    const children = elementToNode($el.childNodes);
+    const children = elementToNode(el.childNodes);
 
     for (const child of children) {
         if (is_Primitive(child)) {
@@ -407,14 +407,14 @@ function wrap_as_root(node: HsonNode): HsonNode {
  *         - Pure layout whitespace is ignored.
  *   - Other node types are ignored.
  *
- * @param $els - The DOM child nodes to transform.
+ * @param els - The DOM child nodes to transform.
  * @returns An array of `HsonNode | Primitive` representing the converted children.
  * @see convert
  */
-function elementToNode($els: NodeListOf<ChildNode>): (HsonNode | Primitive)[] {
+function elementToNode(els: NodeListOf<ChildNode>): (HsonNode | Primitive)[] {
     const children: (HsonNode | Primitive)[] = [];
 
-    for (const kid of Array.from($els)) {
+    for (const kid of Array.from(els)) {
         if (kid.nodeType === Node.ELEMENT_NODE) {
             children.push(convert(kid as Element));
             continue;

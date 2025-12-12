@@ -5,9 +5,9 @@ import { build_wire_attrs } from '../../utils/html-utils/build-wire-attrs.utils'
 import { escape_html } from '../../utils/html-utils/escape-html.utils';
 import { make_string } from '../../utils/primitive-utils/make-string.nodes.utils';
 import { _snip } from '../../utils/sys-utils/snip.utils';
-import { is_Node } from '../../utils/node-utils/node-guards.new.utils';
+import { is_Node } from '../../utils/node-utils/node-guards.new';
 import { assert_invariants } from '../../diagnostics/assert-invariants.utils';
-import { clone_node } from '../../utils/node-utils/clone-node.utils';
+import { clone_node } from '../../utils/node-utils/clone-node';
 import { HsonNode } from '../../types-consts/node.types';
 import { _throw_transform_err } from '../../utils/sys-utils/throw-transform-err.utils';
 
@@ -279,16 +279,16 @@ export function serialize_xml(node: HsonNode | Primitive | undefined): string {
  * - `_obj` and other clusters remain visible where necessary to preserve
  *   HSON’s JSON-mode structure.
  *
- * @param $node - Root HSON node or primitive to serialize as HTML.
+ * @param node - Root HSON node or primitive to serialize as HTML.
  * @returns A trimmed HTML string ready for DOM insertion or inspection.
  * @throws If invariants fail, if `_str` leaks as a literal tag, or if the
  *   input is not a valid HsonNode.
  */
-export function serialize_html($node: HsonNode | Primitive): string {
+export function serialize_html(node: HsonNode | Primitive): string {
 
-  const clone = clone_node($node);
+  const clone = clone_node(node);
   if (!is_Node(clone)) {
-    _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize_html', make_string($node));
+    _throw_transform_err('input node cannot be undefined for node_to_html', 'serialize_html', make_string(node));
   }
 
   // tree assertions throw if structure is off

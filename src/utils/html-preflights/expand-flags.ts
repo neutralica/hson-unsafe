@@ -1,13 +1,36 @@
 // expand-booleans.hson.util.ts
 
-/**
-* expands HTML5 boolean attributes to their XML/XHTML equivalent (name="name")
-*   - uses a two-stage regex approach for reliability
-*   - finds tags, then parses attributes within each tag's attribute string
-*
-* @param {string} input - the HTML string input
-* @returns {string} - HTML string with boolean attributes expanded
-*/
+/*******
+ * Expand selected named HTML entities into numeric character references.
+ *
+ * This is a conservative, whitelist-based expander. It replaces only a small,
+ * explicitly defined set of named entities with their numeric equivalents and
+ * leaves everything else untouched.
+ *
+ * Behavior:
+ * - Known named entities listed in `htmlNamedToNumeric` are replaced with their
+ *   numeric form (e.g. `&copy;` → `&#169;`).
+ * - Core XML/HTML entities are preserved verbatim:
+ *   `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`
+ * - Unknown named entities are left unchanged rather than guessed or stripped.
+ *
+ * Rationale:
+ * - Numeric entities are unambiguous and easier to reason about downstream,
+ *   especially in custom parsers or non-browser contexts.
+ * - Leaving unknown entities intact allows later validation stages to decide
+ *   whether to error, strip, or pass them through.
+ *
+ * Limitations:
+ * - This does not handle numeric entities on input (they are already numeric).
+ * - This does not attempt to validate entity names against the full HTML spec.
+ *
+ * Intended use:
+ * - Normalizing a limited set of human-friendly entities into a canonical,
+ *   numeric form before tokenization or parsing.
+ *
+ * @param input - A string that may contain named HTML entities.
+ * @returns The string with selected named entities expanded to numeric form.
+ *******/
 export function expand_flags(input: string): string {
     /* regex finds opening tags (<tag ...>) or self-closing tags (<tag ... />)
           captures: 1=tagName, 2=attributes string, 3=self-closing slash (optional) */

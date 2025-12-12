@@ -1,4 +1,4 @@
-// is-helpers.hson.util.ts
+// guards.core.ts
 
 
 import { BasicValue, JsonObj, JsonValue, Primitive } from "../../types-consts/core.types";

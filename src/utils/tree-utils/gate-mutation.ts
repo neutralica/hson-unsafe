@@ -1,6 +1,32 @@
 // src/api/livetree/tree-utils/gate-mutation.tree.utils.ts
 
-// make the origin token explicit and readonly
+/**
+ * Create a scoped “mutation gate” around a DOM subtree.
+ *
+ * A mutation gate provides two things:
+ * - A required write path (`write`) that tags a batch of DOM mutations with an origin token.
+ * - A subscription API (`observe`) that fan-outs MutationObserver batches to multiple listeners,
+ *   each receiving both the mutation records and (when applicable) the origin of the write.
+ *
+ * Origin tagging:
+ * - Each `write(fn)` call generates a fresh `OriginTag` and sets it as `currentOrigin`.
+ * - When the browser delivers a MutationObserver callback, the gate passes the captured
+ *   `currentOrigin` to observers and then clears it.
+ * - If a `write` produces *no* observable mutations, a microtask clears `currentOrigin`
+ *   to prevent it from leaking into later unrelated mutation batches.
+ *
+ * Observer behavior:
+ * - A single `MutationObserver` is created for `target` and dispatches to an internal
+ *   subscriber list.
+ * - Subscriber callbacks are invoked synchronously in registration order.
+ * - Errors thrown by subscribers are not caught here (so failures surface loudly in dev).
+ *
+ * Observation scope:
+ * - Observes `subtree`, `childList`, `attributes`, and `characterData` on `target`.
+ *
+ * @param target - Root node whose subtree will be observed.
+ * @returns A `MutationGate` with `write` and `observe` methods.
+ */
 export type OriginTag = Readonly<{ id: string }>;
 
 export type GateObserver = (

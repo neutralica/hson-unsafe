@@ -1,5 +1,22 @@
 // kebab-to-camel.util.ts
 
+/**
+ * Convert a kebab-case CSS/property name into camelCase.
+ *
+ * Behavior:
+ * - Collapses multiple consecutive dashes into a single dash.
+ * - Handles leading vendor prefixes:
+ *   - `-ms-foo` → `msFoo`
+ *   - `-webkit-foo` → `WebkitFoo`
+ * - Converts each `-x` sequence into `X`.
+ * - Leaves non-dashed strings unchanged.
+ *
+ * This is intended for normalizing CSS property names parsed from
+ * strings into a JS-friendly form, not for arbitrary identifier munging.
+ *
+ * @param s - Input string in kebab-case form.
+ * @returns The camelCase equivalent.
+ */
 export function kebab_to_camel(s: string): string {
   if (!s) return s;
 

@@ -3,7 +3,7 @@
 import { ensure_quid, get_node_by_quid } from "../../quid/data-quid.quid";
 import { HsonNode } from "../../types-consts/node.types";
 import { ListenerBuilder } from "../../types-consts/listen.types";
-import { element_for_node } from "../../utils/tree-utils/node-map-helpers.utils";
+import { element_for_node } from "../../utils/tree-utils/node-map-helpers";
 import { css_for_quids as manageCss } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
 import { remove_self as remove_self } from "./livetree-methods/remove2";

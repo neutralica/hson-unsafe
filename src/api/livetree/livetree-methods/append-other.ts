@@ -4,7 +4,7 @@ import { HsonNode } from "../../../types-consts/node.types";
 import { ELEM_TAG } from "../../../types-consts/constants";
 import { CREATE_NODE } from "../../../types-consts/factories";
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
-import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { create_live_tree2 } from "../create-live-tree";
 import { LiveTree } from "../livetree";
 import { TreeSelector } from "../../../types-consts/livetree.types";

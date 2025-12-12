@@ -8,8 +8,8 @@ import { HsonNode, NodeContent } from "../../types-consts/node.types";
 import { Tokens, CloseKind, TokenOpen, TokenClose, TokenArrayOpen, TokenArrayClose, TokenKind, TokenText } from "../../types-consts/token.types";
 import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
 import { _snip } from "../../utils/sys-utils/snip.utils";
-import { unwrap_root_obj } from "../../utils/json-utils/unwrap-root-obj.util";
-import { split_attrs_meta } from "../../utils/hson-utils/split-attrs-meta.new.utils";
+import { unwrap_root_obj } from "../../utils/json-utils/unwrap-root-obj";
+import { split_attrs_meta } from "../../utils/hson-utils/split-attrs-meta";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { is_string } from "../../utils/cote-utils/guards.core";
 import { Primitive } from "../../types-consts/core.types";
@@ -75,19 +75,19 @@ export const make_leaf = (v: Primitive): HsonNode =>
  * - Missing closing tokens, malformed `_root` / VSN shapes, or invalid
  *   payloads for special tags (e.g. `<_val>`) also throw.
  *
- * @param $tokens - Token array produced by `tokenize_hson`.
+ * @param tokens - Token array produced by `tokenize_hson`.
  * @returns A `_root`-wrapped `HsonNode` representing the parsed HSON tree.
  * @see tokenize_hson
  * @see make_leaf
  * @see unwrap_root_obj
  */
-export function parse_tokens($tokens: Tokens[]): HsonNode {
+export function parse_tokens(tokens: Tokens[]): HsonNode {
     const nodes: HsonNode[] = [];
     const topCloseKinds: CloseKind[] = [];
 
     let ix = 0;
-    const N = $tokens.length;
-    function _peek(): Tokens | undefined { return $tokens[ix]; }
+    const N = tokens.length;
+    function _peek(): Tokens | undefined { return tokens[ix]; }
     function _take(kind: typeof TOKEN_KIND.OPEN): TokenOpen;
     function _take(kind: typeof TOKEN_KIND.CLOSE): TokenClose;
     function _take(kind: typeof TOKEN_KIND.ARR_OPEN): TokenArrayOpen;
@@ -98,7 +98,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
 
     // runtime impl checks when an expected kind is passed
     function _take(expected?: TokenKind): any {
-        const tok = $tokens[ix++] as Tokens | undefined;
+        const tok = tokens[ix++] as Tokens | undefined;
         if (!tok) return null;
         if (expected && tok.kind !== expected) {
             _throw_transform_err(`expected ${expected}, got ${tok.kind}`, 'parse_tokens');
@@ -144,7 +144,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
     function isTokenArrOpen(t: Tokens | null | undefined): t is TokenArrayOpen {
         return !!t && t.kind === TOKEN_KIND.ARR_OPEN;
     }
-    function readTag($isTopLevel = false): { node: HsonNode; closeKind: CloseKind } {
+    function readTag(isTopLevel = false): { node: HsonNode; closeKind: CloseKind } {
         // NOTE: _take() returning any is sketchy; narrow immediately.
         const tok = _take();
         if (!isTokenOpen(tok)) {
@@ -221,7 +221,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             //  explicit "<>" under root => single empty _obj cluster
             if (sawEmptyObjShorthand) {
                 node._content = [CREATE_NODE({ _tag: OBJ_TAG })];
-                if ($isTopLevel) topCloseKinds.push(closeKind);
+                if (isTopLevel) topCloseKinds.push(closeKind);
                 return { node, closeKind };
             }
 
@@ -233,20 +233,20 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             } else {
                 node._content = [];
             }
-            if ($isTopLevel) topCloseKinds.push(closeKind);
+            if (isTopLevel) topCloseKinds.push(closeKind);
             return { node, closeKind };
         }
 
         // ---------- VSN passthroughs ----------
         if (open.tag === OBJ_TAG || open.tag === ARR_TAG || open.tag === ELEM_TAG) {
             node._content = kids as NodeContent;
-            if ($isTopLevel) topCloseKinds.push(closeKind);
+            if (isTopLevel) topCloseKinds.push(closeKind);
             return { node, closeKind };
         }
 
         if (open.tag === STR_TAG || open.tag === VAL_TAG || open.tag === II_TAG) {
             node._content = kids as NodeContent;
-            if ($isTopLevel) topCloseKinds.push(closeKind);
+            if (isTopLevel) topCloseKinds.push(closeKind);
             return { node, closeKind };
         }
 
@@ -285,7 +285,7 @@ export function parse_tokens($tokens: Tokens[]): HsonNode {
             }
         }
 
-        if ($isTopLevel) topCloseKinds.push(closeKind);
+        if (isTopLevel) topCloseKinds.push(closeKind);
         return { node, closeKind };
     }
 

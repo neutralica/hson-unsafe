@@ -3,13 +3,38 @@
 import { is_Primitive } from "../cote-utils/guards.core";
 import { HsonNode} from "../../types-consts/node.types";
 import { STR_TAG, VAL_TAG, VSN_TAGS, II_TAG, ROOT_TAG } from "../../types-consts/constants";
-import { is_Node } from "../node-utils/node-guards.new.utils";
+import { is_Node } from "../node-utils/node-guards.new";
 import { Primitive } from "../../types-consts/core.types";
 
-
 /**
- * recursive function that strips off VSN clutter and returns core data in 
- * its native structure for intuitive traversal and manipulation
+ * Convert an HSON node tree into a “plain” JS structure by stripping VSN
+ * (Virtual Structural Node) wrappers like `_root`, `_elem`, `_obj`, `_arr`,
+ * and `_ii`.
+ *
+ * Intent:
+ * - Make the data easier to traverse/manipulate without caring about HSON’s
+ *   structural scaffolding.
+ *
+ * Behavior:
+ * - Primitives return as-is.
+ * - `_str` / `_val` return their single primitive payload.
+ * - For other nodes, collects (a) attributes and (b) unwrapped child content.
+ * - If the current node is `_root` or `_ii`, returns the raw collected array
+ *   instead of a `{ tag: ... }` wrapper.
+ * - Otherwise returns `{ [tag]: payload }` where payload is either:
+ *   - a single primitive (unwrapped), or
+ *   - an array preserving order/structure.
+ *
+ * Notes / caveats:
+ * - This is a lossy transform: it discards metadata and the distinction between
+ *   different VSN cluster shapes beyond their resulting content.
+ * - Attribute handling is intentionally order-preserving (as single-key objects),
+ *   which is convenient for round-trippy inspection but not the most ergonomic
+ *   data model for programmatic use.
+ *
+ * @param node - An HSON node, a primitive, or `undefined`
+ * @returns A plain JS representation of the tree (lossy). Returns `undefined`
+ *          when input is not an HSON node or primitive.
  */
 export function strip_VSNs(node: HsonNode | Primitive | undefined): any {
     /*  1. base case: BasicValues and their VSN wrappers resolve to the raw value */

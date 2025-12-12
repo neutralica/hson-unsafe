@@ -3,7 +3,7 @@
 import { JsonValue } from "../../types-consts/core.types";
 import { HsonNode } from "../../types-consts/node.types";
 import { _ERROR } from "../../types-consts/constants";
-import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg.utils";
+import { isSvgMarkup, node_from_svg } from "../../utils/node-utils/node-from-svg";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { parse_external_html } from "../parsers/parse-external-html.transform";
 import { parse_hson } from "../parsers/parse-hson.new.transform";
@@ -62,10 +62,10 @@ export function construct_tree(
   /* the main object returned by construct_tree */
   return {
     /* methods for creating detached branches from data */
-    fromHTML($html: string): BranchConstructor {
+    fromHTML(html: string): BranchConstructor {
       let node: HsonNode;
 
-      const trimmed = $html.trimStart();
+      const trimmed = html.trimStart();
 
       if (isSvgMarkup(trimmed)) {
         if (!options.unsafe) {
@@ -73,20 +73,20 @@ export function construct_tree(
           _throw_transform_err(
             "liveTree.fromHTML(): SVG markup is only allowed on UNSAFE pipeline or via internal node_from_svg.",
             "liveTree.fromHTML",
-            $html.slice(0, 200)
+            html.slice(0, 200)
           );
         }
 
         // UNSAFE: legacy SVG path (internal demo content)
         const el = new DOMParser()
-          .parseFromString($html, "image/svg+xml")
+          .parseFromString(html, "image/svg+xml")
           .documentElement;
         node = node_from_svg(el);
       } else {
         // NON-SVG HTML: safe pipeline → sanitized; unsafe → raw
         node = options.unsafe
-          ? parse_html($html)
-          : parse_external_html($html);
+          ? parse_html(html)
+          : parse_external_html(html);
       }
 
       const branch = make_branch_from_node(node);
@@ -95,8 +95,8 @@ export function construct_tree(
       };
     },
 
-    fromJSON($json: string | JsonValue): BranchConstructor {
-      const rootNode = parse_json($json as string);
+    fromJSON(json: string | JsonValue): BranchConstructor {
+      const rootNode = parse_json(json as string);
       const branch = make_branch_from_node(rootNode);
       return {
         asBranch: () => branch,
@@ -104,9 +104,9 @@ export function construct_tree(
     },
 
 
-    fromHSON($hson: string): BranchConstructor {
+    fromHSON(hson: string): BranchConstructor {
       // assumes tokenize_hson and parse_tokens available
-      const rootNode = parse_hson($hson);
+      const rootNode = parse_hson(hson);
       const branch = make_branch_from_node(rootNode);
       return {
         asBranch: () => branch,
@@ -115,15 +115,15 @@ export function construct_tree(
 
     /* --- methods for targeting and replacing live dom elements --- */
 
-    queryDom($selector: string): GraftConstructor {
-      const element = document.querySelector<HTMLElement>($selector);
+    queryDom(selector: string): GraftConstructor {
+      const element = document.querySelector<HTMLElement>(selector);
 
       /* return the graft constructor object */
       return {
         graft: (): LiveTree => {
           /* the null check here inside the final method call */
           if (!element) {
-          throw new Error (`hson.liveTree.queryDom: selector "${$selector}" not found.`);
+          throw new Error (`hson.liveTree.queryDom: selector "${selector}" not found.`);
           }
           // only call the main graft function if the element was found
           return graft(element, options);

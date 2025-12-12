@@ -5,7 +5,7 @@ import { Patch, Store, Path, PatchOp, PathSeg } from "../livemap/types.livemap";
  * (CURRENTLY UNUSED, TBC)
  ***************************/
 
-type Subscriber = ($patch: Patch) => void;
+type Subscriber = (patch: Patch) => void;
 
 export class InMemoryStore implements Store {
   private rootJson: unknown;

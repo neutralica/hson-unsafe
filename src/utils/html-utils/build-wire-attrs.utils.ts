@@ -4,7 +4,33 @@ import { _META_DATA_PREFIX } from "../../types-consts/constants";
 import { HsonNode } from "../../types-consts/node.types";
 import { serialize_style } from "../attrs-utils/serialize-style";
 
-/* build wire attrs: user _attrs + selected _meta → data-_... */
+/**
+ * Build a DOM-ready attribute map for an `HsonNode`.
+ *
+ * This is the “wire format” step: it flattens a node’s internal `_attrs` plus
+ * selected `_meta` keys into a plain `{ [name]: string }` dictionary suitable
+ * for `Element.setAttribute(...)` / element construction.
+ *
+ * Rules:
+ * - User attributes (`n._attrs`) are copied as string values.
+ *   - Special-case: `"style"`
+ *     - If `style` is an object (your `StyleObject` shape), it is serialized to
+ *       CSS text via `serialize_style(...)`.
+ *     - If `style` is already a string, it is passed through unchanged.
+ * - Meta attributes (`n._meta`) are *not* generally exposed.
+ *   - Only keys beginning with the `_META_DATA_PREFIX` (e.g. `"data-_"`) are
+ *     included, and the key is preserved exactly.
+ *
+ * Notes / invariants:
+ * - This function does not validate attribute names or escape values; it assumes
+ *   earlier stages enforced the “safe” boundary (or you are building trusted DOM).
+ * - It intentionally ignores non-`data-_` meta so internal bookkeeping doesn’t
+ *   leak into rendered markup.
+ *
+ * @param n - Source HSON node whose `_attrs` and `_meta` will be projected onto
+ *            a DOM attribute dictionary.
+ * @returns A string-valued attribute record representing the node’s wire attrs.
+ */
 export function build_wire_attrs(n: HsonNode): Record<string, string> {
   const out: Record<string, string> = {};
 

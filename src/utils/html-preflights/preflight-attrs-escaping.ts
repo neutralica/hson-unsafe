@@ -1,5 +1,34 @@
-// Escapes `<` and `>` ONLY while inside "..." or '...' attribute values.
-// Leaves everything else untouched. No regex splitting; single pass.
+// preflight-attrs-escaping.ts
+
+/*********
+ * Escape literal angle brackets inside quoted attribute values only.
+ *
+ * This performs a single-pass state-machine scan over the source string and
+ * replaces `<` → `&lt;` and `>` → `&gt;` *only* when the parser is inside a
+ * quoted attribute value (`"..."` or `'...'`) within a tag.
+ *
+ * Everything else is left untouched:
+ * - Text nodes are not escaped.
+ * - Tag structure (`<tag ...>`) is preserved verbatim.
+ * - Unquoted attribute values are not modified.
+ *
+ * This is intentionally not regex-based:
+ * - Regex splitting fails in the presence of nested quotes or malformed attrs.
+ * - A small explicit state machine is more predictable and debuggable here.
+ *
+ * States tracked:
+ * - Text: outside of any tag
+ * - Tag: inside `< ... >` but not inside a quoted value
+ * - EqWait: just saw `=` and are waiting to see if a quoted value begins
+ * - QuotedD / QuotedS: inside `"..."` or `'...'` attribute values
+ *
+ * Use case:
+ * - Prevent accidental tag breaks when attribute values contain `<` or `>`
+ *   that should be treated as literal text, not markup.
+ *
+ * @param src - Raw markup string.
+ * @returns Markup with angle brackets escaped *only* inside quoted attributes.
+ *********/
 export function esc_attrs_quoted_angles(src: string): string {
   enum S { Text, Tag, AttrName, EqWait, QuotedD, QuotedS }
   let s = S.Text, q = 0, out = "";

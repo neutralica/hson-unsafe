@@ -4,8 +4,32 @@ import { HsonQuery } from "../../types-consts/livetree.types";
 
 
 /**
- * parses a simple CSS selector string into an HsonQuery object
- *   currently supports: tag, #id, .class, [attribute], and [attribute="value"]
+ * Parse a *simple* CSS selector string into an `HsonQuery`.
+ *
+ * Supported selector features (intentionally limited):
+ * - Tag selectors:        `div`, `span`
+ * - ID selectors:         `#main`
+ * - Class selectors:      `.item` (multiple classes are space-joined)
+ * - Attribute presence:   `[disabled]`
+ * - Attribute equality:   `[type="button"]`
+ *
+ * Explicit non-goals (by design):
+ * - No combinators (`>`, `+`, `~`, whitespace)
+ * - No pseudo-classes / pseudo-elements
+ * - No namespaces, escaping, or selector lists
+ *
+ * Semantics:
+ * - The first leading tag name (if present) becomes `query.tag`
+ * - `#id` maps to `attrs.id`
+ * - `.class` values accumulate into a single space-delimited `attrs.class`
+ * - `[attr="value"]` sets `attrs[attr] = value`
+ * - Bare `[attr]` is treated as a presence check only
+ *
+ * This parser is intended for HSON’s internal querying needs, not as a
+ * general-purpose CSS selector engine.
+ *
+ * @param selector - A simple selector string (e.g. `div#app.item[data-x="1"]`)
+ * @returns A normalized `HsonQuery` object
  */
 export function parse_selector(selector: string): HsonQuery {
     const query: HsonQuery = { attrs: {} };

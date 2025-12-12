@@ -1,8 +1,8 @@
 // empty.ts
 
-import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
-import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.utils";
-import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new";
+import { detach_node_deep } from "../../../utils/tree-utils/detach-node";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { LiveTree } from "../livetree";
 
 /**

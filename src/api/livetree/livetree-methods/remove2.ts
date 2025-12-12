@@ -3,11 +3,11 @@
 import { drop_quid } from "../../../quid/data-quid.quid";
 import { HsonNode } from "../../../types-consts/node.types";
 import { _DATA_QUID } from "../../../types-consts/constants";
-import { detach_node_deep } from "../../../utils/tree-utils/detach-node.tree.utils";
-import { element_for_node } from "../../../utils/tree-utils/node-map-helpers.utils";
+import { detach_node_deep } from "../../../utils/tree-utils/detach-node";
+import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { LiveTree } from "../livetree";
 import { CssManager } from "./css-manager";
-import { is_Node } from "../../../utils/node-utils/node-guards.new.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards.new";
 
 /**
  * Recursively convert a HSON node into a JSON-shaped `JsonValue`.

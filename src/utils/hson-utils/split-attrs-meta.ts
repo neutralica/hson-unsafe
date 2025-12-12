@@ -1,22 +1,75 @@
-
-// Assumptions:
-// - RawAttr.value has shape { text: string; quoted?: boolean } where `quoted`
-//   is true iff the HSON source used quotes (JSON string-literal grammar).
-// - parse_style_hard_mode(s) returns Record<string,string>.
+// split-attrs-meta.ts
 
 import { HsonAttrs, HsonMeta } from "../../types-consts/node.types";
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
 import { RawAttr } from "../../types-consts/token.types";
 import { parse_style_string } from "../attrs-utils/parse-style";
-import { unescape_hson_string } from "./unescape-hson.utils";
+import { unescape_hson_string } from "./unescape-hson";
 import { Primitive } from "../../types-consts/core.types";
 
-// Helper: decode HSON token text iff it was quoted.
+/*******
+ * Decode an attribute/meta value coming from the HSON tokenizer.
+ *
+ * HSON rule:
+ * - If a value was quoted in source, it is treated as an HSON string literal
+ *   and must be unescaped (e.g. \" \\n \\uXXXX, etc.) via `unescape_hson_string`.
+ * - If it was not quoted, it is treated as raw text and only trimmed.
+ *
+ * This function exists as a single, explicit decision point so the parser does
+ * not scatter “quoted?” logic across multiple call sites.
+ *
+ * @param text - Raw value text from the tokenizer (without surrounding quotes).
+ * @param quoted - True iff the tokenizer recognized this value as quoted.
+ * @returns The decoded string value suitable for storing in `_attrs` or `_meta`.
+ *******/
 function decode_hson_value(text: string, quoted: boolean | undefined): string {
   // single, explicit decision point
   return quoted ? unescape_hson_string(text) : text.trim();
 }
 
+/*******
+ * Split raw parsed attributes into `_attrs` vs `_meta`, applying HSON-edge decoding.
+ *
+ * Input:
+ * - `RawAttr[]` emitted by the tokenizer for a single open tag.
+ * - Each RawAttr includes:
+ *   - `name` (attribute key),
+ *   - optional `value` as `{ text, quoted }`.
+ *
+ * Routing rules:
+ * - Meta keys:
+ *   - Only keys starting with `data-_` (via `_META_DATA_PREFIX`) are stored in `_meta`.
+ *   - Meta values are decoded using HSON quoting rules (no HTML entity decoding).
+ * - Attribute keys:
+ *   - Everything else is stored in `_attrs`.
+ *
+ * Value semantics (HSON edge, not HTML):
+ * - Quoted values are HSON string literals and are decoded via `decode_hson_value`.
+ * - Unquoted values are treated as raw text and trimmed.
+ * - No HTML entity decoding is performed at this stage; this path assumes HSON
+ *   source, not external HTML.
+ *
+ * Special cases:
+ * - `style`:
+ *   - If present, decode (if quoted) and parse using `parse_style_string` to
+ *     produce an object form stored at `attrs.style`.
+ *   - If present but valueless (`style` as a bare key), stores `{}`.
+ * - Flags:
+ *   - If the attribute has no value (bare key), it is treated as a boolean-present
+ *     flag and stored as `attrs[k] = k`.
+ *   - Additionally, `disabled=""` and `disabled="disabled"` (and equivalents) are
+ *     normalized to the same flag representation (`attrs[k] = k`).
+ *
+ * Debug hygiene (optional):
+ * - In non-production builds, may warn if decoded values still contain patterns
+ *   that suggest missed decoding (JSON-style escapes) or cross-edge leakage
+ *   (HTML entities).
+ *
+ * @param raw - Tokenizer-emitted raw attribute list for one open tag.
+ * @returns An object containing:
+ *   - `attrs`: normalized `HsonAttrs` (including parsed `style` when present),
+ *   - `meta`: normalized `HsonMeta` containing only `data-_...` keys.
+ *******/
 export function split_attrs_meta(raw: RawAttr[]): { attrs: HsonAttrs; meta: HsonMeta } {
   const attrs: HsonAttrs = {};
   const meta:  HsonMeta  = {};

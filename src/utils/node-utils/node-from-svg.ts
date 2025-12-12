@@ -9,7 +9,29 @@ export const SVG_NS = "http://www.w3.org/2000/svg";
 export const HTML_NS = "http://www.w3.org/1999/xhtml";
 export const isSvgMarkup = (s: string) => /^<\s*svg[\s>]/i.test(s);
 
-//  DOM → HSON (namespace-aware)
+/**
+ * Convert an SVG DOM `Element` subtree into an HSON node tree.
+ *
+ * Namespace / intent:
+ * - Intended for SVG elements (namespace-aware pipelines can route here when `el.namespaceURI === SVG_NS`
+ *   or when `isSvgMarkup(...)` detects `<svg ...>` input).
+ * - Tag names are normalized to lowercase for stable serialization (`<viewBox>` attributes remain verbatim).
+ *
+ * Attribute handling:
+ * - Copies all attributes as-is into `_attrs` (no normalization, no filtering).
+ * - This preserves SVG-specific casing and names like `viewBox`, `stroke-width`, and `xlink:href`.
+ *
+ * Child handling:
+ * - Element children become nested HSON nodes via recursive conversion.
+ * - Text nodes become `_str` leaves with the raw text content preserved (including whitespace).
+ * - Other node types (comments, processing instructions, etc.) are ignored.
+ *
+ * Output shape:
+ * - Produces a structural node with `_tag`, `_attrs`, `_content`, and an empty `_meta`.
+ *
+ * @param el - The root SVG `Element` to convert.
+ * @returns An `HsonNode` representing `el` and its SVG subtree.
+ */
 export function node_from_svg(el: Element): HsonNode {
   const tag = el.tagName; // keep case if engine expects exact; or `toLowerCase()`
   const attrs: Record<string, string> = {};

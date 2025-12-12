@@ -27,18 +27,18 @@ import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.
  * This function is used by JSON→HSON transforms to choose the correct
  * structural tag for each JSON value.
  *
- * @param $value - Arbitrary JSON value to classify.
+ * @param value - Arbitrary JSON value to classify.
  * @returns One of `ARR_TAG`, `OBJ_TAG`, `STR_TAG`, or `VAL_TAG`.
  * @throws If the value cannot be classified.
  */
-function getTag($value: JsonValue): string {
+function getTag(value: JsonValue): string {
     // 1) Collections first (so they aren't misclassified as "not string")
-    if (Array.isArray($value)) return ARR_TAG;            // _arr
-    if (is_Object($value)) return OBJ_TAG;              // _obj
+    if (Array.isArray(value)) return ARR_TAG;            // _arr
+    if (is_Object(value)) return OBJ_TAG;              // _obj
 
     // 2) Scalars
-    if (typeof $value === 'string') return STR_TAG;       // _str
-    if ($value === null || typeof $value === 'number' || typeof $value === 'boolean') {
+    if (typeof value === 'string') return STR_TAG;       // _str
+    if (value === null || typeof value === 'number' || typeof value === 'boolean') {
         return VAL_TAG;                                   // _val (num|bool|null)
     }
 
@@ -103,15 +103,15 @@ function assertNoForbiddenVSNKeysInJSON(obj: Record<string, unknown>, where: str
  *
  * 1. Primitive branch (`STR_TAG` / `VAL_TAG`)
  *    - `STR_TAG`:
- *      - Requires `$srcJson` to be a string, including `""`.
+ *      - Requires `srcJson` to be a string, including `""`.
  *      - Returns `<_str>` with `_content: [string]`.
  *    - `VAL_TAG`:
- *      - Requires `$srcJson` to be a non-string primitive
+ *      - Requires `srcJson` to be a non-string primitive
  *        (`number | boolean | null`).
  *      - Returns `<_val>` with `_content: [primitive]`.
  *
  * 2. Array branch (`ARR_TAG`)
- *    - Requires `$srcJson` to be an array.
+ *    - Requires `srcJson` to be an array.
  *    - For each item:
  *      - Computes the child tag with `getTag(val)`.
  *      - Recursively calls `nodeFromJson(val, childTag)` to get a child node.
@@ -120,7 +120,7 @@ function assertNoForbiddenVSNKeysInJSON(obj: Record<string, unknown>, where: str
  *    - Returns `<_arr>` containing the `_ii` children.
  *
  * 3. Object branch (`OBJ_TAG`)
- *    - Requires `$srcJson` to be a non-array object.
+ *    - Requires `srcJson` to be a non-array object.
  *    - Applies one of three mutually exclusive paths:
  *
  *    A) Root form: `{ "_root": <payload>, ... }`
@@ -166,14 +166,14 @@ function assertNoForbiddenVSNKeysInJSON(obj: Record<string, unknown>, where: str
  *
  * Errors:
  * - Throws via `_throw_transform_err` when:
- *   - `$srcJson` type does not match the expected parent tag.
+ *   - `srcJson` type does not match the expected parent tag.
  *   - `_root` objects have illegal siblings.
  *   - `_elem` is not an array or has invalid items.
  *   - A generic object contains reserved VSN keys.
  *   - A value is not representable as a supported HSON shape.
  *
- * @param $srcJson - The JSON value to convert (already parsed).
- * @param $parentTag - The HSON tag that dictates how `$srcJson` is interpreted
+ * @param srcJson - The JSON value to convert (already parsed).
+ * @param parentTag - The HSON tag that dictates how `srcJson` is interpreted
  *   (`STR_TAG`, `VAL_TAG`, `ARR_TAG`, `OBJ_TAG`, etc).
  * @returns An object containing the constructed `node` subtree.
  * @see parse_json
@@ -181,44 +181,44 @@ function assertNoForbiddenVSNKeysInJSON(obj: Record<string, unknown>, where: str
  * @see assertNoForbiddenVSNKeysInJSON
  */
 export function nodeFromJson(
-    $srcJson: JsonValue,
-    $parentTag: string
+    srcJson: JsonValue,
+    parentTag: string
 ): { node: HsonNode } {
 
     // ---- 0) Primitive branch (strings → _str, others → _val) ----
-    if ($parentTag === STR_TAG || $parentTag === VAL_TAG) {
+    if (parentTag === STR_TAG || parentTag === VAL_TAG) {
         // preserve empty-string as a real scalar (_str([""]))
-        if ($parentTag === STR_TAG) {
-            if (!is_string($srcJson)) {
-                _throw_transform_err(`expected string for ${STR_TAG}, got ${typeof $srcJson}`, 'nodeFromJson.primitive');
+        if (parentTag === STR_TAG) {
+            if (!is_string(srcJson)) {
+                _throw_transform_err(`expected string for ${STR_TAG}, got ${typeof srcJson}`, 'nodeFromJson.primitive');
             }
             return {
                 node: CREATE_NODE({
                     _tag: STR_TAG,
                     _meta: {},
-                    _content: [$srcJson] // "" included
+                    _content: [srcJson] // "" included
                 })
             };
         } else { // VAL_TAG
-            if (!is_Primitive($srcJson)) {
-                _throw_transform_err(`expected number|boolean|null for ${VAL_TAG}, got ${typeof $srcJson}`, 'nodeFromJson.primitive');
+            if (!is_Primitive(srcJson)) {
+                _throw_transform_err(`expected number|boolean|null for ${VAL_TAG}, got ${typeof srcJson}`, 'nodeFromJson.primitive');
             }
             return {
                 node: CREATE_NODE({
                     _tag: VAL_TAG,
                     _meta: {},
-                    _content: [$srcJson] // null/number/boolean
+                    _content: [srcJson] // null/number/boolean
                 })
             };
         }
     }
 
     // ---- 1) Array branch (_arr → _ii[data-_index]) ----
-    if ($parentTag === ARR_TAG) {
-        if (!Array.isArray($srcJson)) {
-            _throw_transform_err('array expected for ARR_TAG parent', 'parse_json', make_string($srcJson));
+    if (parentTag === ARR_TAG) {
+        if (!Array.isArray(srcJson)) {
+            _throw_transform_err('array expected for ARR_TAG parent', 'parse_json', make_string(srcJson));
         }
-        const items = ($srcJson as JsonValue[]).map((val, ix) => {
+        const items = (srcJson as JsonValue[]).map((val, ix) => {
             const childTag = getTag(val);
             const child = nodeFromJson(val, childTag).node;
             return CREATE_NODE({
@@ -231,11 +231,11 @@ export function nodeFromJson(
     }
 
     // ---- 2) Object branch (three mutually exclusive shapes) ----
-    if ($parentTag === OBJ_TAG) {
-        if (!$srcJson || typeof $srcJson !== 'object' || Array.isArray($srcJson)) {
-            _throw_transform_err('object expected for OBJ_TAG parent', 'parse_json', make_string($srcJson));
+    if (parentTag === OBJ_TAG) {
+        if (!srcJson || typeof srcJson !== 'object' || Array.isArray(srcJson)) {
+            _throw_transform_err('object expected for OBJ_TAG parent', 'parse_json', make_string(srcJson));
         }
-        const obj = $srcJson as Record<string, unknown>;
+        const obj = srcJson as Record<string, unknown>;
 
         // A) HARD-CODED ROOT: { _root: <cluster-or-primitive> } (exclusive)
         if (Object.prototype.hasOwnProperty.call(obj, ROOT_TAG)) {
@@ -407,16 +407,16 @@ export function nodeFromJson(
     }
 
     // ---- Fallback (should be unreachable if callers set parentTag correctly) ----
-    _throw_transform_err(`unhandled parentTag ${$parentTag}`, 'nodeFromJson.dispatch');
+    _throw_transform_err(`unhandled parentTag ${parentTag}`, 'nodeFromJson.dispatch');
 }
 
 /**
  * Parse JSON into a rooted `HsonNode` tree.
  *
  * Input handling:
- * - If `$input` is a string, it is parsed with `JSON.parse`. Any parse
+ * - If `input` is a string, it is parsed with `JSON.parse`. Any parse
  *   error is wrapped and rethrown via `_throw_transform_err`.
- * - If `$input` is already a `JsonValue`, it is used as-is.
+ * - If `input` is already a `JsonValue`, it is used as-is.
  *
  * Legacy `_root` unwrapping:
  * - If the top-level value is an object of the form:
@@ -439,19 +439,19 @@ export function nodeFromJson(
  * - Runs `assert_invariants` on the final root to ensure structural
  *   correctness.
  *
- * @param $input - JSON string or already-parsed `JsonValue`.
+ * @param input - JSON string or already-parsed `JsonValue`.
  * @returns A `_root`-wrapped `HsonNode` representing the JSON payload.
  * @throws If JSON parsing fails or invariants are violated.
  * @see nodeFromJson
  * @see getTag
  * @see assert_invariants
  */
-export function parse_json($input: string | JsonValue): HsonNode {
+export function parse_json(input: string | JsonValue): HsonNode {
   let parsed: JsonValue;
   try {
-    parsed = typeof $input === "string" ? JSON.parse($input) : $input;
+    parsed = typeof input === "string" ? JSON.parse(input) : input;
   } catch (e) {
-    _throw_transform_err(`invalid JSON input ${make_string($input)}`, "parse-json", String(e));
+    _throw_transform_err(`invalid JSON input ${make_string(input)}`, "parse-json", String(e));
   }
 
   // unwrap legacy {_root: ...} but keep data-* meta (unchanged)

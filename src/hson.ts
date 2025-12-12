@@ -45,7 +45,10 @@ import { construct_tree } from "./api/livetree/construct-tree";
  * - Step 4: finalize the chain:
  *       .serialize()  → string output (HTML, JSON, or HSON text)
  *       .parse()      → structured data (JSONValue or HsonNode)
+ *    (liveTree:)
  *       .asBranch()   → LiveTree instance created from HTML
+ *       .graft()      → append LiveTree's HTML representation to the parent of 
+ *                        its root node in the DOM, replacing the original
  *
  * Together these four steps form the complete HSON transformation pipeline:
  *   1) choose source
@@ -196,15 +199,6 @@ export const hson = {
   queryDOM(selector: string): DomQuerySourceConstructor {
     const el = document.querySelector<HTMLElement>(selector);
     return {
-      // liveTree(): DomQueryLiveTreeConstructor {
-      //   return {
-      //     graft(): LiveTree {
-      //       // reuse your existing construct_tree + graft logic
-      //       return construct_tree({ unsafe: false }).queryDom(selector).graft();
-      //       // or: graft(el, { unsafe: false }) if you have a direct helper
-      //     },
-      //   };
-      // },
       liveTree(): DomQueryLiveTreeConstructor {
         return {
           graft(): LiveTree {
@@ -223,16 +217,8 @@ export const hson = {
    - Uses the *trusted* HTML path by default (no DOMPurify).
    * - Throws a structured transform error if `document.body` is unavailable.
    */
-
   queryBody(): DomQuerySourceConstructor {
     return {
-      // liveTree(): DomQueryLiveTreeConstructor {
-      //   return {
-      //     graft(): LiveTree {
-      //       return construct_tree({ unsafe: false }).queryBody().graft();
-      //     },
-      //   };
-      // },
       liveTree(): DomQueryLiveTreeConstructor {
         return {
           graft(): LiveTree {

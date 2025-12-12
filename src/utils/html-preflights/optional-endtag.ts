@@ -6,6 +6,46 @@
 type Range = { start: number; end: number };
 type ListFrame = { name: 'ul' | 'ol'; liOpen: boolean }; 
 
+/*********
+ * Preflight-normalize HTML by explicitly inserting “optional end tags” so an XML-ish
+ * parser won’t choke on HTML5’s permissive omission rules.
+ *
+ * This function edits only the *string* fed to a strict parser (e.g., XML-mode parsing).
+ * It does not mutate any HSON nodes; it is intentionally a one-way “make this parseable”
+ * shim for inputs that are valid-ish HTML but not valid XML.
+ *
+ * What it tries to fix (limited scope by design):
+ * - Lists:
+ *   - Closes a previous `<li>` when a new `<li>` begins at the same list depth.
+ *   - Closes a dangling `<li>` just before `</ul>` / `</ol>` when needed.
+ * - Paragraphs:
+ *   - Closes an open `<p>` when a new `<p>` starts or when a block element starts
+ *     (since HTML auto-closes `<p>` in those situations).
+ * - Definition lists and tables:
+ *   - Applies basic “best effort” closing of `<dt>/<dd>` and table cells/rows/sections
+ *     using small heuristics, to avoid leaving structurally open tags before a strict parse.
+ *
+ * Safety guards:
+ * - Skips “raw text” elements whose contents must be treated as literal text
+ *   (`<script>`, `<style>`, `<textarea>`, `<noscript>`, `<xmp>`, `<iframe>`),
+ *   as well as HTML comments and CDATA blocks. These regions are treated as opaque.
+ * - Skips “VSN” tags (anything whose tag name starts with `_`), since those are
+ *   HSON-internal and should not be rewritten by HTML heuristics.
+ * - Ignores void/self-closing tags.
+ *
+ * Implementation notes:
+ * - Performs a cheap regex-based tag walk and records planned insertions
+ *   (`</li>`, `</p>`, etc.) as splice operations.
+ * - Applies insertions right-to-left so string indices remain stable.
+ *
+ * Limitations (intentional):
+ * - This is not a full HTML parser and will not perfectly repair arbitrarily malformed HTML.
+ * - The DL/table logic is heuristic and may under-close or over-close in pathological cases.
+ * - Only protects a finite set of raw-text blocks; new tag types may need to be added.
+ *
+ * @param src - Source markup that may be valid HTML but not strict-XML friendly.
+ * @returns A rewritten markup string with explicit closures inserted where helpful.
+ *********/
 export function optional_endtag_preflight(src: string): string {
   // 0) Fast exit
   if (!/[<]([a-zA-Z/_])/.test(src)) return src;
