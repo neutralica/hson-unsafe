@@ -3,11 +3,11 @@
 import { CssCustomPropName, PropertyInput, PropertyInputTuple, PropertyManager, PropertyRegistration, PropertySyntax } from "../../../types-consts/at-property.types";
 
 function isPropTuple(x: PropertyInput): x is PropertyInputTuple {
-    // CHANGED: tuples are arrays at runtime; objects are not.
+    // tuples are arrays at runtime; objects are not.
     return Array.isArray(x);
 }
 function normalizePropInput(input: PropertyInput): PropertyRegistration {
-    // CHANGED: tuple path
+    // tuple:
     if (isPropTuple(input)) {
         const [name, syn, initOrUndefined, inhOrUndefined] = input;
         const init: string | undefined = initOrUndefined?.trim();
@@ -21,7 +21,7 @@ function normalizePropInput(input: PropertyInput): PropertyRegistration {
         return { name, syn, inh, init };
     }
 
-    // CHANGED: object path
+    // object:
     const name = input.name;
     const syn = input.syn;
     const inh = input.inh ?? false;

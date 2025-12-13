@@ -63,9 +63,9 @@ export const NODE_ELEMENT_MAP = new WeakMap<HsonNode, Element>();
  *
  * These values are intentionally string literals, never booleans.
  ***************************************************************/
-export const _FALSE = '_false' as const;
-export type FALSE_TYPE = typeof _FALSE;
-export const _ERROR = '_error' as const;
+export const $_FALSE = '_false' as const;
+export type FalseType = typeof $_FALSE;
+export const $_ERROR = '_error' as const;
 
 /***************************************************************
  * Virtual Structural Node (VSN) tags

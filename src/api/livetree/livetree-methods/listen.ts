@@ -3,6 +3,16 @@
 import { ListenerBuilder, ListenOpts, MissingPolicy, ListenerSub, ElemMap } from "../../../types-consts/listen.types";
 import { LiveTree } from "../livetree";
 
+type Q = { type: string; handler: EventListener };
+type QueuedListener = {
+  id: number;
+  sub: ListenerSub | null;
+  type: string;
+  handler: EventListener;
+  cancelled: boolean;
+  offs: Array<() => void> | null; // filled after attach
+};
+
 /**
  * Internal registry mapping EventTargets → Sets of "off" callbacks.
  *
@@ -90,8 +100,10 @@ export function _listeners_off_for_target(target: EventTarget): void {
  * attaching them in a controlled, predictable way.
  */
 export function build_listener(tree: LiveTree): ListenerBuilder {
-  type Q = { type: string; handler: EventListener };
-  const queue: Q[] = [];
+
+
+  let nextId = 1;
+  const queue: QueuedListener[] = [];
 
   let opts: ListenOpts = {};
   let each = false;
@@ -127,7 +139,7 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
   const on = <K extends keyof ElemMap>(
     type: K,
     handler: (ev: ElemMap[K]) => void
-  ): ListenerBuilder => {
+  ): ListenerSub => {
     // wrap once, read flags at dispatch so end-of-chain calls work
     const wrapped: EventListener = (ev: Event) => {
       // enforce in this exact order
@@ -149,9 +161,39 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     };
 
     // queue this binding; attach() will call addEventListener with current opts
-    queue.push({ type: String(type), handler: wrapped });
-    schedule(); // auto-attach at end of microtask
-    return api;
+    const job: QueuedListener = {
+      id: nextId++,
+      sub: null,
+      type: String(type),
+      handler: wrapped,
+      cancelled: false,
+      offs: null,
+    };
+
+    queue.push(job);
+    schedule();
+
+    // CHANGED: return a per-call subscription handle
+    const sub: ListenerSub = {
+      off(): void {
+        // cancel if not yet attached
+        job.cancelled = true;
+
+        // detach immediately if already attached
+        if (job.offs) {
+          for (const f of job.offs) f();
+          job.offs = null;
+        }
+
+        // CHANGED: keep handle state honest
+        sub.count = 0;
+        sub.ok = false;
+      },
+      count: 0,   // updated after attach flush
+      ok: false,  // CHANGED: nothing attached yet
+    };
+    job.sub = sub;
+    return sub;
   };
   const attach = (): ListenerSub => {
     const targets = collectTargets();
@@ -160,6 +202,16 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
       const msg = `listen.attach(): no targets in selection`;
       if (missingPolicy === "throw") throw new Error(msg);
       if (missingPolicy === "warn") console.warn(msg, { tree });
+
+      // CHANGED: if no targets, mark all queued jobs as “done but unattached”
+      for (const job of queue) {
+        job.offs = null;
+        if (job.sub) {
+          job.sub.count = 0;
+          job.sub.ok = false;
+        }
+      }
+      queue.length = 0;
       return { off: () => void 0, count: 0, ok: false };
     }
 
@@ -169,22 +221,49 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
       passive: !!opts.passive,
     };
 
-    const offs: Array<() => void> = [];
-    for (const el of targets) {
-      const tgt = resolveTarget(el);
-      for (const q of queue) {
-        offs.push(addWithOff(tgt, q.type, q.handler, aelo));
+    // CHANGED: snapshot and clear queue so future schedule() ticks don’t reattach old jobs
+    const jobs = queue.splice(0, queue.length);
+
+    const offsAll: Array<() => void> = [];
+
+    for (const job of jobs) {
+      if (job.cancelled) {
+        job.offs = null;
+
+        if (job.sub) {
+          job.sub.count = 0;
+          job.sub.ok = false;
+        }
+
+        continue;
       }
+
+      const jobOffs: Array<() => void> = [];
+
+      for (const el of targets) {
+        const tgt = resolveTarget(el);
+        jobOffs.push(addWithOff(tgt, job.type, job.handler, aelo));
+      }
+
+      job.offs = jobOffs;
+      if (job.sub) {
+        job.sub.count = jobOffs.length;
+        job.sub.ok = jobOffs.length > 0;
+      }
+      for (const f of jobOffs) offsAll.push(f);
     }
+
     const handle: ListenerSub = {
-      off: () => { for (const f of offs) f(); },
-      count: offs.length,
-      ok: offs.length > 0,
+      off: () => { for (const f of offsAll) f(); },
+      count: offsAll.length,
+      ok: offsAll.length > 0,
     };
+
     return handle;
   };
+  let api: ListenerBuilder;
 
-  const api: ListenerBuilder = {
+  api = {
     on,
     onClick: (fn) => on("click", fn),
     onMouseMove: (fn) => on("mousemove", fn),
@@ -193,6 +272,7 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     onKeyDown: (fn) => on("keydown", fn),
     onKeyUp: (fn) => on("keyup", fn),
 
+    // CHANGED: option methods return ListenerBuilder
     once: () => { opts = { ...opts, once: true }; return api; },
     passive: () => { opts = { ...opts, passive: true }; return api; },
     capture: () => { opts = { ...opts, capture: true }; return api; },
@@ -200,14 +280,15 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     toDocument: () => { opts = { ...opts, target: "document" }; return api; },
 
     strict(policy: MissingPolicy = "warn") { missingPolicy = policy; return api; },
-    defer() { autoEnabled = false; return api; },
-    attach() { autoEnabled = false; return attach(); },
+
     preventDefault(): ListenerBuilder { _prevent = true; return api; },
     stopProp(): ListenerBuilder { _stop = true; return api; },
     stopImmediateProp(): ListenerBuilder { _stopImmediate = true; return api; },
     stopAll(): ListenerBuilder { _stopImmediate = _stop = _prevent = true; return api; },
-    clearStops(): ListenerBuilder { _stopImmediate = _stop = _prevent = false; return api; }
+    clearStops(): ListenerBuilder { _stopImmediate = _stop = _prevent = false; return api; },
   };
+
+  return api;
 
   return api;
 }

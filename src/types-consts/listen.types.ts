@@ -76,74 +76,100 @@ export interface ListenerSub {
   ok: boolean;
 }
 
-/**************************************************************
- * Fluent builder for DOM event listeners.
- *
- * A ListenerBuilder captures three things:
- *   1) *What* to listen for (event type + handler),
- *   2) *Where* to attach (element / window / document),
- *   3) *How* to behave (capture / once / passive / strictness).
- *
- * The sequence is:
- *   - configure:
- *       .on("click", handler)
- *       .once().passive().toWindow().strict("throw")
- *   - then attach:
- *       const sub = builder.attach();
- *
- * Key groups:
- *   • Typed events:
- *       - `on<K>()` for generic HTMLElement events
- *       - shorthands like `onClick`, `onKeyDown`, etc.
- *
- *   • Options:
- *       - `once()` / `passive()` / `capture()`
- *       - `toWindow()` / `toDocument()` (vs default "element")
- *
- *   • Validation / scheduling:
- *       - `strict(policy)` controls behavior when no target
- *         exists at attach time ("ignore" | "warn" | "throw").
- *       - `defer()` disables auto-attach; caller *must* invoke
- *         `.attach()` manually to materialize listeners.
- *
- *   • Event flow controls:
- *       - `preventDefault()`
- *       - `stopProp()` (stopPropagation)
- *       - `stopImmediateProp()`
- *       - `stopAll()` (apply all of the above)
- *       - `clearStops()` (reset to pass-through)
- *
- * Implementations are expected to:
- *   - be immutable or copy-on-write per call, so chained calls
- *     do not unexpectedly mutate previously attached configs,
- *   - enforce type safety for event payloads via `EMap`,
- *   - return the same builder type from each fluent method so
- *     long chains remain correctly typed.
- **************************************************************/
-export interface ListenerBuilder {
-  /*----- typed events */
-  on<K extends keyof ElemMap>(type: K, handler: (ev: ElemMap[K]) => void): ListenerBuilder;
-  onClick(h: (ev: MouseEvent) => void): ListenerBuilder;
-  onMouseMove(h: (ev: MouseEvent) => void): ListenerBuilder;
-  onMouseDown(h: (ev: MouseEvent) => void): ListenerBuilder;
-  onMouseUp(h: (ev: MouseEvent) => void): ListenerBuilder;
-  onKeyDown(h: (ev: KeyboardEvent) => void): ListenerBuilder;
-  onKeyUp(h: (ev: KeyboardEvent) => void): ListenerBuilder;
+// /**************************************************************
+//  * Fluent builder for DOM event listeners.
+//  *
+//  * A ListenerBuilder captures three things:
+//  *   1) *What* to listen for (event type + handler),
+//  *   2) *Where* to attach (element / window / document),
+//  *   3) *How* to behave (capture / once / passive / strictness).
+//  *
+//  * The sequence is:
+//  *   - configure:
+//  *       .on("click", handler)
+//  *       .once().passive().toWindow().strict("throw")
+//  *   - then attach:
+//  *       const sub = builder.attach();
+//  *
+//  * Key groups:
+//  *   • Typed events:
+//  *       - `on<K>()` for generic HTMLElement events
+//  *       - shorthands like `onClick`, `onKeyDown`, etc.
+//  *
+//  *   • Options:
+//  *       - `once()` / `passive()` / `capture()`
+//  *       - `toWindow()` / `toDocument()` (vs default "element")
+//  *
+//  *   • Validation / scheduling:
+//  *       - `strict(policy)` controls behavior when no target
+//  *         exists at attach time ("ignore" | "warn" | "throw").
+//  *       - `defer()` disables auto-attach; caller *must* invoke
+//  *         `.attach()` manually to materialize listeners.
+//  *
+//  *   • Event flow controls:
+//  *       - `preventDefault()`
+//  *       - `stopProp()` (stopPropagation)
+//  *       - `stopImmediateProp()`
+//  *       - `stopAll()` (apply all of the above)
+//  *       - `clearStops()` (reset to pass-through)
+//  *
+//  * Implementations are expected to:
+//  *   - be immutable or copy-on-write per call, so chained calls
+//  *     do not unexpectedly mutate previously attached configs,
+//  *   - enforce type safety for event payloads via `EMap`,
+//  *   - return the same builder type from each fluent method so
+//  *     long chains remain correctly typed.
+//  **************************************************************/
+// export interface ListenerBuilder {
+//   /*----- typed events */
+//   on<K extends keyof ElemMap>(type: K, handler: (ev: ElemMap[K]) => void): ListenerBuilder;
+//   onClick(h: (ev: MouseEvent) => void): ListenerBuilder;
+//   onMouseMove(h: (ev: MouseEvent) => void): ListenerBuilder;
+//   onMouseDown(h: (ev: MouseEvent) => void): ListenerBuilder;
+//   onMouseUp(h: (ev: MouseEvent) => void): ListenerBuilder;
+//   onKeyDown(h: (ev: KeyboardEvent) => void): ListenerBuilder;
+//   onKeyUp(h: (ev: KeyboardEvent) => void): ListenerBuilder;
 
-  /*----- options */
+//   /*----- options */
+//   once(): ListenerBuilder;
+//   passive(): ListenerBuilder;
+//   capture(): ListenerBuilder;
+//   toWindow(): ListenerBuilder;
+//   toDocument(): ListenerBuilder;
+
+//   /*----- validation / scheduling */
+//   strict(policy?: MissingPolicy): ListenerBuilder; // default "warn"
+//   defer(): ListenerBuilder; // cancel auto-attach for manual attach()
+
+//   // may remove some day, seeing if this ubreaks something
+//  attach(): ListenerSub;
+//   /* Auto-attach will also return a handle. */
+//   preventDefault(): ListenerBuilder;
+//   stopProp(): ListenerBuilder;
+//   stopImmediateProp(): ListenerBuilder;
+//   stopAll(): ListenerBuilder;
+//   clearStops(): ListenerBuilder;
+// }
+
+export interface ListenerBuilder {
+  on<K extends keyof ElemMap>(type: K, handler: (ev: ElemMap[K]) => void): ListenerSub;
+
+  onClick(h: (ev: MouseEvent) => void): ListenerSub;
+  onMouseMove(h: (ev: MouseEvent) => void): ListenerSub;
+  onMouseDown(h: (ev: MouseEvent) => void): ListenerSub;
+  onMouseUp(h: (ev: MouseEvent) => void): ListenerSub;
+  onKeyDown(h: (ev: KeyboardEvent) => void): ListenerSub;
+  onKeyUp(h: (ev: KeyboardEvent) => void): ListenerSub;
+
+  // option modifiers: these return a *configured* api for the next registration
   once(): ListenerBuilder;
   passive(): ListenerBuilder;
   capture(): ListenerBuilder;
   toWindow(): ListenerBuilder;
   toDocument(): ListenerBuilder;
 
-  /*----- validation / scheduling */
-  strict(policy?: MissingPolicy): ListenerBuilder; // default "warn"
-  defer(): ListenerBuilder; // cancel auto-attach for manual attach()
+  strict(policy?: MissingPolicy): ListenerBuilder;
 
-  // may remove some day, seeing if this ubreaks something
- attach(): ListenerSub;
-  /* Auto-attach will also return a handle. */
   preventDefault(): ListenerBuilder;
   stopProp(): ListenerBuilder;
   stopImmediateProp(): ListenerBuilder;

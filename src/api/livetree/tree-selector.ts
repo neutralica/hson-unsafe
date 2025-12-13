@@ -1,6 +1,6 @@
 // tree-selector.ts
 
-import { ListenerBuilder, ListenerSub } from "../../types-consts/listen.types";
+import { ListenerBuilder, ListenerSub, MissingPolicy } from "../../types-consts/listen.types";
 import { LiveTreeCreateHelper, TagName, TreeSelectorCreateHelper } from "../../types-consts/livetree.types";
 import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
@@ -14,9 +14,48 @@ import { Primitive } from "../../types-consts/core.types";
 import { make_selector_create, make_tree_create } from "./livetree-methods/create-typed";
 
 
-/* ***TYPES ARE DUPLICATES OF TREESELECTOR INTERFACE
-  TODO decide which to keep
- */
+function combineSubs(subs: readonly ListenerSub[]): ListenerSub {
+  // CHANGED: combined off() calls all; idempotency assumed per sub.off()
+  return {
+    count: subs.reduce((n, s) => n + s.count, 0),
+    ok: subs.some(s => s.ok),
+    off(): void {
+      for (const s of subs) s.off();
+    },
+  };
+}
+
+function makeNoopListenerBuilder(): ListenerBuilder {
+  const noopSub: ListenerSub = { count: 0, ok: false, off() { /* no-op */ } };
+
+  // CHANGED: options return itself; on* returns ListenerSub
+  let api: ListenerBuilder;
+  api = {
+    on() { return noopSub; },
+    onClick() { return noopSub; },
+    onMouseMove() { return noopSub; },
+    onMouseDown() { return noopSub; },
+    onMouseUp() { return noopSub; },
+    onKeyDown() { return noopSub; },
+    onKeyUp() { return noopSub; },
+
+    once() { return api; },
+    passive() { return api; },
+    capture() { return api; },
+    toWindow() { return api; },
+    toDocument() { return api; },
+    strict() { return api; },
+
+    preventDefault() { return api; },
+    stopProp() { return api; },
+    stopImmediateProp() { return api; },
+    stopAll() { return api; },
+    clearStops() { return api; },
+  };
+
+  return api;
+}
+
 
 /**
  * Construct a `TreeSelector` over a set of `LiveTree` instances.
@@ -447,149 +486,61 @@ function makeMultiDataManager(items: LiveTree[]): DataManager {
  * @see build_listener
  */
 function makeMultiListener(items: LiveTree[]): ListenerBuilder {
-  // No items: return a fully-typed no-op builder that still chains.
-  if (items.length === 0) {
-    const noopSub: ListenerSub = {
-      count: 0,
-      ok: false,
-      off() {
-        /* no-op */
-      },
-    };
+  if (items.length === 0) return makeNoopListenerBuilder();
 
-    const noop: ListenerBuilder = {
-      on() { return noop; },
-      onClick() { return noop; },
-      onMouseMove() { return noop; },
-      onMouseDown() { return noop; },
-      onMouseUp() { return noop; },
-      onKeyDown() { return noop; },
-      onKeyUp() { return noop; },
+  const listeners = items.map(tree => build_listener(tree)); // CHANGED: ListenerBuilder now
 
-      once() { return noop; },
-      passive() { return noop; },
-      capture() { return noop; },
-      toWindow() { return noop; },
-      toDocument() { return noop; },
+  let multi: ListenerBuilder;
 
-      strict() { return noop; },
-      defer() { return noop; },
-
-      attach() { return noopSub; },
-
-      preventDefault() { return noop; },
-      stopProp() { return noop; },
-      stopImmediateProp() { return noop; },
-      stopAll() { return noop; },
-      clearStops() { return noop; },
-    };
-
-    return noop;
-  }
-
-  // One real ListenerBuilder per LiveTree2
-  const builders = items.map(tree => build_listener(tree));
-
-  // Multi-builder that just fans calls out to each underlying builder
-  const multi: ListenerBuilder = {
+  multi = {
     on(type, handler) {
-      builders.forEach(b => b.on(type as any, handler as any));
-      return multi;
+      const subs = listeners.map(l => l.on(type, handler));
+      return combineSubs(subs);
     },
+
     onClick(handler) {
-      builders.forEach(b => b.onClick(handler));
-      return multi;
+      const subs = listeners.map(l => l.onClick(handler));
+      return combineSubs(subs);
     },
+
     onMouseMove(handler) {
-      builders.forEach(b => b.onMouseMove(handler));
-      return multi;
+      const subs = listeners.map(l => l.onMouseMove(handler));
+      return combineSubs(subs);
     },
+
     onMouseDown(handler) {
-      builders.forEach(b => b.onMouseDown(handler));
-      return multi;
+      const subs = listeners.map(l => l.onMouseDown(handler));
+      return combineSubs(subs);
     },
+
     onMouseUp(handler) {
-      builders.forEach(b => b.onMouseUp(handler));
-      return multi;
+      const subs = listeners.map(l => l.onMouseUp(handler));
+      return combineSubs(subs);
     },
+
     onKeyDown(handler) {
-      builders.forEach(b => b.onKeyDown(handler));
-      return multi;
+      const subs = listeners.map(l => l.onKeyDown(handler));
+      return combineSubs(subs);
     },
+
     onKeyUp(handler) {
-      builders.forEach(b => b.onKeyUp(handler));
-      return multi;
+      const subs = listeners.map(l => l.onKeyUp(handler));
+      return combineSubs(subs);
     },
 
-    once() {
-      builders.forEach(b => b.once());
-      return multi;
-    },
-    passive() {
-      builders.forEach(b => b.passive());
-      return multi;
-    },
-    capture() {
-      builders.forEach(b => b.capture());
-      return multi;
-    },
-    toWindow() {
-      builders.forEach(b => b.toWindow());
-      return multi;
-    },
-    toDocument() {
-      builders.forEach(b => b.toDocument());
-      return multi;
-    },
+    // CHANGED: options return multi after fanning out
+    once() { listeners.forEach(l => l.once()); return multi; },
+    passive() { listeners.forEach(l => l.passive()); return multi; },
+    capture() { listeners.forEach(l => l.capture()); return multi; },
+    toWindow() { listeners.forEach(l => l.toWindow()); return multi; },
+    toDocument() { listeners.forEach(l => l.toDocument()); return multi; },
+    strict(policy: MissingPolicy = "warn") { listeners.forEach(l => l.strict(policy)); return multi; },
 
-    strict(policy) {
-      builders.forEach(b => b.strict(policy));
-      return multi;
-    },
-    defer() {
-      builders.forEach(b => b.defer());
-      return multi;
-    },
-
-    attach(): ListenerSub {
-      let total = 0;
-      const subs: ListenerSub[] = [];
-
-      for (const b of builders) {
-        const sub = b.attach();
-        subs.push(sub);
-        total += sub.count;
-      }
-
-      return {
-        count: total,
-        ok: total > 0,
-        off() {
-          subs.forEach(s => s.off());
-        },
-      };
-    },
-
-    preventDefault() {
-      builders.forEach(b => b.preventDefault());
-      return multi;
-    },
-    stopProp() {
-      builders.forEach(b => b.stopProp());
-      return multi;
-    },
-    stopImmediateProp() {
-      builders.forEach(b => b.stopImmediateProp());
-      return multi;
-    },
-    stopAll() {
-      builders.forEach(b => b.stopAll());
-      return multi;
-    },
-    clearStops() {
-      builders.forEach(b => b.clearStops());
-      return multi;
-    },
+    preventDefault() { listeners.forEach(l => l.preventDefault()); return multi; },
+    stopProp() { listeners.forEach(l => l.stopProp()); return multi; },
+    stopImmediateProp() { listeners.forEach(l => l.stopImmediateProp()); return multi; },
+    stopAll() { listeners.forEach(l => l.stopAll()); return multi; },
+    clearStops() { listeners.forEach(l => l.clearStops()); return multi; },
   };
 
   return multi;

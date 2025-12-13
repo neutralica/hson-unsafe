@@ -1,6 +1,6 @@
 import { AnimAdapters, AnimApi, AnimationSpec, AnimationName } from "./animate.types";
 
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   const n = name.trim();
   if (n === "") throw new Error(`animation name cannot be empty.`);
   return n;

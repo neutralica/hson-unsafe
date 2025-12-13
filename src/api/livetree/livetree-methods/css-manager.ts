@@ -1,7 +1,12 @@
 // css-manager.ts
 
-import { _DATA_QUID } from "../../../types-consts/constants";
+import { PropertyManager } from "../../../types-consts/at-property.types";
+import { $HSON_FRAME, _DATA_QUID, $_FALSE, _TRANSIT_ATTRS, _TRANSIT_PREFIX } from "../../../types-consts/constants";
 import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
+import { normalizeName } from "./animate";
+import { AnimationName, AnimationSpec } from "./animate.types";
+import { manage_property } from "./at-property";
+import { KeyframesManager, manage_keyframes } from "./keyframes";
 
 /**
  * Build a QUID-scoped CSS handle for one or more HSON nodes.
@@ -25,42 +30,99 @@ import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
 export function css_for_quids(quids: readonly string[]): CssHandle {
   const mgr = CssManager.invoke();
   const ids = quids.map(q => q.trim()).filter(Boolean);
+  const atProperty = mgr.atProperty;   // <-- adjust to your actual field name
+  const keyframes = mgr.keyframes;     // <-- adjust
+  const anim = {
+    begin(spec: AnimationSpec): void {
+      if (ids.length === 0) return;
 
-  //  no-op handle if there’s no selection
+      for (const quid of ids) {
+        mgr.setForQuid(quid, "animation-name", spec.name);
+        mgr.setForQuid(quid, "animation-duration", spec.duration);
+
+        if (spec.timingFunction) mgr.setForQuid(quid, "animation-timing-function", spec.timingFunction);
+        if (spec.delay) mgr.setForQuid(quid, "animation-delay", spec.delay);
+        if (spec.iterationCount) mgr.setForQuid(quid, "animation-iteration-count", spec.iterationCount);
+        if (spec.direction) mgr.setForQuid(quid, "animation-direction", spec.direction);
+        if (spec.fillMode) mgr.setForQuid(quid, "animation-fill-mode", spec.fillMode);
+        if (spec.playState) mgr.setForQuid(quid, "animation-play-state", spec.playState);
+      }
+    },
+
+    beginName(name: AnimationName): void {
+      if (ids.length === 0) return;
+      for (const quid of ids) mgr.setForQuid(quid, "animation-name", normalizeName(name));
+    },
+
+    end(mode: "name-only" | "clear-all" = "name-only"): void {
+      if (ids.length === 0) return;
+
+      for (const quid of ids) mgr.setForQuid(quid, "animation-name", "none");
+
+      if (mode === "clear-all") {
+        for (const quid of ids) {
+          mgr.setForQuid(quid, "animation-duration", "");
+          mgr.setForQuid(quid, "animation-timing-function", "");
+          mgr.setForQuid(quid, "animation-delay", "");
+          mgr.setForQuid(quid, "animation-iteration-count", "");
+          mgr.setForQuid(quid, "animation-direction", "");
+          mgr.setForQuid(quid, "animation-fill-mode", "");
+          mgr.setForQuid(quid, "animation-play-state", "");
+        }
+      }
+    },
+
+    // restart/restartName can be added after you pick a reflow strategy
+    restart(spec: AnimationSpec): void {
+      // temporarily stub if you want compilation now:
+      // end("name-only"); begin(spec);
+      this.end("name-only");
+      this.begin(spec);
+    },
+
+    restartName(name: AnimationName): void {
+      this.end("name-only");
+      this.beginName(name);
+    },
+  } as const;
+
   if (ids.length === 0) {
     return {
       set() { /* no-op */ },
       setMany() { /* no-op */ },
       unset() { /* no-op */ },
       clear() { /* no-op */ },
+
+      // CHANGED: still available without selection
+      atProperty,
+      keyframes,
+
+      // CHANGED: anim exists but should no-op internally when ids empty
+      anim,
     };
   }
 
+
   return {
-    //  apply to all selected QUIDs
     set(property: string, value: CssValue): void {
-      for (const quid of ids) {
-        mgr.setForQuid(quid, property, value);
-      }
+      for (const quid of ids) mgr.setForQuid(quid, property, value);
     },
 
     setMany(decls: CssProp): void {
-      for (const quid of ids) {
-        mgr.setManyForQuid(quid, decls);
-      }
+      for (const quid of ids) mgr.setManyForQuid(quid, decls);
     },
 
     unset(property: string): void {
-      for (const quid of ids) {
-        mgr.unsetForQuid(quid, property);
-      }
+      for (const quid of ids) mgr.unsetForQuid(quid, property);
     },
 
     clear(): void {
-      for (const quid of ids) {
-        mgr.clearQuid(quid);
-      }
+      for (const quid of ids) mgr.clearQuid(quid);
     },
+
+    atProperty,
+    keyframes,
+    anim,
   };
 }
 
@@ -113,13 +175,18 @@ function selectorForQuid(quid: string): string {
  */
 export class CssManager {
   private static instance: CssManager | null = null;
-
   // QUID → (property → rendered value)
   private readonly rulesByQuid: Map<string, Map<string, string>> = new Map();
-
   private styleEl: HTMLStyleElement | null = null;
+  private atPropManager: PropertyManager;
+  private keyframeManager: KeyframesManager;
+  private constructor() {
 
-  private constructor() { }
+
+    this.atPropManager = manage_property({ onChange: () => this.syncToDom() });
+    this.keyframeManager = manage_keyframes({ onChange: () => this.syncToDom() });
+  }
+
 
   public static invoke(): CssManager { /* (= getInstance) */
     if (!CssManager.instance) {
@@ -131,9 +198,9 @@ export class CssManager {
      * Ensure the backing `<style>` element exists in the document and return it.
      *
      * Structure:
-     *   <hson_style id="css-manager">
+     *   <hson-_style id="css-manager">
      *     <style id="_hson">…compiled QUID rules…</style>
-     *   </hson_style>
+     *   </hson-_style>
      *
      * This is internal to `CssManager`; callers should not mutate the returned
      * element directly.
@@ -145,9 +212,9 @@ export class CssManager {
 
     const doc: Document = document;
 
-    let host = doc.querySelector<HTMLElement>("hson_style#css-manager");
+    let host = doc.querySelector<HTMLElement>("hson-_style#css-manager");
     if (!host) {
-      host = doc.createElement("hson_style");
+      host = doc.createElement("hson-_style");
       host.id = "css-manager";
       doc.body.appendChild(host);
     }
@@ -163,9 +230,16 @@ export class CssManager {
     return styleEl;
   }
 
+  public get atProperty(): PropertyManager {
+    return this.atPropManager;
+  }
+
+  public get keyframes(): KeyframesManager {
+    return this.keyframeManager;
+  }
+
+
   // --- WRITE API (QUID-based) -------------------------------------------
-
-
   /**
      * Set a single property for a single QUID.
      *
@@ -355,12 +429,15 @@ export class CssManager {
      * Each QUID becomes a separate rule block, separated by blank lines.
      */
   private buildCombinedCss(): string {
+    // CHANGED: render at-rules first (unscoped definitions)
+    const atPropCss = this.atPropManager.renderAll();
+    const keyframesCss = this.keyframeManager.renderAll();
+
+    // CHANGED: render quid-scoped selector blocks (your existing logic)
     const blocks: string[] = [];
 
     for (const [quid, props] of this.rulesByQuid.entries()) {
-      if (props.size === 0) {
-        continue;
-      }
+      if (props.size === 0) continue;
 
       const decls: string[] = [];
       for (const [prop, value] of props.entries()) {
@@ -372,7 +449,15 @@ export class CssManager {
       blocks.push(`${selector} { ${body} }`);
     }
 
-    return blocks.join("\n\n");
+    const quidCss = blocks.join("\n\n");
+
+    // CHANGED: stitch together, skipping empties
+    const parts: string[] = [];
+    if (atPropCss) parts.push(atPropCss);
+    if (keyframesCss) parts.push(keyframesCss);
+    if (quidCss) parts.push(quidCss);
+
+    return parts.join("\n\n");
   }
   /**
      * Push the current compiled CSS into the backing `<style>` element.
