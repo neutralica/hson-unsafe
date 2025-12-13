@@ -1,4 +1,14 @@
-import { AnimAdapters, AnimApi, AnimationSpec } from "./animate.types";
+import { AnimAdapters, AnimApi, AnimationSpec, AnimationName } from "./animate.types";
+
+function normalizeName(name: string): string {
+  const n = name.trim();
+  if (n === "") throw new Error(`animation name cannot be empty.`);
+  return n;
+}
+
+function applyNameOnly<TTree>(tree: TTree, name: string, a: AnimAdapters<TTree>): TTree {
+  return a.setStyleProp(tree, "animation-name", normalizeName(name));
+}
 
 function normalizeSpec(spec: AnimationSpec): AnimationSpec {
   // CHANGED: trim name for safety.
@@ -74,16 +84,20 @@ function forceReflow(tree: unknown, el: Element): void {
 export function make_anim_api<TTree>(adapters: AnimAdapters<TTree>): AnimApi<TTree> {
   return {
     begin_animation(tree: TTree, spec: AnimationSpec): TTree {
-      // CHANGED: normalize + apply explicit properties.
+      // CHANGED: normalize + apply explicit properties (duration now required).
       const s = normalizeSpec(spec);
       return applyAnimationProps(tree, s, adapters);
     },
 
+    // CHANGED: explicit “you’re on your own” name-only start.
+    begin_animation_name(tree: TTree, name: AnimationName): TTree {
+      const n = normalizeName(name);
+      return adapters.setStyleProp(tree, "animation-name", n);
+    },
+
     end_animation(tree: TTree, mode: "name-only" | "clear-all" = "name-only"): TTree {
-      // CHANGED: minimal stop is animation-name: none
       tree = adapters.setStyleProp(tree, "animation-name", "none");
 
-      // CHANGED: optional hard clear for “reset to baseline”.
       if (mode === "clear-all") {
         tree = adapters.setStyleProp(tree, "animation-duration", "");
         tree = adapters.setStyleProp(tree, "animation-timing-function", "");
@@ -98,20 +112,27 @@ export function make_anim_api<TTree>(adapters: AnimAdapters<TTree>): AnimApi<TTr
     },
 
     restart_animation(tree: TTree, spec: AnimationSpec): TTree {
-      // CHANGED: normalize spec once.
       const s = normalizeSpec(spec);
 
-      // CHANGED: turn off animation-name first.
       tree = adapters.setStyleProp(tree, "animation-name", "none");
 
-      // CHANGED: force reflow so the browser commits the "none".
-      // Read from the first element only (cheap; sufficient).
       const first = adapters.getFirstDomElement(tree);
       if (first) forceReflow(tree, first);
 
-      // CHANGED: now re-apply animation props (name + any options).
       tree = applyAnimationProps(tree, s, adapters);
+      return tree;
+    },
 
+    // CHANGED: explicit “you’re on your own” name-only restart.
+    restart_animation_name(tree: TTree, name: AnimationName): TTree {
+      const n = normalizeName(name);
+
+      tree = adapters.setStyleProp(tree, "animation-name", "none");
+
+      const first = adapters.getFirstDomElement(tree);
+      if (first) forceReflow(tree, first);
+
+      tree = adapters.setStyleProp(tree, "animation-name", n);
       return tree;
     },
   };

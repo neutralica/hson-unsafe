@@ -5,7 +5,7 @@ export type AnimationSpec = Readonly<{
   name: AnimationName;
 
   // Optional sugar: if omitted, user can define these in CSS rules/classes instead.
-  duration?: string;          // "250ms", "1s"
+  duration: string;          // "250ms", "1s"
   timingFunction?: string;    // "ease", "linear", "cubic-bezier(...)"
   delay?: string;             // "0ms"
   iterationCount?: string;    // "1", "infinite"
@@ -26,7 +26,14 @@ export type AnimAdapters<TTree> = Readonly<{
 }>;
 
 export type AnimApi<TTree> = Readonly<{
+  // “Guaranteed to run” path.
   begin_animation: (tree: TTree, spec: AnimationSpec) => TTree;
-  end_animation: (tree: TTree, mode?: "name-only" | "clear-all") => TTree;
   restart_animation: (tree: TTree, spec: AnimationSpec) => TTree;
+
+  // “You’re on your own” path: duration/etc must be provided by CSS rules elsewhere.
+  begin_animation_name: (tree: TTree, name: AnimationName) => TTree;
+  restart_animation_name: (tree: TTree, name: AnimationName) => TTree;
+
+  // Stop is unambiguous.
+  end_animation: (tree: TTree, mode?: "name-only" | "clear-all") => TTree;
 }>;
