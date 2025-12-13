@@ -11,14 +11,24 @@ function applyNameOnly<TTree>(tree: TTree, name: string, a: AnimAdapters<TTree>)
 }
 
 function normalizeSpec(spec: AnimationSpec): AnimationSpec {
-  // CHANGED: trim name for safety.
-  const name = spec.name.trim();
+  const name = normalizeName(spec.name);
 
-  if (name === "") {
-    throw new Error(`begin_animation: spec.name cannot be empty.`);
+  const duration = spec.duration.trim();
+  if (duration === "") {
+    throw new Error(`begin_animation: spec.duration cannot be empty.`);
   }
 
-  return { ...spec, name };
+  return {
+    ...spec,
+    name,
+    duration,
+    timingFunction: spec.timingFunction?.trim(),
+    delay: spec.delay?.trim(),
+    iterationCount: spec.iterationCount?.trim(),
+    direction: spec.direction?.trim(),
+    fillMode: spec.fillMode?.trim(),
+    playState: spec.playState?.trim(),
+  };
 }
 
 function applyAnimationProps<TTree>(
@@ -81,21 +91,20 @@ function forceReflow(tree: unknown, el: Element): void {
 // ------------------------------------------------------------
 // Factory
 // ------------------------------------------------------------
-export function make_anim_api<TTree>(adapters: AnimAdapters<TTree>): AnimApi<TTree> {
+export function apply_animation<TTree>(adapters: AnimAdapters<TTree>): AnimApi<TTree> {
   return {
-    begin_animation(tree: TTree, spec: AnimationSpec): TTree {
+    begin(tree: TTree, spec: AnimationSpec): TTree {
       // CHANGED: normalize + apply explicit properties (duration now required).
       const s = normalizeSpec(spec);
       return applyAnimationProps(tree, s, adapters);
     },
 
-    // CHANGED: explicit “you’re on your own” name-only start.
-    begin_animation_name(tree: TTree, name: AnimationName): TTree {
-      const n = normalizeName(name);
-      return adapters.setStyleProp(tree, "animation-name", n);
+    beginName(tree: TTree, name: AnimationName): TTree {
+      return applyNameOnly(tree, name, adapters);
     },
 
-    end_animation(tree: TTree, mode: "name-only" | "clear-all" = "name-only"): TTree {
+
+    end(tree: TTree, mode: "name-only" | "clear-all" = "name-only"): TTree {
       tree = adapters.setStyleProp(tree, "animation-name", "none");
 
       if (mode === "clear-all") {
@@ -111,7 +120,7 @@ export function make_anim_api<TTree>(adapters: AnimAdapters<TTree>): AnimApi<TTr
       return tree;
     },
 
-    restart_animation(tree: TTree, spec: AnimationSpec): TTree {
+    restart(tree: TTree, spec: AnimationSpec): TTree {
       const s = normalizeSpec(spec);
 
       tree = adapters.setStyleProp(tree, "animation-name", "none");
@@ -124,16 +133,14 @@ export function make_anim_api<TTree>(adapters: AnimAdapters<TTree>): AnimApi<TTr
     },
 
     // CHANGED: explicit “you’re on your own” name-only restart.
-    restart_animation_name(tree: TTree, name: AnimationName): TTree {
-      const n = normalizeName(name);
-
+    restartName(tree: TTree, name: AnimationName): TTree {
+      // CHANGED: normalize + reuse helper.
       tree = adapters.setStyleProp(tree, "animation-name", "none");
 
       const first = adapters.getFirstDomElement(tree);
       if (first) forceReflow(tree, first);
 
-      tree = adapters.setStyleProp(tree, "animation-name", n);
-      return tree;
+      return applyNameOnly(tree, name, adapters);
     },
   };
 }
