@@ -1,8 +1,9 @@
 // css.types.ts
 
-import { AnimationName, AnimationSpec } from "../api/livetree/livetree-methods/animate.types";
+import { AnimationName, AnimationSpec, CssAnimHandle } from "../api/livetree/livetree-methods/animate.types";
 import { KeyframesManager } from "../api/livetree/livetree-methods/keyframes";
 import { StyleKey } from "../api/livetree/livetree-methods/style-manager";
+import { StyleSetter } from "../api/livetree/livetree-methods/style-setter";
 import { PropertyManager } from "./at-property.types";
 
 
@@ -189,23 +190,11 @@ export type StyleObject = Partial<Record<StyleKey, string | number | null | unde
  * underlying `<style>` element, keeping the CSS in sync with the
  * current state of the handle.
  */
-export type CssHandle = Readonly<{
-  // scoped (per-quid selector rules)
-  set: (property: string, value: CssValue) => void;
-  setMany: (decls: CssProp) => void;
-  unset: (property: string) => void;
-  clear: () => void;
 
-  // unscoped definitions (at-rules in the shared stylesheet)
-  atProperty: PropertyManager;
-  keyframes: KeyframesManager;
-
-  // scoped convenience (writes animation-* declarations under quid selectors)
-  anim: Readonly<{
-    begin: (spec: AnimationSpec) => void;
-    beginName: (name: AnimationName) => void;
-    end: (mode?: "name-only" | "clear-all") => void;
-    restart: (spec: AnimationSpec) => void;
-    restartName: (name: AnimationName) => void;
-  }>;
-}>;
+export type CssHandle = Readonly<
+  StyleSetter & {
+    atProperty: PropertyManager;
+    keyframes: KeyframesManager;
+    anim: CssAnimHandle;
+  }
+>;

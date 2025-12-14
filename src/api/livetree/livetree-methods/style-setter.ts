@@ -156,6 +156,7 @@ function normalizePropToCamel(prop: string): string {
   // If it already looks camelCase (no dashes), keep it.
   if (!p.includes("-")) return p;
 
+    // BUG/TODO: this sould use our existing kebab_to_camel
   // kebab-case → camelCase (background-color → backgroundColor)
   return p.replace(/-([a-z])/g, (_, ch: string) => ch.toUpperCase());
 }

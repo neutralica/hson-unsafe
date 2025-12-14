@@ -1,6 +1,7 @@
-// types (keep small; mirror CSS)
-export type AnimationName = string;
+// animate.types.ts
 
+export type AnimationName = string;
+export type AnimationEndMode = "name-only" | "clear-all";
 export type AnimationSpec = Readonly<{
   name: AnimationName;
 
@@ -35,5 +36,13 @@ export type AnimApi<TTree> = Readonly<{
   restartName: (tree: TTree, name: AnimationName) => TTree;
 
   // Stop is unambiguous.
-  end: (tree: TTree, mode?: "name-only" | "clear-all") => TTree;
+  end: (tree: TTree, mode?: AnimationEndMode) => TTree;
+}>;
+
+export type CssAnimHandle = Readonly<{
+  begin: (spec: AnimationSpec) => void;
+  restart: (spec: AnimationSpec) => void;
+  beginName: (name: AnimationName) => void;
+  restartName: (name: AnimationName) => void;
+  end: (mode?: "name-only" | "clear-all") => void;
 }>;

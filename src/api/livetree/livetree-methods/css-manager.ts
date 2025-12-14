@@ -3,129 +3,36 @@
 import { PropertyManager } from "../../../types-consts/at-property.types";
 import { $HSON_FRAME, _DATA_QUID, $_FALSE, _TRANSIT_ATTRS, _TRANSIT_PREFIX } from "../../../types-consts/constants";
 import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
-import { normalizeName } from "./animate";
-import { AnimationName, AnimationSpec } from "./animate.types";
+import { apply_animation, CssScope, normalizeName } from "./animate";
+import { AnimAdapters, AnimApi, AnimationEndMode, AnimationName, AnimationSpec } from "./animate.types";
 import { manage_property } from "./at-property";
 import { KeyframesManager, manage_keyframes } from "./keyframes";
+import { make_style_setter, StyleSetter } from "./style-setter";
 
-/**
- * Build a QUID-scoped CSS handle for one or more HSON nodes.
- *
- * This is the core entrypoint used by `LiveTree.css` and `TreeSelector.css`.
- *
- * Behavior:
- * - Trims incoming QUIDs and drops empties.
- * - If the resulting list is empty, returns a no-op handle where all methods
- *   (`set`, `setMany`, `unset`, `clear`) do nothing.
- * - Otherwise, returns a `CssHandle` that forwards calls into the global
- *   `CssManager` singleton for each QUID in the set.
- *
- * Semantics:
- * - `set(property, value)` and `setMany(decls)` *merge* into any existing
- *   rules for each QUID.
- * - `unset(property)` removes a single property but leaves other properties
- *   for that QUID intact.
- * - `clear()` removes *all* properties for each bound QUID.
- */
+
 export function css_for_quids(quids: readonly string[]): CssHandle {
   const mgr = CssManager.invoke();
   const ids = quids.map(q => q.trim()).filter(Boolean);
-  const atProperty = mgr.atProperty;   // <-- adjust to your actual field name
-  const keyframes = mgr.keyframes;     // <-- adjust
-  const anim = {
-    begin(spec: AnimationSpec): void {
-      if (ids.length === 0) return;
 
-      for (const quid of ids) {
-        mgr.setForQuid(quid, "animation-name", spec.name);
-        mgr.setForQuid(quid, "animation-duration", spec.duration);
+  const atProperty = mgr.atProperty ?? mgr.atPropManager;         // depending on your final naming
+  const keyframes = mgr.keyframes ?? mgr.keyframeManager;
 
-        if (spec.timingFunction) mgr.setForQuid(quid, "animation-timing-function", spec.timingFunction);
-        if (spec.delay) mgr.setForQuid(quid, "animation-delay", spec.delay);
-        if (spec.iterationCount) mgr.setForQuid(quid, "animation-iteration-count", spec.iterationCount);
-        if (spec.direction) mgr.setForQuid(quid, "animation-direction", spec.direction);
-        if (spec.fillMode) mgr.setForQuid(quid, "animation-fill-mode", spec.fillMode);
-        if (spec.playState) mgr.setForQuid(quid, "animation-play-state", spec.playState);
-      }
+  const anim = mgr.anim_for_quids(ids);
+
+  const setter = make_style_setter({
+    apply: (propCanon, value) => {
+      for (const quid of ids) mgr.setForQuid(quid, propCanon, String(value));
     },
-
-    beginName(name: AnimationName): void {
-      if (ids.length === 0) return;
-      for (const quid of ids) mgr.setForQuid(quid, "animation-name", normalizeName(name));
+    remove: (propCanon) => {
+      for (const quid of ids) mgr.unsetForQuid(quid, propCanon);
     },
-
-    end(mode: "name-only" | "clear-all" = "name-only"): void {
-      if (ids.length === 0) return;
-
-      for (const quid of ids) mgr.setForQuid(quid, "animation-name", "none");
-
-      if (mode === "clear-all") {
-        for (const quid of ids) {
-          mgr.setForQuid(quid, "animation-duration", "");
-          mgr.setForQuid(quid, "animation-timing-function", "");
-          mgr.setForQuid(quid, "animation-delay", "");
-          mgr.setForQuid(quid, "animation-iteration-count", "");
-          mgr.setForQuid(quid, "animation-direction", "");
-          mgr.setForQuid(quid, "animation-fill-mode", "");
-          mgr.setForQuid(quid, "animation-play-state", "");
-        }
-      }
-    },
-
-    // restart/restartName can be added after you pick a reflow strategy
-    restart(spec: AnimationSpec): void {
-      // temporarily stub if you want compilation now:
-      // end("name-only"); begin(spec);
-      this.end("name-only");
-      this.begin(spec);
-    },
-
-    restartName(name: AnimationName): void {
-      this.end("name-only");
-      this.beginName(name);
-    },
-  } as const;
-
-  if (ids.length === 0) {
-    return {
-      set() { /* no-op */ },
-      setMany() { /* no-op */ },
-      unset() { /* no-op */ },
-      clear() { /* no-op */ },
-
-      // CHANGED: still available without selection
-      atProperty,
-      keyframes,
-
-      // CHANGED: anim exists but should no-op internally when ids empty
-      anim,
-    };
-  }
-
-
-  return {
-    set(property: string, value: CssValue): void {
-      for (const quid of ids) mgr.setForQuid(quid, property, value);
-    },
-
-    setMany(decls: CssProp): void {
-      for (const quid of ids) mgr.setManyForQuid(quid, decls);
-    },
-
-    unset(property: string): void {
-      for (const quid of ids) mgr.unsetForQuid(quid, property);
-    },
-
-    clear(): void {
+    clear: () => {
       for (const quid of ids) mgr.clearQuid(quid);
     },
+  });
 
-    atProperty,
-    keyframes,
-    anim,
-  };
+  return { ...setter, atProperty, keyframes, anim };
 }
-
 /**
  * Convenience wrapper for the single-QUID case.
  *
@@ -150,7 +57,16 @@ function selectorForQuid(quid: string): string {
   // SINGLE place where we define how a QUID maps to a CSS selector
   return `[${_DATA_QUID}="${quid}"]`;
 }
+function canon_to_css_prop(propCanon: string): string {
+  // CSS custom properties keep their spelling
+  if (propCanon.startsWith("--")) return propCanon;
 
+  // Already kebab (your StyleKey allowed `${string}-${string}`)
+  if (propCanon.includes("-")) return propCanon;
+
+  // camelCase -> kebab-case
+  return propCanon.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
+}
 /**
  * Singleton manager for QUID-scoped CSS rules.
  *
@@ -178,15 +94,29 @@ export class CssManager {
   // QUID → (property → rendered value)
   private readonly rulesByQuid: Map<string, Map<string, string>> = new Map();
   private styleEl: HTMLStyleElement | null = null;
-  private atPropManager: PropertyManager;
-  private keyframeManager: KeyframesManager;
+  public readonly atPropManager: PropertyManager;
+  public readonly keyframeManager: KeyframesManager;
+  private dirty = false;
+  private scheduled = false;
+
   private constructor() {
-
-
-    this.atPropManager = manage_property({ onChange: () => this.syncToDom() });
-    this.keyframeManager = manage_keyframes({ onChange: () => this.syncToDom() });
+    this.atPropManager = manage_property({ onChange: () => this.mark_changed() });
+    this.keyframeManager = manage_keyframes({ onChange: () => this.mark_changed() });
   }
 
+
+  private mark_changed(): void {
+    this.dirty = true;
+    if (this.scheduled) return;
+
+    this.scheduled = true;
+    queueMicrotask(() => {
+      this.scheduled = false;
+      if (!this.dirty) return;
+      this.dirty = false;
+      this.syncToDom();
+    });
+  }
 
   public static invoke(): CssManager { /* (= getInstance) */
     if (!CssManager.instance) {
@@ -238,39 +168,93 @@ export class CssManager {
     return this.keyframeManager;
   }
 
+  // private buildQuidCss(): string {
+  //   const blocks: string[] = [];
+
+  //   for (const [quid, props] of this.rulesByQuid.entries()) {
+  //     if (props.size === 0) continue;
+
+  //     const decls: string[] = [];
+  //     for (const [propCanon, value] of props.entries()) {
+  //       const prop = canon_to_css_prop(propCanon);
+  //       decls.push(`${prop}: ${value};`);
+  //     }
+
+  //     blocks.push(`${selectorForQuid(quid)} { ${decls.join(" ")} }`);
+  //   }
+
+  //   return blocks.join("\n\n");
+  // }
 
   // --- WRITE API (QUID-based) -------------------------------------------
-  /**
-     * Set a single property for a single QUID.
-     *
-     * - `quid` and `property` are trimmed and must be non-empty.
-     * - `value` is normalized via `renderCssValue` (string pass-through or
-     *   `{value, unit}` join).
-     * - Merges into any existing rule for that QUID (does not clear others).
-     * - Triggers a full stylesheet rebuild via `syncToDom()`.
-     */
-  public setForQuid(quid: string, property: string, value: CssValue): void {
-    const trimmedQuid = quid.trim();
-    const trimmedProp = property.trim();
 
-    if (!trimmedQuid) {
-      throw new Error("CssManager.setForQuid: quid must be non-empty");
+  public setForQuid(quid: string, propCanon: string, value: string): void {
+    const q = quid.trim(); if (!q) return;
+    const p = propCanon.trim(); if (!p) return;
+    const v = String(value).trim();
+    if (!v) {
+      this.unsetForQuid(q, p);
+      return;
     }
-    if (!trimmedProp) {
-      throw new Error("CssManager.setForQuid: property must be non-empty");
-    }
-
-    const rendered: string = renderCssValue(value);
-
-    let props = this.rulesByQuid.get(trimmedQuid);
+    let props = this.rulesByQuid.get(q);
     if (!props) {
-      props = new Map<string, string>();
-      this.rulesByQuid.set(trimmedQuid, props);
+      props = new Map();
+      this.rulesByQuid.set(q, props);
     }
 
-    props.set(trimmedProp, rendered);
-    this.syncToDom();
+    props.set(p, v);
+    this.mark_changed();
   }
+
+
+
+  public anim_for_quids(quids: readonly string[]) {
+    const scope: CssScope = { quids: quids.map(q => q.trim()).filter(Boolean) };
+
+    const adapters: AnimAdapters<CssScope> = {
+      setStyleProp: (sc: CssScope, prop: string, value: string): CssScope => {
+        for (const quid of sc.quids) {
+          this.setForQuid(quid, prop, value);
+        }
+        return sc;
+      },
+
+      // stylesheet-scoped: there are no DOM elements to iterate
+      forEachDomElement: (_sc: CssScope, _fn: (el: Element) => void): void => {
+        // no-op
+      },
+
+      getFirstDomElement: (_sc: CssScope): Element | undefined => {
+        return undefined;
+      },
+    };
+
+    const api: AnimApi<CssScope> = apply_animation<CssScope>(adapters);
+
+    // Wrap so the consumer doesn't pass "tree" / scope
+    return {
+      begin: (spec: AnimationSpec): void => { api.begin(scope, spec); },
+      beginName: (name: AnimationName): void => { api.beginName(scope, name); },
+      end: (mode?: AnimationEndMode): void => { api.end(scope, mode); },
+
+      restart: (spec: AnimationSpec): void => {
+        // restart via stylesheet flush, not reflow
+        api.end(scope, "name-only");
+        this.syncToDom();
+        api.begin(scope, spec);
+        this.syncToDom();
+      },
+
+      restartName: (name: AnimationName): void => {
+        api.end(scope, "name-only");
+        this.syncToDom();
+        api.beginName(scope, name);
+        this.syncToDom();
+      },
+    } as const;
+  }
+
+  /* ????? do we change the below */
 
 
   /**
@@ -305,119 +289,88 @@ export class CssManager {
     this.syncToDom();
   }
 
-
-  /**
-     * Remove a single property for a given QUID.
-     *
-     * - If the QUID has no rule map, this is a no-op.
-     * - If the property removal leaves the map empty, the QUID entry is
-     *   removed entirely.
-     * - Always triggers a stylesheet rebuild.
-     */
-  public unsetForQuid(quid: string, property: string): void {
+  public unsetForQuid(quid: string, propCanon: string): void {
     const props = this.rulesByQuid.get(quid);
-    if (!props) {
-      return;
-    }
+    if (!props) return;
 
-    props.delete(property);
+    props.delete(propCanon);
+    if (props.size === 0) this.rulesByQuid.delete(quid);
 
-    if (props.size === 0) {
-      this.rulesByQuid.delete(quid);
-    }
-
-    this.syncToDom();
+    this.mark_changed();
   }
 
-  /**
-     * Remove all properties for a given QUID.
-     *
-     * - If the QUID has no entry, this is a no-op.
-     * - Otherwise, removes the QUID from `rulesByQuid` and rebuilds the CSS.
-     */
+
   public clearQuid(quid: string): void {
-    if (!this.rulesByQuid.has(quid)) {
-      return;
-    }
-    this.rulesByQuid.delete(quid);
-    this.syncToDom();
+    if (!this.rulesByQuid.delete(quid)) return;
+    this.mark_changed();
   }
 
-
-  /**
-     * Clear all QUID-scoped rules from the manager and the DOM.
-     *
-     * - If there are no rules, returns early.
-     * - Otherwise, empties the internal map and clears the `<style>` content.
-     */
   public clearAll(): void {
-    if (this.rulesByQuid.size === 0) {
-      return;
-    }
+    if (this.rulesByQuid.size === 0) return;
     this.rulesByQuid.clear();
-    this.syncToDom();
+    this.mark_changed();
   }
+  
+//   // --- READ / INTROSPECTION (QUID-based) --------------------------------
+//   /**
+//      * Check whether any rules exist for a given QUID.
+//      */
+//   public hasQuid(quid: string): boolean {
+//     return this.rulesByQuid.has(quid);
+//   }
 
-  // --- READ / INTROSPECTION (QUID-based) --------------------------------
-  /**
-     * Check whether any rules exist for a given QUID.
-     */
-  public hasQuid(quid: string): boolean {
-    return this.rulesByQuid.has(quid);
-  }
+//   /**
+//      * Check whether a specific property is defined for a given QUID.
+//      */
+//   public hasPropForQuid(quid: string, property: string): boolean {
+//     const props = this.rulesByQuid.get(quid);
+//     return props ? props.has(property) : false;
+//   }
 
-  /**
-     * Check whether a specific property is defined for a given QUID.
-     */
-  public hasPropForQuid(quid: string, property: string): boolean {
-    const props = this.rulesByQuid.get(quid);
-    return props ? props.has(property) : false;
-  }
+//   /**
+//  * Get the rendered value for a property on a given QUID, if present.
+//  *
+//  * @returns The CSS string value, or `undefined` if the QUID or property
+//  *          has no rule.
+//  */
+//   public getPropForQuid(quid: string, property: string): string | undefined {
+//     const props = this.rulesByQuid.get(quid);
+//     return props ? props.get(property) : undefined;
+//   }
 
-  /**
- * Get the rendered value for a property on a given QUID, if present.
- *
- * @returns The CSS string value, or `undefined` if the QUID or property
- *          has no rule.
- */
-  public getPropForQuid(quid: string, property: string): string | undefined {
-    const props = this.rulesByQuid.get(quid);
-    return props ? props.get(property) : undefined;
-  }
+//   /**
+//      * Debug helper: render a single QUID’s CSS block as a string, e.g.:
+//      *
+//      *   `[data-_quid="…"] { width: 240px; transform: …; }`
+//      *
+//      * @returns `undefined` if the QUID has no properties.
+//      */
+//   public getQuidCss(quid: string): string | undefined {
+//     const props = this.rulesByQuid.get(quid);
+//     if (!props || props.size === 0) {
+//       return undefined;
+//     }
 
-  /**
-     * Debug helper: render a single QUID’s CSS block as a string, e.g.:
-     *
-     *   `[data-_quid="…"] { width: 240px; transform: …; }`
-     *
-     * @returns `undefined` if the QUID has no properties.
-     */
-  public getQuidCss(quid: string): string | undefined {
-    const props = this.rulesByQuid.get(quid);
-    if (!props || props.size === 0) {
-      return undefined;
-    }
+//     const decls: string[] = [];
+//     for (const [prop, value] of props.entries()) {
+//       decls.push(`${prop}: ${value};`);
+//     }
 
-    const decls: string[] = [];
-    for (const [prop, value] of props.entries()) {
-      decls.push(`${prop}: ${value};`);
-    }
+//     const selector = selectorForQuid(quid);
+//     return `${selector} { ${decls.join(" ")} }`;
+//   }
 
-    const selector = selectorForQuid(quid);
-    return `${selector} { ${decls.join(" ")} }`;
-  }
-
-  /**
-    * Render the entire QUID rule set into a single CSS string.
-    *
-    * This is primarily intended for:
-    * - tests (snapshotting the stylesheet),
-    * - debug logging,
-    * - external tooling that wants to mirror the compiled rules.
-    */
-  public getCombinedCss(): string {
-    return this.buildCombinedCss();
-  }
+//   /**
+//     * Render the entire QUID rule set into a single CSS string.
+//     *
+//     * This is primarily intended for:
+//     * - tests (snapshotting the stylesheet),
+//     * - debug logging,
+//     * - external tooling that wants to mirror the compiled rules.
+//     */
+//   public getCombinedCss(): string {
+//     return this.buildCombinedCss();
+//   }
 
   // --- INTERNAL: BUILD + SYNC -------------------------------------------
   /**
@@ -429,29 +382,25 @@ export class CssManager {
      * Each QUID becomes a separate rule block, separated by blank lines.
      */
   private buildCombinedCss(): string {
-    // CHANGED: render at-rules first (unscoped definitions)
-    const atPropCss = this.atPropManager.renderAll();
-    const keyframesCss = this.keyframeManager.renderAll();
+    const atPropCss = this.atPropManager.renderAll().trim();
+    const keyframesCss = this.keyframeManager.renderAll().trim();
 
-    // CHANGED: render quid-scoped selector blocks (your existing logic)
     const blocks: string[] = [];
 
     for (const [quid, props] of this.rulesByQuid.entries()) {
       if (props.size === 0) continue;
 
       const decls: string[] = [];
-      for (const [prop, value] of props.entries()) {
+      for (const [propCanon, value] of props.entries()) {
+        const prop = canon_to_css_prop(propCanon);
         decls.push(`${prop}: ${value};`);
       }
 
-      const selector = selectorForQuid(quid);
-      const body = decls.join(" ");
-      blocks.push(`${selector} { ${body} }`);
+      blocks.push(`${selectorForQuid(quid)} { ${decls.join(" ")} }`);
     }
 
-    const quidCss = blocks.join("\n\n");
+    const quidCss = blocks.join("\n\n").trim();
 
-    // CHANGED: stitch together, skipping empties
     const parts: string[] = [];
     if (atPropCss) parts.push(atPropCss);
     if (keyframesCss) parts.push(keyframesCss);
@@ -459,6 +408,7 @@ export class CssManager {
 
     return parts.join("\n\n");
   }
+
   /**
      * Push the current compiled CSS into the backing `<style>` element.
      *

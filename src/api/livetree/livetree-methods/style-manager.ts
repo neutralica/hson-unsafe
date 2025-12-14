@@ -298,165 +298,165 @@ function applyStyleToNode(node: HsonNode, kebabName: string, value: string): voi
     }
 }
 
-/**
- * Read a single style property value for a node, preferring the DOM.
- *
- * Behavior:
- * - If an `HTMLElement` is mapped for the node:
- *   - Calls `getComputedStyle(el).getPropertyValue(kebabName)`.
- *   - Trims the result; if non-empty, returns it.
- * - Otherwise (or if DOM value is empty):
- *   - Looks at `node._attrs.style`:
- *     - If it's a string, parses it with a small regex to find the
- *       requested property.
- *     - If it's an object, returns `styleObj[kebabName]` if present
- *       and non-empty.
- *
- * Returns `undefined` when no value can be determined from either DOM
- * or HSON.
- *
- * @param node - The HSON node whose style should be inspected.
- * @param kebabName - CSS property name in kebab-case (or `--var` form).
- * @returns The effective style value as a string, or `undefined` if absent.
- */
-function readStyleFromNode(node: HsonNode, kebabName: string): string | undefined {
-    const el = element_for_node(node);
-    if (el instanceof HTMLElement) {
-        const v = getComputedStyle(el).getPropertyValue(kebabName);
-        const t = v.trim();
-        if (t !== "") return t;
-    }
-    const a = node._attrs as Record<string, unknown> | undefined;
-    if (!a) return undefined;
-    const s = a.style;
-    if (!s) return undefined;
-    if (typeof s === "string") {
-        const m = s.match(new RegExp(`(^|;)\\s*${kebabName}\\s*:\\s*([^;]+)`));
-        return m?.[2]?.trim();
-    }
-    if (typeof s === "object") {
-        const obj = s as Record<string, string>;
-        const v = obj[kebabName];
-        return v === "" ? undefined : v;
-    }
-    return undefined;
-}
+// /**
+//  * Read a single style property value for a node, preferring the DOM.
+//  *
+//  * Behavior:
+//  * - If an `HTMLElement` is mapped for the node:
+//  *   - Calls `getComputedStyle(el).getPropertyValue(kebabName)`.
+//  *   - Trims the result; if non-empty, returns it.
+//  * - Otherwise (or if DOM value is empty):
+//  *   - Looks at `node._attrs.style`:
+//  *     - If it's a string, parses it with a small regex to find the
+//  *       requested property.
+//  *     - If it's an object, returns `styleObj[kebabName]` if present
+//  *       and non-empty.
+//  *
+//  * Returns `undefined` when no value can be determined from either DOM
+//  * or HSON.
+//  *
+//  * @param node - The HSON node whose style should be inspected.
+//  * @param kebabName - CSS property name in kebab-case (or `--var` form).
+//  * @returns The effective style value as a string, or `undefined` if absent.
+//  */
+// function readStyleFromNode(node: HsonNode, kebabName: string): string | undefined {
+//     const el = element_for_node(node);
+//     if (el instanceof HTMLElement) {
+//         const v = getComputedStyle(el).getPropertyValue(kebabName);
+//         const t = v.trim();
+//         if (t !== "") return t;
+//     }
+//     const a = node._attrs as Record<string, unknown> | undefined;
+//     if (!a) return undefined;
+//     const s = a.style;
+//     if (!s) return undefined;
+//     if (typeof s === "string") {
+//         const m = s.match(new RegExp(`(^|;)\\s*${kebabName}\\s*:\\s*([^;]+)`));
+//         return m?.[2]?.trim();
+//     }
+//     if (typeof s === "object") {
+//         const obj = s as Record<string, string>;
+//         const v = obj[kebabName];
+//         return v === "" ? undefined : v;
+//     }
+//     return undefined;
+// }
 
-/* --------------------------- FACADE (Proxy-based) --------------------------- */
-/**
- * Proxy-backed facade for strongly-typed style setters.
- *
- * Structure:
- * - For each `AllowedStyleKey`:
- *   - Exposes a method `(value: string) => LiveTree`, enabling calls
- *     such as `tree.style.set.width("240px")`.
- * - Index signature:
- *   - `[custom: string]: (value: string) => LiveTree` allows bracket
- *     access for kebab/custom names:
- *     - `tree.style.set["--brand-color"]("#f0f")`
- *     - `tree.style.set["background-color"]("red")`
- *
- * Implementations returned by `buildSetFacade`:
- * - Normalize property names (camelCase vs kebab/custom).
- * - Delegate to `applyStyleToNode` and return the underlying `LiveTree`
- *   for chaining.
- */
-type StyleSetterFacade = {
-    // typed camelCase keys → setter(value: string)
-    [K in AllowedStyleKey]: (value: string) => LiveTree;
-} & {
-    // bracket access allows kebab/custom ('--brand', 'background-color')
-    [custom: string]: (value: string) => LiveTree;
-};
+// /* --------------------------- FACADE (Proxy-based) --------------------------- */
+// /**
+//  * Proxy-backed facade for strongly-typed style setters.
+//  *
+//  * Structure:
+//  * - For each `AllowedStyleKey`:
+//  *   - Exposes a method `(value: string) => LiveTree`, enabling calls
+//  *     such as `tree.style.set.width("240px")`.
+//  * - Index signature:
+//  *   - `[custom: string]: (value: string) => LiveTree` allows bracket
+//  *     access for kebab/custom names:
+//  *     - `tree.style.set["--brand-color"]("#f0f")`
+//  *     - `tree.style.set["background-color"]("red")`
+//  *
+//  * Implementations returned by `buildSetFacade`:
+//  * - Normalize property names (camelCase vs kebab/custom).
+//  * - Delegate to `applyStyleToNode` and return the underlying `LiveTree`
+//  *   for chaining.
+//  */
+// type StyleSetterFacade = {
+//     // typed camelCase keys → setter(value: string)
+//     [K in AllowedStyleKey]: (value: string) => LiveTree;
+// } & {
+//     // bracket access allows kebab/custom ('--brand', 'background-color')
+//     [custom: string]: (value: string) => LiveTree;
+// };
 
-/**
- * Build a `StyleSetterFacade` for a given `LiveTree` and key set.
- *
- * Behavior:
- * - Creates a Proxy whose:
- *   - `get` trap:
- *     - For a known key:
- *       - Returns a cached setter function `(value: string) => LiveTree`
- *         that:
- *           - Normalizes the property name (camelCase → kebab unless
- *             already `--` or containing `"-"`).
- *           - Writes to the node via `applyStyleToNode`.
- *           - Returns the same `LiveTree` for chaining.
- *     - For unknown keys:
- *       - Attempts a camelCase lookup via `kebab_to_camel`.
- *       - Falls back to treating the key as-is (custom/kebab path).
- *   - `ownKeys` / `getOwnPropertyDescriptor` / `has` traps:
- *       - Expose the runtime `keys` set for reflection and tooling.
- *   - `set` trap:
- *       - Disallows assigning new properties directly to the facade.
- *
- * The facade is built once per `StyleManager2` instance and reused for
- * all `style.set.*` calls on that tree.
- *
- * @param tree - The `LiveTree` whose node styles the facade will mutate.
- * @param keys - The runtime-derived style keys (`AllowedStyleKey[]`) to
- *               expose as strongly-typed properties.
- * @returns A `StyleSetterFacade` proxy bound to the given tree.
- * @see applyStyleToNode
- * @see kebab_to_camel
- * @see camel_to_kebab
- */
-function buildSetFacade(tree: LiveTree, keys: ReadonlyArray<AllowedStyleKey>): StyleSetterFacade {
-    const target: Record<string | symbol, unknown> = Object.create(null);
-    const cache = new Map<string, (value: string) => LiveTree>();
+// /**
+//  * Build a `StyleSetterFacade` for a given `LiveTree` and key set.
+//  *
+//  * Behavior:
+//  * - Creates a Proxy whose:
+//  *   - `get` trap:
+//  *     - For a known key:
+//  *       - Returns a cached setter function `(value: string) => LiveTree`
+//  *         that:
+//  *           - Normalizes the property name (camelCase → kebab unless
+//  *             already `--` or containing `"-"`).
+//  *           - Writes to the node via `applyStyleToNode`.
+//  *           - Returns the same `LiveTree` for chaining.
+//  *     - For unknown keys:
+//  *       - Attempts a camelCase lookup via `kebab_to_camel`.
+//  *       - Falls back to treating the key as-is (custom/kebab path).
+//  *   - `ownKeys` / `getOwnPropertyDescriptor` / `has` traps:
+//  *       - Expose the runtime `keys` set for reflection and tooling.
+//  *   - `set` trap:
+//  *       - Disallows assigning new properties directly to the facade.
+//  *
+//  * The facade is built once per `StyleManager2` instance and reused for
+//  * all `style.set.*` calls on that tree.
+//  *
+//  * @param tree - The `LiveTree` whose node styles the facade will mutate.
+//  * @param keys - The runtime-derived style keys (`AllowedStyleKey[]`) to
+//  *               expose as strongly-typed properties.
+//  * @returns A `StyleSetterFacade` proxy bound to the given tree.
+//  * @see applyStyleToNode
+//  * @see kebab_to_camel
+//  * @see camel_to_kebab
+//  */
+// function buildSetFacade(tree: LiveTree, keys: ReadonlyArray<AllowedStyleKey>): StyleSetterFacade {
+//     const target: Record<string | symbol, unknown> = Object.create(null);
+//     const cache = new Map<string, (value: string) => LiveTree>();
 
-    const hasKey: Record<string, true> = Object.create(null);
-    for (let i = 0; i < keys.length; i += 1) hasKey[keys[i]] = true;
+//     const hasKey: Record<string, true> = Object.create(null);
+//     for (let i = 0; i < keys.length; i += 1) hasKey[keys[i]] = true;
 
-    const ensureSetter = (name: string): ((value: string) => LiveTree) => {
-        const hit = cache.get(name);
-        if (hit) return hit;
+//     const ensureSetter = (name: string): ((value: string) => LiveTree) => {
+//         const hit = cache.get(name);
+//         if (hit) return hit;
 
-        const setter = (value: string): LiveTree => {
-            // write across all currently selected nodes
-            const kebab = name.startsWith("--") || name.includes("-") ? name : camel_to_kebab(name);
-            const val = value; // keep raw; empty string removes property
-            applyStyleToNode(tree.node, kebab, val);
-            return tree;
-        };
+//         const setter = (value: string): LiveTree => {
+//             // write across all currently selected nodes
+//             const kebab = name.startsWith("--") || name.includes("-") ? name : camel_to_kebab(name);
+//             const val = value; // keep raw; empty string removes property
+//             applyStyleToNode(tree.node, kebab, val);
+//             return tree;
+//         };
 
-        cache.set(name, setter);
-        return setter;
-    };
+//         cache.set(name, setter);
+//         return setter;
+//     };
 
-    const handler: ProxyHandler<typeof target> = {
-        get(_t, prop) {
-            if (typeof prop !== "string") return undefined;
-            if (hasKey[prop] === true) return ensureSetter(prop);
-            const maybeCamel = kebab_to_camel(prop);
-            if (maybeCamel !== prop && hasKey[maybeCamel] === true) {
-                return ensureSetter(maybeCamel);
-            }
-            return ensureSetter(prop); // generic path (kebab/custom)
-        },
-        ownKeys() {
-            return keys.slice(); // mutable copy as required by Proxy contract
-        },
-        getOwnPropertyDescriptor(_t, prop) {
-            if (typeof prop !== "string") return undefined;
-            if (hasKey[prop] !== true) return undefined;
-            return {
-                configurable: true,
-                enumerable: true,
-                writable: false,
-                value: ensureSetter(prop),
-            };
-        },
-        has(_t, prop) {
-            return typeof prop === "string" && hasKey[prop] === true;
-        },
-        set() {
-            return false;
-        },
-    };
+//     const handler: ProxyHandler<typeof target> = {
+//         get(_t, prop) {
+//             if (typeof prop !== "string") return undefined;
+//             if (hasKey[prop] === true) return ensureSetter(prop);
+//             const maybeCamel = kebab_to_camel(prop);
+//             if (maybeCamel !== prop && hasKey[maybeCamel] === true) {
+//                 return ensureSetter(maybeCamel);
+//             }
+//             return ensureSetter(prop); // generic path (kebab/custom)
+//         },
+//         ownKeys() {
+//             return keys.slice(); // mutable copy as required by Proxy contract
+//         },
+//         getOwnPropertyDescriptor(_t, prop) {
+//             if (typeof prop !== "string") return undefined;
+//             if (hasKey[prop] !== true) return undefined;
+//             return {
+//                 configurable: true,
+//                 enumerable: true,
+//                 writable: false,
+//                 value: ensureSetter(prop),
+//             };
+//         },
+//         has(_t, prop) {
+//             return typeof prop === "string" && hasKey[prop] === true;
+//         },
+//         set() {
+//             return false;
+//         },
+//     };
 
-    return new Proxy(target, handler) as unknown as StyleSetterFacade;
-}
+//     return new Proxy(target, handler) as unknown as StyleSetterFacade;
+// }
 
 /* --------------------------------- MANAGER ---------------------------------- */
 /**
@@ -478,7 +478,7 @@ export class StyleManager {
     // accept the real LiveTree2; do not reference private methods.
     private readonly tree: LiveTree;
     private readonly runtimeKeys: ReadonlyArray<AllowedStyleKey>;
-    private readonly _set: StyleSetterFacade;
+    // private readonly _set: StyleSetterFacade;
     public readonly setter: StyleSetter;
 
     /**
@@ -501,14 +501,14 @@ export class StyleManager {
         // compute keys once (DOM probe if available).
         this.runtimeKeys = computeRuntimeKeys();
         // build the proxy using those keys.
-        this._set = buildSetFacade(this.tree, this.runtimeKeys);
+        // this._set = buildSetFacade(this.tree, this.runtimeKeys);
         this.setter = make_style_setter({
             // OPTIONAL: if you have runtimeKeys in camelCase, feed them
             keys: this.runtimeKeys,
 
             apply: (propCanon, value) => {
                 // assumes setProperty accepts canonical camelCase or --var
-                this.setProperty(propCanon, value);
+                this.applu(propCanon, value);
             },
 
             remove: (propCanon) => {
@@ -516,28 +516,28 @@ export class StyleManager {
             },
 
             clear: () => {
-                this.replace({});
+                this.clearAll();
             },
         });
     }
 
-    /**
-     * Typed style setter facade for this node.
-     *
-     * Examples:
-     *   `tree.style.set.width(240);`
-     *   `tree.style.set.transform("translate(10px, 20px)");`
-     *
-     * This is a DX layer over `setProperty`, where:
-     * - Keys are constrained to the runtime-supported style properties
-     *   discovered at initialization (`runtimeKeys`).
-     * - Values are passed through to the underlying single-property logic.
-     *
-     * @returns A `StyleSetterFacade` exposing property-specific setter methods.
-     */
-    get set(): StyleSetterFacade {
-        return this._set;
-    }
+    // /**
+    //  * Typed style setter facade for this node.
+    //  *
+    //  * Examples:
+    //  *   `tree.style.set.width(240);`
+    //  *   `tree.style.set.transform("translate(10px, 20px)");`
+    //  *
+    //  * This is a DX layer over `setProperty`, where:
+    //  * - Keys are constrained to the runtime-supported style properties
+    //  *   discovered at initialization (`runtimeKeys`).
+    //  * - Values are passed through to the underlying single-property logic.
+    //  *
+    //  * @returns A `StyleSetterFacade` exposing property-specific setter methods.
+    //  */
+    // private get set(): StyleSetterFacade {
+    //     return this._set;
+    // }
 
     /**
      * Set a single inline style property on this node.
@@ -559,7 +559,7 @@ export class StyleManager {
      * @returns The underlying `LiveTree` instance, for chaining.
      * @see applyStyleToNode
      */
-    setProperty(propertyName: string, value: string | number | null): LiveTree {
+    private applu(propertyName: string, value: string | number | null): LiveTree {
         const kebab = propertyName.startsWith("--")
             ? propertyName
             : camel_to_kebab(propertyName);
@@ -569,27 +569,27 @@ export class StyleManager {
 
         return this.tree;
     }
-    /**
-     * Read a style property value from this node's inline style.
-     *
-     * Behavior:
-     * - Uses `this.tree.node` as the single source node.
-     * - Normalizes the requested property name before lookup.
-     * - Delegates to `readStyleFromNode`, which inspects the HSON-backed
-     *   style representation (and/or inline style attribute, depending on
-     *   implementation).
-     *
-     * @param propertyName - CSS property name in camelCase or kebab-case.
-     * @returns The property value as a string, or `undefined` if there is no
-     *          inline declaration for that property.
-     * @see readStyleFromNode
-     */
-    get(propertyName: string): string | undefined {
-        const first = this.tree.node;
-        if (!first) return undefined;
-        const kebab = kebab_to_camel(propertyName);
-        return readStyleFromNode(first, kebab);
-    }
+    // /**
+    //  * Read a style property value from this node's inline style.
+    //  *
+    //  * Behavior:
+    //  * - Uses `this.tree.node` as the single source node.
+    //  * - Normalizes the requested property name before lookup.
+    //  * - Delegates to `readStyleFromNode`, which inspects the HSON-backed
+    //  *   style representation (and/or inline style attribute, depending on
+    //  *   implementation).
+    //  *
+    //  * @param propertyName - CSS property name in camelCase or kebab-case.
+    //  * @returns The property value as a string, or `undefined` if there is no
+    //  *          inline declaration for that property.
+    //  * @see readStyleFromNode
+    //  */
+    // private get(propertyName: string): string | undefined {
+    //     const first = this.tree.node;
+    //     if (!first) return undefined;
+    //     const kebab = kebab_to_camel(propertyName);
+    //     return readStyleFromNode(first, kebab);
+    // }
 
     /**
      * Remove a single inline style property from this node.
@@ -607,7 +607,7 @@ export class StyleManager {
      * @returns The underlying `LiveTree` instance, for chaining.
      * @see removeStyleFromNode
      */
-    remove(propertyName: string): LiveTree {
+    private remove(propertyName: string): LiveTree {
         const kebab = camel_to_kebab(propertyName);
         const node = this.tree.node;
         removeStyleFromNode(node, kebab);
@@ -615,138 +615,74 @@ export class StyleManager {
         return this.tree;
     }
 
-    /**
-     * Return the list of allowed style keys for this runtime.
-     *
-     * The returned array is the same `runtimeKeys` computed at construction
-     * time, representing the style properties that `style.set` can expose.
-     *
-     * Useful for:
-     * - Testing and assertions.
-     * - Tooling that wants to inspect what properties are supported.
-     * - Diagnostics and introspection.
-     *
-     * @returns A readonly array of runtime-supported style property keys.
-     */
-    keys(): ReadonlyArray<AllowedStyleKey> {
-        return this.runtimeKeys;
-    }
+    // /**
+    //  * Return the list of allowed style keys for this runtime.
+    //  *
+    //  * The returned array is the same `runtimeKeys` computed at construction
+    //  * time, representing the style properties that `style.set` can expose.
+    //  *
+    //  * Useful for:
+    //  * - Testing and assertions.
+    //  * - Tooling that wants to inspect what properties are supported.
+    //  * - Diagnostics and introspection.
+    //  *
+    //  * @returns A readonly array of runtime-supported style property keys.
+    //  */
+    // private keys(): ReadonlyArray<AllowedStyleKey> {
+    //     return this.runtimeKeys;
+    // }
 
-    /**
-     * Batch inline-style setter with merge semantics.
-     *
-     * Example:
-     *   tree.style.setMulti({
-     *     width: 240,
-     *     transform: "translate(10px, 20px)",
-     *     "--win-bg": "#111",
-     *   });
-     *
-     * Rules:
-     * - Iterates over the own keys of `props`:
-     *   - `undefined` → ignored (no-op for that key).
-     *   - `null` → removes the property via `remove(propertyName)`.
-     *   - string/number → applied via `setProperty(propertyName, value)`.
-     * - Only the properties present in `props` are touched; all other
-     *   existing declarations on the node are left intact (merge, not replace).
-     *
-     * @param props - Map of property names to values to merge into the
-     *                existing inline style.
-     * @returns The underlying `LiveTree` instance, for chaining.
-     * @see setProperty
-     * @see remove
-     */
-    setMulti(props: StyleObject): LiveTree {
-        // snapshot keys once; iteration order preserved
-        const keys = Object.keys(props) as Array<keyof StyleObject>;
-        for (let i = 0; i < keys.length; i += 1) {
-            const k = keys[i];
-            const v = props[k];
-            if (v === undefined) continue;        // skip holes
-            if (v === null) {
-                // allow null to mean "remove this declaration"
-                this.remove(String(k));
-            } else {
-                // delegate to existing single-prop pathway
-                this.setProperty(String(k), v);
-            }
-        }
-        return this.tree;
-    }
+    // /**
+    //  * Batch inline-style setter with merge semantics.
+    //  *
+    //  * Example:
+    //  *   tree.style.setMulti({
+    //  *     width: 240,
+    //  *     transform: "translate(10px, 20px)",
+    //  *     "--win-bg": "#111",
+    //  *   });
+    //  *
+    //  * Rules:
+    //  * - Iterates over the own keys of `props`:
+    //  *   - `undefined` → ignored (no-op for that key).
+    //  *   - `null` → removes the property via `remove(propertyName)`.
+    //  *   - string/number → applied via `setProperty(propertyName, value)`.
+    //  * - Only the properties present in `props` are touched; all other
+    //  *   existing declarations on the node are left intact (merge, not replace).
+    //  *
+    //  * @param props - Map of property names to values to merge into the
+    //  *                existing inline style.
+    //  * @returns The underlying `LiveTree` instance, for chaining.
+    //  * @see setProperty
+    //  * @see remove
+    //  */
+    // private setMulti(props: StyleObject): LiveTree {
+    //     // snapshot keys once; iteration order preserved
+    //     const keys = Object.keys(props) as Array<keyof StyleObject>;
+    //     for (let i = 0; i < keys.length; i += 1) {
+    //         const k = keys[i];
+    //         const v = props[k];
+    //         if (v === undefined) continue;        // skip holes
+    //         if (v === null) {
+    //             // allow null to mean "remove this declaration"
+    //             this.remove(String(k));
+    //         } else {
+    //             // delegate to existing single-prop pathway
+    //             this.setProperty(String(k), v);
+    //         }
+    //     }
+    //     return this.tree;
+    // }
 
-    /**
-     * Batch inline-style setter with *replace* semantics.
-     *
-     * Example:
-     *   tree.style.replace({
-     *     width: "240px",
-     *     transform: "translate(10px,20px)",
-     *     "--win-bg": "#111",
-     *   });
-     *
-     * Behavior:
-     * - Builds a normalized style map:
-     *   - Trims each value; skips entries where the normalized value is
-     *     empty or `null`/`undefined`.
-     * - For this node:
-     *   - Ensures `_attrs` exists, then sets `_attrs.style` to the new
-     *     normalized map.
-     *   - If the normalized map is empty:
-     *     - Deletes the `style` attribute from `_attrs`.
-     *     - Removes the DOM `style` attribute, if an element is present.
-     * - If there are normalized entries:
-     *   - Serializes the map via `serialize_style` and applies it as the
-     *     `style` attribute on the DOM element (if present).
-     *
-     * The end result is that this node's inline style is entirely replaced
-     * by the contents of `map` (modulo skipped/empty values), rather than
-     * merged into the existing declarations.
-     *
-     * @param map - Map of property names to values that should form the
-     *              entire new inline style for this node.
-     * @returns The underlying `LiveTree` instance, for chaining.
-     * @see serialize_style
-     */
+    private clearAll(): void {
+        const node = this.tree.node;
+        if (!node._attrs) return;
 
-    replace(map: StyleObject): LiveTree {
-        const normalized: StyleObject = {};
-
-        for (const key of Object.keys(map) as StyleKey[]) {
-            const raw = map[key];
-            if (raw == null) continue;
-
-            const v = String(raw).trim();
-            if (!v) continue;
-
-            normalized[key] = v;
-        }
-
-        const normKeys = Object.keys(normalized) as StyleKey[];
-
-        const node = this.tree.node; // HsonNode
-        if (!node._attrs) node._attrs = {};
         const attrs = node._attrs as HsonAttrs;
+        delete (attrs as any).style;
+
         const el = element_for_node(node) as HTMLElement | undefined;
-
-        if (!normKeys.length) {
-            delete (attrs as any).style;
-            if (el) el.removeAttribute("style");
-            return this.tree;           // 👈 was `continue`
-        }
-
-        const next: StyleObject = {};
-        for (const key of normKeys) {
-            const v = normalized[key];
-            if (v == null) continue;
-            next[key] = v;
-        }
-
-        (attrs as any).style = next;
-
-        if (el) {
-            const cssText = serialize_style(next as Record<string, string>);
-            el.setAttribute("style", cssText);
-        }
-        return this.tree;
+        if (el) el.removeAttribute("style");
     }
+
 }

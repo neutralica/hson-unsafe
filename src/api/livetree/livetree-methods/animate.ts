@@ -1,5 +1,8 @@
 import { AnimAdapters, AnimApi, AnimationSpec, AnimationName } from "./animate.types";
 
+// move to css.types.ts when verified used
+export type CssScope = Readonly<{ quids: readonly string[] }>;
+
 export function normalizeName(name: string): string {
   const n = name.trim();
   if (n === "") throw new Error(`animation name cannot be empty.`);
