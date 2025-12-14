@@ -20,6 +20,7 @@ import { append_branch } from "./livetree-methods/append-other";
 import { make_tree_create } from "./livetree-methods/create-typed";
 import { FindWithById, NodeRef } from "../../types-consts/livetree.types";
 import { Primitive } from "../../types-consts/core.types";
+import { StyleSetter } from "./livetree-methods/style-setter";
 
 /**
  * Create a stable `NodeRef` for a given `HsonNode`.
@@ -324,11 +325,12 @@ export class LiveTree {
    * @returns A `StyleManager2` instance bound to this tree.
    * @see StyleManager
    */
-  public get style(): StyleManager {
+  public get style(): StyleSetter {
     if (!this.styleManagerInternal) {
       this.styleManagerInternal = new StyleManager(this);
     }
-    return this.styleManagerInternal;
+    // StyleManager must expose its StyleSetter (suggested name: `setter`)
+    return this.styleManagerInternal.setter;
   }
 
   /**

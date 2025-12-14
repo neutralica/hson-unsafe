@@ -8,6 +8,7 @@ import { ListenerBuilder } from "./listen.types";
 import { HsonAttrs, HsonMeta, HsonNode } from "./node.types";
 import { HtmlTag } from "../api/livetree/livetree-methods/create-typed";
 import { Primitive } from "./core.types";
+import { StyleSetter } from "../api/livetree/livetree-methods/style-setter";
 
 /**************************************************************
  * Structural query for selecting `HsonNode` instances.
@@ -244,7 +245,7 @@ export interface TreeSelector {
      * @returns A `StyleManager2`-compatible proxy for the selection.
      * @see StyleManager
      */
-  readonly style: StyleManager;
+  readonly style: StyleSetter;
 
   /**
    * QUID-scoped stylesheet handle for the current selection.

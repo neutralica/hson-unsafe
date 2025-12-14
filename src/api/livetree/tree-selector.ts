@@ -12,6 +12,7 @@ import { LiveTree } from "./livetree";
 import { TreeSelector } from "../../types-consts/livetree.types";
 import { Primitive } from "../../types-consts/core.types";
 import { make_selector_create, make_tree_create } from "./livetree-methods/create-typed";
+import { make_style_setter, StyleSetter } from "./livetree-methods/style-setter";
 
 
 function combineSubs(subs: readonly ListenerSub[]): ListenerSub {
@@ -248,30 +249,36 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
      * @returns A `StyleManager2`-compatible proxy for the selection.
      * @see StyleManager
      */
-    get style(): StyleManager {
-      // CHANGED: inline "first tree" lookup instead of calling firstTree()
+
+    get style(): StyleSetter {
       const first = items[0];
       if (!first) {
         throw new Error("[TreeSelector.style] no items in selector");
       }
 
-      const base = first.style;
+      // broadcast adapter — apply/remove/clear fan out to all items
+      const adapters = {
+        apply: (propCanon: string, value: string) => {
+          for (const t of items) {
+            t.style.setProp(propCanon, value);
+          }
+        },
 
-      // Clone the StyleManager surface
-      const proxy = Object.create(base) as StyleManager;
+        remove: (propCanon: string) => {
+          for (const t of items) {
+            t.style.remove(propCanon);
+          }
+        },
 
-      // Override ONLY setMulti to broadcast
-      (proxy as any).setMulti = (block: StyleObject): LiveTree => {
-        for (const t of items) {
-          t.style.setMulti(block);
-        }
-        // maintain the existing return contract (LiveTree)
-        return first.style.setMulti(block);
-      };
+        clear: () => {
+          for (const t of items) {
+            t.style.clear();
+          }
+        },
+      } satisfies Parameters<typeof make_style_setter>[0]; // optional if you have that type accessible
 
-      return proxy;
+      return make_style_setter(adapters);
     },
-
     /**
      * QUID-scoped stylesheet handle for the current selection.
      *

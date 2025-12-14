@@ -14,7 +14,7 @@ export type StyleValue =
   | Readonly<{ value: string | number; unit?: string }>;
 
 // canonical “many” map: camelCase keys at rest
-export type StyleMap = Readonly<Record<string, StyleValue>>;
+export type StyleMap = Readonly<Partial<Record<StyleKey, StyleValue>>>;
 
 export type StyleSetter = Readonly<{
   /** Proxy builder: setter.set.backgroundColor("aquamarine") */
@@ -84,7 +84,7 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
 
     setMany(map: StyleMap): StyleSetter {
       for (const [k, v] of Object.entries(map)) {
-        setterApi.setProp(k as StyleKey, v);
+        setterApi.setProp(k, v);
       }
       return api;
     },
@@ -123,11 +123,11 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
           if (!keySet.has(canon)) {
             // return a function anyway so it fails “softly” at runtime (no throw)
             // but TS autocomplete is where most constraint lives.
-            return (v: StyleValue) => setterApi.setProp(canon as StyleKey, v);
+            return (v: StyleValue) => setterApi.setProp(canon, v);
           }
         }
 
-        return (v: StyleValue) => setterApi.setProp(rawKey as StyleKey, v);
+        return (v: StyleValue) => setterApi.setProp(rawKey, v);
       },
     }
   );
