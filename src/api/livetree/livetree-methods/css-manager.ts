@@ -290,21 +290,34 @@ export class CssManager {
 
   // --- WRITE API (QUID-based) -------------------------------------------
 
-  public setForQuid(quid: string, propCanon: string, value: CssValue | string | number | boolean): void {
+  public setForQuid(
+    quid: string,
+    propCanon: string,
+    value: CssValue | string | number | boolean
+  ): void {
     this.ensureStyleElement();
+
     const q = quid.trim();
     if (!q) return;
 
     const p = propCanon.trim();
     if (!p) return;
 
+    // CHANGED: treat null-delete semantics only if renderCssValue returns null
     const rendered =
       typeof value === "string" || typeof value === "number" || typeof value === "boolean"
         ? String(value)
-        : renderCssValue(value);
+        : renderCssValue(value); // <-- must return string or null
 
+    // CHANGED: explicit delete if null
+    if (rendered === null) {
+      this.unsetForQuid(q, p);
+      return;
+    }
+
+    // CHANGED: don't treat "0" as delete; only empty string deletes
     const v = rendered.trim();
-    if (!v) {
+    if (v.length === 0) {
       this.unsetForQuid(q, p);
       return;
     }
@@ -467,6 +480,24 @@ export class CssManager {
      * Each QUID becomes a separate rule block, separated by blank lines.
      */
   private buildCombinedCss(): string {
+    // INVARIANT:
+    // Each QUID MUST emit exactly one selector block.
+    // rulesByQuid is Map<quid, Map<prop, string>> and MUST be folded
+    // into a single `[data-_quid="..."] { ... }` block.
+    // Do NOT emit per-property selector blocks.
+    //
+    // Boundary: rulesByQuid stores final rendered strings only (no objects).
+
+    // Optional guard (no process.env):
+    for (const [quid, rules] of this.rulesByQuid) {
+      for (const [prop, val] of rules) {
+        if (typeof val !== "string") {
+          throw new Error(
+            `CssManager invariant violated: non-string value at ${quid}.${prop}`
+          );
+        }
+      }
+    }
     const atPropCss = this.atPropManager.renderAll().trim();
     const keyframesCss = this.keyframeManager.renderAll().trim();
 
@@ -498,5 +529,6 @@ export class CssManager {
     const styleEl = this.ensureStyleElement();
     styleEl.textContent = this.buildCombinedCss();
     this.changed = false;
+
   }
 }

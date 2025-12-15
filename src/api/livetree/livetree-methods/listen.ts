@@ -190,7 +190,20 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     return sub;
   };
   const attach = (): ListenerSub => {
+    // INVARIANT (ListenerBuilder.attach):
+    // attach() must be an edge-trigger: it attaches ONLY the jobs currently queued.
+    // Jobs are snapshotted and the queue cleared so schedule() / subsequent ticks
+    // cannot reattach old jobs, which causes duplicate listeners and “haunting” behavior.
+    // If attach() is called with an empty selection, jobs are finalized as unattached.
+
     const targets = collectTargets();
+
+    // Optional sanity check (no process.env, and doesn't assume QUID exists):
+    for (const el of targets) {
+      if (!(el instanceof Element)) {
+        throw new Error("listen.attach(): non-Element target in selection");
+      }
+    }
 
     if (targets.length === 0) {
       const msg = `listen.attach(): no targets in selection`;
