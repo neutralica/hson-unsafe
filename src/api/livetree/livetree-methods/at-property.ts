@@ -6,7 +6,7 @@ function isPropTuple(x: PropertyInput): x is PropertyInputTuple {
     // tuples are arrays at runtime; objects are not.
     return Array.isArray(x);
 }
-function normalizePropInput(input: PropertyInput): PropertyRegistration {
+function coerce_atprop_input(input: PropertyInput): PropertyRegistration {
     // tuple:
     if (isPropTuple(input)) {
         const [name, syn, initOrUndefined, inhOrUndefined] = input;
@@ -107,7 +107,7 @@ export function manage_property(args: {
     // CHANGED: public API implementation.
     return {
         register(input: PropertyInput): void {
-            const next = normalizePropInput(input);
+            const next = coerce_atprop_input(input);
             const prev = regByName.get(next.name);
 
             // CHANGED: cheap equality check; normalize ensures stable strings.
@@ -126,7 +126,7 @@ export function manage_property(args: {
         registerMany(inputs: readonly PropertyInput[]): void {
             // CHANGED: batch normalize + set.
             for (const input of inputs) {
-                const reg: PropertyRegistration = normalizePropInput(input);
+                const reg: PropertyRegistration = coerce_atprop_input(input);
                 regByName.set(reg.name, reg);
             }
             args.onChange();

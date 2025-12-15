@@ -1,10 +1,10 @@
 // css-manager.ts
 
 import { PropertyManager } from "../../../types-consts/at-property.types";
-import { $HSON_FRAME, _DATA_QUID, $_FALSE, _TRANSIT_ATTRS, _TRANSIT_PREFIX } from "../../../types-consts/constants";
+import { _DATA_QUID } from "../../../types-consts/constants";
 import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
-import { apply_animation, CssScope, normalizeName } from "./animate";
-import { AnimAdapters, AnimApi, AnimationEndMode, AnimationName, AnimationSpec, CssAnimHandle } from "./animate.types";
+import { apply_animation } from "./animate";
+import { AnimAdapters, CssAnimHandle } from "./animate.types";
 import { manage_property } from "./at-property";
 import { KeyframesManager, manage_keyframes } from "./keyframes";
 import { AllowedStyleKey } from "./style-manager";
@@ -31,7 +31,7 @@ export function css_for_quids(quids: readonly string[]): CssHandle {
 
   const setter = make_style_setter({
     apply: (propCanon, value) => {
-      for (const quid of ids) mgr.setForQuid(quid, propCanon, String(value));
+      for (const quid of ids) mgr.setForQuid(quid, propCanon, value);
     },
     remove: (propCanon) => {
       for (const quid of ids) mgr.unsetForQuid(quid, propCanon);
@@ -65,11 +65,12 @@ export function css_for_quid(quid: string): CssHandle {   // NEW
 function renderCssValue(v: CssValue): string {
   // string → already a valid CSS literal
   if (typeof v === "string") {
-    return v;
+    return v.trim();
   }
 
   // object → { value, unit } → e.g. "12px", "1.5rem"
-  return `${v.value}${v.unit}`;
+  const unit = v.unit === "_" ? "" : v.unit;
+  return `${v.value}${unit}`;
 }
 
 function selectorForQuid(quid: string): string {
@@ -113,8 +114,8 @@ export class CssManager {
   // QUID → (property → rendered value)
   private readonly rulesByQuid: Map<string, Map<string, string>> = new Map();
   private styleEl: HTMLStyleElement | null = null;
-  private readonly atPropManager: PropertyManager;
-  private readonly keyframeManager: KeyframesManager;
+  private atPropManager: PropertyManager;
+  private keyframeManager: KeyframesManager;
   private changed = false;
   private scheduled = false;
   private boundDoc: Document | null = null;
@@ -127,21 +128,25 @@ export class CssManager {
 
   private mark_changed(): void {
     this.changed = true;
-    if (this.scheduled) return;
-
-    this.scheduled = true;
-    queueMicrotask(() => {
-      this.scheduled = false;
-      if (!this.changed) return;
-      this.changed = false;
-      this.syncToDom();
-    });
+    this.syncToDom();
   }
   public static invoke(): CssManager {
     if (!CssManager.instance) CssManager.instance = new CssManager();
     // ensure host <style> exists immediately 
     CssManager.instance.ensureStyleElement();
     return CssManager.instance;
+  }
+
+  private resetManagersAndRules(): void {
+    this.rulesByQuid.clear();
+    this.changed = false;
+    this.scheduled = false;
+    this.atPropManager = manage_property({ onChange: () => this.mark_changed() });
+    this.keyframeManager = manage_keyframes({ onChange: () => this.mark_changed() });
+
+    if (this.styleEl && this.styleEl.isConnected) {
+      this.styleEl.textContent = "";
+    }
   }
 
 
@@ -153,15 +158,8 @@ export class CssManager {
       this.boundDoc = doc;
       this.styleEl = null;
 
-      // CHANGED: prevent stale rules replaying into the new document
-      this.rulesByQuid.clear();
-
-      // CHANGED: reset the manager state too (whatever the managers expose)
-      this.atPropManager?.clear?.();
-      this.keyframeManager?.clear?.();
-
-      this.changed = true;
-      this.scheduled = false;
+      // reset rules and managers for the new document
+      this.resetManagersAndRules();
     }
 
 
@@ -170,6 +168,9 @@ export class CssManager {
       if (!this.styleEl.isConnected || this.styleEl.ownerDocument !== doc) {
         this.styleEl = null;
       } else {
+        if (!this.changed && this.styleEl.textContent === "" && this.rulesByQuid.size > 0) {
+          this.rulesByQuid.clear();
+        }
         return this.styleEl;
       }
     }
@@ -200,6 +201,11 @@ export class CssManager {
       host.appendChild(styleEl);
     }
 
+    // If a test manually cleared the style tag, mirror that reset into memory.
+    if (!this.changed && styleEl.textContent === "" && this.rulesByQuid.size > 0) {
+      this.rulesByQuid.clear();
+    }
+
     this.styleEl = styleEl;
     return styleEl;
   }
@@ -215,12 +221,8 @@ export class CssManager {
 
   // TODO make private once dev helpers are formalized
   public devReset(): void {
-    this.rulesByQuid.clear();
-    this.changed = false;
-    this.scheduled = false;
-
-    const styleEl = this.ensureStyleElement();
-    styleEl.textContent = "";
+    this.resetManagersAndRules();
+    this.ensureStyleElement();
   }
 
   // TODO make private once dev helpers are formalized
@@ -288,19 +290,33 @@ export class CssManager {
 
   // --- WRITE API (QUID-based) -------------------------------------------
 
-  public setForQuid(quid: string, propCanon: string, value: string): void {
+  public setForQuid(quid: string, propCanon: string, value: CssValue | string | number | boolean): void {
+    this.ensureStyleElement();
     const q = quid.trim();
     if (!q) return;
 
-    const map = this.rulesByQuid.get(q) ?? new Map<string, string>();
-    this.rulesByQuid.set(q, map);
+    const p = propCanon.trim();
+    if (!p) return;
 
-    // CHANGED: ensure value is a string, never "[object Object]"
-    map.set(propCanon, String(value));
+    const rendered =
+      typeof value === "string" || typeof value === "number" || typeof value === "boolean"
+        ? String(value)
+        : renderCssValue(value);
 
-    this.changed = true;
-    this.mark_changed
-    this.scheduled = true;
+    const v = rendered.trim();
+    if (!v) {
+      this.unsetForQuid(q, p);
+      return;
+    }
+
+    let props = this.rulesByQuid.get(q);
+    if (!props) {
+      props = new Map<string, string>();
+      this.rulesByQuid.set(q, props);
+    }
+
+    props.set(p, v);
+    this.mark_changed();
   }
 
 
@@ -329,10 +345,9 @@ export class CssManager {
      * - Iterates `decls` and writes each trimmed property name into the
      *   QUID’s property map, normalizing values via `renderCssValue`.
      * - Skips properties whose names trim to `""`.
-     * - Triggers a full stylesheet rebuild via `syncToDom()`.
+    * - Triggers a full stylesheet rebuild via `syncToDom()`.
      */
   public setManyForQuid(quid: string, decls: CssProp): void {
-    console.log('set many for quid! reached')
     this.ensureStyleElement();
     const trimmedQuid = quid.trim();
     if (!trimmedQuid) {
@@ -479,44 +494,9 @@ export class CssManager {
     return parts.join("\n\n");
   }
 
-  private compileQuidRules(): string {
-    const parts: string[] = [];
-
-    for (const [quid, rules] of this.rulesByQuid.entries()) {
-      if (!rules || rules.size === 0) continue;
-
-      const decls: string[] = [];
-      for (const [prop, value] of rules.entries()) {
-        // CHANGED: skip nullish/empty removals defensively
-        if (value == null) continue;
-        decls.push(`${prop}: ${value};`);
-      }
-
-      if (decls.length === 0) continue;
-
-      parts.push(`${selectorForQuid(quid)} { ${decls.join(" ")} }`);
-    }
-
-    return parts.join("\n");
-  }
-
-
   private syncToDom(): void {
-    if (!this.changed) return;
     const styleEl = this.ensureStyleElement();
-    // one-block-per-quid compilation
-    const quidCss = this.compileQuidRules();
-    const atPropCss = this.atPropManager.renderAll?.() ?? "";
-    const keyframesCss = this.keyframeManager.renderAll?.() ?? "";
-    const cssText = [atPropCss, keyframesCss, quidCss].filter(Boolean).join("\n");
-    styleEl.textContent = cssText;
+    styleEl.textContent = this.buildCombinedCss();
     this.changed = false;
-    console.log("[CssManager.syncToDom]", {
-      quids: this.rulesByQuid.size,
-      rulesTotal: Array.from(this.rulesByQuid.values()).reduce((n, m) => n + m.size, 0),
-      changed: this.changed,
-      scheduled: this.scheduled,
-      cssLen: this.styleEl?.textContent?.length ?? 0,
-    });
   }
 }

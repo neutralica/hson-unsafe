@@ -4,9 +4,9 @@ import { ensure_quid, get_node_by_quid } from "../../quid/data-quid.quid";
 import { HsonNode } from "../../types-consts/node.types";
 import { ListenerBuilder } from "../../types-consts/listen.types";
 import { element_for_node } from "../../utils/tree-utils/node-map-helpers";
-import { css_for_quids as manageCss } from "./livetree-methods/css-manager";
+import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
-import { remove_self as remove_self } from "./livetree-methods/remove2";
+import { remove_self } from "./livetree-methods/remove2";
 import { get_node_form_value, get_node_text, set_node_content, set_node_form_value } from "./livetree-methods/content";
 import { DataManager } from "./livetree-methods/data-manager2.tree";
 import { empty_contents } from "./livetree-methods/empty2";
@@ -362,11 +362,11 @@ export class LiveTree {
    * that can be used to manage styles keyed by this node's QUID.
    *
    * @returns A `CssHandle` targeting this tree's node.
-   * @see manageCss
+   * @see css_for_quids
    * @see CssHandle
    */
   public get css(): CssHandle {
-    return manageCss([this.quid]);
+    return css_for_quids([this.quid]);
   }
 
   /**

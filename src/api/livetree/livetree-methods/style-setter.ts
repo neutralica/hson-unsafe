@@ -1,6 +1,8 @@
 // style-setter.ts
 
 
+import { normalize_css_prop_key } from "../../../utils/attrs-utils/normalize-css";
+import { SetSurface } from "./css-manager";
 import { StyleKey } from "./style-manager";
 
 
@@ -18,10 +20,7 @@ export type StyleMap = Readonly<Partial<Record<StyleKey, StyleValue>>>;
 
 export type StyleSetter = Readonly<{
   /** Proxy builder: setter.set.backgroundColor("aquamarine") */
-  set: Record<string, (v: StyleValue) => StyleSetter> & {
-    /** custom property convenience: setter.setVar("--bg", "#123") */
-    var: (name: `--${string}`, v: StyleValue) => StyleSetter;
-  };
+  set: SetSurface<StyleSetter>;
 
   /** stringly escape hatch (accepts camelCase or kebab-case) */
   setProp: (prop: StyleKey, v: StyleValue) => StyleSetter;
@@ -69,7 +68,7 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
     set: any;
   } = {
     setProp(prop: StyleKey, v: StyleValue): StyleSetter {
-      const canon = normalizePropToCamel(prop);
+      const canon = normalize_css_prop_key(prop);
       const rendered = renderStyleValue(v);
 
       // CHANGED: null/undefined => remove (predictable “delete semantics”)
@@ -90,7 +89,7 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
     },
 
     remove(prop: StyleKey): StyleSetter {
-      adapters.remove(normalizePropToCamel(prop));
+      adapters.remove(normalize_css_prop_key(prop));
       return api;
     },
 
@@ -106,31 +105,17 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
   //   setter.set.backgroundColor("x")
   //   setter.set["background-color"]("x")  (allowed)
   //   setter.set.var("--bg", "#123")
-  const setProxy = new Proxy(
-    {},
-    {
-      get(_t, rawKey: string | symbol) {
-        if (rawKey === "var") {
-          return (name: `--${string}`, v: StyleValue) =>
-            setterApi.setProp(name, v);
-        }
+  const setProxy = new Proxy({} as StyleSetter["set"], {
+    get(_t, rawKey: string | symbol) {
+      if (rawKey === "var") {
+        return (name: `--${string}`, v: StyleValue) => setterApi.setProp(name, v);
+      }
+      if (typeof rawKey !== "string") return undefined;
 
-        if (typeof rawKey !== "string") return undefined;
-
-        // Optional allowlist: if present, only allow known keys (plus custom props).
-        if (keySet && !rawKey.startsWith("--")) {
-          const canon = normalizePropToCamel(rawKey);
-          if (!keySet.has(canon)) {
-            // return a function anyway so it fails “softly” at runtime (no throw)
-            // but TS autocomplete is where most constraint lives.
-            return (v: StyleValue) => setterApi.setProp(canon, v);
-          }
-        }
-
-        return (v: StyleValue) => setterApi.setProp(rawKey, v);
-      },
-    }
-  );
+      // runtime normalization still happens inside setProp()
+      return (v: StyleValue) => setterApi.setProp(rawKey, v);
+    },
+  });
 
   setterApi.set = setProxy;
 
@@ -147,20 +132,6 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
 
 /* ----------------------------- normalization ----------------------------- */
 
-/** Accept camelCase, kebab-case, vendor-ish forms, and custom props. Return canonical camelCase. */
-function normalizePropToCamel(prop: string): string {
-  const p = prop.trim();
-  if (p === "") return p;
-  if (p.startsWith("--")) return p; // custom properties stay as-is
-
-  // If it already looks camelCase (no dashes), keep it.
-  if (!p.includes("-")) return p;
-
-    // BUG/TODO: this sould use our existing kebab_to_camel
-  // kebab-case → camelCase (background-color → backgroundColor)
-  return p.replace(/-([a-z])/g, (_, ch: string) => ch.toUpperCase());
-}
-
 /** Render/coerce values to strings. Return null for “remove” semantics. */
 function renderStyleValue(v: StyleValue): string | null {
   if (v == null) return null;
@@ -172,10 +143,31 @@ function renderStyleValue(v: StyleValue): string | null {
 
   if (typeof v === "number") return String(v);
   if (typeof v === "boolean") return v ? "true" : "false";
+  if (typeof v === "object") {
+    const obj = v as { value?: unknown; unit?: unknown };
 
-  // {value, unit} helper
-  const raw = v.value;
-  const unit = v.unit ?? "";
-  const val = typeof raw === "string" ? raw.trim() : String(raw);
-  return `${val}${unit}`.trim();
+    if ("value" in obj) {
+      const raw = obj.value;
+      const unit = typeof obj.unit === "string" ? obj.unit : "";
+      const val =
+        typeof raw === "string" ? raw.trim() :
+          typeof raw === "number" ? String(raw) :
+            raw == null ? "" :
+              String(raw);
+
+      return `${val}${unit}`.trim();
+    }
+
+    // CHANGED: fallback so weird objects don't stringify to "[object Object]"
+    return String(v);
+  }
+    return String(v);
 }
+  
+// old ending
+//   // {value, unit} helper
+//   const raw = v.value;
+//   const unit = v.unit ?? "";
+//   const val = typeof raw === "string" ? raw.trim() : String(raw);
+//   return `${val}${unit}`.trim();
+// }

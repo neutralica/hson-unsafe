@@ -61,7 +61,7 @@ type KeysWithStringValues<T> = {
  * the current browser and form the base of `StyleKey` and the
  * `StyleSetterFacade` surface.
  */
-type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>, "cssText">;
+export type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>, "cssText">;
 
 /**
  * Union of all style keys supported by the style system:
@@ -237,14 +237,28 @@ function ensureStyleObject(a: Record<string, unknown>): Record<string, string> {
                 if (idx <= 0) continue;
                 const k = s.slice(0, idx).trim();
                 const v = s.slice(idx + 1).trim();
-                if (k) out[k] = v;
+                if (k) {
+                    const storeKey = k.startsWith("--") ? k : kebab_to_camel(k);
+                    out[storeKey] = v;
+                }
             }
         }
         a.style = out;
         return out;
     }
     if (prev && typeof prev === "object") {
-        return prev as Record<string, string>;
+        const obj = prev as Record<string, string>;
+        // normalize any kebab keys to camelCase once on read
+        const needsNormalize = Object.keys(obj).some(k => k.includes("-"));
+        if (!needsNormalize) return obj;
+
+        const normalized: Record<string, string> = Object.create(null);
+        for (const [k, v] of Object.entries(obj)) {
+            const storeKey = k.startsWith("--") ? k : kebab_to_camel(k);
+            normalized[storeKey] = v;
+        }
+        a.style = normalized;
+        return normalized;
     }
     const fresh: Record<string, string> = Object.create(null);
     a.style = fresh;
@@ -289,12 +303,13 @@ function applyStyleToNode(node: HsonNode, kebabName: string, value: string): voi
     // 2) mirror into node._attrs.style (object form)
     const attrs = (node._attrs ??= {}) as Record<string, unknown>;
     const styleObj = ensureStyleObject(attrs);
+    const internalKey = kebabName.startsWith("--") ? kebabName : kebab_to_camel(kebabName);
     if (value === "") {
-        if (Object.prototype.hasOwnProperty.call(styleObj, kebabName)) {
-            delete styleObj[kebabName];
+        if (Object.prototype.hasOwnProperty.call(styleObj, internalKey)) {
+            delete styleObj[internalKey];
         }
     } else {
-        styleObj[kebabName] = value;
+        styleObj[internalKey] = value;
     }
 }
 
@@ -508,7 +523,7 @@ export class StyleManager {
 
             apply: (propCanon, value) => {
                 // assumes setProperty accepts canonical camelCase or --var
-                this.applu(propCanon, value);
+                this.apply(propCanon, value);
             },
 
             remove: (propCanon) => {
@@ -559,7 +574,7 @@ export class StyleManager {
      * @returns The underlying `LiveTree` instance, for chaining.
      * @see applyStyleToNode
      */
-    private applu(propertyName: string, value: string | number | null): LiveTree {
+    private apply(propertyName: string, value: string | number | null): LiveTree {
         const kebab = propertyName.startsWith("--")
             ? propertyName
             : camel_to_kebab(propertyName);

@@ -113,18 +113,12 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
   let _stopImmediate = false;
 
   // auto-attach scheduling
-  let scheduled = false;
   let autoEnabled = true;
   let lastHandle: ListenerSub | null = null;
 
   const schedule = () => {
-    if (!autoEnabled || scheduled) return;
-    scheduled = true;
-    queueMicrotask(() => {
-      scheduled = false;
-      if (!autoEnabled) return;
-      lastHandle = attach(); // performs real attach
-    });
+    if (!autoEnabled) return;
+    lastHandle = attach(); // perform real attach immediately so handlers fire in same tick
   };
 
   const resolveTarget = (el: Element): EventTarget =>
