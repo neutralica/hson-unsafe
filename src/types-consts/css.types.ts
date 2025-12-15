@@ -196,5 +196,9 @@ export type CssHandle = Readonly<
     atProperty: PropertyManager;
     keyframes: KeyframesManager;
     anim: CssAnimHandle;
+    // TODO make private once dev helpers are formalized
+    devSnapshot: () => string;
+    devReset?: () => void;
+    devFlush?: () => void;
   }
 >;

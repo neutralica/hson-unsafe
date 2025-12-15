@@ -4,20 +4,30 @@ import { PropertyManager } from "../../../types-consts/at-property.types";
 import { $HSON_FRAME, _DATA_QUID, $_FALSE, _TRANSIT_ATTRS, _TRANSIT_PREFIX } from "../../../types-consts/constants";
 import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
 import { apply_animation, CssScope, normalizeName } from "./animate";
-import { AnimAdapters, AnimApi, AnimationEndMode, AnimationName, AnimationSpec } from "./animate.types";
+import { AnimAdapters, AnimApi, AnimationEndMode, AnimationName, AnimationSpec, CssAnimHandle } from "./animate.types";
 import { manage_property } from "./at-property";
 import { KeyframesManager, manage_keyframes } from "./keyframes";
-import { make_style_setter, StyleSetter } from "./style-setter";
+import { AllowedStyleKey } from "./style-manager";
+import { make_style_setter, StyleSetter, StyleValue } from "./style-setter";
 
+type CssAnimScope = Readonly<{ quids: readonly string[] }>;
+/* DEBUG - remove */
+const CSS_HOST_TAG = "hson-_style";
+const CSS_HOST_ID = "css-manager";
+const CSS_STYLE_ID = "_hson";
+
+export type SetSurface<Next> =
+  // enumerated known CSSStyleDeclaration keys → rich autocomplete
+  { [K in AllowedStyleKey]: (v: StyleValue) => Next }
+  // allow these via bracket access too
+  & Record<`--${string}`, (v: StyleValue) => Next>
+  & Record<`${string}-${string}`, (v: StyleValue) => Next>
+  // convenience
+  & { var: (name: `--${string}`, v: StyleValue) => Next };
 
 export function css_for_quids(quids: readonly string[]): CssHandle {
   const mgr = CssManager.invoke();
   const ids = quids.map(q => q.trim()).filter(Boolean);
-
-  const atProperty = mgr.atProperty ?? mgr.atPropManager;         // depending on your final naming
-  const keyframes = mgr.keyframes ?? mgr.keyframeManager;
-
-  const anim = mgr.anim_for_quids(ids);
 
   const setter = make_style_setter({
     apply: (propCanon, value) => {
@@ -31,7 +41,16 @@ export function css_for_quids(quids: readonly string[]): CssHandle {
     },
   });
 
-  return { ...setter, atProperty, keyframes, anim };
+  // CHANGED: devSnapshot is a method that computes at call time
+  return {
+    ...setter,
+    atProperty: mgr.atProperty,   // keep whichever names you actually have
+    keyframes: mgr.keyframes,
+    anim: mgr.animForQuids(ids),
+    devSnapshot: () => mgr.devSnapshot(),
+    devReset: () => mgr.devReset(),
+    devFlush: () => mgr.devFlush(),
+  };
 }
 /**
  * Convenience wrapper for the single-QUID case.
@@ -74,7 +93,7 @@ function canon_to_css_prop(propCanon: string): string {
  * - Maintains an in-memory map: `QUID → (property → value)`.
  * - Renders that map into a single `<style>` element in the document,
  *   using the QUID→selector mapping from `selectorForQuid`.
- * - Provides both write APIs (`setForQuid`, `setManyForQuid`, `unsetForQuid`,
+ * - Provides both write APIs (`setForQuid`, `setMany`, `unsetForQuid`,
  *   `clearQuid`, `clearAll`) and read/introspection APIs
  *   (`hasQuid`, `hasPropForQuid`, `getPropForQuid`, `getQuidCss`,
  *   `getCombinedCss`).
@@ -94,10 +113,11 @@ export class CssManager {
   // QUID → (property → rendered value)
   private readonly rulesByQuid: Map<string, Map<string, string>> = new Map();
   private styleEl: HTMLStyleElement | null = null;
-  public readonly atPropManager: PropertyManager;
-  public readonly keyframeManager: KeyframesManager;
-  private dirty = false;
+  private readonly atPropManager: PropertyManager;
+  private readonly keyframeManager: KeyframesManager;
+  private changed = false;
   private scheduled = false;
+  private boundDoc: Document | null = null;
 
   private constructor() {
     this.atPropManager = manage_property({ onChange: () => this.mark_changed() });
@@ -106,53 +126,77 @@ export class CssManager {
 
 
   private mark_changed(): void {
-    this.dirty = true;
+    this.changed = true;
     if (this.scheduled) return;
 
     this.scheduled = true;
     queueMicrotask(() => {
       this.scheduled = false;
-      if (!this.dirty) return;
-      this.dirty = false;
+      if (!this.changed) return;
+      this.changed = false;
       this.syncToDom();
     });
   }
-
-  public static invoke(): CssManager { /* (= getInstance) */
-    if (!CssManager.instance) {
-      CssManager.instance = new CssManager();
-    }
+  public static invoke(): CssManager {
+    if (!CssManager.instance) CssManager.instance = new CssManager();
+    // ensure host <style> exists immediately 
+    CssManager.instance.ensureStyleElement();
     return CssManager.instance;
   }
-  /**
-     * Ensure the backing `<style>` element exists in the document and return it.
-     *
-     * Structure:
-     *   <hson-_style id="css-manager">
-     *     <style id="_hson">…compiled QUID rules…</style>
-     *   </hson-_style>
-     *
-     * This is internal to `CssManager`; callers should not mutate the returned
-     * element directly.
-     */
-  private ensureStyleElement(): HTMLStyleElement {
-    if (this.styleEl) {
-      return this.styleEl;
-    }
 
+
+  private ensureStyleElement(): HTMLStyleElement {
     const doc: Document = document;
 
-    let host = doc.querySelector<HTMLElement>("hson-_style#css-manager");
-    if (!host) {
-      host = doc.createElement("hson-_style");
-      host.id = "css-manager";
-      doc.body.appendChild(host);
+    // CHANGED: if happy-dom swapped the global document, drop cached nodes AND clear state
+    if (this.boundDoc !== doc) {
+      this.boundDoc = doc;
+      this.styleEl = null;
+
+      // CHANGED: prevent stale rules replaying into the new document
+      this.rulesByQuid.clear();
+
+      // CHANGED: reset the manager state too (whatever the managers expose)
+      this.atPropManager?.clear?.();
+      this.keyframeManager?.clear?.();
+
+      this.changed = true;
+      this.scheduled = false;
     }
 
-    let styleEl = host.querySelector<HTMLStyleElement>("style#_hson");
+
+    // CHANGED: if cached styleEl exists but is detached or from a different doc, drop it
+    if (this.styleEl) {
+      if (!this.styleEl.isConnected || this.styleEl.ownerDocument !== doc) {
+        this.styleEl = null;
+      } else {
+        return this.styleEl;
+      }
+    }
+
+    // CHANGED: choose a mount point that is actually in the document tree
+    const mount =
+      (doc.head && doc.head.isConnected ? doc.head : null) ??
+      (doc.body && doc.body.isConnected ? doc.body : null) ??
+      doc.documentElement;
+
+    if (!mount) {
+      throw new Error("CssManager.ensureStyleElement: document has no mount point");
+    }
+
+    let host = doc.querySelector<HTMLElement>(`${CSS_HOST_TAG}#${CSS_HOST_ID}`);
+    if (!host) {
+      host = doc.createElement(CSS_HOST_TAG);
+      host.id = CSS_HOST_ID;
+
+      // CHANGED: append to the *connected* mount, not “head exists”
+      mount.appendChild(host);
+    }
+
+    let styleEl = host.querySelector<HTMLStyleElement>(`style#${CSS_STYLE_ID}`);
     if (!styleEl) {
       styleEl = doc.createElement("style");
-      styleEl.id = "_hson";
+      styleEl.id = CSS_STYLE_ID;
       host.appendChild(styleEl);
     }
 
@@ -160,12 +204,68 @@ export class CssManager {
     return styleEl;
   }
 
+  // TODO make private once dev helpers are formalized
+  public devSnapshot(): string {
+    const cssText = this.buildCombinedCss();
+    const styleEl = this.ensureStyleElement();
+    styleEl.textContent = cssText;
+    this.changed = false;
+    return cssText;
+  }
+
+  // TODO make private once dev helpers are formalized
+  public devReset(): void {
+    this.rulesByQuid.clear();
+    this.changed = false;
+    this.scheduled = false;
+
+    const styleEl = this.ensureStyleElement();
+    styleEl.textContent = "";
+  }
+
+  // TODO make private once dev helpers are formalized
+  public devFlush(): void {
+    this.syncToDom();
+  }
+
+  private makeAnimAdapters(): AnimAdapters<CssAnimScope> {
+    return {
+      // 1) set a single CSS property for every QUID in the scope
+      setStyleProp: (scope, prop, value) => {
+        for (const quid of scope.quids) {
+          this.setForQuid(quid, prop, value);
+        }
+        return scope;
+      },
+
+      // 2) iterate DOM elements for the selection
+      forEachDomElement: (scope, fn) => {
+        for (const quid of scope.quids) {
+          const el = document.querySelector(selectorForQuid(quid));
+          if (el) fn(el);
+        }
+      },
+
+      // 3) return one element (first match) for minimal reflow poke
+      getFirstDomElement: (scope) => {
+        for (const quid of scope.quids) {
+          const el = document.querySelector(selectorForQuid(quid));
+          if (el) return el;
+        }
+        return undefined;
+      },
+    };
+  }
+
   public get atProperty(): PropertyManager {
+    this.ensureStyleElement();
     return this.atPropManager;
   }
 
   public get keyframes(): KeyframesManager {
+    this.ensureStyleElement();
     return this.keyframeManager;
+
   }
 
   // private buildQuidCss(): string {
@@ -189,69 +289,34 @@ export class CssManager {
   // --- WRITE API (QUID-based) -------------------------------------------
 
   public setForQuid(quid: string, propCanon: string, value: string): void {
-    const q = quid.trim(); if (!q) return;
-    const p = propCanon.trim(); if (!p) return;
-    const v = String(value).trim();
-    if (!v) {
-      this.unsetForQuid(q, p);
-      return;
-    }
-    let props = this.rulesByQuid.get(q);
-    if (!props) {
-      props = new Map();
-      this.rulesByQuid.set(q, props);
-    }
+    const q = quid.trim();
+    if (!q) return;
 
-    props.set(p, v);
-    this.mark_changed();
+    const map = this.rulesByQuid.get(q) ?? new Map<string, string>();
+    this.rulesByQuid.set(q, map);
+
+    // CHANGED: ensure value is a string, never "[object Object]"
+    map.set(propCanon, String(value));
+
+    this.changed = true;
+    this.mark_changed
+    this.scheduled = true;
   }
 
 
 
-  public anim_for_quids(quids: readonly string[]) {
-    const scope: CssScope = { quids: quids.map(q => q.trim()).filter(Boolean) };
+  public animForQuids(quids: readonly string[]): CssAnimHandle {
+    this.ensureStyleElement();
+    const api = apply_animation(this.makeAnimAdapters());
+    const scope: CssAnimScope = { quids };
 
-    const adapters: AnimAdapters<CssScope> = {
-      setStyleProp: (sc: CssScope, prop: string, value: string): CssScope => {
-        for (const quid of sc.quids) {
-          this.setForQuid(quid, prop, value);
-        }
-        return sc;
-      },
-
-      // stylesheet-scoped: there are no DOM elements to iterate
-      forEachDomElement: (_sc: CssScope, _fn: (el: Element) => void): void => {
-        // no-op
-      },
-
-      getFirstDomElement: (_sc: CssScope): Element | undefined => {
-        return undefined;
-      },
-    };
-
-    const api: AnimApi<CssScope> = apply_animation<CssScope>(adapters);
-
-    // Wrap so the consumer doesn't pass "tree" / scope
     return {
-      begin: (spec: AnimationSpec): void => { api.begin(scope, spec); },
-      beginName: (name: AnimationName): void => { api.beginName(scope, name); },
-      end: (mode?: AnimationEndMode): void => { api.end(scope, mode); },
-
-      restart: (spec: AnimationSpec): void => {
-        // restart via stylesheet flush, not reflow
-        api.end(scope, "name-only");
-        this.syncToDom();
-        api.begin(scope, spec);
-        this.syncToDom();
-      },
-
-      restartName: (name: AnimationName): void => {
-        api.end(scope, "name-only");
-        this.syncToDom();
-        api.beginName(scope, name);
-        this.syncToDom();
-      },
-    } as const;
+      begin: (spec) => { api.begin(scope, spec); },
+      restart: (spec) => { api.restart(scope, spec); },
+      beginName: (name) => { api.beginName(scope, name); },
+      restartName: (name) => { api.restartName(scope, name); },
+      end: (mode) => { api.end(scope, mode); },
+    };
   }
 
   /* ????? do we change the below */
@@ -267,6 +332,8 @@ export class CssManager {
      * - Triggers a full stylesheet rebuild via `syncToDom()`.
      */
   public setManyForQuid(quid: string, decls: CssProp): void {
+    console.log('set many for quid! reached')
+    this.ensureStyleElement();
     const trimmedQuid = quid.trim();
     if (!trimmedQuid) {
       throw new Error("CssManager.setManyForQuid: quid must be non-empty");
@@ -290,6 +357,7 @@ export class CssManager {
   }
 
   public unsetForQuid(quid: string, propCanon: string): void {
+    this.ensureStyleElement();
     const props = this.rulesByQuid.get(quid);
     if (!props) return;
 
@@ -301,76 +369,78 @@ export class CssManager {
 
 
   public clearQuid(quid: string): void {
+    this.ensureStyleElement();
     if (!this.rulesByQuid.delete(quid)) return;
     this.mark_changed();
   }
 
   public clearAll(): void {
+    this.ensureStyleElement();
     if (this.rulesByQuid.size === 0) return;
     this.rulesByQuid.clear();
     this.mark_changed();
   }
-  
-//   // --- READ / INTROSPECTION (QUID-based) --------------------------------
-//   /**
-//      * Check whether any rules exist for a given QUID.
-//      */
-//   public hasQuid(quid: string): boolean {
-//     return this.rulesByQuid.has(quid);
-//   }
 
-//   /**
-//      * Check whether a specific property is defined for a given QUID.
-//      */
-//   public hasPropForQuid(quid: string, property: string): boolean {
-//     const props = this.rulesByQuid.get(quid);
-//     return props ? props.has(property) : false;
-//   }
+  //   // --- READ / INTROSPECTION (QUID-based) --------------------------------
+  //   /**
+  //      * Check whether any rules exist for a given QUID.
+  //      */
+  //   public hasQuid(quid: string): boolean {
+  //     return this.rulesByQuid.has(quid);
+  //   }
 
-//   /**
-//  * Get the rendered value for a property on a given QUID, if present.
-//  *
-//  * @returns The CSS string value, or `undefined` if the QUID or property
-//  *          has no rule.
-//  */
-//   public getPropForQuid(quid: string, property: string): string | undefined {
-//     const props = this.rulesByQuid.get(quid);
-//     return props ? props.get(property) : undefined;
-//   }
+  //   /**
+  //      * Check whether a specific property is defined for a given QUID.
+  //      */
+  //   public hasPropForQuid(quid: string, property: string): boolean {
+  //     const props = this.rulesByQuid.get(quid);
+  //     return props ? props.has(property) : false;
+  //   }
 
-//   /**
-//      * Debug helper: render a single QUID’s CSS block as a string, e.g.:
-//      *
-//      *   `[data-_quid="…"] { width: 240px; transform: …; }`
-//      *
-//      * @returns `undefined` if the QUID has no properties.
-//      */
-//   public getQuidCss(quid: string): string | undefined {
-//     const props = this.rulesByQuid.get(quid);
-//     if (!props || props.size === 0) {
-//       return undefined;
-//     }
+  //   /**
+  //  * Get the rendered value for a property on a given QUID, if present.
+  //  *
+  //  * @returns The CSS string value, or `undefined` if the QUID or property
+  //  *          has no rule.
+  //  */
+  //   public getPropForQuid(quid: string, property: string): string | undefined {
+  //     const props = this.rulesByQuid.get(quid);
+  //     return props ? props.get(property) : undefined;
+  //   }
 
-//     const decls: string[] = [];
-//     for (const [prop, value] of props.entries()) {
-//       decls.push(`${prop}: ${value};`);
-//     }
+  //   /**
+  //      * Debug helper: render a single QUID’s CSS block as a string, e.g.:
+  //      *
+  //      *   `[data-_quid="…"] { width: 240px; transform: …; }`
+  //      *
+  //      * @returns `undefined` if the QUID has no properties.
+  //      */
+  //   public getQuidCss(quid: string): string | undefined {
+  //     const props = this.rulesByQuid.get(quid);
+  //     if (!props || props.size === 0) {
+  //       return undefined;
+  //     }
 
-//     const selector = selectorForQuid(quid);
-//     return `${selector} { ${decls.join(" ")} }`;
-//   }
+  //     const decls: string[] = [];
+  //     for (const [prop, value] of props.entries()) {
+  //       decls.push(`${prop}: ${value};`);
+  //     }
 
-//   /**
-//     * Render the entire QUID rule set into a single CSS string.
-//     *
-//     * This is primarily intended for:
-//     * - tests (snapshotting the stylesheet),
-//     * - debug logging,
-//     * - external tooling that wants to mirror the compiled rules.
-//     */
-//   public getCombinedCss(): string {
-//     return this.buildCombinedCss();
-//   }
+  //     const selector = selectorForQuid(quid);
+  //     return `${selector} { ${decls.join(" ")} }`;
+  //   }
+
+  //   /**
+  //     * Render the entire QUID rule set into a single CSS string.
+  //     *
+  //     * This is primarily intended for:
+  //     * - tests (snapshotting the stylesheet),
+  //     * - debug logging,
+  //     * - external tooling that wants to mirror the compiled rules.
+  //     */
+  //   public getCombinedCss(): string {
+  //     return this.buildCombinedCss();
+  //   }
 
   // --- INTERNAL: BUILD + SYNC -------------------------------------------
   /**
@@ -409,14 +479,44 @@ export class CssManager {
     return parts.join("\n\n");
   }
 
-  /**
-     * Push the current compiled CSS into the backing `<style>` element.
-     *
-     * Called after every write operation so that DOM stays in lockstep with
-     * the in-memory rule map.
-     */
+  private compileQuidRules(): string {
+    const parts: string[] = [];
+
+    for (const [quid, rules] of this.rulesByQuid.entries()) {
+      if (!rules || rules.size === 0) continue;
+
+      const decls: string[] = [];
+      for (const [prop, value] of rules.entries()) {
+        // CHANGED: skip nullish/empty removals defensively
+        if (value == null) continue;
+        decls.push(`${prop}: ${value};`);
+      }
+
+      if (decls.length === 0) continue;
+
+      parts.push(`${selectorForQuid(quid)} { ${decls.join(" ")} }`);
+    }
+
+    return parts.join("\n");
+  }
+
+
   private syncToDom(): void {
+    if (!this.changed) return;
     const styleEl = this.ensureStyleElement();
-    styleEl.textContent = this.buildCombinedCss();
+    // one-block-per-quid compilation
+    const quidCss = this.compileQuidRules();
+    const atPropCss = this.atPropManager.renderAll?.() ?? "";
+    const keyframesCss = this.keyframeManager.renderAll?.() ?? "";
+    const cssText = [atPropCss, keyframesCss, quidCss].filter(Boolean).join("\n");
+    styleEl.textContent = cssText;
+    this.changed = false;
+    console.log("[CssManager.syncToDom]", {
+      quids: this.rulesByQuid.size,
+      rulesTotal: Array.from(this.rulesByQuid.values()).reduce((n, m) => n + m.size, 0),
+      changed: this.changed,
+      scheduled: this.scheduled,
+      cssLen: this.styleEl?.textContent?.length ?? 0,
+    });
   }
 }
