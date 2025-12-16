@@ -37,7 +37,6 @@ export function node_from_svg(el: Element): HsonNode {
   const attrs: Record<string, string> = {};
   for (let i = 0; i < el.attributes.length; i++) {
     const a = el.attributes[i];
-    if (a.name==='viewBox'||a.name==='viewbox')
     attrs[a.name] = a.value;
   }
   const kids: HsonNode[] = [];
