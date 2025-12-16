@@ -6,7 +6,7 @@ import { CREATE_NODE } from "../../types-consts/factories";
 import { _DATA_INDEX, _META_DATA_PREFIX } from "../../types-consts/constants";
 import { HsonMeta,  HsonAttrs, HsonNode } from "../../types-consts/node.types";
 import { JsonObj, JsonValue, Primitive } from "../../types-consts/core.types";
-import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
+import { assert_invariants } from "../../diagnostics/assert-invariants.test";
 import { _snip } from "../../utils/sys-utils/snip.utils";
 import { make_string } from "../../utils/primitive-utils/make-string.nodes.utils";
 import { parse_style_string } from "../../utils/attrs-utils/parse-style";

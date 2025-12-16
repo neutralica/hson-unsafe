@@ -6,7 +6,7 @@ import { escape_html } from '../../utils/html-utils/escape-html.utils';
 import { make_string } from '../../utils/primitive-utils/make-string.nodes.utils';
 import { _snip } from '../../utils/sys-utils/snip.utils';
 import { is_Node } from '../../utils/node-utils/node-guards.new';
-import { assert_invariants } from '../../diagnostics/assert-invariants.utils';
+import { assert_invariants } from '../../diagnostics/assert-invariants.test';
 import { clone_node } from '../../utils/node-utils/clone-node';
 import { HsonNode } from '../../types-consts/node.types';
 import { _throw_transform_err } from '../../utils/sys-utils/throw-transform-err.utils';

@@ -6,7 +6,7 @@ import { _snip } from "../../utils/sys-utils/snip.utils";
 import { serialize_style } from "../../utils/attrs-utils/serialize-style";
 import { serialize_primitive } from "../../utils/primitive-utils/serialize-primitive.utils";
 import { is_Node } from "../../utils/node-utils/node-guards.new";
-import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
+import { assert_invariants } from "../../diagnostics/assert-invariants.test";
 import { _META_DATA_PREFIX } from "../../types-consts/constants";
 import { HsonAttrs, HsonMeta, HsonNode } from "../../types-consts/node.types";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";

@@ -8,7 +8,7 @@ import { _snip } from "../../utils/sys-utils/snip.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
 import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs.utils";
 import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
-import { assert_invariants } from "../../diagnostics/assert-invariants.utils";
+import { assert_invariants } from "../../diagnostics/assert-invariants.test";
 import { expand_entities } from "../../utils/html-preflights/expand-entities";
 import { expand_flags } from "../../utils/html-preflights/expand-flags";
 import { expand_void_tags } from "../../utils/html-preflights/expand-self-closing";
