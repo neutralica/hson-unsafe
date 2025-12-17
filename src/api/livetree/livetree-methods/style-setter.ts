@@ -96,7 +96,7 @@ export type StyleSetterAdapters = Readonly<{
  * ## Adapter contract (important invariants)
  * The adapters are called with:
  * - `propCanon`: a canonical CSS property string (kebab-case or `--custom-prop`).
- * - `value`: a rendered string value (already normalized/coerced by `renderStyleValue()`).
+ * - `value`: a rendered string value (already normalized/coerced by `renderCssValue()`).
  *
  * Adapters should treat these as “ready to apply”:
  * - `apply(propCanon, value)` must perform the write for that backend.
@@ -131,7 +131,7 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
   } = {
     setProp(prop: CssKey, v: CssValue): StyleSetter {
       const canon = nrmlz_cssom_prop_key(prop);
-      const rendered = renderStyleValue(v);
+      const rendered = renderCssValue(v);
 
       //  null/undefined => remove (predictable “delete semantics”)
       if (rendered == null) {
@@ -195,7 +195,7 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
 /* ----------------------------- normalization ----------------------------- */
 
 /**
- * Coerce a `StyleValue` into a CSS-ready string, or return `null` to signal “remove”.
+ * Coerce a `CssValue` into a CSS-ready string, or return `null` to signal “remove”.
  *
  * Semantics:
  * - `null | undefined` → `null` (meaning: remove the property)
@@ -203,11 +203,11 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
  * - `number | boolean` → stringified
  * - `{ value, unit? }` → `${value}${unit ?? ""}` (trimmed)
  *
- * This function is the *only* place where `StyleValue` coercion rules should live, so that:
+ * This function is the *only* place where `CssValue` coercion rules should live, so that:
  * - `StyleManager` and `CssManager` backends behave identically, and
  * - tests can target one normalization surface rather than multiple call-sites.
  */
-function renderStyleValue(v: CssValue): string | null {
+function renderCssValue(v: CssValue): string | null {
   if (v == null) return null;
 
   if (typeof v === "string") {
