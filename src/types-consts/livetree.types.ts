@@ -2,7 +2,7 @@
 
 import { LiveTree } from "../api/livetree/livetree";
 import { CssHandle } from "./css.types";
-import { DataManager } from "../api/livetree/livetree-methods/data-manager2.tree";
+import { DataManager } from "../api/livetree/livetree-methods/data-manager";
 import { StyleManager } from "../api/livetree/livetree-methods/style-manager";
 import { ListenerBuilder } from "./listen.types";
 import { HsonAttrs, HsonMeta, HsonNode } from "./node.types";

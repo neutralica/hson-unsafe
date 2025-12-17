@@ -8,7 +8,7 @@ import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
 import { remove_self } from "./livetree-methods/remove2";
 import { get_node_form_value, get_node_text, set_node_content, set_node_form_value } from "./livetree-methods/content";
-import { DataManager } from "./livetree-methods/data-manager2.tree";
+import { DataManager } from "./livetree-methods/data-manager";
 import { empty_contents } from "./livetree-methods/empty2";
 import { build_listener } from "./livetree-methods/listen";
 import { find_all_in_tree, make_find_for } from "./livetree-methods/find";

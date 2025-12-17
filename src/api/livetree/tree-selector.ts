@@ -4,10 +4,8 @@ import { ListenerBuilder, ListenerSub, MissingPolicy } from "../../types-consts/
 import { LiveTreeCreateHelper, TagName, TreeSelectorCreateHelper } from "../../types-consts/livetree.types";
 import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
-import { DataManager, DatasetObj, DatasetValue } from "./livetree-methods/data-manager2.tree";
+import { DataManager, DatasetObj, DatasetValue } from "./livetree-methods/data-manager";
 import { build_listener } from "./livetree-methods/listen";
-import { StyleManager } from "./livetree-methods/style-manager";
-import { StyleObject } from "../../types-consts/css.types";
 import { LiveTree } from "./livetree";
 import { TreeSelector } from "../../types-consts/livetree.types";
 import { Primitive } from "../../types-consts/core.types";

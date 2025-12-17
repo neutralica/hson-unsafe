@@ -1,6 +1,6 @@
 // serialize-css.ts
 
-import { StyleObject } from "../../types-consts/css.types";
+import { CssMap } from "../../types-consts/css.types";
 
 /*******
  * Convert a camelCase (or mixed) property name into kebab-case.
@@ -64,7 +64,7 @@ export function camel_to_kebab(str: string): string {
  * @param style - Style object mapping property names to values (or undefined).
  * @returns A CSS declaration list string, or `""` when there is nothing to emit.
  *******/
-export function serialize_style(style: StyleObject | undefined): string {
+export function serialize_style(style: CssMap | undefined): string {
   if (!style || !Object.keys(style).length) { return ""; }
 
   // CHANGE: normalize entries BEFORE sorting/serializing

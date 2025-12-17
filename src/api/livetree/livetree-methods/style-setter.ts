@@ -1,21 +1,10 @@
 // style-setter.ts
 
+import { CssMap, CssValue } from "../../../types-consts/css.types";
 import { nrmlz_cssom_prop_key } from "../../../utils/attrs-utils/normalize-css";
 import { SetSurface } from "./css-manager";
-import { StyleKey } from "./style-manager";
+import { CssKey } from "../../../types-consts/css.types";
 
-
-// keep this aligned with your existing CssValue if you already have it
-export type StyleValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | Readonly<{ value: string | number; unit?: string }>;
-
-// canonical “many” map: camelCase keys at rest
-export type StyleMap = Readonly<Partial<Record<StyleKey, StyleValue>>>;
 
 /**
  * Fluent write surface for styles.
@@ -37,13 +26,13 @@ export type StyleSetter = Readonly<{
   set: SetSurface<StyleSetter>;
 
   /** stringly escape hatch (accepts camelCase or kebab-case) */
-  setProp: (prop: StyleKey, v: StyleValue) => StyleSetter;
+  setProp: (prop: CssKey, v: CssValue) => StyleSetter;
 
   /** set many props from an object (keys may be camel or kebab) */
-  setMany: (map: StyleMap) => StyleSetter;
+  setMany: (map: CssMap) => StyleSetter;
 
   /** remove one prop (accepts camelCase or kebab-case) */
-  remove: (prop: StyleKey) => StyleSetter;
+  remove: (prop: CssKey) => StyleSetter;
 
   /** clear all props for this handle */
   clear: () => StyleSetter;
@@ -134,13 +123,13 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
     adapters.keys ? new Set(adapters.keys) : null;
 
   const setterApi: {
-    setProp: (prop: StyleKey, v: StyleValue) => StyleSetter;
-    setMany: (map: StyleMap) => StyleSetter;
-    remove: (prop: StyleKey) => StyleSetter;
+    setProp: (prop: CssKey, v: CssValue) => StyleSetter;
+    setMany: (map: CssMap) => StyleSetter;
+    remove: (prop: CssKey) => StyleSetter;
     clear: () => StyleSetter;
     set: any;
   } = {
-    setProp(prop: StyleKey, v: StyleValue): StyleSetter {
+    setProp(prop: CssKey, v: CssValue): StyleSetter {
       const canon = nrmlz_cssom_prop_key(prop);
       const rendered = renderStyleValue(v);
 
@@ -154,14 +143,14 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
       return api;
     },
 
-    setMany(map: StyleMap): StyleSetter {
+    setMany(map: CssMap): StyleSetter {
       for (const [k, v] of Object.entries(map)) {
-        setterApi.setProp(k, v);
+        if (v) { setterApi.setProp(k, v); }
       }
       return api;
     },
 
-    remove(prop: StyleKey): StyleSetter {
+    remove(prop: CssKey): StyleSetter {
       adapters.remove(nrmlz_cssom_prop_key(prop));
       return api;
     },
@@ -181,12 +170,12 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
   const setProxy = new Proxy({} as StyleSetter["set"], {
     get(_t, rawKey: string | symbol) {
       if (rawKey === "var") {
-        return (name: `--${string}`, v: StyleValue) => setterApi.setProp(name, v);
+        return (name: `--${string}`, v: CssValue) => setterApi.setProp(name, v);
       }
       if (typeof rawKey !== "string") return undefined;
 
       // runtime normalization still happens inside setProp()
-      return (v: StyleValue) => setterApi.setProp(rawKey, v);
+      return (v: CssValue) => setterApi.setProp(rawKey, v);
     },
   });
 
@@ -218,7 +207,7 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
  * - `StyleManager` and `CssManager` backends behave identically, and
  * - tests can target one normalization surface rather than multiple call-sites.
  */
-function renderStyleValue(v: StyleValue): string | null {
+function renderStyleValue(v: CssValue): string | null {
   if (v == null) return null;
 
   if (typeof v === "string") {
@@ -246,6 +235,5 @@ function renderStyleValue(v: StyleValue): string | null {
     //  fallback so weird objects don't stringify to "[object Object]"
     return String(v);
   }
-    return String(v);
+  return String(v);
 }
-  

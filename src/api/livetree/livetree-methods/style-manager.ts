@@ -1,7 +1,7 @@
 // style-manager.ts
 
 import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
-import { StyleObject } from "../../../types-consts/css.types";
+import { CssMap } from "../../../types-consts/css.types";
 import { camel_to_kebab, serialize_style } from "../../../utils/attrs-utils/serialize-style";
 import { kebab_to_camel } from "../../../utils/primitive-utils/kebab-to-camel.util";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
@@ -44,18 +44,6 @@ type KeysWithStringValues<T> = {
  * `StyleSetterFacade` surface.
  */
 export type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>, "cssText">;
-
-/**
- * Union of all style keys supported by the style system:
- * - `AllowedStyleKey` — canonical properties from `CSSStyleDeclaration`.
- * - `--${string}` — arbitrary CSS custom properties (variables).
- * - `${string}-${string}` — kebab-case custom or unknown properties.
- *
- * This allows both strongly-typed known properties and flexible
- * custom/kebab names to be handled by the same infrastructure.
- */
-export type StyleKey =
-    | string
 
 /* ------------------------------ RUNTIME KEYS -------------------------------- */
 
@@ -124,7 +112,7 @@ function removeStyleFromNode(node: HsonNode, kebabName: string): void {
 
     // 2) Update node model (_attrs.style is CssObject now)
     const attrs = (node as any)._attrs as HsonAttrs | undefined;
-    const styleObj = (attrs?.style as StyleObject | undefined) ?? undefined;
+    const styleObj = (attrs?.style as CssMap | undefined) ?? undefined;
 
     if (styleObj) {
         // drop from CssObject

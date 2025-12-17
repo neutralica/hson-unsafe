@@ -1,7 +1,7 @@
 // node.types.ts
 
 
-import { StyleObject } from "./css.types";
+import { CssMap } from "./css.types";
 import {  Primitive } from "./core.types";
 import { _DATA_INDEX, _DATA_QUID } from "./constants";
 
@@ -47,7 +47,7 @@ export type NodeContent = (HsonNode | Primitive)[];
  * The transform pipeline normalizes attributes; LiveTree keeps `_attrs`
  * in lockstep with the DOM.
  *******/
-export type HsonAttrs = {'style'?: StyleObject } & Record<string, Primitive>;
+export type HsonAttrs = {'style'?: CssMap } & Record<string, Primitive>;
 
 
 /*******

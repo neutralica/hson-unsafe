@@ -8,7 +8,7 @@ import { AnimAdapters, CssAnimHandle } from "./animate.types";
 import { manage_property } from "./at-property";
 import { KeyframesManager, manage_keyframes } from "./keyframes";
 import { AllowedStyleKey } from "./style-manager";
-import { make_style_setter, StyleSetter, StyleValue } from "./style-setter";
+import { make_style_setter } from "./style-setter";
 
 type CssAnimScope = Readonly<{ quids: readonly string[] }>;
 
@@ -29,12 +29,12 @@ const CSS_STYLE_ID = "_hson";
  */
 export type SetSurface<Next> =
   // enumerated known CSSStyleDeclaration keys → rich autocomplete
-  { [K in AllowedStyleKey]: (v: StyleValue) => Next }
+  { [K in AllowedStyleKey]: (v: CssValue) => Next }
   // allow these via bracket access too
-  & Record<`--${string}`, (v: StyleValue) => Next>
-  & Record<`${string}-${string}`, (v: StyleValue) => Next>
+  & Record<`--${string}`, (v: CssValue) => Next>
+  & Record<`${string}-${string}`, (v: CssValue) => Next>
   // convenience
-  & { var: (name: `--${string}`, v: StyleValue) => Next };
+  & { var: (name: `--${string}`, v: CssValue) => Next };
 
 
 /**
@@ -112,6 +112,13 @@ function renderCssValue(v: CssValue): string {
   // string → already a valid CSS literal
   if (typeof v === "string") {
     return v.trim();
+  }
+  if (
+    typeof v === 'number' ||
+    typeof v === 'boolean' ||
+    !v
+  ) {
+    return '';
   }
 
   // object → { value, unit } → e.g. "12px", "1.5rem"
@@ -216,33 +223,33 @@ export class CssManager {
     this.atPropManager = manage_property({ onChange: () => this.mark_changed() });
     this.keyframeManager = manage_keyframes({ onChange: () => this.mark_changed() });
   }
-/**
- * Marks the stylesheet state as updated and triggers a DOM sync.
- *
- * This is the single “invalidates + re-render” hook used by sub-managers
- * (`PropertyManager`, `KeyframesManager`) and by any rule write paths that
- * need to refresh the generated `<style>` text.
- *
- * Implementation note:
- * - This currently calls `syncToDom()` immediately. If you later introduce
- *   batching (e.g. microtask/RAF), this is the natural choke point to flip
- *   from “eager” to “scheduled” syncing.
- */
+  /**
+   * Marks the stylesheet state as updated and triggers a DOM sync.
+   *
+   * This is the single “invalidates + re-render” hook used by sub-managers
+   * (`PropertyManager`, `KeyframesManager`) and by any rule write paths that
+   * need to refresh the generated `<style>` text.
+   *
+   * Implementation note:
+   * - This currently calls `syncToDom()` immediately. If you later introduce
+   *   batching (e.g. microtask/RAF), this is the natural choke point to flip
+   *   from “eager” to “scheduled” syncing.
+   */
   private mark_changed(): void {
     this.changed = true;
     this.syncToDom();
   }
 
-/**
- * Returns the singleton `CssManager` instance, creating it on first use.
- *
- * Side effects:
- * - Ensures the manager is bound to a valid `<style>` element in the current
- *   global `document` (via `ensureStyleElement()`), so subsequent writes can
- *   safely render without a “first write creates DOM” race.
- *
- * @returns The process-wide `CssManager` singleton.
- */
+  /**
+   * Returns the singleton `CssManager` instance, creating it on first use.
+   *
+   * Side effects:
+   * - Ensures the manager is bound to a valid `<style>` element in the current
+   *   global `document` (via `ensureStyleElement()`), so subsequent writes can
+   *   safely render without a “first write creates DOM” race.
+   *
+   * @returns The process-wide `CssManager` singleton.
+   */
   public static invoke(): CssManager {
     if (!CssManager.instance) CssManager.instance = new CssManager();
     // ensure host <style> exists immediately 
@@ -250,22 +257,22 @@ export class CssManager {
     return CssManager.instance;
   }
 
-/**
- * Resets all in-memory CSS state and owned sub-managers to a clean baseline.
- *
- * This is primarily a test/host-environment safety valve:
- * - When the global `document` identity changes (e.g. Happy DOM replacing
- *   `globalThis.document`), previously cached DOM references and rule maps
- *   are no longer valid. This method clears rule state and recreates
- *   `@property` / keyframe managers so they are bound to the new document.
- *
- * Side effects:
- * - Clears all QUID-scoped rule maps.
- * - Clears internal scheduling/dirty flags.
- * - Reinitializes `PropertyManager` and `KeyframesManager` with fresh
- *   `onChange` hooks.
- * - If the current `<style>` element is still connected, empties its text.
- */
+  /**
+   * Resets all in-memory CSS state and owned sub-managers to a clean baseline.
+   *
+   * This is primarily a test/host-environment safety valve:
+   * - When the global `document` identity changes (e.g. Happy DOM replacing
+   *   `globalThis.document`), previously cached DOM references and rule maps
+   *   are no longer valid. This method clears rule state and recreates
+   *   `@property` / keyframe managers so they are bound to the new document.
+   *
+   * Side effects:
+   * - Clears all QUID-scoped rule maps.
+   * - Clears internal scheduling/dirty flags.
+   * - Reinitializes `PropertyManager` and `KeyframesManager` with fresh
+   *   `onChange` hooks.
+   * - If the current `<style>` element is still connected, empties its text.
+   */
   private resetManagersAndRules(): void {
     this.rulesByQuid.clear();
     this.changed = false;
@@ -278,36 +285,36 @@ export class CssManager {
     }
   }
 
-/**
- * Ensures the manager has a live `<style>` element in the current `document`
- * and returns it.
- *
- * Responsibilities:
- * 1) Detect host-document swaps:
- *    - If `globalThis.document` is not the same object previously seen,
- *      cached DOM references are discarded and internal rule/manager state is
- *      reset to avoid leaking rules across documents.
- *
- * 2) Validate cached element:
- *    - If `this.styleEl` exists but is detached or belongs to a different
- *      document, it is discarded and recreated.
- *
- * 3) Create / locate the host container and style element:
- *    - Ensures a host element `${CSS_HOST_TAG}#${CSS_HOST_ID}` exists.
- *    - Ensures a child `<style id="${CSS_STYLE_ID}">` exists inside the host.
- *
- * 4) Mirror external resets:
- *    - If a test harness or caller manually clears the `<style>` text while
- *      the manager still has non-empty rule state, this method treats the DOM
- *      as authoritative and clears `rulesByQuid` to match.
- *
- * Mount policy:
- * - Prefers `document.head` when connected, otherwise `document.body`,
- *   otherwise `document.documentElement`. Throws if none are available.
- *
- * @throws Error if no connected mount point exists in the current document.
- * @returns The ensured `<style>` element used for rendered CSS output.
- */
+  /**
+   * Ensures the manager has a live `<style>` element in the current `document`
+   * and returns it.
+   *
+   * Responsibilities:
+   * 1) Detect host-document swaps:
+   *    - If `globalThis.document` is not the same object previously seen,
+   *      cached DOM references are discarded and internal rule/manager state is
+   *      reset to avoid leaking rules across documents.
+   *
+   * 2) Validate cached element:
+   *    - If `this.styleEl` exists but is detached or belongs to a different
+   *      document, it is discarded and recreated.
+   *
+   * 3) Create / locate the host container and style element:
+   *    - Ensures a host element `${CSS_HOST_TAG}#${CSS_HOST_ID}` exists.
+   *    - Ensures a child `<style id="${CSS_STYLE_ID}">` exists inside the host.
+   *
+   * 4) Mirror external resets:
+   *    - If a test harness or caller manually clears the `<style>` text while
+   *      the manager still has non-empty rule state, this method treats the DOM
+   *      as authoritative and clears `rulesByQuid` to match.
+   *
+   * Mount policy:
+   * - Prefers `document.head` when connected, otherwise `document.body`,
+   *   otherwise `document.documentElement`. Throws if none are available.
+   *
+   * @throws Error if no connected mount point exists in the current document.
+   * @returns The ensured `<style>` element used for rendered CSS output.
+   */
   private ensureStyleElement(): HTMLStyleElement {
     const doc: Document = document;
 
@@ -368,20 +375,20 @@ export class CssManager {
     return styleEl;
   }
 
-/**
- * Dev-only helper that forces a full stylesheet render and returns the CSS text.
- *
- * Behavior:
- * - Builds the combined stylesheet text from all current manager state
- *   (QUID rules + `@property` registrations + keyframes/animations).
- * - Writes that text directly into the managed `<style id="${CSS_STYLE_ID}">`.
- * - Clears the internal dirty flag (`changed = false`).
- *
- * This is intentionally side-effecting and should be treated as an
- * introspection/diagnostic escape hatch (useful in tests and debugging).
- *
- * @returns The exact CSS text written into the managed `<style>` element.
- */
+  /**
+   * Dev-only helper that forces a full stylesheet render and returns the CSS text.
+   *
+   * Behavior:
+   * - Builds the combined stylesheet text from all current manager state
+   *   (QUID rules + `@property` registrations + keyframes/animations).
+   * - Writes that text directly into the managed `<style id="${CSS_STYLE_ID}">`.
+   * - Clears the internal dirty flag (`changed = false`).
+   *
+   * This is intentionally side-effecting and should be treated as an
+   * introspection/diagnostic escape hatch (useful in tests and debugging).
+   *
+   * @returns The exact CSS text written into the managed `<style>` element.
+   */
   public devSnapshot(): string {
     const cssText = this.buildCombinedCss();
     const styleEl = this.ensureStyleElement();
@@ -390,48 +397,48 @@ export class CssManager {
     return cssText;
   }
 
-/**
- * Dev-only helper that hard-resets all CSS state and re-ensures the DOM host.
- *
- * Behavior:
- * - Clears all QUID-scoped rules.
- * - Recreates the `@property` and keyframes managers.
- * - Empties the managed `<style>` element (if connected).
- * - Ensures the host + `<style>` element exist for the current `document`.
- *
- * This is primarily intended for tests (e.g. to avoid cross-test leakage)
- * and for manual debugging when the manager state must be rebuilt from zero.
- */
+  /**
+   * Dev-only helper that hard-resets all CSS state and re-ensures the DOM host.
+   *
+   * Behavior:
+   * - Clears all QUID-scoped rules.
+   * - Recreates the `@property` and keyframes managers.
+   * - Empties the managed `<style>` element (if connected).
+   * - Ensures the host + `<style>` element exist for the current `document`.
+   *
+   * This is primarily intended for tests (e.g. to avoid cross-test leakage)
+   * and for manual debugging when the manager state must be rebuilt from zero.
+   */
   public devReset(): void {
     this.resetManagersAndRules();
     this.ensureStyleElement();
   }
 
-/**
- * Dev-only helper that forces a DOM sync of the stylesheet.
- *
- * This bypasses any future batching/scheduling strategy by directly invoking
- * `syncToDom()`. Useful in tests or debugging when you want the `<style>` tag
- * to reflect the latest in-memory rules immediately.
- */
+  /**
+   * Dev-only helper that forces a DOM sync of the stylesheet.
+   *
+   * This bypasses any future batching/scheduling strategy by directly invoking
+   * `syncToDom()`. Useful in tests or debugging when you want the `<style>` tag
+   * to reflect the latest in-memory rules immediately.
+   */
   public devFlush(): void {
     this.syncToDom();
   }
 
-/**
- * Constructs the adapter surface used by the animation subsystem for QUID scopes.
- *
- * The returned adapters translate generic animation operations into this
- * manager’s concrete mechanisms:
- * - style writes are routed through `setForQuid()` for each QUID in scope
- * - DOM pokes are performed by querying elements via `selectorForQuid()`
- *
- * Design intent:
- * - Keep the animation engine generic (it only knows about `scope`),
- *   while `CssManager` owns how scope maps to CSS rules and DOM elements.
- *
- * @returns An `AnimAdapters<CssAnimScope>` implementation bound to this manager.
- */
+  /**
+   * Constructs the adapter surface used by the animation subsystem for QUID scopes.
+   *
+   * The returned adapters translate generic animation operations into this
+   * manager’s concrete mechanisms:
+   * - style writes are routed through `setForQuid()` for each QUID in scope
+   * - DOM pokes are performed by querying elements via `selectorForQuid()`
+   *
+   * Design intent:
+   * - Keep the animation engine generic (it only knows about `scope`),
+   *   while `CssManager` owns how scope maps to CSS rules and DOM elements.
+   *
+   * @returns An `AnimAdapters<CssAnimScope>` implementation bound to this manager.
+   */
   private makeAnimAdapters(): AnimAdapters<CssAnimScope> {
     return {
       // 1) set a single CSS property for every QUID in the scope
@@ -461,29 +468,29 @@ export class CssManager {
     };
   }
 
-/**
- * Exposes the `@property` registration manager used by this `CssManager`.
- *
- * Access guarantees:
- * - Ensures the managed `<style>` element exists for the current `document`
- *   before returning the manager, so subsequent registrations can be rendered.
- *
- * @returns The live `PropertyManager` instance (singleton-owned).
- */
+  /**
+   * Exposes the `@property` registration manager used by this `CssManager`.
+   *
+   * Access guarantees:
+   * - Ensures the managed `<style>` element exists for the current `document`
+   *   before returning the manager, so subsequent registrations can be rendered.
+   *
+   * @returns The live `PropertyManager` instance (singleton-owned).
+   */
   public get atProperty(): PropertyManager {
     this.ensureStyleElement();
     return this.atPropManager;
   }
 
-/**
- * Exposes the keyframes/animation definition manager used by this `CssManager`.
- *
- * Access guarantees:
- * - Ensures the managed `<style>` element exists for the current `document`
- *   before returning the manager, so keyframe writes can be rendered.
- *
- * @returns The live `KeyframesManager` instance (singleton-owned).
- */
+  /**
+   * Exposes the keyframes/animation definition manager used by this `CssManager`.
+   *
+   * Access guarantees:
+   * - Ensures the managed `<style>` element exists for the current `document`
+   *   before returning the manager, so keyframe writes can be rendered.
+   *
+   * @returns The live `KeyframesManager` instance (singleton-owned).
+   */
   public get keyframes(): KeyframesManager {
     this.ensureStyleElement();
     return this.keyframeManager;
@@ -491,27 +498,27 @@ export class CssManager {
   }
 
   // --- WRITE API (QUID-based) -------------------------------------------
-/**
- * Sets (or unsets) a single CSS declaration for a specific QUID selector.
- *
- * Rules:
- * - `quid` and `propCanon` are trimmed; blank inputs are treated as no-ops.
- * - Values are normalized to a string:
- *   - primitives are stringified
- *   - `CssValue` objects are rendered by `renderCssValue`
- * - Delete semantics:
- *   - if rendering yields `null`, the property is removed
- *   - if the rendered string trims to `""`, the property is removed
- *   - `"0"` and other non-empty strings are preserved (not treated as delete)
- *
- * Side effects:
- * - Mutates the in-memory rules map for the QUID.
- * - Marks the stylesheet dirty and triggers a DOM sync via `mark_changed()`.
- *
- * @param quid The QUID whose selector will receive the declaration.
- * @param propCanon The canonical property key (e.g. `"opacity"`, `"--k"`).
- * @param value The value to assign; may be a primitive or a structured `CssValue`.
- */
+  /**
+   * Sets (or unsets) a single CSS declaration for a specific QUID selector.
+   *
+   * Rules:
+   * - `quid` and `propCanon` are trimmed; blank inputs are treated as no-ops.
+   * - Values are normalized to a string:
+   *   - primitives are stringified
+   *   - `CssValue` objects are rendered by `renderCssValue`
+   * - Delete semantics:
+   *   - if rendering yields `null`, the property is removed
+   *   - if the rendered string trims to `""`, the property is removed
+   *   - `"0"` and other non-empty strings are preserved (not treated as delete)
+   *
+   * Side effects:
+   * - Mutates the in-memory rules map for the QUID.
+   * - Marks the stylesheet dirty and triggers a DOM sync via `mark_changed()`.
+   *
+   * @param quid The QUID whose selector will receive the declaration.
+   * @param propCanon The canonical property key (e.g. `"opacity"`, `"--k"`).
+   * @param value The value to assign; may be a primitive or a structured `CssValue`.
+   */
   public setForQuid(
     quid: string,
     propCanon: string,
@@ -554,20 +561,20 @@ export class CssManager {
     this.mark_changed();
   }
 
-/**
- * Creates an animation handle bound to a set of QUIDs.
- *
- * This wires the generic animation engine (`apply_animation`) to a concrete
- * QUID scope by providing adapters (via `makeAnimAdapters()`) that:
- * - write animation-related CSS properties through `setForQuid()`
- * - locate and poke DOM elements via `selectorForQuid()`
- *
- * The returned handle is intentionally small and explicit: callers can begin,
- * restart, or end animations either by spec or by animation-name.
- *
- * @param quids The QUIDs that comprise the animation scope.
- * @returns A `CssAnimHandle` that controls animations for that scope.
- */
+  /**
+   * Creates an animation handle bound to a set of QUIDs.
+   *
+   * This wires the generic animation engine (`apply_animation`) to a concrete
+   * QUID scope by providing adapters (via `makeAnimAdapters()`) that:
+   * - write animation-related CSS properties through `setForQuid()`
+   * - locate and poke DOM elements via `selectorForQuid()`
+   *
+   * The returned handle is intentionally small and explicit: callers can begin,
+   * restart, or end animations either by spec or by animation-name.
+   *
+   * @param quids The QUIDs that comprise the animation scope.
+   * @returns A `CssAnimHandle` that controls animations for that scope.
+   */
   public animForQuids(quids: readonly string[]): CssAnimHandle {
     this.ensureStyleElement();
     const api = apply_animation(this.makeAnimAdapters());
@@ -582,25 +589,25 @@ export class CssManager {
     };
   }
 
-/**
- * Sets multiple CSS declarations for a single QUID in one call.
- *
- * Notes:
- * - This is a bulk-write convenience API over the per-QUID rule map.
- * - Unlike `setForQuid`, it currently throws on a blank/whitespace QUID
- *   (programmer error), and it syncs via `syncToDom()` directly.
- *
- * Behavior:
- * - Trims and validates `quid`.
- * - Ensures a per-QUID property map exists.
- * - Iterates `decls` and writes each non-blank property name after trimming.
- * - Renders each value using `renderCssValue`.
- * - Forces a stylesheet rebuild via `syncToDom()`.
- *
- * @param quid The QUID whose selector will receive the declarations.
- * @param decls A property map (already canonicalized at the call site).
- * @throws Error if `quid` is blank after trimming.
- */
+  /**
+   * Sets multiple CSS declarations for a single QUID in one call.
+   *
+   * Notes:
+   * - This is a bulk-write convenience API over the per-QUID rule map.
+   * - Unlike `setForQuid`, it currently throws on a blank/whitespace QUID
+   *   (programmer error), and it syncs via `syncToDom()` directly.
+   *
+   * Behavior:
+   * - Trims and validates `quid`.
+   * - Ensures a per-QUID property map exists.
+   * - Iterates `decls` and writes each non-blank property name after trimming.
+   * - Renders each value using `renderCssValue`.
+   * - Forces a stylesheet rebuild via `syncToDom()`.
+   *
+   * @param quid The QUID whose selector will receive the declarations.
+   * @param decls A property map (already canonicalized at the call site).
+   * @throws Error if `quid` is blank after trimming.
+   */
   public setManyForQuid(quid: string, decls: CssProp): void {
     this.ensureStyleElement();
     const trimmedQuid = quid.trim();
@@ -625,18 +632,18 @@ export class CssManager {
     this.syncToDom();
   }
 
-/**
- * Removes a single CSS declaration for a specific QUID selector.
- *
- * Behavior:
- * - If the QUID has no rule map, this is a no-op.
- * - If removing the property empties the QUID’s rule map, the QUID entry
- *   is removed entirely.
- * - Marks the stylesheet dirty and triggers a DOM sync via `mark_changed()`.
- *
- * @param quid The QUID whose selector will have the property removed.
- * @param propCanon The canonical property key to remove.
- */
+  /**
+   * Removes a single CSS declaration for a specific QUID selector.
+   *
+   * Behavior:
+   * - If the QUID has no rule map, this is a no-op.
+   * - If removing the property empties the QUID’s rule map, the QUID entry
+   *   is removed entirely.
+   * - Marks the stylesheet dirty and triggers a DOM sync via `mark_changed()`.
+   *
+   * @param quid The QUID whose selector will have the property removed.
+   * @param propCanon The canonical property key to remove.
+   */
   public unsetForQuid(quid: string, propCanon: string): void {
     this.ensureStyleElement();
     const props = this.rulesByQuid.get(quid);
@@ -648,34 +655,34 @@ export class CssManager {
     this.mark_changed();
   }
 
-/**
- * Removes all CSS declarations for a specific QUID selector.
- *
- * Behavior:
- * - No-ops if the QUID has no entry.
- * - Marks the stylesheet dirty and triggers a DOM sync via `mark_changed()`
- *   only when something was actually cleared.
- *
- * @param quid The QUID whose entire rule block should be removed.
- */
+  /**
+   * Removes all CSS declarations for a specific QUID selector.
+   *
+   * Behavior:
+   * - No-ops if the QUID has no entry.
+   * - Marks the stylesheet dirty and triggers a DOM sync via `mark_changed()`
+   *   only when something was actually cleared.
+   *
+   * @param quid The QUID whose entire rule block should be removed.
+   */
   public clearQuid(quid: string): void {
     this.ensureStyleElement();
     if (!this.rulesByQuid.delete(quid)) return;
     this.mark_changed();
   }
 
-/**
- * Clears all QUID-scoped CSS declarations managed by this instance.
- *
- * Behavior:
- * - No-ops if no rules are stored.
- * - Clears the entire `rulesByQuid` map.
- * - Marks the stylesheet dirty and triggers a DOM sync via `mark_changed()`.
- *
- * This does not reset `@property` registrations or keyframe definitions.
- * Use `devReset()` (or an explicit manager reset path) when you need a full
- * reset of all CSS-related state.
- */
+  /**
+   * Clears all QUID-scoped CSS declarations managed by this instance.
+   *
+   * Behavior:
+   * - No-ops if no rules are stored.
+   * - Clears the entire `rulesByQuid` map.
+   * - Marks the stylesheet dirty and triggers a DOM sync via `mark_changed()`.
+   *
+   * This does not reset `@property` registrations or keyframe definitions.
+   * Use `devReset()` (or an explicit manager reset path) when you need a full
+   * reset of all CSS-related state.
+   */
   public clearAll(): void {
     this.ensureStyleElement();
     if (this.rulesByQuid.size === 0) return;
@@ -756,21 +763,21 @@ export class CssManager {
     return parts.join("\n\n");
   }
 
-/**
- * Synchronizes the current in-memory CSS state into the managed `<style>` tag.
- *
- * Behavior:
- * - Ensures the host `<style id="${CSS_STYLE_ID}">` exists for the current `document`
- *   via `ensureStyleElement()`.
- * - Rebuilds the full stylesheet text via `buildCombinedCss()` and assigns it to
- *   `styleEl.textContent` (full overwrite, not incremental patching).
- * - Clears the dirty flag (`changed = false`).
- *
- * Notes:
- * - This is the single “write-to-DOM” choke point for the manager.
- * - Callers typically reach this via `mark_changed()` (and any batching strategy
- *   should live there, not here).
- */
+  /**
+   * Synchronizes the current in-memory CSS state into the managed `<style>` tag.
+   *
+   * Behavior:
+   * - Ensures the host `<style id="${CSS_STYLE_ID}">` exists for the current `document`
+   *   via `ensureStyleElement()`.
+   * - Rebuilds the full stylesheet text via `buildCombinedCss()` and assigns it to
+   *   `styleEl.textContent` (full overwrite, not incremental patching).
+   * - Clears the dirty flag (`changed = false`).
+   *
+   * Notes:
+   * - This is the single “write-to-DOM” choke point for the manager.
+   * - Callers typically reach this via `mark_changed()` (and any batching strategy
+   *   should live there, not here).
+   */
   private syncToDom(): void {
     const styleEl = this.ensureStyleElement();
     styleEl.textContent = this.buildCombinedCss();

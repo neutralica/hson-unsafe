@@ -2,7 +2,6 @@
 
 import { AnimationName, AnimationSpec, CssAnimHandle } from "../api/livetree/livetree-methods/animate.types";
 import { KeyframesManager } from "../api/livetree/livetree-methods/keyframes";
-import { StyleKey } from "../api/livetree/livetree-methods/style-manager";
 import { StyleSetter } from "../api/livetree/livetree-methods/style-setter";
 import { PropertyManager } from "./at-property.types";
 
@@ -28,18 +27,14 @@ export type CssUnit =
   | "deg"
   | "_"; // unitless
 
-/**
- * Union of supported CSS value representations.
- *
- * - `string`:
- *     - Raw CSS value, e.g. `"240px"`, `"translate(10px, 20px)"`.
- * - `{ value: number; unit: CssUnit }`:
- *     - Structured form, e.g. `{ value: 240, unit: "px" }`.
- *
- * The structured form is intended for internal use and tooling that may
- * need to adjust or compute with numeric values before rendering.
- */
-export type CssValue = string | { value: number; unit: CssUnit };
+/** Values accepted by style setters and CSS manager helpers. */
+export type CssValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Readonly<{ value: string | number; unit?: string }>;
 
 /**
  * Canonical stored representation of a single CSS rule as text.
@@ -167,7 +162,7 @@ export interface CssRuleBuilder {
  * This shape is used by APIs like `StyleManager2.setMulti` to perform
  * batch style updates on a node.
  */
-export type StyleObject = Partial<Record<StyleKey, string | number | null | undefined>>;
+export type CssMap = Readonly<Partial<Record<CssKey, CssValue>>>;
 
 /**
  * Public-facing handle for working with QUID-scoped stylesheet rules.
@@ -190,7 +185,6 @@ export type StyleObject = Partial<Record<StyleKey, string | number | null | unde
  * underlying `<style>` element, keeping the CSS in sync with the
  * current state of the handle.
  */
-
 export type CssHandle = Readonly<
   StyleSetter & {
     atProperty: PropertyManager;
@@ -202,3 +196,21 @@ export type CssHandle = Readonly<
     devFlush?: () => void;
   }
 >;
+
+/**
+ * Union of all style keys supported by the style system:
+ * - `AllowedStyleKey` — canonical properties from `CSSStyleDeclaration`.
+ * - `--${string}` — arbitrary CSS custom properties (variables).
+ * - `${string}-${string}` — kebab-case custom or unknown properties.
+ *
+ * This allows both strongly-typed known properties and flexible
+ * custom/kebab names to be handled by the same infrastructure.
+ */
+
+export type CssKey = string;
+// keep this aligned with your existing CssValue if you already have it
+// canonical “many” map: camelCase keys at rest
+
+
+
+
