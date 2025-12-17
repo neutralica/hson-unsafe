@@ -1,30 +1,23 @@
-// loop-3.test.ts
-
 /**
+ * loop-3.test.ts
+ *
  * A deterministic 3-way round-trip validation rig for HSON.
  *
- * This module exercises the full serialization ring:
+ * This module exercises the serialization ring:
  *   JSON ↔ HTML ↔ HSON
  *
- * The goal is to detect structural drift by repeatedly:
- *   1) serializing a canonical HsonNode into another format,
- *   2) parsing it back into a HsonNode,
- *   3) asserting invariants,
- *   4) diffing the result against the prior node.
- *
- * The loop is intentionally linear, explicit, and side-effect free.
- * There is no logging; all results are returned as structured data.
+ * NEW (dual mode):
+ *   - Run the ring twice (cw + ccw) from the same entry.
+ *   - Compare the final nodes from both directions.
+ *   - Optionally (paranoid) compare per-step parsed nodes across directions.
  */
 
 import { hson } from "../hson";
 import { HsonNode } from "../types-consts";
 import { is_Node } from "../utils/node-utils/node-guards.new";
+import { make_string } from "../utils/primitive-utils/make-string.nodes.utils";
 import { assert_invariants } from "./assert-invariants.test";
 import { compare_nodes } from "./compare-nodes.test";
-
-/* ============================================================================
- * Public types
- * ========================================================================== */
 
 export type Fmt = "json" | "html" | "hson";
 export type SourceFormat = Fmt | "auto" | "node" | "dom";
@@ -32,37 +25,51 @@ export type LoopDir = "cw" | "ccw";
 
 export type LoopOpts = {
   times?: number;            // default 3
-  dir?: LoopDir;             // default "cw"
+  dir?: LoopDir;             // default "cw" (only used when dual=false)
   entry?: SourceFormat;      // default "auto"
-  verbose?: boolean;         // include step trace
+  verbose?: boolean;         // default false; when true, include trace
   stopOnFirstFail?: boolean; // default true
-  capture?: boolean;         // capture serialized artifacts
+  capture?: boolean;         // capture emitted artifacts (strings)
+  dual?: boolean;            // CHANGED: run both cw + ccw and compare final nodes (default true)
+  paranoid?: boolean;        // ADDED: also compare per-step parsed nodes across dirs (requires captureNodes)
 };
 
-export type Step = {
-  step: string;
-  ok: boolean;
-  error?: string;
-};
+export type Step = { step: string; ok: boolean; error?: string };
 
 export type Artifact = {
-  lap: number;   // 1-based
+  lap: number;
   fmt: Fmt;
-  stage: "emit" | "closure";
   text: string;
+  node: string;
+
+};
+
+export type NodeMark = {
+  lap: number;
+  fmt: Fmt;
+  phase: "parse" | "closure";
+  node: HsonNode;
 };
 
 export type LoopReport = {
   ok: boolean;
   times: number;
-  dir: LoopDir;
+  dir: LoopDir | "dual";           // CHANGED
   entry: SourceFormat;
+
+  failures: Step[];
+  trace?: Step[];
+
+  artifacts?: Artifact[];          // emitted strings
+  marks?: NodeMark[];              // parsed nodes (only when paranoid/captureNodes)
 
   final?: { fmt: Fmt; text: string };
 
-  failures?: Step[];
-  trace?: Step[];
-  artifacts?: Artifact[];
+  // ADDED: dual summary
+  dualFinals?: {
+    cw: { fmt: Fmt; text: string };
+    ccw: { fmt: Fmt; text: string };
+  };
 };
 
 export type FixtureAtom =
@@ -74,38 +81,43 @@ export type FixtureAtom =
   | HTMLElement
   | HsonNode;
 
-/* ============================================================================
- * Serialization ring
- * ========================================================================== */
-
-const SPIN: Record<Fmt, {
-  emit: (n: HsonNode) => string;
-  parse: (s: string) => HsonNode;
-}> = {
+/* =========================================================================
+ * THE TEST CHAIN
+ * =========================================================================
+ */
+const SPIN: Record<Fmt, { emit: (n: HsonNode) => string; parse: (s: string) => HsonNode }> = {
   json: {
-    emit: (n) => hson.fromNode(n).toJSON().serialize(),
-    parse: (s) => hson.fromJSON(s.trim()).toHSON().parse() as HsonNode,
+    emit: (n) => hson.fromNode(n as any).toJSON().serialize(),
+    parse: (s) => hson.fromJSON(s.trim()).toHSON().parse() as any,
   },
   html: {
-    emit: (n) => hson.fromNode(n).toHTML().serialize(),
-    parse: (s) => hson.fromTrustedHtml(s).toHSON().parse() as HsonNode,
+    emit: (n) => hson.fromNode(n as any).toHTML().serialize(),
+    parse: (s) => hson.fromTrustedHtml(s).toHSON().parse() as any,
   },
   hson: {
-    emit: (n) => hson.fromNode(n).toHSON().serialize(),
-    parse: (s) => hson.fromHSON(s).toHSON().parse() as HsonNode,
+    emit: (n) => hson.fromNode(n as any).toHSON().serialize(),
+    parse: (s) => hson.fromHSON(s).toHSON().parse() as any,
   },
 } as const;
 
-/* ============================================================================
- * Core loop
- * ========================================================================== */
+/* =========================================================================
+ * CORE LOOP — sequential and readable
+ * ========================================================================= */
 
 type CoreOpt = {
   trace: Step[];
   failures: Step[];
   verbose: boolean;
   stopOnFirstFail: boolean;
-  capture?: { artifacts: Artifact[] };
+
+  capture?: { artifacts: Artifact[] }; // emitted text artifacts
+  marks?: { nodes: NodeMark[] };       // CHANGED: parsed-node marks for paranoid mode
+};
+
+type RunResult = {
+  ok: boolean;
+  final: { fmt: Fmt; text: string };
+  finalNode: HsonNode;                 // ADDED: needed for dual compare
 };
 
 function runRing(
@@ -114,149 +126,238 @@ function runRing(
   dir: LoopDir,
   times: number,
   opt: CoreOpt
-): { ok: boolean; final: { fmt: Fmt; text: string } } {
-
-  let node = safe_parse(entryFmt, entryText, `enter:${entryFmt}`, opt);
+): RunResult {
+  // 1) enter the ring
+  let node = safe_parse(entryFmt, entryText, `enter:${entryFmt}`, opt, { lap: 0, fmt: entryFmt, phase: "parse" });
   if (!node) {
-    return { ok: false, final: { fmt: entryFmt, text: entryText } };
+    return { ok: false, final: { fmt: entryFmt, text: entryText }, finalNode: { _tag: "_bad", _content: [] } as any };
   }
 
+  // 2) choose direction (a visible ring order)
   const ring: readonly Fmt[] =
     dir === "cw"
-      ? ["json", "html", "hson"]
-      : ["json", "hson", "html"];
+      ? (["json", "html", "hson"] as const)
+      : (["json", "hson", "html"] as const);
 
+  // rotate ring so we start at entryFmt
   const path = rotate_ring(ring, entryFmt);
 
   let carryText = entryText;
-  let carryFmt: Fmt = entryFmt;
 
+  // 3) walk the ring: emit -> parse -> diff -> advance
   for (let lap = 0; lap < times; lap++) {
-    const lapNo = lap + 1;
-    step_ok(opt, `lap ${lapNo}/${times} begin`);
+    step_ok(opt, `lap ${lap + 1}/${times} begin`);
 
-    for (const fmt of path) {
+    for (let i = 0; i < path.length; i++) {
+      const fmt = path[i];
+
       const text = safe_emit(fmt, node, `emit:${fmt}`, opt);
       if (text === undefined) {
-        return { ok: false, final: { fmt: carryFmt, text: carryText } };
+        return { ok: false, final: { fmt: entryFmt, text: carryText }, finalNode: node };
       }
 
-      opt.capture?.artifacts.push({
-        lap: lapNo,
-        fmt,
-        stage: "emit",
-        text,
-      });
-
-      const next = safe_parse(fmt, text, `parse:${fmt}`, opt);
+      // CHANGED: capture emitted artifacts here
+      
+      const next = safe_parse(fmt, text, `parse:${fmt}`, opt, { lap, fmt, phase: "parse" });
       if (!next) {
-        return { ok: false, final: { fmt: carryFmt, text: carryText } };
+        return { ok: false, final: { fmt: entryFmt, text: carryText }, finalNode: node };
       }
-
+      if (opt.capture) {
+        opt.capture.artifacts.push({
+          lap,
+          fmt,
+          text,
+          node: make_string(next),
+        });
+      }
+      
       const diffs = compare_nodes(node, next, false);
       if (diffs.length) {
-        step_fail(opt, `cmp:node -> ${fmt} -> node`, diffs[0]);
+        step_fail(opt, `diff nodes<ERR>:node -> ${fmt} -> node`, diffs[0]);
         if (opt.stopOnFirstFail) {
-          return { ok: false, final: { fmt: carryFmt, text: carryText } };
+          return { ok: false, final: { fmt: entryFmt, text: carryText }, finalNode: node };
         }
       } else {
-        step_ok(opt, `cmp:node -> ${fmt} -> node`);
+        step_ok(opt, `diff nodes<OK>:node -> ${fmt} -> node`);
       }
 
       node = next;
       carryText = text;
-      carryFmt = fmt;
     }
 
-    const closeText = safe_emit(entryFmt, node, `closure:emit:${entryFmt}`, opt);
+    // 4) closure check: return to entry representation and re-parse once
+    const closeText = safe_emit(entryFmt, node, `return:to:${entryFmt}`, opt);
     if (closeText !== undefined) {
-      opt.capture?.artifacts.push({
-        lap: lapNo,
-        fmt: entryFmt,
-        stage: "closure",
-        text: closeText,
-      });
-
-      const closeNode = safe_parse(entryFmt, closeText, `closure:parse:${entryFmt}`, opt);
+      const closeNode = safe_parse(entryFmt, closeText, `return:from:${entryFmt}`, opt, { lap, fmt: entryFmt, phase: "closure" });
       if (closeNode) {
-        const diffs = compare_nodes(node, closeNode, false);
-        if (diffs.length) {
-          step_fail(opt, `closure:cmp:${entryFmt}`, diffs[0]);
+        const closeDiffs = compare_nodes(node, closeNode, false);
+        if (closeDiffs.length) {
+          step_fail(opt, `closure:${entryFmt}`, closeDiffs[0]);
           if (opt.stopOnFirstFail) {
-            return { ok: false, final: { fmt: carryFmt, text: carryText } };
+            return { ok: false, final: { fmt: entryFmt, text: carryText }, finalNode: node };
           }
         } else {
-          step_ok(opt, `closure:cmp:${entryFmt}`);
+          step_ok(opt, `return:check:${entryFmt}`);
         }
-
         node = closeNode;
         carryText = closeText;
-        carryFmt = entryFmt;
       }
     }
 
-    step_ok(opt, `lap ${lapNo}/${times} end`);
+    step_ok(opt, `lap ${lap + 1}/${times} end`);
   }
 
-  return {
-    ok: opt.failures.length === 0,
-    final: { fmt: carryFmt, text: carryText },
-  };
+  return { ok: opt.failures.length === 0, final: { fmt: entryFmt, text: carryText }, finalNode: node };
 }
 
-/* ============================================================================
- * Public entry
- * ========================================================================== */
+/* =========================================================================
+ * PUBLIC ENTRY
+ * ========================================================================= */
 
-export function _test_full_loop(
-  atom: FixtureAtom,
-  opts: LoopOpts = {}
-): LoopReport {
-
+/**
+ * Runs a multi-lap round-trip validation across JSON, HTML, and HSON.
+ *
+ * Default behavior runs BOTH directions (dual=true) and compares the
+ * final nodes from cw vs ccw to detect path-dependence.
+ *
+ * When paranoid=true, also captures parsed nodes ("marks") and compares
+ * cw vs ccw at matching (lap, fmt, phase) checkpoints.
+ */
+export function _test_full_loop(atom: FixtureAtom, opts: LoopOpts = {}): LoopReport {
   const trace: Step[] = [];
   const failures: Step[] = [];
   const artifacts: Artifact[] = [];
+  const marks: NodeMark[] = [];
 
-  const core: CoreOpt = {
+  const coreBase: Omit<CoreOpt, "capture" | "marks"> = {
     trace,
     failures,
     verbose: !!opts.verbose,
     stopOnFirstFail: opts.stopOnFirstFail ?? true,
-    capture: opts.capture ? { artifacts } : undefined,
   };
 
-  const times = clamp_int(opts.times ?? 3, 1, 10_000);
-  const dir: LoopDir = opts.dir ?? "cw";
-  const entry = (opts.entry ?? "auto") as SourceFormat;
+  // CHANGED: dual by default
+  const dual = opts.dual ?? true;
 
-  const resolved = resolve_entry(atom, entry, core);
+  const times = clamp_int(opts.times ?? 3, 1, 10_000);
+
+  const entry = (opts.entry ?? "auto") as SourceFormat;
+  const resolved = resolve_entry(atom, entry, coreBase);
   if (!resolved) {
-    return finalize(false, times, dir, entry, core, undefined);
+    return finalize(false, times, dual ? "dual" : (opts.dir ?? "cw"), entry, trace, failures, undefined, undefined, undefined, undefined);
   }
 
   const { fmt, text } = resolved;
-  const res = runRing(fmt, text, dir, times, core);
 
-  return finalize(res.ok, times, dir, entry, core, res.final);
+  // ---- single-direction mode (kept for simplicity / explicitness) ----
+  if (!dual) {
+    const dir: LoopDir = opts.dir ?? "cw";
+
+    const core: CoreOpt = {
+      ...coreBase,
+      capture: opts.capture ? { artifacts } : undefined,
+      marks: opts.paranoid ? { nodes: marks } : undefined,
+    };
+
+    const res = runRing(fmt, text, dir, times, core);
+    return finalize(res.ok, times, dir, entry, trace, failures, opts.capture ? artifacts : undefined, opts.paranoid ? marks : undefined, res.final, undefined);
+  }
+
+  // ---- dual mode (cw + ccw) ----
+  const cwArtifacts: Artifact[] = [];
+  const ccwArtifacts: Artifact[] = [];
+  const cwMarks: NodeMark[] = [];
+  const ccwMarks: NodeMark[] = [];
+
+  const cwCore: CoreOpt = {
+    ...coreBase,
+    capture: opts.capture ? { artifacts: cwArtifacts } : undefined,
+    marks: opts.paranoid ? { nodes: cwMarks } : undefined,
+  };
+
+  const ccwCore: CoreOpt = {
+    ...coreBase,
+    capture: opts.capture ? { artifacts: ccwArtifacts } : undefined,
+    marks: opts.paranoid ? { nodes: ccwMarks } : undefined,
+  };
+
+  const cwRes = runRing(fmt, text, "cw", times, cwCore);
+  const ccwRes = runRing(fmt, text, "ccw", times, ccwCore);
+
+  // CHANGED: compare final nodes cw vs ccw (path dependence detector)
+  const finalDiffs = compare_nodes(cwRes.finalNode, ccwRes.finalNode, false);
+  if (finalDiffs.length) {
+    step_fail({ trace, failures, verbose: !!opts.verbose, stopOnFirstFail: true }, "dual:finalNode cw != ccw", finalDiffs[0]);
+  } else {
+    step_ok({ trace, failures, verbose: !!opts.verbose, stopOnFirstFail: true }, "dual:finalNode cw == ccw");
+  }
+
+  // ADDED: paranoid cross-check at each checkpoint (lap, fmt, phase)
+  if (opts.paranoid) {
+    const byKey = (m: NodeMark) => `${m.lap}|${m.fmt}|${m.phase}`;
+
+    const cwMap = new Map<string, HsonNode>();
+    for (const m of cwMarks) cwMap.set(byKey(m), m.node);
+
+    const ccwMap = new Map<string, HsonNode>();
+    for (const m of ccwMarks) ccwMap.set(byKey(m), m.node);
+
+    const keys = new Set<string>([...cwMap.keys(), ...ccwMap.keys()]);
+    for (const k of keys) {
+      const a = cwMap.get(k);
+      const b = ccwMap.get(k);
+      if (!a || !b) {
+        step_fail({ trace, failures, verbose: !!opts.verbose, stopOnFirstFail: true }, `paranoid:missing mark ${k}`, !a ? "missing cw mark" : "missing ccw mark");
+        continue;
+      }
+      const diffs = compare_nodes(a, b, false);
+      if (diffs.length) {
+        step_fail({ trace, failures, verbose: !!opts.verbose, stopOnFirstFail: true }, `paranoid:mark mismatch ${k}`, diffs[0]);
+        if (opts.stopOnFirstFail ?? true) break;
+      } else {
+        step_ok({ trace, failures, verbose: !!opts.verbose, stopOnFirstFail: true }, `paranoid:mark ok ${k}`);
+      }
+    }
+  }
+
+  const ok = failures.length === 0 && cwRes.ok && ccwRes.ok;
+
+  // Merge optional capture payloads in a simple, readable way:
+  const mergedArtifacts = opts.capture ? [...cwArtifacts, ...ccwArtifacts] : undefined;
+  const mergedMarks = opts.paranoid ? [...cwMarks, ...ccwMarks] : undefined;
+
+  return finalize(
+    ok,
+    times,
+    "dual",
+    entry,
+    trace,
+    failures,
+    mergedArtifacts,
+    mergedMarks,
+    // pick one "final" for convenience; both are also returned in dualFinals
+    cwRes.final,
+    { cw: cwRes.final, ccw: ccwRes.final }
+  );
 }
 
-/* ============================================================================
- * Helpers
- * ========================================================================== */
+/* =========================================================================
+ * HELPERS
+ * ========================================================================= */
 
 function resolve_entry(
   atom: FixtureAtom,
   entry: SourceFormat,
-  opt: CoreOpt
+  opt: Pick<CoreOpt, "trace" | "failures" | "verbose" | "stopOnFirstFail">
 ): { fmt: Fmt; text: string } | undefined {
-
   if (entry !== "auto") {
     return coerce_entry(atom, entry, opt);
   }
 
   if (is_Node(atom)) {
     const text = safe_emit("hson", atom, "emit:node->hson(entry)", opt);
-    return text ? { fmt: "hson", text } : undefined;
+    if (text === undefined) return undefined;
+    return { fmt: "hson", text };
   }
 
   if (is_html_element(atom)) {
@@ -273,101 +374,127 @@ function resolve_entry(
     const n = SPIN.json.parse(s);
     assert_invariants(n, "auto:json");
     return { fmt: "json", text: s };
-  } catch {}
+  } catch { /* ignore */ }
 
   try {
     const n = SPIN.html.parse(s);
     assert_invariants(n, "auto:html");
     return { fmt: "html", text: s };
-  } catch {}
+  } catch { /* ignore */ }
 
   try {
     const n = SPIN.hson.parse(s);
     assert_invariants(n, "auto:hson");
     return { fmt: "hson", text: s };
-  } catch {}
+  } catch { /* ignore */ }
 
-  step_fail(opt, "resolve_entry:auto", "Could not detect entry format");
+  step_fail(opt, "resolve_entry:auto", "Could not detect entry format via try-parse (json/html/hson)");
   return undefined;
 }
 
 function coerce_entry(
   atom: FixtureAtom,
   entry: SourceFormat,
-  opt: CoreOpt
+  opt: Pick<CoreOpt, "trace" | "failures" | "verbose" | "stopOnFirstFail">
 ): { fmt: Fmt; text: string } | undefined {
-
   if (entry === "json") {
-    return { fmt: "json", text: typeof atom === "string" ? atom : JSON.stringify(atom) };
+    const text = typeof atom === "string" ? atom : JSON.stringify(atom);
+    return { fmt: "json", text };
   }
 
   if (entry === "html") {
     if (typeof atom === "string") return { fmt: "html", text: atom };
     if (is_html_element(atom)) return { fmt: "html", text: atom.outerHTML };
-    step_fail(opt, "resolve_entry:html", "Invalid html entry");
+    step_fail(opt, "resolve_entry:html", "Non-string/non-HTMLElement provided for html entry");
     return undefined;
   }
 
   if (entry === "hson") {
     if (typeof atom === "string") return { fmt: "hson", text: atom };
-    step_fail(opt, "resolve_entry:hson", "Invalid hson entry");
+    step_fail(opt, "resolve_entry:hson", "Non-string provided for hson entry");
     return undefined;
   }
 
   if (entry === "node") {
     if (!is_Node(atom)) {
-      step_fail(opt, "resolve_entry:node", "Invalid node entry");
+      step_fail(opt, "resolve_entry:node", "Non-HsonNode provided for node entry");
       return undefined;
     }
     const text = safe_emit("hson", atom, "emit:node->hson(entry)", opt);
-    return text ? { fmt: "hson", text } : undefined;
+    if (text === undefined) return undefined;
+    return { fmt: "hson", text };
   }
 
   if (entry === "dom") {
     if (!is_html_element(atom)) {
-      step_fail(opt, "resolve_entry:dom", "Invalid dom entry");
+      step_fail(opt, "resolve_entry:dom", "Non-HTMLElement provided for dom entry");
       return undefined;
     }
     return { fmt: "html", text: atom.outerHTML };
   }
 
-  step_fail(opt, "resolve_entry", `Unsupported entry: ${entry}`);
+  step_fail(opt, "resolve_entry", `Unsupported entry: ${String(entry)}`);
   return undefined;
 }
 
-function safe_emit(fmt: Fmt, node: HsonNode, step: string, opt: CoreOpt): string | undefined {
+function safe_emit(
+  fmt: Fmt,
+  node: HsonNode,
+  stepName: string,
+  opt: Pick<CoreOpt, "trace" | "failures" | "verbose" | "stopOnFirstFail">
+): string | undefined {
   try {
     const s = SPIN[fmt].emit(node);
-    step_ok(opt, step);
+    step_ok(opt, stepName);
     return s;
   } catch (err) {
-    step_fail(opt, step, err_to_string(err));
+    step_fail(opt, stepName, err_to_string(err));
     return undefined;
   }
 }
 
-function safe_parse(fmt: Fmt, text: string, step: string, opt: CoreOpt): HsonNode | undefined {
+function safe_parse(
+  fmt: Fmt,
+  text: string,
+  stepName: string,
+  opt: CoreOpt,
+  mark?: { lap: number; fmt: Fmt; phase: "parse" | "closure" } // ADDED
+): HsonNode | undefined {
   try {
     const n = SPIN[fmt].parse(text);
-    assert_invariants(n, `loop:${fmt}`);
-    step_ok(opt, step);
+    assert_invariants(n, `loop_test:${fmt}`);
+    step_ok(opt, stepName);
+
+    // ADDED: capture parsed nodes for paranoid cross-direction comparisons
+    if (opt.marks && mark) {
+      opt.marks.nodes.push({ ...mark, node: n });
+    }
+
     return n;
   } catch (err) {
-    step_fail(opt, step, err_to_string(err));
+    step_fail(opt, stepName, err_to_string(err));
     return undefined;
   }
 }
 
 function rotate_ring(ring: readonly Fmt[], entry: Fmt): readonly Fmt[] {
-  const i = ring.indexOf(entry);
-  return i < 0 ? ring : [...ring.slice(i), ...ring.slice(0, i)];
+  const idx = ring.indexOf(entry);
+  if (idx < 0) return ring;
+  return [...ring.slice(idx), ...ring.slice(0, idx)];
 }
 
-function step_ok(opt: CoreOpt, step: string): void {
+function step_ok(
+  opt: Pick<CoreOpt, "trace" | "failures" | "verbose" | "stopOnFirstFail">,
+  step: string
+): void {
   if (opt.verbose) opt.trace.push({ step, ok: true });
 }
 
-function step_fail(opt: CoreOpt, step: string, error: string): void {
+function step_fail(
+  opt: Pick<CoreOpt, "trace" | "failures" | "verbose" | "stopOnFirstFail">,
+  step: string,
+  error: string
+): void {
   opt.failures.push({ step, ok: false, error });
   if (opt.verbose) opt.trace.push({ step, ok: false, error });
 }
@@ -375,37 +502,48 @@ function step_fail(opt: CoreOpt, step: string, error: string): void {
 function finalize(
   ok: boolean,
   times: number,
-  dir: LoopDir,
+  dir: LoopDir | "dual",
   entry: SourceFormat,
-  opt: CoreOpt,
-  final?: { fmt: Fmt; text: string }
+  trace: Step[],
+  failures: Step[],
+  artifacts?: Artifact[],
+  marks?: NodeMark[],
+  final?: { fmt: Fmt; text: string },
+  dualFinals?: { cw: { fmt: Fmt; text: string }; ccw: { fmt: Fmt; text: string } }
 ): LoopReport {
-
-  const report: LoopReport = {
+  return {
     ok,
     times,
     dir,
     entry,
+    failures,
+    trace: trace.length ? trace : undefined,
+    artifacts,
+    marks,
     final,
+    dualFinals,
   };
-
-  if (opt.failures.length) report.failures = opt.failures;
-  if (opt.verbose) report.trace = opt.trace;
-  if (opt.capture) report.artifacts = opt.capture.artifacts;
-
-  return report;
 }
 
 function clamp_int(n: number, min: number, max: number): number {
   const x = Math.trunc(n);
-  return Number.isNaN(x) ? min : Math.min(max, Math.max(min, x));
+  if (Number.isNaN(x)) return min;
+  if (x < min) return min;
+  if (x > max) return max;
+  return x;
 }
 
 function err_to_string(err: unknown): string {
-  return err instanceof Error ? err.message || String(err) : String(err);
+  if (err instanceof Error) return err.message || String(err);
+  return String(err);
 }
 
 function is_html_element(x: unknown): x is HTMLElement {
-  const H = (globalThis as any).HTMLElement;
+  const g: any = globalThis as any;
+  const H = g.HTMLElement;
   return typeof H === "function" && x instanceof H;
+}
+function snapshot_node_hson(n: HsonNode, max = 4000): string {
+  const s = make_string(hson.fromNode(n as any).toHSON().parse());
+  return s.length > max ? s.slice(0, max) + `…(+${s.length - max})` : s;
 }
