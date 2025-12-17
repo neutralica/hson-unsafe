@@ -2,12 +2,12 @@
 
 import { kebab_to_camel } from "../primitive-utils/kebab-to-camel.util";
 
-// CHANGED: keep this table small and explicit.
+//  keep this table small and explicit.
 const CSS_PROP_ALIASES: Readonly<Record<string, string>> = {
   float: "cssFloat",
 };
 
-// CHANGED: vendor prefixes to CSSOM-style names.
+//  vendor prefixes to CSSOM-style names.
 const VENDOR_PREFIX_ALIASES: Readonly<Record<string, string>> = {
   "-webkit-": "Webkit",
   "-moz-": "Moz",
@@ -16,17 +16,49 @@ const VENDOR_PREFIX_ALIASES: Readonly<Record<string, string>> = {
 };
 
 /**
- * Accept camelCase, kebab-case, vendor-ish forms, and custom props.
- * Return canonical CSSOM-style camelCase (or `--var` unchanged).
+ * Normalize a CSS style property key into a canonical form used internally
+ * by the style system.
+ *
+ * This function exists to collapse the many ways a developer might specify
+ * a CSS property into a single, predictable representation before it is
+ * applied or removed.
+ *
+ * Accepted input forms:
+ * - camelCase (e.g. `backgroundColor`)
+ * - kebab-case (e.g. `background-color`)
+ * - vendor-prefixed kebab-case (e.g. `-webkit-user-select`)
+ * - CSS custom properties (e.g. `--my-var`)
+ *
+ * Normalization rules:
+ * - Custom properties (`--*`) are returned unchanged.
+ * - Known CSS aliases (e.g. `"float"`) are mapped explicitly
+ *   (e.g. → `"cssFloat"`).
+ * - Vendor-prefixed kebab-case properties are converted to their
+ *   CSSOM-style camelCase equivalents (e.g. `-webkit-foo-bar` → `WebkitFooBar`).
+ * - Standard kebab-case properties are converted to camelCase.
+ * - Already-camelCase properties are returned as-is.
+ *
+ * This canonical form is used consistently across:
+ * - Proxy-based setters (`style.set.backgroundColor(...)`)
+ * - String-based setters (`setProp("background-color", ...)`)
+ * - Bulk setters (`setMany({ backgroundColor: ..., "background-color": ... })`)
+ *
+ * @param raw
+ *   A raw CSS property key in camelCase, kebab-case, vendor-prefixed,
+ *   or custom-property form.
+ *
+ * @returns
+ *   A canonicalized property key suitable for internal style application.
+ *   Returns an empty string if the input trims to empty.
  */
-export function normalize_css_prop_key(raw: string): string {
+export function nrmlz_cssom_prop_key(raw: string): string {
   const p = raw.trim();
   if (p === "") return "";
 
   // custom properties stay as-is
   if (p.startsWith("--")) return p;
 
-  // CHANGED: aliases first (treat input case-insensitively)
+  //  aliases first (treat input case-insensitively)
   const lower = p.toLowerCase();
   const aliased = CSS_PROP_ALIASES[lower];
   if (aliased) return aliased;

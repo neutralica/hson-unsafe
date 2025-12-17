@@ -3,7 +3,7 @@
 import { is_Primitive } from "../cote-utils/guards.core";
 import { HsonNode} from "../../types-consts/node.types";
 import { STR_TAG, VAL_TAG, VSN_TAGS, II_TAG, ROOT_TAG } from "../../types-consts/constants";
-import { is_Node } from "../node-utils/node-guards.new";
+import { is_Node } from "../node-utils/node-guards";
 import { Primitive } from "../../types-consts/core.types";
 
 /**

@@ -6,7 +6,7 @@ import { CREATE_NODE } from "../../types-consts/factories";
 import { is_Primitive, is_string } from "../../utils/cote-utils/guards.core";
 import { _snip } from "../../utils/sys-utils/snip.utils";
 import { _throw_transform_err } from "../../utils/sys-utils/throw-transform-err.utils";
-import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs.utils";
+import { parse_html_attrs } from "../../utils/html-utils/parse_html_attrs";
 import { coerce } from "../../utils/primitive-utils/coerce-string.utils";
 import { assert_invariants } from "../../diagnostics/assert-invariants.test";
 import { expand_entities } from "../../utils/html-preflights/expand-entities";
@@ -21,7 +21,7 @@ import { dedupe_attrs_html } from "../../safety/dedupe-attrs";
 import { quote_unquoted_attrs } from "../../utils/html-preflights/quoted-unquoted";
 import { mangle_illegal_attrs } from "../../utils/html-preflights/mangle-illegal-attrs";
 import { namespace_svg } from "../../utils/html-preflights/namespace-svg";
-import { is_indexed } from "../../utils/node-utils/node-guards.new";
+import { is_indexed } from "../../utils/node-utils/node-guards";
 import { Primitive } from "../../types-consts/core.types";
 
 /**

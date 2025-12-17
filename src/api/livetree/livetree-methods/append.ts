@@ -1,7 +1,7 @@
 // append.ts
 
-import { is_Node } from "../../../utils/node-utils/node-guards.new";
-import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem.new.utils";
+import { is_Node } from "../../../utils/node-utils/node-guards";
+import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem";
 import { STR_TAG, ELEM_TAG } from "../../../types-consts/constants";
 import { HsonNode } from "../../../types-consts/node.types";
 import { CREATE_NODE } from "../../../types-consts/factories";

@@ -1,6 +1,6 @@
 import { HsonNode } from "../../types-consts/node.types";
 import { ROOT_TAG } from "../../types-consts/constants";
-import { is_Node } from "./node-guards.new";
+import { is_Node } from "./node-guards";
 
 /**
  * Normalize a returned parse root into a stable node fragment.

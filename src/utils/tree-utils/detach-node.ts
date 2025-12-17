@@ -3,7 +3,7 @@
 import { _listeners_off_for_target } from "../../api/livetree/livetree-methods/listen";
 import { HsonNode } from "../../types-consts/node.types";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
-import { is_Node } from "../node-utils/node-guards.new";
+import { is_Node } from "../node-utils/node-guards";
 import { element_for_node } from "./node-map-helpers";
 
 

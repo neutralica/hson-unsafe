@@ -14,7 +14,7 @@
 
 import { hson } from "../hson";
 import { HsonNode } from "../types-consts";
-import { is_Node } from "../utils/node-utils/node-guards.new";
+import { is_Node } from "../utils/node-utils/node-guards";
 import { make_string } from "../utils/primitive-utils/make-string.nodes.utils";
 import { assert_invariants } from "./assert-invariants.test";
 import { compare_nodes } from "./compare-nodes.test";
@@ -30,7 +30,7 @@ export type LoopOpts = {
   verbose?: boolean;         // default false; when true, include trace
   stopOnFirstFail?: boolean; // default true
   capture?: boolean;         // capture emitted artifacts (strings)
-  dual?: boolean;            // CHANGED: run both cw + ccw and compare final nodes (default true)
+  dual?: boolean;            //  run both cw + ccw and compare final nodes (default true)
   paranoid?: boolean;        // ADDED: also compare per-step parsed nodes across dirs (requires captureNodes)
 };
 
@@ -111,7 +111,7 @@ type CoreOpt = {
   stopOnFirstFail: boolean;
 
   capture?: { artifacts: Artifact[] }; // emitted text artifacts
-  marks?: { nodes: NodeMark[] };       // CHANGED: parsed-node marks for paranoid mode
+  marks?: { nodes: NodeMark[] };       //  parsed-node marks for paranoid mode
 };
 
 type RunResult = {
@@ -156,7 +156,7 @@ function runRing(
         return { ok: false, final: { fmt: entryFmt, text: carryText }, finalNode: node };
       }
 
-      // CHANGED: capture emitted artifacts here
+      //  capture emitted artifacts here
       
       const next = safe_parse(fmt, text, `parse:${fmt}`, opt, { lap, fmt, phase: "parse" });
       if (!next) {
@@ -236,7 +236,7 @@ export function _test_full_loop(atom: FixtureAtom, opts: LoopOpts = {}): LoopRep
     stopOnFirstFail: opts.stopOnFirstFail ?? true,
   };
 
-  // CHANGED: dual by default
+  //  dual by default
   const dual = opts.dual ?? true;
 
   const times = clamp_int(opts.times ?? 3, 1, 10_000);
@@ -284,7 +284,7 @@ export function _test_full_loop(atom: FixtureAtom, opts: LoopOpts = {}): LoopRep
   const cwRes = runRing(fmt, text, "cw", times, cwCore);
   const ccwRes = runRing(fmt, text, "ccw", times, ccwCore);
 
-  // CHANGED: compare final nodes cw vs ccw (path dependence detector)
+  //  compare final nodes cw vs ccw (path dependence detector)
   const finalDiffs = compare_nodes(cwRes.finalNode, ccwRes.finalNode, false);
   if (finalDiffs.length) {
     step_fail({ trace, failures, verbose: !!opts.verbose, stopOnFirstFail: true }, "dual:finalNode cw != ccw", finalDiffs[0]);

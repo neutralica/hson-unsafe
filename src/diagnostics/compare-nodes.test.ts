@@ -1,7 +1,7 @@
 // compare-nodes.ts
 
 import type { HsonNode } from "../types-consts/node.types";
-import { is_Node } from "../utils/node-utils/node-guards.new";
+import { is_Node } from "../utils/node-utils/node-guards";
 import { make_string } from "../utils/primitive-utils/make-string.nodes.utils";
 
 const LEAF = new Set(["_str", "_val"]);

@@ -14,9 +14,24 @@ import { Primitive } from "../../types-consts/core.types";
 import { make_selector_create, make_tree_create } from "./livetree-methods/create-typed";
 import { make_style_setter, StyleSetter } from "./livetree-methods/style-setter";
 
-
+/**
+ * Combine multiple `ListenerSub` subscriptions into a single subscription.
+ *
+ * The returned subscription reports a summed `count`, an `ok` flag that is
+ * true if any sub is ok, and an `off()` method that calls `off()` on each
+ * provided sub in order.
+ *
+ * Assumes each `sub.off()` is idempotent; this helper does not attempt to
+ * guard against double-disposal beyond delegating to the subs themselves.
+ *
+ * @param subs
+ *   Subscriptions to combine.
+ *
+ * @returns
+ *   A single `ListenerSub` that aggregates counters/flags and disposes all subs.
+ */
 function combineSubs(subs: readonly ListenerSub[]): ListenerSub {
-  // CHANGED: combined off() calls all; idempotency assumed per sub.off()
+  // combined off() calls all; idempotency assumed per sub.off()
   return {
     count: subs.reduce((n, s) => n + s.count, 0),
     ok: subs.some(s => s.ok),
@@ -25,11 +40,26 @@ function combineSubs(subs: readonly ListenerSub[]): ListenerSub {
     },
   };
 }
-
+/**
+ * Create a no-op `ListenerBuilder` implementation.
+ *
+ * This is used when a `TreeSelector` (or similar surface) has no viable DOM
+ * targets to attach listeners to, but callers still want a consistent fluent
+ * API that won’t throw.
+ *
+ * Behavior:
+ * - All `on*()` methods return a stable no-op `ListenerSub`.
+ * - All option/modifier methods (`once`, `passive`, `capture`, etc.) return the
+ *   same builder instance for chaining.
+ * - The no-op `ListenerSub.off()` is safe to call repeatedly.
+ *
+ * @returns
+ *   A `ListenerBuilder` whose operations are inert and safe to chain.
+ */
 function makeNoopListenerBuilder(): ListenerBuilder {
   const noopSub: ListenerSub = { count: 0, ok: false, off() { /* no-op */ } };
 
-  // CHANGED: options return itself; on* returns ListenerSub
+  // options return itself; on* returns ListenerSub
   let api: ListenerBuilder;
   api = {
     on() { return noopSub; },
@@ -79,8 +109,6 @@ function makeNoopListenerBuilder(): ListenerBuilder {
  */
 export function make_tree_selector(trees: LiveTree[]): TreeSelector {
   //  defensive copy to avoid external mutation
-
-
   const items: LiveTree[] = [...trees];
 
   const result: TreeSelector = {
@@ -391,7 +419,7 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
      * - Iterates over the internal list of trees and calls `t.setText(value)`
      *   on each one, so each selected node is updated via the same HSON +
      *   DOM sync path as a single-tree call.
-     * - The selection itself is not changed: after this call, the selector
+     * - The selection itself is not  after this call, the selector
      *   still refers to the same `LiveTree` instances, now with updated text.
      *
      * This is a broadcast side-effect: it performs a write operation on
@@ -450,9 +478,9 @@ function makeMultiDataManager(items: LiveTree[]): DataManager {
       return firstTree();
     },
 
-    setMulti(map: DatasetObj): LiveTree {
+    setMany(map: DatasetObj): LiveTree {
       for (const t of items) {
-        t.data.setMulti(map);
+        t.data.setMany(map);
       }
       return firstTree();
     },
@@ -495,7 +523,7 @@ function makeMultiDataManager(items: LiveTree[]): DataManager {
 function makeMultiListener(items: LiveTree[]): ListenerBuilder {
   if (items.length === 0) return makeNoopListenerBuilder();
 
-  const listeners = items.map(tree => build_listener(tree)); // CHANGED: ListenerBuilder now
+  const listeners = items.map(tree => build_listener(tree)); //  ListenerBuilder now
 
   let multi: ListenerBuilder;
 
@@ -535,7 +563,7 @@ function makeMultiListener(items: LiveTree[]): ListenerBuilder {
       return combineSubs(subs);
     },
 
-    // CHANGED: options return multi after fanning out
+    //  options return multi after fanning out
     once() { listeners.forEach(l => l.once()); return multi; },
     passive() { listeners.forEach(l => l.passive()); return multi; },
     capture() { listeners.forEach(l => l.capture()); return multi; },

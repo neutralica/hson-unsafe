@@ -1,11 +1,49 @@
-
+// at-property.ts
 
 import { CssCustomPropName, PropertyInput, PropertyInputTuple, PropertyManager, PropertyRegistration, PropertySyntax } from "../../../types-consts/at-property.types";
 
+/**
+ * Type guard for `PropertyInput` tuple form.
+ *
+ * `@property` registrations can be provided either as:
+ * - a tuple (runtime array), or
+ * - an object (runtime plain object).
+ *
+ * This guard discriminates the tuple form using `Array.isArray`, which is
+ * reliable at runtime for distinguishing arrays from objects.
+ *
+ * @param x
+ *   A `PropertyInput` value in either tuple or object form.
+ *
+ * @returns
+ *   `true` if `x` is the tuple form (`PropertyInputTuple`), otherwise `false`.
+ */
 function isPropTuple(x: PropertyInput): x is PropertyInputTuple {
     // tuples are arrays at runtime; objects are not.
     return Array.isArray(x);
 }
+
+/**
+ * Normalize a `PropertyInput` into a canonical `PropertyRegistration`.
+ *
+ * Accepts either tuple-style or object-style inputs and produces a single,
+ * normalized registration shape:
+ * - trims `init` when present
+ * - defaults `inh` to `false`
+ * - enforces that `init` is provided when `syn !== "*"`
+ *
+ * This function is intended to be the single “front door” for input coercion
+ * so the rest of the manager can assume stable, comparable values.
+ *
+ * @param input
+ *   A `PropertyInput` in tuple form or object form.
+ *
+ * @returns
+ *   A normalized `PropertyRegistration`.
+ *
+ * @throws
+ *   If `syn !== "*"` and `init` is missing or empty after trimming.
+ */
 function coerce_atprop_input(input: PropertyInput): PropertyRegistration {
     // tuple:
     if (isPropTuple(input)) {
@@ -13,7 +51,7 @@ function coerce_atprop_input(input: PropertyInput): PropertyRegistration {
         const init: string | undefined = initOrUndefined?.trim();
         const inh: boolean = inhOrUndefined ?? false;
 
-        // CHANGED: enforce init unless "*"
+        //  enforce init unless "*"
         if (syn !== "*" && (!init || init === "")) {
             throw new Error(`@property ${name}: init is required when syntax is not "*".`);
         }
@@ -33,98 +71,101 @@ function coerce_atprop_input(input: PropertyInput): PropertyRegistration {
 
     return { name, syn, inh, init };
 }
-// ----------------------------------------------
+
+/**
+ * Create a `PropertyManager` for CSS `@property` registrations.
+ *
+ * This manager stores normalized registrations keyed by custom property name
+ * and can render either a single `@property` block or the full set.
+ *
+ * Design notes:
+ * - Inputs are normalized through `coerce_atprop_input()` so internal state is
+ *   canonical (stable comparisons, stable rendering).
+ * - `onChange()` is invoked whenever registrations *meaningfully* change, so a
+ *   caller (typically a higher-level CSS manager) can re-render/rebuild a style
+ *   sheet snapshot.
+ * - Rendering is deterministic: `renderAll()` sorts names to keep output stable
+ *   across runs and avoid noisy diffs.
+ *
+ * @param args
+ *   Construction options.
+ *
+ * @param args.onChange
+ *   Callback invoked when the manager’s rendered output should be considered
+ *   dirty (e.g., after register/unregister/batch updates).
+ *
+ * @returns
+ *   A `PropertyManager` with register/unregister/query and render capabilities.
+ */
 export function manage_property(args: {
     // Called whenever registrations change.
     onChange: () => void;
 }): PropertyManager {
-    // CHANGED: internal storage is canonical normalized registrations by name.
+    //  internal storage is canonical normalized registrations by name.
     const regByName: Map<CssCustomPropName, PropertyRegistration> = new Map();
 
-    // CHANGED: normalize all inputs into the canonical shape.
-    // function normalize(input: PropertyInput): PropertyRegistration {
-    //     // CHANGED: tuple → object normalization.
-    //     if (Array.isArray(input)) {
-    //         // CHANGED: destructure by position.
-    //         const [name, syn, initOrUndefined, inhOrUndefined] = input;
 
-    //         // CHANGED: interpret third slot as init (if present).
-    //         const init: string | undefined = initOrUndefined;
 
-    //         // CHANGED: interpret fourth slot as inh (if present), default false.
-    //         const inh: boolean = inhOrUndefined ?? false;
-
-    //         // CHANGED: validate required init unless syn === "*".
-    //         if (syn !== "*" && (init === undefined || init.trim() === "")) {
-    //             throw new Error(`@property ${name}: init is required when syntax is not "*".`);
-    //         }
-
-    //         // CHANGED: return canonical form with trimmed init.
-    //         return { name, syn, inh, init: init?.trim() };
-    //     }
-
-    //     // CHANGED: object input defaults and validation.
-    //     const name: CssCustomPropName = input.name;
-    //     const syn: PropertySyntax = input.syn;
-    //     const inh: boolean = input.inh ?? false;
-    //     const init: string | undefined = input.init?.trim();
-
-    //     // CHANGED: validate required init unless syn === "*".
-    //     if (syn !== "*" && (init === undefined || init === "")) {
-    //         throw new Error(`@property ${name}: init is required when syntax is not "*".`);
-    //     }
-
-    //     // CHANGED: canonical form.
-    //     return { name, syn, inh, init };
-    // }
-
-    // CHANGED: render a single canonical registration.
+/**
+ * Render a single `@property` registration into canonical CSS text.
+ *
+ * Output is intentionally deterministic and diff-friendly:
+ * - always emits `syntax` and `inherits`
+ * - emits `initial-value` only when provided (optional only for `syn="*"`)
+ * - uses stable indentation and newline joining
+ *
+ * @param r
+ *   The normalized property registration to render.
+ *
+ * @returns
+ *   A complete `@property … { … }` block as CSS text.
+ */
     function renderReg(r: PropertyRegistration): string {
-        // CHANGED: build lines explicitly; init is optional only for "*".
+        //  build lines explicitly; init is optional only for "*".
         const lines: string[] = [];
 
-        // CHANGED: start at-rule block.
+        //  start at-rule block.
         lines.push(`@property ${r.name} {`);
 
-        // CHANGED: syntax is always required.
+        //  syntax is always required.
         lines.push(`  syntax: "${r.syn}";`);
 
-        // CHANGED: inherits is always emitted explicitly.
+        //  inherits is always emitted explicitly.
         lines.push(`  inherits: ${r.inh ? "true" : "false"};`);
 
-        // CHANGED: initial-value is emitted only if present.
+        //  initial-value is emitted only if present.
         if (r.init !== undefined) {
             lines.push(`  initial-value: ${r.init};`);
         }
 
-        // CHANGED: end block.
+        //  end block.
         lines.push(`}`);
 
-        // CHANGED: join with newlines.
+        //  join with newlines.
         return lines.join("\n");
     }
 
-    // CHANGED: public API implementation.
+    //  public API implementation.
     return {
         register(input: PropertyInput): void {
             const next = coerce_atprop_input(input);
             const prev = regByName.get(next.name);
 
-            // CHANGED: cheap equality check; normalize ensures stable strings.
+            //  cheap equality check; normalize ensures stable strings.
             const isSame =
                 prev !== undefined &&
                 prev.syn === next.syn &&
                 prev.inh === next.inh &&
                 prev.init === next.init;
 
-            if (isSame) return; // CHANGED: avoid pointless re-render.
+            if (isSame) return; //  avoid pointless re-render.
 
             regByName.set(next.name, next);
             args.onChange();
         },
 
         registerMany(inputs: readonly PropertyInput[]): void {
-            // CHANGED: batch normalize + set.
+            //  batch normalize + set.
             for (const input of inputs) {
                 const reg: PropertyRegistration = coerce_atprop_input(input);
                 regByName.set(reg.name, reg);
@@ -133,32 +174,32 @@ export function manage_property(args: {
         },
 
         unregister(name: CssCustomPropName): void {
-            // CHANGED: delete and mark changed if something was removed.
+            //  delete and mark changed if something was removed.
             const didDelete: boolean = regByName.delete(name);
             if (didDelete) args.onChange();
         },
 
         has(name: CssCustomPropName): boolean {
-            // CHANGED: trivial query.
+            //  trivial query.
             return regByName.has(name);
         },
 
         get(name: CssCustomPropName): PropertyRegistration | undefined {
-            // CHANGED: return canonical registration (already readonly).
+            //  return canonical registration (already readonly).
             return regByName.get(name);
         },
 
         renderOne(name: CssCustomPropName): string {
-            // CHANGED: render one or empty string if missing.
+            //  render one or empty string if missing.
             const reg: PropertyRegistration | undefined = regByName.get(name);
             return reg ? renderReg(reg) : "";
         },
 
         renderAll(): string {
-            // CHANGED: sort keys for deterministic output (diff/test friendly).
+            //  sort keys for deterministic output (diff/test friendly).
             const names: CssCustomPropName[] = Array.from(regByName.keys()).sort();
 
-            // CHANGED: render in sorted order.
+            //  render in sorted order.
             const blocks: string[] = [];
             for (const name of names) {
                 const reg = regByName.get(name);

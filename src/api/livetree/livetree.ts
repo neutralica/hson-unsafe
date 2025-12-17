@@ -311,20 +311,22 @@ export class LiveTree {
   }
 
   /*---------- managers & adapters ---------- */
-  /**
-   * Lazily constructed style manager for this tree's node.
-   *
-   * Behavior:
-   * - On first access, constructs a new `StyleManager2` bound to this
-   *   `LiveTree` and caches it in `styleManagerInternal`.
-   * - Subsequent accesses return the same manager instance.
-   *
-   * The style manager provides higher-level operations over inline style
-   * and HSON-backed style objects while keeping DOM and HSON in sync.
-   *
-   * @returns A `StyleManager2` instance bound to this tree.
-   * @see StyleManager
-   */
+ /**
+ * Style write surface for this node’s **inline** `style=""`.
+ *
+ * Returns a `StyleSetter` (fluent API) whose backend is this node’s `StyleManager`.
+ * The setter:
+ * - normalizes property keys (camelCase / kebab-case / `--vars`) into canonical CSS keys,
+ * - coerces values to strings (with `null|undefined` meaning “remove”),
+ * - applies mutations to inline style while keeping the DOM and HSON attrs in sync.
+ *
+ * Implementation note:
+ * - The underlying `StyleManager` is constructed lazily on first access and cached.
+ *
+ * @returns A `StyleSetter` bound to this tree’s node (inline style backend).
+ * @see make_style_setter
+ * @see StyleManager
+ */
   public get style(): StyleSetter {
     if (!this.styleManagerInternal) {
       this.styleManagerInternal = new StyleManager(this);
@@ -355,16 +357,21 @@ export class LiveTree {
     return this.datasetManagerInternal;
   }
 
-  /**
-   * Return a CSS handle scoped to this tree's QUID selector.
-   *
-   * Internally calls `manageCss([this.quid])`, producing a `CssHandle`
-   * that can be used to manage styles keyed by this node's QUID.
-   *
-   * @returns A `CssHandle` targeting this tree's node.
-   * @see css_for_quids
-   * @see CssHandle
-   */
+/**
+ * Style write surface for this node’s stylesheet rule(s), data-_quid as the selector.
+ *
+ * Returns a `CssHandle` whose core mutation API is a `StyleSetter` backed by `CssManager`.
+ * Writes become QUID-scoped blocks of the form:
+ *   `[data-_quid="..."] { ... }`
+ *
+ * This is distinct from `style`:
+ * - `style` mutates inline `style=""` on the element,
+ * - `css` mutates stylesheet rules owned by `CssManager`.
+ *
+ * @returns A `CssHandle` targeting this node’s QUID selector.
+ * @see css_for_quids
+ * @see CssManager
+ */
   public get css(): CssHandle {
     return css_for_quids([this.quid]);
   }

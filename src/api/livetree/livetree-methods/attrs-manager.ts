@@ -1,3 +1,5 @@
+// attrs-manager.ts
+
 import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
 import { parse_style_string } from "../../../utils/attrs-utils/parse-style";
 import { serialize_style } from "../../../utils/attrs-utils/serialize-style";

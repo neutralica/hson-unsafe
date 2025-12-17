@@ -5,7 +5,7 @@
  * Using this enum provides compile-time safety and editor autocompletion.
  * Example: `const myColor = HtmlColor.CornflowerBlue;`
  */
-export const HtmlColor = {
+export const _htmlColor = {
   AliceBlue: "#F0F8FF",
   AntiqueWhite: "#FAEBD7",
   Aqua: "#00FFFF",

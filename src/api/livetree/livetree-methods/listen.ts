@@ -167,7 +167,7 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     queue.push(job);
     schedule();
 
-    // CHANGED: return a per-call subscription handle
+    //  return a per-call subscription handle
     const sub: ListenerSub = {
       off(): void {
         // cancel if not yet attached
@@ -179,12 +179,12 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
           job.offs = null;
         }
 
-        // CHANGED: keep handle state honest
+        //  keep handle state honest
         sub.count = 0;
         sub.ok = false;
       },
       count: 0,   // updated after attach flush
-      ok: false,  // CHANGED: nothing attached yet
+      ok: false,  //  nothing attached yet
     };
     job.sub = sub;
     return sub;
@@ -210,7 +210,7 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
       if (missingPolicy === "throw") throw new Error(msg);
       if (missingPolicy === "warn") console.warn(msg, { tree });
 
-      // CHANGED: if no targets, mark all queued jobs as “done but unattached”
+      //  if no targets, mark all queued jobs as “done but unattached”
       for (const job of queue) {
         job.offs = null;
         if (job.sub) {
@@ -228,7 +228,7 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
       passive: !!opts.passive,
     };
 
-    // CHANGED: snapshot and clear queue so future schedule() ticks don’t reattach old jobs
+    //  snapshot and clear queue so future schedule() ticks don’t reattach old jobs
     const jobs = queue.splice(0, queue.length);
 
     const offsAll: Array<() => void> = [];
@@ -279,7 +279,7 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     onKeyDown: (fn) => on("keydown", fn),
     onKeyUp: (fn) => on("keyup", fn),
 
-    // CHANGED: option methods return ListenerBuilder
+    //  option methods return ListenerBuilder
     once: () => { opts = { ...opts, once: true }; return api; },
     passive: () => { opts = { ...opts, passive: true }; return api; },
     capture: () => { opts = { ...opts, capture: true }; return api; },

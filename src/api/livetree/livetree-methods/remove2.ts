@@ -7,7 +7,7 @@ import { detach_node_deep } from "../../../utils/tree-utils/detach-node";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { LiveTree } from "../livetree";
 import { CssManager } from "./css-manager";
-import { is_Node } from "../../../utils/node-utils/node-guards.new";
+import { is_Node } from "../../../utils/node-utils/node-guards";
 
 /**
  * Recursively convert a HSON node into a JSON-shaped `JsonValue`.

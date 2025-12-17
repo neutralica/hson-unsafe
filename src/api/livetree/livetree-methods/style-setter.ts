@@ -1,7 +1,6 @@
 // style-setter.ts
 
-
-import { normalize_css_prop_key } from "../../../utils/attrs-utils/normalize-css";
+import { nrmlz_cssom_prop_key } from "../../../utils/attrs-utils/normalize-css";
 import { SetSurface } from "./css-manager";
 import { StyleKey } from "./style-manager";
 
@@ -18,6 +17,21 @@ export type StyleValue =
 // canonical “many” map: camelCase keys at rest
 export type StyleMap = Readonly<Partial<Record<StyleKey, StyleValue>>>;
 
+/**
+ * Fluent write surface for styles.
+ *
+ * A `StyleSetter` is a *handle* bound to some target (one element’s inline style,
+ * one QUID-scoped CSS rule block, a multi-selection broadcast, etc.).
+ *
+ * The same API is used across backends; differences live behind `StyleSetterAdapters`.
+ *
+ * - `setProp` / `setMany` write values.
+ * - `remove` deletes a single property.
+ * - `clear` deletes all properties for the handle.
+ * - `set` is a Proxy-based convenience surface (`setter.set.backgroundColor("...")`).
+ *
+ * All methods return the same `StyleSetter` for chaining.
+ */
 export type StyleSetter = Readonly<{
   /** Proxy builder: setter.set.backgroundColor("aquamarine") */
   set: SetSurface<StyleSetter>;
@@ -35,6 +49,22 @@ export type StyleSetter = Readonly<{
   clear: () => StyleSetter;
 }>;
 
+/**
+ * Backend interface used by `make_style_setter()` to perform actual writes.
+ *
+ * This is the “bridge” between the generic fluent API (`StyleSetter`) and a concrete style backend
+ * (inline style via `StyleManager`, QUID-scoped stylesheet rules via `CssManager`, etc.).
+ *
+ * ## Invariants expected by implementers
+ * - `propCanon` is already normalized to canonical CSS form (kebab-case or `--custom-prop`).
+ * - `value` is already rendered to a string (no additional coercion should be needed).
+ * - `remove()` and `clear()` should be idempotent (safe to call repeatedly).
+ *
+ * Implementers are responsible for:
+ * - choosing the storage/write strategy (DOM `style=""`, CSSStyleRule text, etc.),
+ * - ensuring the target exists (or no-op if it does not),
+ * - updating any “dirty” flags / re-render triggers used by the backend.
+ */
 export type StyleSetterAdapters = Readonly<{
   /**
    * Apply a single *canonical* property (camelCase or --var) with a rendered string value.
@@ -55,7 +85,50 @@ export type StyleSetterAdapters = Readonly<{
   keys?: readonly string[];
 }>;
 
-/** Create a StyleSetter backed by the provided adapters. */
+/**
+ * Create a `StyleSetter`: a small, fluent, backend-agnostic “write surface” for CSS style.
+ *
+ * ## What this is
+ * `StyleSetter` is intentionally dumb: it holds **no state** and performs **no DOM/CSSOM logic**
+ * itself. It only:
+ *  1) normalizes property keys to a canonical CSS form, and
+ *  2) renders/coerces values into strings (or “remove”),
+ * then delegates the actual write/remove/clear work to the provided `adapters`.
+ *
+ * ## Where it sits in the system (wiring diagram)
+ * - `LiveTree.style` / `TreeSelector.style` typically returns a `StyleSetter` backed by a
+ *   `StyleManager` adapter (inline style on the element).
+ * - `LiveTree.css` / `TreeSelector.css` typically returns a `StyleSetter` backed by a
+ *   `CssManager` adapter (QUID-scoped rules in a stylesheet).
+ *
+ * That means: the *same* fluent API (setProp/setMany/remove/clear and the `setter.set.*` proxy)
+ * can be used regardless of whether the underlying mechanism is inline styles or stylesheet rules.
+ *
+ * ## Adapter contract (important invariants)
+ * The adapters are called with:
+ * - `propCanon`: a canonical CSS property string (kebab-case or `--custom-prop`).
+ * - `value`: a rendered string value (already normalized/coerced by `renderStyleValue()`).
+ *
+ * Adapters should treat these as “ready to apply”:
+ * - `apply(propCanon, value)` must perform the write for that backend.
+ * - `remove(propCanon)` must delete/unset that property for that backend.
+ * - `clear()` must remove all properties for that handle/backend target.
+ *
+ * `make_style_setter()` guarantees:
+ * - `null | undefined` values are treated as **remove semantics** (calls `adapters.remove()`).
+ * - keys passed via proxy or map entries are normalized via `normalize_css_prop_key()`.
+ *
+ * ## Proxy builder notes
+ * The returned `setter.set` is a Proxy that converts property access into calls:
+ *   `setter.set.backgroundColor("red")` → `setProp("backgroundColor", "red")`
+ *   `setter.set["background-color"]("red")` → `setProp("background-color", "red")`
+ *   `setter.set.var("--k", 1)` → `setProp("--k", 1)`
+ *
+ * @param adapters Backend callbacks that implement apply/remove/clear for a specific target
+ * (inline style, QUID stylesheet block, etc.).
+ *
+ * @returns A fluent `StyleSetter` that delegates mutations to the provided adapters.
+ */
 export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
   const keySet: ReadonlySet<string> | null =
     adapters.keys ? new Set(adapters.keys) : null;
@@ -68,10 +141,10 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
     set: any;
   } = {
     setProp(prop: StyleKey, v: StyleValue): StyleSetter {
-      const canon = normalize_css_prop_key(prop);
+      const canon = nrmlz_cssom_prop_key(prop);
       const rendered = renderStyleValue(v);
 
-      // CHANGED: null/undefined => remove (predictable “delete semantics”)
+      //  null/undefined => remove (predictable “delete semantics”)
       if (rendered == null) {
         adapters.remove(canon);
         return api;
@@ -89,7 +162,7 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
     },
 
     remove(prop: StyleKey): StyleSetter {
-      adapters.remove(normalize_css_prop_key(prop));
+      adapters.remove(nrmlz_cssom_prop_key(prop));
       return api;
     },
 
@@ -132,7 +205,19 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
 
 /* ----------------------------- normalization ----------------------------- */
 
-/** Render/coerce values to strings. Return null for “remove” semantics. */
+/**
+ * Coerce a `StyleValue` into a CSS-ready string, or return `null` to signal “remove”.
+ *
+ * Semantics:
+ * - `null | undefined` → `null` (meaning: remove the property)
+ * - `string` → trimmed string (empty string is allowed and preserved)
+ * - `number | boolean` → stringified
+ * - `{ value, unit? }` → `${value}${unit ?? ""}` (trimmed)
+ *
+ * This function is the *only* place where `StyleValue` coercion rules should live, so that:
+ * - `StyleManager` and `CssManager` backends behave identically, and
+ * - tests can target one normalization surface rather than multiple call-sites.
+ */
 function renderStyleValue(v: StyleValue): string | null {
   if (v == null) return null;
 
@@ -158,16 +243,9 @@ function renderStyleValue(v: StyleValue): string | null {
       return `${val}${unit}`.trim();
     }
 
-    // CHANGED: fallback so weird objects don't stringify to "[object Object]"
+    //  fallback so weird objects don't stringify to "[object Object]"
     return String(v);
   }
     return String(v);
 }
   
-// old ending
-//   // {value, unit} helper
-//   const raw = v.value;
-//   const unit = v.unit ?? "";
-//   const val = typeof raw === "string" ? raw.trim() : String(raw);
-//   return `${val}${unit}`.trim();
-// }

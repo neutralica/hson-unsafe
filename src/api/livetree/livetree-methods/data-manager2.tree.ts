@@ -1,5 +1,5 @@
 // data-manager.utils.ts
-;
+
 import { Primitive } from "../../../types-consts/core.types";
 import { camel_to_kebab } from "../../../utils/attrs-utils/serialize-style";
 import { LiveTree } from "../livetree";
@@ -86,7 +86,7 @@ export class DataManager {
     }
 
     // 2) Multiple keys at once
-    setMulti(map: DatasetObj): LiveTree {
+    setMany(map: DatasetObj): LiveTree {
         const patch: Record<string, string | null> = {};
 
         for (const [key, value] of Object.entries(map)) {

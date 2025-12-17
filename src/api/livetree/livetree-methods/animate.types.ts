@@ -16,13 +16,13 @@ export type AnimationSpec = Readonly<{
 }>;
 
 export type AnimAdapters<TTree> = Readonly<{
-  // CHANGED: one canonical way to set a single CSS property on the selection.
+  //  one canonical way to set a single CSS property on the selection.
   setStyleProp: (tree: TTree, prop: string, value: string) => TTree;
 
-  // CHANGED: iterate selected DOM elements (for forcing reflow on all if desired).
+  //  iterate selected DOM elements (for forcing reflow on all if desired).
   forEachDomElement: (tree: TTree, fn: (el: Element) => void) => void;
 
-  // CHANGED: get one DOM element (for minimal reflow poke).
+  //  get one DOM element (for minimal reflow poke).
   getFirstDomElement: (tree: TTree) => Element | undefined;
 }>;
 
