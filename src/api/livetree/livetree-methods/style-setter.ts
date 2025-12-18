@@ -45,7 +45,7 @@ export type StyleSetter = Readonly<{
  * (inline style via `StyleManager`, QUID-scoped stylesheet rules via `CssManager`, etc.).
  *
  * ## Invariants expected by implementers
- * - `propCanon` is already normalized to canonical CSS form (kebab-case or `--custom-prop`).
+ * - `propCanon` is already normalized to canonical CSS form (camelCase or `--custom-prop`).
  * - `value` is already rendered to a string (no additional coercion should be needed).
  * - `remove()` and `clear()` should be idempotent (safe to call repeatedly).
  *
@@ -95,7 +95,7 @@ export type StyleSetterAdapters = Readonly<{
  *
  * ## Adapter contract (important invariants)
  * The adapters are called with:
- * - `propCanon`: a canonical CSS property string (kebab-case or `--custom-prop`).
+ * - `propCanon`: already normalized to canonical CSS form (camelCase or `--custom-prop`).
  * - `value`: a rendered string value (already normalized/coerced by `renderCssValue()`).
  *
  * Adapters should treat these as “ready to apply”:
@@ -145,7 +145,7 @@ export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
 
     setMany(map: CssMap): StyleSetter {
       for (const [k, v] of Object.entries(map)) {
-        if (v) { setterApi.setProp(k, v); }
+        if (v !== undefined && v !== null) setterApi.setProp(k, v);
       }
       return api;
     },

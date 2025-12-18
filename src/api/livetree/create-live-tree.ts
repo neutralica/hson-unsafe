@@ -16,6 +16,7 @@ import { HsonNode } from "../../types-consts/node.types";
 import { SVG_NS } from "../../utils/node-utils/node-from-svg";
 import { is_Node } from "../../utils/node-utils/node-guards";
 import { linkNodeToElement } from "../../utils/tree-utils/node-map-helpers";
+import { canon_to_css_prop, nrmlz_cssom_prop_key } from "../../utils/attrs-utils/normalize-css";
 
 
 
@@ -137,8 +138,10 @@ export function create_live_tree2(
           const obj = raw as Record<string, string | number | null>;
           for (const [prop, v] of Object.entries(obj)) {
             const val = v == null ? "" : String(v);
-            if (val === "") elt.style.removeProperty(prop);
-            else elt.style.setProperty(prop, val);
+            const cssProp = canon_to_css_prop(nrmlz_cssom_prop_key(prop));
+            if (!cssProp) continue;
+            if (val === "") elt.style.removeProperty(cssProp);
+            else elt.style.setProperty(cssProp, val);
           }
         }
         continue;

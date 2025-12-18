@@ -149,7 +149,7 @@ export interface CssRuleBuilder {
  * Plain-object representation of inline style declarations.
  *
  * Keys:
- * - `StyleKey` values, typically:
+ * - `CsseKey` values, typically:
  *   - Known CSS properties derived from `CSSStyleDeclaration`.
  *   - Custom props / kebab-case names.
  *
@@ -162,7 +162,10 @@ export interface CssRuleBuilder {
  * This shape is used by APIs like `StyleManager2.setMulti` to perform
  * batch style updates on a node.
  */
-export type CssMap = Readonly<Partial<Record<CssKey, CssValue>>>;
+export type CssMap = Readonly<
+  Partial<Record<AllowedStyleKey | "float", CssValue>> &
+  Record<string, CssValue>
+>;
 
 /**
  * Public-facing handle for working with QUID-scoped stylesheet rules.
@@ -198,19 +201,27 @@ export type CssHandle = Readonly<
 >;
 
 /**
- * Union of all style keys supported by the style system:
- * - `AllowedStyleKey` — canonical properties from `CSSStyleDeclaration`.
- * - `--${string}` — arbitrary CSS custom properties (variables).
- * - `${string}-${string}` — kebab-case custom or unknown properties.
+ * Union of style keys supported by the style system.
  *
- * This allows both strongly-typed known properties and flexible
- * custom/kebab names to be handled by the same infrastructure.
+ * We keep these **strongly typed** so `style.setMany({ ... })` gets
+ * autocomplete for common keys like `zIndex`, while still allowing:
+ * - CSS custom properties (`--foo`)
+ * - kebab-case keys (`background-color`, `pointer-events`, etc.)
+ * - `"float"` as a convenience alias (normalized to `cssFloat`)
  */
 
+type StringKeys<T> = Extract<keyof T, string>;
+type KeysWithStringValues<T> = {
+  [K in StringKeys<T>]: T[K] extends string ? K : never
+}[StringKeys<T>];
+
+export type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>, "cssText">;
+
+/**
+ * Property-name type for stringly-typed APIs like `setProp("...", ...)`.
+ *
+ * Keep this broad so callers can pass dynamic strings without fighting the type
+ * system. For autocomplete, see `CssMap` (used by `setMany({ ... })`).
+ */
 export type CssKey = string;
-// keep this aligned with your existing CssValue if you already have it
-// canonical “many” map: camelCase keys at rest
-
-
-
 

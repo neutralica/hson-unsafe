@@ -1,7 +1,7 @@
 // data-manager.utils.ts
 
 import { Primitive } from "../../../types-consts/core.types";
-import { camel_to_kebab } from "../../../utils/attrs-utils/serialize-style";
+import { camel_to_kebab } from "../../../utils/attrs-utils/camel_to_kebab";
 import { LiveTree } from "../livetree";
 
 

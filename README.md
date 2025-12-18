@@ -24,20 +24,21 @@ The core HSON is a set of seven transformers that convert data between HTML, JSO
 
 > This project is a proof of concept and not a final version. Carries a risk of executing unescaped html from unknown sources.  Use at your own risk. 
 
-### Installation
-// NOT LIVE ON NPM
+
 ```bash 
-// npm install hson
-// THIS DOESNT EXIST
+ npm install hson-live
+```
 
 This project uses TypeScript. To build:
 
 1. Install dependencies:
    ```bash
    npm install
+   ```
 2. Compile the source:
 ```bash
 npx tsc
+```
 
 This will output compiled JavaScript to the dist/ directory.
 
@@ -53,7 +54,7 @@ import { hson } from 'hson';
 const html = '<div id="main"><p class="greeting">Hello</p></div>';
 
 // 2. Convert it to its HSON representation
-const hsonString = hson.transform
+const hsonString = hson
   .fromHTML(html)
   .toHSON()
   .serialize();
@@ -67,7 +68,7 @@ console.log(hsonString);
 */
 
 // 3. Continue the chain to get a clean JSON object
-const jsonObject = hson.transform
+const jsonObject = hson
   .fromHTML(html)
   .toJSON()
   .parse();
@@ -75,13 +76,27 @@ const jsonObject = hson.transform
 console.log(jsonObject);
 /*
 {
-  "div": {
-    "_meta": { "attrs": { "id": "main" } },
-    "p": {
-      "_meta": { "attrs": { "class": "greeting" } },
-      "#text": "Hello"
+  "_elem": [
+    {
+      "_attrs": {
+        "id": "main"
+      },
+      "div": {
+        "_elem": [
+          {
+            "_attrs": {
+              "class": "greeting"
+            },
+            "p": {
+              "_elem": [
+                "Hello"
+              ]
+            }
+          }
+        ]
+      }
     }
-  }
+  ]
 }
 */
 ```
@@ -89,4 +104,4 @@ console.log(jsonObject);
 
 Documentation
 
-For HSON's syntax, liveTree API, and core concepts, please see the src//docs directory.
+For HSON's syntax, liveTree API, and core concepts, please see /src/docs

@@ -570,6 +570,7 @@ export class LiveTree {
    *          `undefined` if not mounted.
    * @see NodeRef.resolveElement
    */
+  // TODO should this return an HtmlElement to prevent constant typeof checks?
   public asDomElement(): Element | undefined {
     const firstRef = this.nodeRef;
     if (!firstRef) return undefined;

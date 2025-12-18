@@ -2,7 +2,8 @@
 
 import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
 import { CssMap } from "../../../types-consts/css.types";
-import { camel_to_kebab, serialize_style } from "../../../utils/attrs-utils/serialize-style";
+import { serialize_style } from "../../../utils/attrs-utils/serialize-style";
+import { camel_to_kebab } from "../../../utils/attrs-utils/camel_to_kebab";
 import { kebab_to_camel } from "../../../utils/primitive-utils/kebab-to-camel.util";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { LiveTree } from "../livetree";
@@ -255,20 +256,22 @@ function ensureStyleObject(a: Record<string, unknown>): Record<string, string> {
  * @see ensureStyleObject
  */
 function applyStyleToNode(node: HsonNode, kebabName: string, value: string): void {
-    // 1) push to DOM if element exists
     const el = element_for_node(node);
-    if (el instanceof HTMLElement) {
+
+    // CHANGED: allow SVGElement too (and any Element with a style decl)
+    if (el instanceof Element) {
         if (value === "") {
-            el.style.removeProperty(kebabName);
+            (el as any).style.removeProperty(kebabName);
         } else {
-            el.style.setProperty(kebabName, value);
+            (el as any).style.setProperty(kebabName, value);
         }
     }
 
-    // 2) mirror into node._attrs.style (object form)
+    // 2) mirror into node._attrs.style (object form) … unchanged
     const attrs = (node._attrs ??= {}) as Record<string, unknown>;
     const styleObj = ensureStyleObject(attrs);
     const internalKey = kebabName.startsWith("--") ? kebabName : kebab_to_camel(kebabName);
+
     if (value === "") {
         if (Object.prototype.hasOwnProperty.call(styleObj, internalKey)) {
             delete styleObj[internalKey];
@@ -362,13 +365,14 @@ export class StyleManager {
      * @see applyStyleToNode
      */
     private apply(propertyName: string, value: string | number | null): LiveTree {
+
         const kebab = propertyName.startsWith("--")
             ? propertyName
             : camel_to_kebab(propertyName);
 
         const val = value == null ? "" : String(value);
         applyStyleToNode(this.tree.node, kebab, val);
-
+        const el = this.tree.asDomElement() as any;
         return this.tree;
     }
 

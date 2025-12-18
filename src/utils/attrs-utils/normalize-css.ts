@@ -1,10 +1,12 @@
 // css-prop-utils.ts
 
 import { kebab_to_camel } from "../primitive-utils/kebab-to-camel.util";
+import { camel_to_kebab } from "./camel_to_kebab";
 
 //  keep this table small and explicit.
 const CSS_PROP_ALIASES: Readonly<Record<string, string>> = {
-  float: "cssFloat",
+  float: "cssFloat",        // input "float" -> store "cssFloat"
+  "css-float": "cssFloat",  // if you ever see this
 };
 
 //  vendor prefixes to CSSOM-style names.
@@ -14,6 +16,12 @@ const VENDOR_PREFIX_ALIASES: Readonly<Record<string, string>> = {
   "-ms-": "ms",
   "-o-": "O",
 };
+
+export function canon_to_css_prop(propCanon: string): string {
+  if (propCanon.startsWith("--")) return propCanon;
+  if (propCanon === "cssFloat") return "float";
+  return camel_to_kebab(propCanon);
+}
 
 /**
  * Normalize a CSS style property key into a canonical form used internally

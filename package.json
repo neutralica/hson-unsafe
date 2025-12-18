@@ -1,53 +1,57 @@
 {
-  "name": "hson-live", 
-  "version": "2.0.25",
+  "name": "hson-live",
+  "version": "2.0.26",
   "description": "HSON 2025",
-  "files": [ "dist", "README.md", "LICENSE"  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "author": "neutralica @ terminal_gothic",
   "license": "Parity-7.0.0",
   "keywords": [
-  "html",
-  "json",
-  "custom format",
-  "hson",
-  "parser",
-  "markup",
-  "glue format"
+    "html",
+    "json",
+    "custom format",
+    "hson",
+    "parser",
+    "markup",
+    "glue format"
   ],
   "type": "module",
   "types": "./dist/index.d.ts",
   "exports": {
-  "./hson": {
-  "types": "./dist/hson.d.ts",
-  "import": "./dist/hson.js"
+    "./hson": {
+      "types": "./dist/hson.d.ts",
+      "import": "./dist/hson.js"
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./diagnostics": {
+      "types": "./dist/diagnostics/index.d.ts",
+      "import": "./dist/diagnostics/index.js"
+    },
+    "./types": {
+      "types": "./dist/types-consts/index.d.ts",
+      "import": "./dist/types-consts/index.js"
+    }
   },
-  ".": {
-  "types": "./dist/index.d.ts",
-  "import": "./dist/index.js"
-  },
-  "./diagnostics": {
-  "types": "./dist/diagnostics/index.d.ts",
-  "import": "./dist/diagnostics/index.js"
-  },
-  "./types": {
-  "types": "./dist/types-consts/index.d.ts",
-  "import": "./dist/types-consts/index.js"
-  }
-  },  
   "scripts": {
-  "clean": "rm -rf dist",
-  "build": "npm run clean && tsc",
-  "check": "tsc -p tsconfig.json --noEmit"
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc",
+    "check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-  "@types/dompurify": "^3.2.0",
+    "@types/dompurify": "^3.2.0",
     "@types/node": "^22.16.3",
-  "chokidar-cli": "^3.0.0",
-  "npm-run-all": "^4.1.5",
-  "ts-node": "^10.9.2",
-  "typescript": "^5.8.3"
+    "chokidar-cli": "^3.0.0",
+    "npm-run-all": "^4.1.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
-  "dompurify": "^3.3.0"
+    "dompurify": "^3.3.0"
   }
 }
