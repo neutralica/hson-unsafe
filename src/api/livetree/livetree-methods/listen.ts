@@ -269,17 +269,46 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     return handle;
   };
   let api: ListenerBuilder;
+  // NEW: internal helper: allow string event types for custom events without
+  // weakening the typed `on<K extends keyof ElemMap>()`.
+  const onAny = <E extends Event>(type: string, handler: (ev: E) => void): ListenerSub => {
+    // NOTE: this is the same as `on`, but without keyof ElemMap constraint.
+    return on(type as keyof ElemMap, handler as (ev: any) => void);
+    // CHANGED: we deliberately reuse `on(...)` so queue/attach logic stays 1-source-of-truth.
+  };
 
   api = {
     on,
+
+    // NEW: convenience
+    onInput: (fn) => on("input", (ev) => fn(ev as InputEvent)),
+    onChange: (fn) => on("change", (ev) => fn(ev as Event)),
+    onSubmit: (fn) => on("submit", (ev) => fn(ev as SubmitEvent)),
+
     onClick: (fn) => on("click", fn),
+    onPointerDown: (fn) => on("pointerdown", (ev) => fn(ev as PointerEvent)),
+    onPointerMove: (fn) => on("pointermove", (ev) => fn(ev as PointerEvent)),
+    onPointerUp: (fn) => on("pointerup", (ev) => fn(ev as PointerEvent)),
+    
+    onFocusIn: (fn) => on("focusin", (ev) => fn(ev as FocusEvent)),
+    onFocusOut: (fn) => on("focusout", (ev) => fn(ev as FocusEvent)),
+    
+    // existing
     onMouseMove: (fn) => on("mousemove", fn),
     onMouseDown: (fn) => on("mousedown", fn),
     onMouseUp: (fn) => on("mouseup", fn),
     onKeyDown: (fn) => on("keydown", fn),
     onKeyUp: (fn) => on("keyup", fn),
 
-    //  option methods return ListenerBuilder
+    // CHANGED: generic string event name, typed event payload
+    onCustom: <E extends Event = Event>(type: string, handler: (ev: E) => void) => {
+      return on(type as unknown as keyof ElemMap, handler as unknown as (ev: Event) => void);
+    },
+    onCustomDetail: <D>(type: string, handler: (ev: CustomEvent<D>) => void) => {
+      return api.onCustom<CustomEvent<D>>(type, handler);
+    },
+
+    // options chain (unchanged)
     once: () => { opts = { ...opts, once: true }; return api; },
     passive: () => { opts = { ...opts, passive: true }; return api; },
     capture: () => { opts = { ...opts, capture: true }; return api; },
@@ -294,8 +323,6 @@ export function build_listener(tree: LiveTree): ListenerBuilder {
     stopAll(): ListenerBuilder { _stopImmediate = _stop = _prevent = true; return api; },
     clearStops(): ListenerBuilder { _stopImmediate = _stop = _prevent = false; return api; },
   };
-
-  return api;
 
   return api;
 }

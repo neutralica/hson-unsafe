@@ -38,35 +38,37 @@ function combineSubs(subs: readonly ListenerSub[]): ListenerSub {
     },
   };
 }
-/**
- * Create a no-op `ListenerBuilder` implementation.
- *
- * This is used when a `TreeSelector` (or similar surface) has no viable DOM
- * targets to attach listeners to, but callers still want a consistent fluent
- * API that won’t throw.
- *
- * Behavior:
- * - All `on*()` methods return a stable no-op `ListenerSub`.
- * - All option/modifier methods (`once`, `passive`, `capture`, etc.) return the
- *   same builder instance for chaining.
- * - The no-op `ListenerSub.off()` is safe to call repeatedly.
- *
- * @returns
- *   A `ListenerBuilder` whose operations are inert and safe to chain.
- */
+
+// TODO DOC
 function makeNoopListenerBuilder(): ListenerBuilder {
   const noopSub: ListenerSub = { count: 0, ok: false, off() { /* no-op */ } };
 
-  // options return itself; on* returns ListenerSub
-  let api: ListenerBuilder;
-  api = {
-    on() { return noopSub; },
-    onClick() { return noopSub; },
-    onMouseMove() { return noopSub; },
-    onMouseDown() { return noopSub; },
-    onMouseUp() { return noopSub; },
-    onKeyDown() { return noopSub; },
-    onKeyUp() { return noopSub; },
+  // CHANGED: one noop "on" implementation
+  const onNoop = () => noopSub;
+
+  // CHANGED: helpers to reuse the same function for all onX methods
+  const api: ListenerBuilder = {
+    on: onNoop as any,
+
+    onClick: onNoop as any,
+    onMouseMove: onNoop as any,
+    onMouseDown: onNoop as any,
+    onMouseUp: onNoop as any,
+    onKeyDown: onNoop as any,
+    onKeyUp: onNoop as any,
+
+    onInput: onNoop as any,
+    onChange: onNoop as any,
+    onSubmit: onNoop as any,
+
+    onPointerDown: onNoop as any,
+    onPointerMove: onNoop as any,
+    onPointerUp: onNoop as any,
+    onFocusIn: onNoop as any,
+    onFocusOut: onNoop as any,
+
+    onCustom: onNoop as any,
+    onCustomDetail: onNoop as any,
 
     once() { return api; },
     passive() { return api; },
@@ -275,7 +277,6 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
      * @returns A `StyleManager2`-compatible proxy for the selection.
      * @see StyleManager
      */
-
     get style(): StyleSetter {
       const first = items[0];
       if (!first) {
@@ -526,6 +527,7 @@ function makeMultiListener(items: LiveTree[]): ListenerBuilder {
   let multi: ListenerBuilder;
 
   multi = {
+    // TODO - make this declarative 
     on(type, handler) {
       const subs = listeners.map(l => l.on(type, handler));
       return combineSubs(subs);
@@ -558,6 +560,55 @@ function makeMultiListener(items: LiveTree[]): ListenerBuilder {
 
     onKeyUp(handler) {
       const subs = listeners.map(l => l.onKeyUp(handler));
+      return combineSubs(subs);
+    },
+    onInput(handler) {
+      const subs = listeners.map(l => l.onInput(handler));
+      return combineSubs(subs);
+    },
+
+    onChange(handler) {
+      const subs = listeners.map(l => l.onChange(handler));
+      return combineSubs(subs);
+    },
+
+    onSubmit(handler) {
+      const subs = listeners.map(l => l.onSubmit(handler));
+      return combineSubs(subs);
+    },
+
+    onPointerDown(handler) {
+      const subs = listeners.map(l => l.onPointerDown(handler));
+      return combineSubs(subs);
+    },
+
+    onPointerMove(handler) {
+      const subs = listeners.map(l => l.onPointerMove(handler));
+      return combineSubs(subs);
+    },
+
+    onPointerUp(handler) {
+      const subs = listeners.map(l => l.onPointerUp(handler));
+      return combineSubs(subs);
+    },
+
+    onFocusIn(handler) {
+      const subs = listeners.map(l => l.onFocusIn(handler));
+      return combineSubs(subs);
+    },
+
+    onFocusOut(handler) {
+      const subs = listeners.map(l => l.onFocusOut(handler));
+      return combineSubs(subs);
+    },
+
+    onCustom(type, handler) {
+      const subs = listeners.map(l => l.onCustom(type, handler));
+      return combineSubs(subs);
+    },
+
+    onCustomDetail(type, handler) {
+      const subs = listeners.map(l => l.onCustomDetail(type, handler));
       return combineSubs(subs);
     },
 

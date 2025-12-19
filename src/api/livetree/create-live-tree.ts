@@ -2,7 +2,7 @@
 import { Primitive } from "../../types-consts/core.types";
 import { ensure_quid } from "../../quid/data-quid.quid";
 
-import { create_el_safe, set_attrs_safe } from "../../safety/safe-mount.safe";
+import { set_attrs_safe } from "../../safety/safe-mount.safe";
 import {
   _DATA_QUID,
   ARR_TAG,
@@ -103,14 +103,33 @@ export function create_live_tree2(
 
   // REAL ELEMENT NODE --------------------------------------
 
+  const tag = n._tag;
+  const metaQuid = n._meta?._quid;
+  const quidInfo = metaQuid ? `, node._meta._quid=${metaQuid}` : "";
+  const illegalDomTag = (badTag: string) =>
+    new Error(
+      `[create_live_tree2] illegal DOM tag "${badTag}" (node._tag=${n._tag}${quidInfo})`
+    );
+
+  // "_" prefixes are reserved for HSON virtual/internal nodes (and meta like `_tag`).
+  // They must never be materialized as real DOM elements.
+  if (tag.startsWith("_")) {
+    throw illegalDomTag(tag);
+  }
+
   // decide namespace for *this* element + descendants
-  const ns: "html" | "svg" = n._tag === "svg" ? "svg" : parentNs;
+  const ns: "html" | "svg" = tag === "svg" ? "svg" : parentNs;
 
   // create element respecting namespace
   const el: Element =
     ns === "svg"
-      ? document.createElementNS(SVG_NS, n._tag)
-      : (create_el_safe(n._tag) as HTMLElement);
+      ? document.createElementNS(SVG_NS, tag)
+      : document.createElement(tag);
+
+  // Belt-and-suspenders: guard against any factory emitting "_" DOM tags.
+  if (el.tagName.startsWith("_")) {
+    throw illegalDomTag(el.tagName);
+  }
 
   // single source of truth for mapping HsonNode -> Element
   linkNodeToElement(n, el);

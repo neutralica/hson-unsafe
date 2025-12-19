@@ -13,6 +13,9 @@
  **************************************************************/
 export type ElemMap = HTMLElementEventMap;
 
+// TODO - doc
+export type CustomEventHandler<D = unknown> = (ev: CustomEvent<D>) => void;
+
 /**************************************************************
  * Per-listener configuration options.
  *
@@ -154,12 +157,28 @@ export interface ListenerSub {
 export interface ListenerBuilder {
   on<K extends keyof ElemMap>(type: K, handler: (ev: ElemMap[K]) => void): ListenerSub;
 
+  // NEW: common convenience events
+  onInput: (fn: (ev: InputEvent) => void) => ListenerSub;
+  onChange: (fn: (ev: Event) => void) => ListenerSub;        // change is just Event in TS DOM libs
+  onSubmit: (fn: (ev: SubmitEvent) => void) => ListenerSub;
+
   onClick(h: (ev: MouseEvent) => void): ListenerSub;
   onMouseMove(h: (ev: MouseEvent) => void): ListenerSub;
   onMouseDown(h: (ev: MouseEvent) => void): ListenerSub;
   onMouseUp(h: (ev: MouseEvent) => void): ListenerSub;
   onKeyDown(h: (ev: KeyboardEvent) => void): ListenerSub;
   onKeyUp(h: (ev: KeyboardEvent) => void): ListenerSub;
+  
+  // NEW: strongly-typed CustomEvent detail (still uses string event name)
+  onPointerDown: (fn: (ev: PointerEvent) => void) => ListenerSub;
+  onPointerMove: (fn: (ev: PointerEvent) => void) => ListenerSub;
+  onPointerUp: (fn: (ev: PointerEvent) => void) => ListenerSub;
+  onFocusIn: (fn: (ev: FocusEvent) => void) => ListenerSub;
+  onFocusOut: (fn: (ev: FocusEvent) => void) => ListenerSub;
+  
+  // NEW: custom events / “anything else”
+  onCustom: <E extends Event = Event>(type: string, handler: (ev: E) => void) => ListenerSub;
+  onCustomDetail: <D>(type: string, handler: (ev: CustomEvent<D>) => void) => ListenerSub;
 
   // option modifiers: these return a *configured* api for the next registration
   once(): ListenerBuilder;

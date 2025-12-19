@@ -2,6 +2,7 @@
 
 import { HsonNode } from "../../types-consts/node.types";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
+import { make_string } from "../primitive-utils/make-string.nodes.utils";
 
 
 /**
@@ -20,23 +21,24 @@ import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
 export function linkNodeToElement(node: HsonNode, el: Element): void {
   NODE_ELEMENT_MAP.set(node, el);
 }
-
-/**
- * Resolve the DOM `Element` currently associated with an `HsonNode`, if any.
- *
- * This is a safe lookup:
- * - Returns `undefined` when the node is not mounted / not linked.
- * - Does not create or mutate any mapping.
- *
- * Typical callers use this to decide whether a DOM-sync operation is needed,
- * e.g. “update the element if mounted, otherwise only update the HSON graph.”
- *
- * @param node - The HSON node to resolve.
- * @returns The linked DOM element, or `undefined` if none is registered.
- */
-export function element_for_node(node: HsonNode): Element | undefined {
-  return NODE_ELEMENT_MAP.get(node);
-}
+// OLD DNU
+// /**
+//  * Resolve the DOM `Element` currently associated with an `HsonNode`, if any.
+//  *
+//  * This is a safe lookup:
+//  * - Returns `undefined` when the node is not mounted / not linked.
+//  * - Does not create or mutate any mapping.
+//  *
+//  * Typical callers use this to decide whether a DOM-sync operation is needed,
+//  * e.g. “update the element if mounted, otherwise only update the HSON graph.”
+//  *
+//  * @param node - The HSON node to resolve.
+//  * @returns The linked DOM element, or `undefined` if none is registered.
+//  */
+// export function element_for_node(
+//   node: HsonNode): Element | undefined {
+//   return NODE_ELEMENT_MAP.get(node);
+// }
 
 //  optional helpers
 /**
@@ -60,4 +62,41 @@ export function unlinkNode(node: HsonNode): void {
  */
 export function hasElementForNode(node: HsonNode): boolean {
   return NODE_ELEMENT_MAP.has(node);
+}
+
+export type ElementLookupPolicy = "throw" | "warn" | "silent";
+
+export function element_for_node(node: HsonNode): Element | undefined {
+  return NODE_ELEMENT_MAP.get(node);
+}
+
+// NEW: opt-in tripwire
+export function element_for_node_checked(
+  node: HsonNode,
+  purpose: string,
+  policy: ElementLookupPolicy = "throw",
+): Element | undefined {
+  const el = NODE_ELEMENT_MAP.get(node);
+  if (!el) return undefined;
+
+  // DOM tagName comes back uppercase in HTML.
+  // `_TAG` showing up means something created `<_tag>` / `<_TAG>` in the DOM.
+  const tag = el.tagName;
+
+  // Invariant: no HSON virtual/internal tags should ever exist as DOM elements.
+  // If you allow custom elements, they still shouldn't start with "_".
+  if (tag.startsWith("_")) {
+    const quid = node._meta?._quid ?? "<no-quid>";
+    const msg = `[element_for_node_checked] unexpected DOM element tag "${tag}" for purpose="${purpose}" (node._tag=${node._tag}, quid=${quid})`;
+
+    if (policy === "warn") {
+      console.warn(msg, { node, el });
+      return el;
+    }
+    if (policy === "throw") {
+      throw new Error(msg);
+    }
+  }
+
+  return el;
 }
