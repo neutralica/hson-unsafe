@@ -1,3 +1,5 @@
+// find.ts
+
 import { HsonNode } from "../../../types-consts/node.types";
 import { FindWithById, HsonQuery } from "../../../types-consts/livetree.types";
 import { parse_selector } from "../../../utils/tree-utils/parse-selector";
@@ -7,78 +9,49 @@ import { TreeSelector } from "../../../types-consts/livetree.types";
 import { search_nodes } from "./search2";
 
 
-/**
- * Wrap a raw `HsonNode` in a new `LiveTree` that inherits the caller’s host root.
- *
- * Semantics:
- * - Constructs a new `LiveTree` over `node`.
- * - Copies the parent’s `hostRoot` via `adoptRoots(parent.getHostRoots())`
- *   so the new tree participates in the same “document root” context
- *   (for removal, grafting, etc.).
- *
- * Notes:
- * - Used by search helpers (`find` / `find_all_in_tree`) to ensure that
- *   returned child trees still know which root they belong to, even
- *   though they are focused on a single node.
- */
-function wrapInChildTree(parent: LiveTree, node: HsonNode): LiveTree {
-    return new LiveTree(node).adoptRoots(parent.getHostRoots());
-}
+// “batching” helpers + queryish types
 
-/**
- * Build a `find` helper bound to a specific `LiveTree`.
- *
- * Surface:
- * - Callable as `find(query)` → `LiveTree | undefined`
- * - Augmented with:
- *   - `find.byId(id)`      → `LiveTree | undefined`
- *   - `find.must(query)`   → `LiveTree` (throws if no match)
- *   - `find.mustById(id)`  → `LiveTree` (throws if no match)
- *
- * Behavior:
- * - Converts string selectors via `parse_selector` into `HsonQuery`.
- * - Delegates to `search_nodes([tree.node], query, { findFirst: true })`,
- *   so the search is rooted at the current tree’s node (not global).
- * - Wraps the first matching `HsonNode` in a child `LiveTree` that
- *   inherits the parent’s host root (`wrapInChildTree`).
- *
- * Error semantics:
- * - `find(...)` and `find.byId(...)` return `undefined` when no match.
- * - `find.must(...)` and `find.mustById(...)` throw with a descriptive
- *   message including either the selector or a provided `label`.
- */
-export function make_find_for(tree: LiveTree): FindWithById {
-    const base = ((q: HsonQuery | string): LiveTree | undefined => {
-        const query = typeof q === "string" ? parse_selector(q) : q;
-        const found = search_nodes([tree.node], query, { findFirst: true });
-        if (!found.length) return undefined;
-        return wrapInChildTree(tree, found[0]); // ← changed
-    }) as FindWithById;
+export type FindQueryOne = HsonQuery | string;
+export type FindQueryMany = FindQueryOne | readonly FindQueryOne[];
 
-    base.byId = (id: string): LiveTree | undefined =>
-        base({ attrs: { id } });
+export type Finder = ((q: FindQueryOne) => LiveTree | undefined) & {
+    byId: (id: string) => LiveTree | undefined;
+    must: (q: FindQueryOne, label?: string) => LiveTree;
+    mustById: (id: string, label?: string) => LiveTree;
+    byAttribute: (attr: string, value: string) => LiveTree | undefined;
+    byFlag: (flag: string) => LiveTree | undefined;
+    byTag: (tag: string) => LiveTree | undefined;
+};
+export type FinderAll = ((q: FindQueryMany) => TreeSelector) & {
+    byId: (ids: string | readonly string[]) => TreeSelector;
+    byAttribute: (attr: string, value: string) => TreeSelector;
+    byFlag: (flag: string) => TreeSelector;
+    byTag: (tag: string) => TreeSelector;
+    must: (q: FindQueryMany, label?: string) => TreeSelector;
+};
 
-    base.must = (q, label) => {
-        const res = base(q);
-        if (!res) {
-            const desc = label ?? (typeof q === "string" ? q : JSON.stringify(q));
-            throw new Error(`[LiveTree2.find.must] expected match for ${desc}`);
-        }
-        return res;
-    };
+// export interface FindOne {
+//     (q: FindQueryOne): LiveTree | undefined;
 
-    base.mustById = (id, label) => {
-        const res = base.byId(id);
-        if (!res) {
-            const desc = label ?? `#${id}`;
-            throw new Error(`[LiveTree2.find.mustById] expected element ${desc}`);
-        }
-        return res;
-    };
+//     byId(id: string): LiveTree | undefined;
+//     byAttribute(name: string, value: string): LiveTree | undefined;
+//     byFlag(flag: string): LiveTree | undefined;
+//     byTag(tag: string): LiveTree | undefined;
 
-    return base;
-}
+//     must(q: FindQueryOne, label?: string): LiveTree;
+//     mustById(id: string, label?: string): LiveTree;
+// }
 
+// export interface FindMany {
+//     (q: FindQueryMany): TreeSelector;
+
+//     byId(ids: readonly string[]): TreeSelector; // CHANGED: id list for findAll
+//     byAttribute(name: string, values: readonly string[]): TreeSelector;
+//     byFlag(flags: readonly string[]): TreeSelector;
+//     byTag(tags: readonly string[]): TreeSelector;
+
+//     must(q: FindQueryMany, label?: string): TreeSelector;
+// }
 /**
  * Find *all* matching nodes under a `LiveTree` and return them as a `TreeSelector`.
  *
@@ -106,3 +79,166 @@ export function find_all_in_tree(tree: LiveTree, q: HsonQuery | string): TreeSel
     const trees = found.map(node => wrapInChildTree(tree, node)); // ← changed
     return make_tree_selector(trees);
 }
+
+function asManyQuery(q: FindQueryOne): readonly FindQueryOne[];
+function asManyQuery(q: readonly FindQueryOne[]): readonly FindQueryOne[];
+function asManyQuery(q: FindQueryMany): readonly FindQueryOne[]; // <-- ADD THIS
+function asManyQuery(q: FindQueryMany): readonly FindQueryOne[] {
+    const out: readonly FindQueryOne[] = Array.isArray(q) ? q : [q];
+    return out;
+}
+
+
+// NEW: many-query helper (OR/union semantics)
+export function find_all_in_tree_many(tree: LiveTree, q: FindQueryMany): TreeSelector {
+    const qs = asManyQuery(q);
+
+    const out: LiveTree[] = [];
+    for (const one of qs) {
+        const sel = find_all_in_tree(tree, one);  // returns TreeSelector
+        out.push(...sel.toArray());              // CHANGED: use TreeSelector primitive
+    }
+
+    return make_tree_selector(out);
+}
+
+function normalizeOne(q: FindQueryOne): HsonQuery {
+    return typeof q === "string" ? parse_selector(q) : q;
+}
+export function make_find_for(tree: LiveTree): FindWithById {
+    const base = ((q: FindQueryOne): LiveTree | undefined => {
+        const query = typeof q === "string" ? parse_selector(q) : q;
+        const found = search_nodes([tree.node], query, { findFirst: true });
+        if (!found.length) return undefined;
+        return wrapInChildTree(tree, found[0]);
+    }) as FindWithById;
+
+    base.byId = (id: string) => base({ attrs: { id } });
+
+    base.must = (q, label) => {
+        const res = base(q);
+        if (!res) {
+            const desc = label ?? (typeof q === "string" ? q : JSON.stringify(q));
+            throw new Error(`[LiveTree.find.must] expected match for ${desc}`);
+        }
+        return res;
+    };
+
+    base.mustById = (id, label) => {
+        const res = base.byId(id);
+        if (!res) {
+            const desc = label ?? `#${id}`;
+            throw new Error(`[LiveTree.find.mustById] expected element ${desc}`);
+        }
+        return res;
+    };
+
+    return base;
+}
+
+export function make_find_all_for(tree: LiveTree): FinderAll {
+    const base = ((q: FindQueryMany): TreeSelector => {
+        const qs = asManyQuery(q);
+
+        const out: LiveTree[] = [];
+        for (const one of qs) {
+            const query = normalizeOne(one);
+            const found = search_nodes([tree.node], query, { findFirst: false });
+            for (const node of found) out.push(wrapInChildTree(tree, node));
+        }
+
+        return make_tree_selector(out);
+    }) as FinderAll;
+
+    base.byId = (ids) => {
+        const list = Array.isArray(ids) ? ids : [ids];
+        return base(list.map((id) => ({ attrs: { id } })));
+    };
+
+    base.byAttribute = (attr, value) => base({ attrs: { [attr]: value } });
+    base.byFlag = (flag) => base({ attrs: { [flag]: flag } });
+    base.byTag = (tag) => base({ tag });
+
+    base.must = (q, label) => {
+        const sel = base(q);
+        if (sel.count() === 0) {
+            const desc = label ?? "query";
+            throw new Error(`[LiveTree.findAll.must] expected >=1 match for ${desc}`);
+        }
+        return sel;
+    };
+
+    return base;
+}
+
+/**
+ * Wrap a raw `HsonNode` in a new `LiveTree` that inherits the caller’s host root.
+ *
+ * Semantics:
+ * - Constructs a new `LiveTree` over `node`.
+ * - Copies the parent’s `hostRoot` via `adoptRoots(parent.getHostRoots())`
+ *   so the new tree participates in the same “document root” context
+ *   (for removal, grafting, etc.).
+ *
+ * Notes:
+ * - Used by search helpers (`find` / `find_all_in_tree`) to ensure that
+ *   returned child trees still know which root they belong to, even
+ *   though they are focused on a single node.
+ */
+function wrapInChildTree(parent: LiveTree, node: HsonNode): LiveTree {
+    return new LiveTree(node).adoptRoots(parent.getHostRoots());
+}
+
+// /**
+//  * Build a `find` helper bound to a specific `LiveTree`.
+//  *
+//  * Surface:
+//  * - Callable as `find(query)` → `LiveTree | undefined`
+//  * - Augmented with:
+//  *   - `find.byId(id)`      → `LiveTree | undefined`
+//  *   - `find.must(query)`   → `LiveTree` (throws if no match)
+//  *   - `find.mustById(id)`  → `LiveTree` (throws if no match)
+//  *
+//  * Behavior:
+//  * - Converts string selectors via `parse_selector` into `HsonQuery`.
+//  * - Delegates to `search_nodes([tree.node], query, { findFirst: true })`,
+//  *   so the search is rooted at the current tree’s node (not global).
+//  * - Wraps the first matching `HsonNode` in a child `LiveTree` that
+//  *   inherits the parent’s host root (`wrapInChildTree`).
+//  *
+//  * Error semantics:
+//  * - `find(...)` and `find.byId(...)` return `undefined` when no match.
+//  * - `find.must(...)` and `find.mustById(...)` throw with a descriptive
+//  *   message including either the selector or a provided `label`.
+//  */
+// export function make_find_for(tree: LiveTree): FindWithById {
+//     const base = ((q: HsonQuery | string): LiveTree | undefined => {
+//         const query = typeof q === "string" ? parse_selector(q) : q;
+//         const found = search_nodes([tree.node], query, { findFirst: true });
+//         if (!found.length) return undefined;
+//         return wrapInChildTree(tree, found[0]); // ← changed
+//     }) as FindWithById;
+
+//     base.byId = (id: string): LiveTree | undefined =>
+//         base({ attrs: { id } });
+
+//     base.must = (q, label) => {
+//         const res = base(q);
+//         if (!res) {
+//             const desc = label ?? (typeof q === "string" ? q : JSON.stringify(q));
+//             throw new Error(`[LiveTree2.find.must] expected match for ${desc}`);
+//         }
+//         return res;
+//     };
+
+//     base.mustById = (id, label) => {
+//         const res = base.byId(id);
+//         if (!res) {
+//             const desc = label ?? `#${id}`;
+//             throw new Error(`[LiveTree2.find.mustById] expected element ${desc}`);
+//         }
+//         return res;
+//     };
+
+//     return base;
+// }

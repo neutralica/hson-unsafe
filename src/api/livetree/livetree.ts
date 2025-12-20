@@ -11,7 +11,7 @@ import { get_node_form_value, get_node_text, set_node_content, set_node_form_val
 import { DataManager } from "./livetree-methods/data-manager";
 import { empty_contents } from "./livetree-methods/empty2";
 import { build_listener } from "./livetree-methods/listen";
-import { find_all_in_tree, make_find_for } from "./livetree-methods/find";
+import { find_all_in_tree, find_all_in_tree_many, FindQueryMany, make_find_for } from "./livetree-methods/find";
 import { clearFlagsImpl, getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
 import { remove_child } from "./livetree-methods/remove-child2";
 import { StyleManager } from "./livetree-methods/style-manager";
@@ -21,6 +21,7 @@ import { make_tree_create } from "./livetree-methods/create-typed";
 import { FindWithById, NodeRef } from "../../types-consts/livetree.types";
 import { Primitive } from "../../types-consts/core.types";
 import { StyleSetter } from "./livetree-methods/style-setter";
+import { make_tree_selector } from "./tree-selector";
 
 /**
  * Create a stable `NodeRef` for a given `HsonNode`.
@@ -236,7 +237,7 @@ export class LiveTree {
    * @returns A `TreeSelector` over all matching subtrees.
    * @see find_all_in_tree
    */
-  public findAll = (q: HsonQuery | string): TreeSelector => find_all_in_tree(this, q);
+  public findAll = (q: FindQueryMany): TreeSelector => find_all_in_tree_many(this, q);
 
   /**
    * Typed element creation helper bound to this `LiveTree`.
@@ -311,22 +312,22 @@ export class LiveTree {
   }
 
   /*---------- managers & adapters ---------- */
- /**
- * Style write surface for this node’s **inline** `style=""`.
- *
- * Returns a `StyleSetter` (fluent API) whose backend is this node’s `StyleManager`.
- * The setter:
- * - normalizes property keys (camelCase / kebab-case / `--vars`) into canonical CSS keys,
- * - coerces values to strings (with `null|undefined` meaning “remove”),
- * - applies mutations to inline style while keeping the DOM and HSON attrs in sync.
- *
- * Implementation note:
- * - The underlying `StyleManager` is constructed lazily on first access and cached.
- *
- * @returns A `StyleSetter` bound to this tree’s node (inline style backend).
- * @see make_style_setter
- * @see StyleManager
- */
+  /**
+  * Style write surface for this node’s **inline** `style=""`.
+  *
+  * Returns a `StyleSetter` (fluent API) whose backend is this node’s `StyleManager`.
+  * The setter:
+  * - normalizes property keys (camelCase / kebab-case / `--vars`) into canonical CSS keys,
+  * - coerces values to strings (with `null|undefined` meaning “remove”),
+  * - applies mutations to inline style while keeping the DOM and HSON attrs in sync.
+  *
+  * Implementation note:
+  * - The underlying `StyleManager` is constructed lazily on first access and cached.
+  *
+  * @returns A `StyleSetter` bound to this tree’s node (inline style backend).
+  * @see make_style_setter
+  * @see StyleManager
+  */
   public get style(): StyleSetter {
     if (!this.styleManagerInternal) {
       this.styleManagerInternal = new StyleManager(this);
@@ -357,21 +358,21 @@ export class LiveTree {
     return this.datasetManagerInternal;
   }
 
-/**
- * Style write surface for this node’s stylesheet rule(s), data-_quid as the selector.
- *
- * Returns a `CssHandle` whose core mutation API is a `StyleSetter` backed by `CssManager`.
- * Writes become QUID-scoped blocks of the form:
- *   `[data-_quid="..."] { ... }`
- *
- * This is distinct from `style`:
- * - `style` mutates inline `style=""` on the element,
- * - `css` mutates stylesheet rules owned by `CssManager`.
- *
- * @returns A `CssHandle` targeting this node’s QUID selector.
- * @see css_for_quids
- * @see CssManager
- */
+  /**
+   * Style write surface for this node’s stylesheet rule(s), data-_quid as the selector.
+   *
+   * Returns a `CssHandle` whose core mutation API is a `StyleSetter` backed by `CssManager`.
+   * Writes become QUID-scoped blocks of the form:
+   *   `[data-_quid="..."] { ... }`
+   *
+   * This is distinct from `style`:
+   * - `style` mutates inline `style=""` on the element,
+   * - `css` mutates stylesheet rules owned by `CssManager`.
+   *
+   * @returns A `CssHandle` targeting this node’s QUID selector.
+   * @see css_for_quids
+   * @see CssManager
+   */
   public get css(): CssHandle {
     return css_for_quids([this.quid]);
   }

@@ -9,7 +9,7 @@ import { make_string } from "../../../utils/primitive-utils/make-string.nodes.ut
 import { _throw_transform_err } from "../../../utils/sys-utils/throw-transform-err.utils";
 import { LiveTree } from "../livetree";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
-import { create_live_tree2 } from "../create-live-tree";
+import { create_live_tree2 } from "../livetree-constructors/create-live-tree";
 
 /**
  * Normalize an insertion index for an array of a given length.
