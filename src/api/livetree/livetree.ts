@@ -11,11 +11,11 @@ import { get_node_form_value, get_node_text, set_node_content, set_node_form_val
 import { DataManager } from "./livetree-methods/data-manager";
 import { empty_contents } from "./livetree-methods/empty2";
 import { build_listener } from "./livetree-methods/listen";
-import { find_all_in_tree, find_all_in_tree_many, FindQueryMany, make_find_for } from "./livetree-methods/find";
+import { FindMany, make_find_all_for, make_find_for } from "./livetree-methods/find"; // CHANGED
 import { clearFlagsImpl, getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
 import { remove_child } from "./livetree-methods/remove-child2";
 import { StyleManager } from "./livetree-methods/style-manager";
-import { HsonQuery, LiveTreeCreateHelper, TreeSelector } from "../../types-consts/livetree.types";
+import { LiveTreeCreateHelper } from "../../types-consts/livetree.types"; // CHANGED
 import { append_branch } from "./livetree-methods/append-other";
 import { make_tree_create } from "./livetree-methods/create-typed";
 import { FindWithById, NodeRef } from "../../types-consts/livetree.types";
@@ -237,7 +237,7 @@ export class LiveTree {
    * @returns A `TreeSelector` over all matching subtrees.
    * @see find_all_in_tree
    */
-  public findAll = (q: FindQueryMany): TreeSelector => find_all_in_tree_many(this, q);
+  public findAll: FindMany = make_find_all_for(this); 
 
   /**
    * Typed element creation helper bound to this `LiveTree`.

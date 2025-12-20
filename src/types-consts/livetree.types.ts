@@ -9,6 +9,7 @@ import { HsonAttrs, HsonMeta, HsonNode } from "./node.types";
 import { HtmlTag } from "../api/livetree/livetree-methods/create-typed";
 import { Primitive } from "./core.types";
 import { StyleSetter } from "../api/livetree/livetree-methods/style-setter";
+import { FindMany, FindQuery } from "../api/livetree/livetree-methods/find";
 
 /**************************************************************
  * Structural query for selecting `HsonNode` instances.
@@ -48,7 +49,7 @@ export interface HsonQuery {
  * cleared. Callers must treat this as a soft reference.
  **************************************************************/
 export interface NodeRef {
-  q: string;                       
+  q: string;
   resolveNode(): HsonNode | undefined;
   resolveElement(): Element | undefined;
 }
@@ -67,10 +68,12 @@ export interface NodeRef {
  *       Shortcut for `{ attrs: { id } }`, limited to the bound
  *       root’s subtree.
  *
- *   - `find.must(q, label?)` / `mustById(id, label?)`:
+ *   - `find.must`:
  *       Same as above, but throws a descriptive `Error` when no
- *       match is found. The optional `label` is used to improve
- *       error messages (e.g. test helpers).
+ *       match is found. Callable as `find.must(q, label?)`, and
+ *       exposes the same helpers (`find.must.byId`, etc.).
+ *       The optional `label` is used to improve error messages
+ *       (e.g. test helpers).
  *
  * Implementations typically:
  *   - run `search_nodes` starting from `tree.node`,
@@ -78,12 +81,19 @@ export interface NodeRef {
  *     constructor (`wrapInChildTree`),
  *   - maintain the host root identity across branches.
  **************************************************************/
-export interface FindWithById {
-  (q: HsonQuery | string): LiveTree | undefined;
-  byId(id: string): LiveTree | undefined;
-  must(q: HsonQuery | string, label?: string): LiveTree;
-  mustById(id: string, label?: string): LiveTree;
-}
+type FindOneHelpers<Return> = {
+  byId: (id: string) => Return;
+  byAttrs: (attr: string, value: string) => Return;
+  byFlags: (flag: string) => Return;
+  byTag: (tag: string) => Return;
+};
+
+export type FindWithByIdMust = ((q: FindQuery, label?: string) => LiveTree) & FindOneHelpers<LiveTree>;
+
+export type FindWithById = ((q: FindQuery) => LiveTree | undefined) &
+  FindOneHelpers<LiveTree | undefined> & {
+    must: FindWithByIdMust;
+  };
 
 /**************************************************************
  * Allowed HTML tag names for creation helpers.
@@ -352,6 +362,8 @@ export interface TreeSelector {
      * @see LiveTree.setText 
      */
   setText(value: Primitive): TreeSelector;
+  find: FindWithById;
+  findAll: FindMany;
 }
 
 /**************************************************************
@@ -403,7 +415,7 @@ export type CreateHelper<Single, Many> = {
  *
  * This makes calls like:
  *
- *   tree.find.mustById("root")
+ *   tree.find.must.byId("root")
  *     .create.p(1)
  *     .setAttrs({ class: "insert" })
  *     .setText("between");

@@ -1,7 +1,7 @@
 // tree-selector.ts
 
 import { ListenerBuilder, ListenerSub, MissingPolicy } from "../../types-consts/listen.types";
-import { LiveTreeCreateHelper, TagName, TreeSelectorCreateHelper } from "../../types-consts/livetree.types";
+import { FindWithById, LiveTreeCreateHelper, TagName, TreeSelectorCreateHelper } from "../../types-consts/livetree.types";
 import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
 import { DataManager, DatasetObj, DatasetValue } from "./livetree-methods/data-manager";
@@ -11,6 +11,7 @@ import { TreeSelector } from "../../types-consts/livetree.types";
 import { Primitive } from "../../types-consts/core.types";
 import { make_selector_create, make_tree_create } from "./livetree-methods/create-typed";
 import { make_style_setter, StyleSetter } from "./livetree-methods/style-setter";
+import { FindMany, FindQuery, FindQueryMany } from "./livetree-methods/find";
 
 /**
  * Combine multiple `ListenerSub` subscriptions into a single subscription.
@@ -110,8 +111,8 @@ function makeNoopListenerBuilder(): ListenerBuilder {
 export function make_tree_selector(trees: LiveTree[]): TreeSelector {
   //  defensive copy to avoid external mutation
   const items: LiveTree[] = [...trees];
-
   const result: TreeSelector = {
+    
     /**
      * Return a shallow copy of the underlying `LiveTree` array.
      *
@@ -434,7 +435,92 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
       }
       return result;
     },
+    find: (() => {
+      const base = ((q: FindQuery): LiveTree | undefined => {
+        for (const t of items) {
+          const hit = t.find(q);
+          if (hit) return hit;
+        }
+        return undefined;
+      }) as FindWithById;
+
+      const mustBase = ((q: FindQuery, label?: string): LiveTree => {
+        const hit = base(q);
+        if (!hit) {
+          const desc = label ?? (typeof q === "string" ? q : JSON.stringify(q));
+          throw new Error(`[TreeSelector.find.must] expected match for ${desc}`);
+        }
+        return hit;
+      }) as FindWithById["must"];
+
+      base.byId = (id: string) => base({ attrs: { id } });
+      base.byAttrs = (attr: string, value: string) => base({ attrs: { [attr]: value } });
+      base.byFlags = (flag: string) => base({ attrs: { [flag]: flag } });
+      base.byTag = (tag: string) => base({ tag });
+
+      mustBase.byId = (id: string) => mustBase({ attrs: { id } });
+      mustBase.byAttrs = (attr: string, value: string) => mustBase({ attrs: { [attr]: value } });
+      mustBase.byFlags = (flag: string) => mustBase({ attrs: { [flag]: flag } });
+      mustBase.byTag = (tag: string) => mustBase({ tag });
+
+      base.must = mustBase;
+
+      return base;
+    })(),
+
+    // ADDED: findAll (function-object with helpers)
+    findAll: (() => {
+      const base = ((q: FindQueryMany): TreeSelector => {
+        const out: LiveTree[] = [];
+        for (const t of items) {
+          out.push(...t.findAll(q).toArray());
+        }
+        return make_tree_selector(out);
+      }) as FindMany;
+
+      const mustBase = ((q: FindQueryMany, label?: string): TreeSelector => {
+        const sel = base(q);
+        if (sel.count() === 0) {
+          const desc = label ?? "query";
+          throw new Error(`[TreeSelector.findAll.must] expected >=1 match for ${desc}`);
+        }
+        return sel;
+      }) as FindMany["must"];
+
+      base.id = (ids: string | readonly string[]): TreeSelector => {
+        const list: readonly string[] = Array.isArray(ids) ? ids : [ids];
+        return base(list.map((id) => ({ attrs: { id } })));
+      };
+
+      base.byAttribute = (attr: string, value: string): TreeSelector =>
+        base({ attrs: { [attr]: value } });
+
+      base.byFlag = (flag: string): TreeSelector =>
+        base({ attrs: { [flag]: flag } });
+
+      base.byTag = (tag: string): TreeSelector =>
+        base({ tag });
+
+      mustBase.id = (ids: string | readonly string[]): TreeSelector => {
+        const list: readonly string[] = Array.isArray(ids) ? ids : [ids];
+        return mustBase(list.map((id) => ({ attrs: { id } })));
+      };
+
+      mustBase.byAttribute = (attr: string, value: string): TreeSelector =>
+        mustBase({ attrs: { [attr]: value } });
+
+      mustBase.byFlag = (flag: string): TreeSelector =>
+        mustBase({ attrs: { [flag]: flag } });
+
+      mustBase.byTag = (tag: string): TreeSelector =>
+        mustBase({ tag });
+
+      base.must = mustBase;
+
+      return base;
+    })(),
   };
+  
   return result;
 }
 
