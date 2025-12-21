@@ -10,6 +10,7 @@ import { HtmlTag } from "../api/livetree/livetree-methods/create-typed";
 import { Primitive } from "./core.types";
 import { StyleSetter } from "../api/livetree/livetree-methods/style-setter";
 import { FindMany, FindQuery } from "../api/livetree/livetree-methods/find";
+import { AnimSpec } from "../api/livetree/livetree-methods/animate.types";
 
 /**************************************************************
  * Structural query for selecting `HsonNode` instances.
@@ -444,3 +445,4 @@ export type LiveTreeCreateHelper = CreateHelper<LiveTree, TreeSelector>;
  * further broadcast-style operations.
  **************************************************************/
 export type TreeSelectorCreateHelper = CreateHelper<TreeSelector, TreeSelector>;
+

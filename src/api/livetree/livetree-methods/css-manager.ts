@@ -2,15 +2,12 @@
 
 import { PropertyManager } from "../../../types-consts/at-property.types";
 import { _DATA_QUID } from "../../../types-consts/constants";
-import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
-import { apply_animation } from "./animate";
-import { AnimAdapters, CssAnimHandle } from "./animate.types";
+import { CssValue, CssProp, CssHandle, AllowedStyleKey } from "../../../types-consts/css.types";
+import { apply_animation, bind_anim_api } from "./animate";
+import { AnimAdapters, CssAnimHandle, CssAnimScope } from "./animate.types";
 import { manage_property } from "./at-property";
 import { KeyframesManager, manage_keyframes } from "./keyframes";
-import { AllowedStyleKey } from "./style-manager";
 import { make_style_setter } from "./style-setter";
-
-type CssAnimScope = Readonly<{ quids: readonly string[] }>;
 
 const CSS_HOST_TAG = "hson-_style";
 const CSS_HOST_ID = "css-manager";
@@ -577,16 +574,11 @@ export class CssManager {
    */
   public animForQuids(quids: readonly string[]): CssAnimHandle {
     this.ensureStyleElement();
-    const api = apply_animation(this.makeAnimAdapters());
+
+    const core = apply_animation(this.makeAnimAdapters()); // AnimApiCore<CssAnimScope>
     const scope: CssAnimScope = { quids };
 
-    return {
-      begin: (spec) => { api.begin(scope, spec); },
-      restart: (spec) => { api.restart(scope, spec); },
-      beginName: (name) => { api.beginName(scope, name); },
-      restartName: (name) => { api.restartName(scope, name); },
-      end: (mode) => { api.end(scope, mode); },
-    };
+    return bind_anim_api(scope, core); // AnimApi<CssAnimScope>
   }
 
   /**

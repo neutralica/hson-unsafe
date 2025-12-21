@@ -1,50 +1,13 @@
 // style-manager.ts
 
 import { HsonAttrs, HsonNode } from "../../../types-consts/node.types";
-import { CssMap } from "../../../types-consts/css.types";
+import { AllowedStyleKey, CssMap } from "../../../types-consts/css.types";
 import { serialize_style } from "../../../utils/attrs-utils/serialize-style";
 import { camel_to_kebab } from "../../../utils/attrs-utils/camel_to_kebab";
 import { kebab_to_camel } from "../../../utils/primitive-utils/kebab-to-camel.util";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { LiveTree } from "../livetree";
 import { make_style_setter, StyleSetter } from "./style-setter";
-
-/* ------------------------------- TYPE HELPERS ------------------------------- */
-/**
- * Extract only the string-valued keys from a type.
- *
- * For `CSSStyleDeclaration`, this filters out non-string keys so that
- * downstream helpers can reason purely in terms of string property
- * names.
- *
- * @typeParam T - The object type whose keys should be filtered.
- */
-type StringKeys<T> = Extract<keyof T, string>;
-
-/**
- * Extract keys from `T` whose values are assignable to `string`.
- *
- * Used with `CSSStyleDeclaration` to discover which properties are
- * string fields (e.g. `color`, `backgroundColor`) and thus suitable
- * for use as style keys.
- *
- * @typeParam T - The object type whose string-valued keys are desired.
- */
-type KeysWithStringValues<T> = {
-    [K in StringKeys<T>]: T[K] extends string ? K : never
-}[StringKeys<T>];
-
-/**
- * Subset of `CSSStyleDeclaration` keys that:
- * - are strings, and
- * - have `string` values,
- * excluding the special `cssText` field.
- *
- * These keys represent the canonical style properties supported by
- * the current browser and form the base of `StyleKey` and the
- * `StyleSetterFacade` surface.
- */
-export type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>, "cssText">;
 
 /* ------------------------------ RUNTIME KEYS -------------------------------- */
 

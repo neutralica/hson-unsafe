@@ -2,7 +2,7 @@
 
 export type AnimationName = string;
 export type AnimationEndMode = "name-only" | "clear-all";
-export type AnimationSpec = Readonly<{
+export type AnimSpec = Readonly<{
   name: AnimationName;
 
   // Optional sugar: if omitted, user can define these in CSS rules/classes instead.
@@ -26,23 +26,36 @@ export type AnimAdapters<TTree> = Readonly<{
   getFirstDomElement: (tree: TTree) => Element | undefined;
 }>;
 
+// CHANGED: AnimApi is bound to a particular tree via closure,
+// so methods do NOT accept `tree` but DO return `TTree` for chaining.
 export type AnimApi<TTree> = Readonly<{
-  // “Guaranteed to run” path.
-  begin: (tree: TTree, spec: AnimationSpec) => TTree;
-  restart: (tree: TTree, spec: AnimationSpec) => TTree;
+  begin: (spec: AnimSpec) => TTree;
+  restart: (spec: AnimSpec) => TTree;
 
-  // “You’re on your own” path: duration/etc must be provided by CSS rules elsewhere.
+  beginName: (name: AnimationName) => TTree;
+  restartName: (name: AnimationName) => TTree;
+
+  end: (mode?: AnimationEndMode) => TTree;
+
+  // ADDED:
+  setPlayState: (state: "running" | "paused") => TTree;
+  pause: () => TTree;
+  resume: () => TTree;
+}>;
+export type AnimApiCore<TTree> = Readonly<{
+  begin: (tree: TTree, spec: AnimSpec) => TTree;
+  restart: (tree: TTree, spec: AnimSpec) => TTree;
+
   beginName: (tree: TTree, name: AnimationName) => TTree;
   restartName: (tree: TTree, name: AnimationName) => TTree;
 
-  // Stop is unambiguous.
   end: (tree: TTree, mode?: AnimationEndMode) => TTree;
+
+  // ADDED:
+  setPlayState: (tree: TTree, state: "running" | "paused") => TTree;
+  pause: (tree: TTree) => TTree;
+  resume: (tree: TTree) => TTree;
 }>;
 
-export type CssAnimHandle = Readonly<{
-  begin: (spec: AnimationSpec) => void;
-  restart: (spec: AnimationSpec) => void;
-  beginName: (name: AnimationName) => void;
-  restartName: (name: AnimationName) => void;
-  end: (mode?: "name-only" | "clear-all") => void;
-}>;
+export type CssAnimHandle = AnimApi<CssAnimScope>;
+export type CssAnimScope = Readonly<{ quids: readonly string[]; }>;

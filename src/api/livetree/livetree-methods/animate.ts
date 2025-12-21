@@ -1,8 +1,28 @@
 // animate.ts
 
-import { AnimAdapters, AnimApi, AnimationSpec, AnimationName } from "./animate.types";
+import { AnimAdapters, AnimApi, AnimApiCore, AnimSpec, AnimationName, AnimationEndMode } from "./animate.types";
 
 // export type CssScope = Readonly<{ quids: readonly string[] }>;
+
+// CHANGED: single type parameter; output API matches the core + target type
+export function bind_anim_api<TTarget>(
+  target: TTarget,
+  core: AnimApiCore<TTarget>,
+): AnimApi<TTarget> {
+  return {
+    begin: (spec) => core.begin(target, spec),
+    restart: (spec) => core.restart(target, spec),
+
+    beginName: (name) => core.beginName(target, name),
+    restartName: (name) => core.restartName(target, name),
+
+    end: (mode) => core.end(target, mode),
+
+    setPlayState: (state) => core.setPlayState(target, state),
+    pause: () => core.pause(target),
+    resume: () => core.resume(target),
+  };
+}
 
 /**
  * Normalize and validate an animation/keyframes name.
@@ -72,7 +92,7 @@ function applyNameOnly<TTree>(tree: TTree, name: string, a: AnimAdapters<TTree>)
  * @throws {Error}
  *   If `name` is empty after trimming, or if `duration` is empty after trimming.
  */
-function normalizeSpec(spec: AnimationSpec): AnimationSpec {
+function normalizeSpec(spec: AnimSpec): AnimSpec {
   const name = normalizeName(spec.name);
 
   const duration = spec.duration.trim();
@@ -121,7 +141,7 @@ function normalizeSpec(spec: AnimationSpec): AnimationSpec {
  */
 function applyAnimationProps<TTree>(
   tree: TTree,
-  spec: AnimationSpec,
+  spec: AnimSpec,
   a: AnimAdapters<TTree>,
 ): TTree {
   //  apply only properties present in spec.
@@ -224,56 +244,66 @@ function forceReflow(tree: unknown, el: Element): void {
  * @returns
  *   An `AnimApi<TTree>` implementing begin/restart/end operations over the scope.
  */
-export function apply_animation<TTree>(adapters: AnimAdapters<TTree>): AnimApi<TTree> {
+// CHANGED: return core for the same TTarget the adapters operate on
+export function apply_animation<TTarget>(
+  adapters: AnimAdapters<TTarget>,
+): AnimApiCore<TTarget> {
   return {
-    begin(tree: TTree, spec: AnimationSpec): TTree {
-      //  normalize + apply explicit properties (duration now required).
+    begin(target: TTarget, spec: AnimSpec): TTarget {
       const s = normalizeSpec(spec);
-      return applyAnimationProps(tree, s, adapters);
+      return applyAnimationProps(target, s, adapters);
     },
 
-    beginName(tree: TTree, name: AnimationName): TTree {
-      return applyNameOnly(tree, name, adapters);
+    beginName(target: TTarget, name: AnimationName): TTarget {
+      return applyNameOnly(target, name, adapters);
     },
 
-
-    end(tree: TTree, mode: "name-only" | "clear-all" = "name-only"): TTree {
-      tree = adapters.setStyleProp(tree, "animation-name", "none");
+    end(target: TTarget, mode: AnimationEndMode = "name-only"): TTarget {
+      target = adapters.setStyleProp(target, "animation-name", "none");
 
       if (mode === "clear-all") {
-        tree = adapters.setStyleProp(tree, "animation-duration", "");
-        tree = adapters.setStyleProp(tree, "animation-timing-function", "");
-        tree = adapters.setStyleProp(tree, "animation-delay", "");
-        tree = adapters.setStyleProp(tree, "animation-iteration-count", "");
-        tree = adapters.setStyleProp(tree, "animation-direction", "");
-        tree = adapters.setStyleProp(tree, "animation-fill-mode", "");
-        tree = adapters.setStyleProp(tree, "animation-play-state", "");
+        target = adapters.setStyleProp(target, "animation-duration", "");
+        target = adapters.setStyleProp(target, "animation-timing-function", "");
+        target = adapters.setStyleProp(target, "animation-delay", "");
+        target = adapters.setStyleProp(target, "animation-iteration-count", "");
+        target = adapters.setStyleProp(target, "animation-direction", "");
+        target = adapters.setStyleProp(target, "animation-fill-mode", "");
+        target = adapters.setStyleProp(target, "animation-play-state", "");
       }
 
-      return tree;
+      return target;
     },
 
-    restart(tree: TTree, spec: AnimationSpec): TTree {
+    restart(target: TTarget, spec: AnimSpec): TTarget {
       const s = normalizeSpec(spec);
 
-      tree = adapters.setStyleProp(tree, "animation-name", "none");
+      target = adapters.setStyleProp(target, "animation-name", "none");
 
-      const first = adapters.getFirstDomElement(tree);
-      if (first) forceReflow(tree, first);
+      const first = adapters.getFirstDomElement(target);
+      if (first) forceReflow(target, first);
 
-      tree = applyAnimationProps(tree, s, adapters);
-      return tree;
+      return applyAnimationProps(target, s, adapters);
     },
 
-    //  explicit “you’re on your own” name-only restart.
-    restartName(tree: TTree, name: AnimationName): TTree {
-      //  normalize + reuse helper.
-      tree = adapters.setStyleProp(tree, "animation-name", "none");
+    restartName(target: TTarget, name: AnimationName): TTarget {
+      target = adapters.setStyleProp(target, "animation-name", "none");
 
-      const first = adapters.getFirstDomElement(tree);
-      if (first) forceReflow(tree, first);
+      const first = adapters.getFirstDomElement(target);
+      if (first) forceReflow(target, first);
 
-      return applyNameOnly(tree, name, adapters);
+      return applyNameOnly(target, name, adapters);
+    },
+
+    setPlayState(target: TTarget, state: "running" | "paused"): TTarget {
+      return adapters.setStyleProp(target, "animation-play-state", state);
+    },
+
+    pause(target: TTarget): TTarget {
+      return adapters.setStyleProp(target, "animation-play-state", "paused");
+    },
+
+    resume(target: TTarget): TTarget {
+      return adapters.setStyleProp(target, "animation-play-state", "running");
     },
   };
 }

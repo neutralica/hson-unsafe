@@ -21,7 +21,27 @@ import { make_tree_create } from "./livetree-methods/create-typed";
 import { FindWithById, NodeRef } from "../../types-consts/livetree.types";
 import { Primitive } from "../../types-consts/core.types";
 import { StyleSetter } from "./livetree-methods/style-setter";
-import { make_tree_selector } from "./tree-selector";
+// NEW: motion.ts (or livetree-methods/motion.ts)
+export type MotionVars = Readonly<{
+  x?: string;   // "--x"
+  y?: string;   // "--y"
+  tx?: string;  // "--tx" (animated)
+  ty?: string;  // "--ty" (animated)
+  dx?: string;  // "--dx" (interactive)
+  dy?: string;  // "--dy" (interactive)
+}>;
+
+export function set_motion_transform(t: LiveTree): void {
+  // CHANGED: one canonical transform composition.
+  t.style.setMany({
+    transform:
+      "translate3d(" +
+      "calc(var(--x, 0px) + var(--dx, 0px) + var(--tx, 0px))," +
+      "calc(var(--y, 0px) + var(--dy, 0px) + var(--ty, 0px))," +
+      "0)",
+    "will-change": "transform",
+  });
+}
 
 /**
  * Create a stable `NodeRef` for a given `HsonNode`.
