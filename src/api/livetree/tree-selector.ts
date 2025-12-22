@@ -1,6 +1,6 @@
 // tree-selector.ts
 
-import { ListenerBuilder, ListenerSub, MissingPolicy } from "../../types-consts/listen.types";
+import { attachConvenience, ListenerBuilder, ListenerSub, MissingPolicy } from "../../types-consts/listen.types";
 import { FindWithById, LiveTreeCreateHelper, TagName, TreeSelectorCreateHelper } from "../../types-consts/livetree.types";
 import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
@@ -44,38 +44,19 @@ function combineSubs(subs: readonly ListenerSub[]): ListenerSub {
 function makeNoopListenerBuilder(): ListenerBuilder {
   const noopSub: ListenerSub = { count: 0, ok: false, off() { /* no-op */ } };
 
-  // CHANGED: one noop "on" implementation
-  const onNoop = () => noopSub;
-
-  // CHANGED: helpers to reuse the same function for all onX methods
   const api: ListenerBuilder = {
-    on: onNoop as any,
+    on: (() => noopSub) as any,
 
-    onClick: onNoop as any,
-    onMouseMove: onNoop as any,
-    onMouseDown: onNoop as any,
-    onMouseUp: onNoop as any,
-    onKeyDown: onNoop as any,
-    onKeyUp: onNoop as any,
-
-    onInput: onNoop as any,
-    onChange: onNoop as any,
-    onSubmit: onNoop as any,
-
-    onPointerDown: onNoop as any,
-    onPointerMove: onNoop as any,
-    onPointerUp: onNoop as any,
-    onFocusIn: onNoop as any,
-    onFocusOut: onNoop as any,
-
-    onCustom: onNoop as any,
-    onCustomDetail: onNoop as any,
+    // CHANGED: noop onCustom is sufficient
+    onCustom: (() => noopSub) as any,
+    onCustomDetail: (() => noopSub) as any,
 
     once() { return api; },
     passive() { return api; },
     capture() { return api; },
     toWindow() { return api; },
     toDocument() { return api; },
+
     strict() { return api; },
 
     preventDefault() { return api; },
@@ -83,9 +64,9 @@ function makeNoopListenerBuilder(): ListenerBuilder {
     stopImmediateProp() { return api; },
     stopAll() { return api; },
     clearStops() { return api; },
-  };
+  } as ListenerBuilder;
 
-  return api;
+  return attachConvenience(api);
 }
 
 
@@ -112,7 +93,7 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
   //  defensive copy to avoid external mutation
   const items: LiveTree[] = [...trees];
   const result: TreeSelector = {
-    
+
     /**
      * Return a shallow copy of the underlying `LiveTree` array.
      *
@@ -520,7 +501,7 @@ export function make_tree_selector(trees: LiveTree[]): TreeSelector {
       return base;
     })(),
   };
-  
+
   return result;
 }
 
@@ -608,86 +589,18 @@ function makeMultiDataManager(items: LiveTree[]): DataManager {
 function makeMultiListener(items: LiveTree[]): ListenerBuilder {
   if (items.length === 0) return makeNoopListenerBuilder();
 
-  const listeners = items.map(tree => build_listener(tree)); //  ListenerBuilder now
+  const listeners = items.map(tree => build_listener(tree));
 
   let multi: ListenerBuilder;
 
   multi = {
-    // TODO - make this declarative 
+    // CHANGED: base primitive
     on(type, handler) {
       const subs = listeners.map(l => l.on(type, handler));
       return combineSubs(subs);
     },
 
-    onClick(handler) {
-      const subs = listeners.map(l => l.onClick(handler));
-      return combineSubs(subs);
-    },
-
-    onMouseMove(handler) {
-      const subs = listeners.map(l => l.onMouseMove(handler));
-      return combineSubs(subs);
-    },
-
-    onMouseDown(handler) {
-      const subs = listeners.map(l => l.onMouseDown(handler));
-      return combineSubs(subs);
-    },
-
-    onMouseUp(handler) {
-      const subs = listeners.map(l => l.onMouseUp(handler));
-      return combineSubs(subs);
-    },
-
-    onKeyDown(handler) {
-      const subs = listeners.map(l => l.onKeyDown(handler));
-      return combineSubs(subs);
-    },
-
-    onKeyUp(handler) {
-      const subs = listeners.map(l => l.onKeyUp(handler));
-      return combineSubs(subs);
-    },
-    onInput(handler) {
-      const subs = listeners.map(l => l.onInput(handler));
-      return combineSubs(subs);
-    },
-
-    onChange(handler) {
-      const subs = listeners.map(l => l.onChange(handler));
-      return combineSubs(subs);
-    },
-
-    onSubmit(handler) {
-      const subs = listeners.map(l => l.onSubmit(handler));
-      return combineSubs(subs);
-    },
-
-    onPointerDown(handler) {
-      const subs = listeners.map(l => l.onPointerDown(handler));
-      return combineSubs(subs);
-    },
-
-    onPointerMove(handler) {
-      const subs = listeners.map(l => l.onPointerMove(handler));
-      return combineSubs(subs);
-    },
-
-    onPointerUp(handler) {
-      const subs = listeners.map(l => l.onPointerUp(handler));
-      return combineSubs(subs);
-    },
-
-    onFocusIn(handler) {
-      const subs = listeners.map(l => l.onFocusIn(handler));
-      return combineSubs(subs);
-    },
-
-    onFocusOut(handler) {
-      const subs = listeners.map(l => l.onFocusOut(handler));
-      return combineSubs(subs);
-    },
-
+    // CHANGED: implement onCustom once and let convenience layer derive everything
     onCustom(type, handler) {
       const subs = listeners.map(l => l.onCustom(type, handler));
       return combineSubs(subs);
@@ -698,20 +611,24 @@ function makeMultiListener(items: LiveTree[]): ListenerBuilder {
       return combineSubs(subs);
     },
 
-    //  options return multi after fanning out
+    // options: mutate underlying builders and return this one
     once() { listeners.forEach(l => l.once()); return multi; },
     passive() { listeners.forEach(l => l.passive()); return multi; },
     capture() { listeners.forEach(l => l.capture()); return multi; },
     toWindow() { listeners.forEach(l => l.toWindow()); return multi; },
     toDocument() { listeners.forEach(l => l.toDocument()); return multi; },
-    strict(policy: MissingPolicy = "warn") { listeners.forEach(l => l.strict(policy)); return multi; },
+
+    strict(policy) { listeners.forEach(l => l.strict(policy)); return multi; },
 
     preventDefault() { listeners.forEach(l => l.preventDefault()); return multi; },
     stopProp() { listeners.forEach(l => l.stopProp()); return multi; },
     stopImmediateProp() { listeners.forEach(l => l.stopImmediateProp()); return multi; },
     stopAll() { listeners.forEach(l => l.stopAll()); return multi; },
     clearStops() { listeners.forEach(l => l.clearStops()); return multi; },
-  };
+  } as ListenerBuilder;
 
-  return multi;
+  // ADDED: fill in onClick/onAnimationEnd/etc in terms of onCustom
+  return attachConvenience(multi);
+
+
 }

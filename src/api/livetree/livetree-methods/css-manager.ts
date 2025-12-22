@@ -212,8 +212,12 @@ export class CssManager {
   private styleEl: HTMLStyleElement | null = null;
   private atPropManager: PropertyManager;
   private keyframeManager: KeyframesManager;
-  private changed = false;
-  private scheduled = false;
+  private changed: boolean = false;
+
+  // ADDED: coalescing state
+  private scheduled: boolean = false;        // CHANGED: prevents multiple schedules
+  private rafId: number | null = null;       // CHANGED: lets us cancel when forcing sync
+
   private boundDoc: Document | null = null;
 
   private constructor() {
@@ -233,9 +237,43 @@ export class CssManager {
    *   from “eager” to “scheduled” syncing.
    */
   private mark_changed(): void {
+    // CHANGED: mark dirty, but DO NOT write immediately
     this.changed = true;
-    this.syncToDom();
+
+    // CHANGED: schedule a single flush
+    this.scheduleSync();
   }
+
+  // -------------------------
+  // ADDED: scheduling layer
+  // -------------------------
+  private scheduleSync(): void {
+    if (this.scheduled) return;
+
+    // CHANGED: in Node (tests), flush immediately for determinism
+    if (this.isNodeRuntime()) {
+      this.syncNow();
+      return;
+    }
+
+    const raf = (globalThis as any).requestAnimationFrame as
+      | ((cb: FrameRequestCallback) => number)
+      | undefined;
+
+    // CHANGED: if no RAF in a browser-ish env, fallback to immediate
+    if (!raf) {
+      this.syncNow();
+      return;
+    }
+
+    this.scheduled = true;
+    this.rafId = raf(() => {
+      this.scheduled = false;
+      this.rafId = null;
+      this.syncNow();
+    });
+  }
+
 
   /**
    * Returns the singleton `CssManager` instance, creating it on first use.
@@ -409,17 +447,6 @@ export class CssManager {
   public devReset(): void {
     this.resetManagersAndRules();
     this.ensureStyleElement();
-  }
-
-  /**
-   * Dev-only helper that forces a DOM sync of the stylesheet.
-   *
-   * This bypasses any future batching/scheduling strategy by directly invoking
-   * `syncToDom()`. Useful in tests or debugging when you want the `<style>` tag
-   * to reflect the latest in-memory rules immediately.
-   */
-  public devFlush(): void {
-    this.syncToDom();
   }
 
   /**
@@ -755,25 +782,43 @@ export class CssManager {
     return parts.join("\n\n");
   }
 
-  /**
-   * Synchronizes the current in-memory CSS state into the managed `<style>` tag.
-   *
-   * Behavior:
-   * - Ensures the host `<style id="${CSS_STYLE_ID}">` exists for the current `document`
-   *   via `ensureStyleElement()`.
-   * - Rebuilds the full stylesheet text via `buildCombinedCss()` and assigns it to
-   *   `styleEl.textContent` (full overwrite, not incremental patching).
-   * - Clears the dirty flag (`changed = false`).
-   *
-   * Notes:
-   * - This is the single “write-to-DOM” choke point for the manager.
-   * - Callers typically reach this via `mark_changed()` (and any batching strategy
-   *   should live there, not here).
+  // added
+  private isNodeRuntime(): boolean {
+    return typeof (globalThis as any).process !== "undefined"
+      && !!(globalThis as any).process?.versions?.node;
+  }
+  /** // changed
+   * Dev-only helper that forces a DOM sync of the stylesheet immediately.
+   * Useful in tests/debugging when you want the `<style>` tag updated right now.
    */
+  public devFlush(): void {
+    // CHANGED: force immediate write (not scheduled)
+    this.syncNow();
+  }
+  /** // added
+   * Immediately writes the current in-memory CSS to the DOM.
+   * This is the "force it now" path used by devFlush and (optionally) tests.
+   */
+  private syncNow(): void {
+    // CHANGED: cancel any pending scheduled flush to avoid double work
+    if (this.rafId !== null) cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.scheduled = false;
+
+    // CHANGED: no-op if nothing changed
+    if (!this.changed) return;
+
+    // CHANGED: perform the actual write
+    this.syncToDom();
+  }
+  // changed
   private syncToDom(): void {
     const styleEl = this.ensureStyleElement();
-    styleEl.textContent = this.buildCombinedCss();
-    this.changed = false;
 
+    // NOTE: keep this as a simple text update; do NOT replace the <style> node
+    styleEl.textContent = this.buildCombinedCss();
+
+    // CHANGED: clear dirty flag only after a successful write
+    this.changed = false;
   }
 }
