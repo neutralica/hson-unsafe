@@ -60,14 +60,18 @@ const HTML_TAGS: TagName[] = [
  * @returns A `LiveTreeCreateHelper` bound to `tree`.
  */
 export function make_tree_create(tree: LiveTree): LiveTreeCreateHelper {
-  // Core worker that handles both single-tag and multi-tag creation.
-  function createForTags(
-    tagOrTags: TagName | TagName[],
-    index?: number,
-  ): LiveTree | TreeSelector2 {
+  // CHANGED: placement config for *next* create call only
+  let nextIndex: number | undefined = undefined;
+
+  const consumeIndex = (): number | undefined => {
+    const ix = nextIndex;
+    nextIndex = undefined; // CHANGED: one-shot
+    return ix;
+  };
+
+  function createForTags(tagOrTags: TagName | TagName[], index?: number): LiveTree | TreeSelector2 {
     const tags: TagName[] = Array.isArray(tagOrTags) ? tagOrTags : [tagOrTags];
 
-    // Ensure the tree has a bound node; mutators are allowed to throw if not.
     void tree.node;
 
     const created: LiveTree[] = [];
@@ -76,20 +80,15 @@ export function make_tree_create(tree: LiveTree): LiveTreeCreateHelper {
     for (const t of tags) {
       const html = `<${t}></${t}>`;
 
-      const parsed = hson
-        .fromTrustedHtml(html)
-        .toHSON()
-        .parse();
-
+      const parsed = hson.fromTrustedHtml(html).toHSON().parse();
       const root0: HsonNode = Array.isArray(parsed) ? parsed[0] : parsed;
 
-      // Temporary branch used only to drive append semantics.
       const branch = new LiveTree(root0);
 
-      // Attach into the graph + DOM, respecting insertion index.
-      tree.append(branch, insertIx);
+      // CHANGED: call your new insertAt/append/prepend surface (not append(content, index?))
+      if (typeof insertIx === "number") tree.append(branch, insertIx);
+      else tree.append(branch);
 
-      // unwrap `_elem` wrapper to get the real children that were appended.
       const appended = unwrap_root_elem(root0);
 
       for (const child of appended) {
@@ -104,34 +103,42 @@ export function make_tree_create(tree: LiveTree): LiveTreeCreateHelper {
     }
 
     if (!Array.isArray(tagOrTags)) {
-      // Single-tag case: return the first created child (should exist).
-      if (!created.length) {
-        throw new Error("[LiveTree.create] no children created");
-      }
+      if (!created.length) throw new Error("[LiveTree.create] no children created");
       return created[0];
     }
 
-    // Multi-tag case: return a selector of all new children.
     return make_tree_selector(created);
   }
 
-  const helper: LiveTreeCreateHelper = {
-    // Batch creation: tree.create.tags(["div","span"], index?)
+  // CHANGED: build helper object once; mutate its methods to return itself
+  // CHANGED: build as a mutable object, then return as LiveTreeCreateHelper
+  const helper: Partial<LiveTreeCreateHelper> & {
+    prepend(): LiveTreeCreateHelper;
+    at(index: number): LiveTreeCreateHelper;
+  } = {
     tags(tags: TagName[], index?: number): TreeSelector2 {
-      const result = createForTags(tags, index);
-      return result as TreeSelector2;
+      return createForTags(tags, index) as TreeSelector2;
     },
-  } as LiveTreeCreateHelper;
 
-  // Per-tag sugar: tree.create.div(index?), tree.create.span(index?), …
+    prepend(): LiveTreeCreateHelper {
+      nextIndex = 0;
+      return helper as LiveTreeCreateHelper;
+    },
+
+    at(index: number): LiveTreeCreateHelper {
+      nextIndex = index;
+      return helper as LiveTreeCreateHelper;
+    },
+  };
+
   for (const tag of HTML_TAGS) {
     (helper as any)[tag] = (index?: number): LiveTree => {
-      const result = createForTags(tag, index);
-      return result as LiveTree;
+      const ix = (typeof index === "number") ? index : consumeIndex();
+      return createForTags(tag, ix) as LiveTree;
     };
   }
 
-  return helper;
+  return helper as LiveTreeCreateHelper;
 }
 
 

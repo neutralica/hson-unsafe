@@ -121,13 +121,13 @@ export type TagName = keyof HTMLElementTagNameMap;
  *   - propagate the correct `Single` / `Many` return type
  *     according to the context (`tree` vs `selector`).
  **************************************************************/
-export type CreateHelper<Single, Many> = {
-  // per-tag sugar: .create.div(index?)
-  [K in TagName]: (index?: number) => Single;
-} & {
-  // batch: .create.tags(["div", "span"], index?)
-  tags(tags: TagName[], index?: number): Many;
-};
+// export type CreateHelper<Single, Many> = {
+//   // per-tag sugar: .create.div(index?)
+//   [K in TagName]: (index?: number) => Single;
+// } & {
+//   // batch: .create.tags(["div", "span"], index?)
+//   tags(tags: TagName[], index?: number): Many;
+// };
 
 /**************************************************************
  * LiveTreeCreateHelper
@@ -158,6 +158,17 @@ export type CreateHelper<Single, Many> = {
  * read as “insert a new <p> in the middle and then configure it”.
  **************************************************************/
 export type LiveTreeCreateHelper = CreateHelper<LiveTree, TreeSelector2>;
+
+// CHANGED: add fluent placement methods to the helper type
+export type CreateHelper<Single, Many> = {
+  [K in TagName]: (index?: number) => Single;
+} & {
+  tags(tags: TagName[], index?: number): Many;
+
+  // ADDED: fluent placement
+  prepend(): CreateHelper<Single, Many>;
+  at(index: number): CreateHelper<Single, Many>;
+};
 
 /**************************************************************
  * Creation helper exposed as `selector.create` on a

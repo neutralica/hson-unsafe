@@ -35,50 +35,35 @@ export function normalize_ix(index: number, length: number): number {
   return fromEnd;
 }
 
-/**
- * Append a `LiveTree` branch as children of this `LiveTree`'s node,
- * updating both the HSON structure and the bound DOM subtree.
- *
- * The incoming `content` branch is normalized to a list of HSON nodes
- * via `unwrap_root_elem`, so its root `_elem` wrapper is not appended.
- * The nodes are then inserted into the target node's `_elem` container,
- * creating that container if needed. Insertion position is controlled
- * by `index` (normalized by `normalize_ix`); omitted `index` appends at
- * the end.
- *
- * If a live DOM element is associated with the target node, each new
- * HSON node is rendered with `create_live_tree2` and inserted into the
- * DOM at the corresponding position, keeping HSON and DOM in sync.
- *
- * @this LiveTree - The anchor tree whose node will receive the new children.
- * @param content - The `LiveTree` branch to append into this tree.
- * @param index - Optional insertion index in the `_elem` container;
- *                negative values index from the end, and values outside
- *                the range are clamped.
- * @returns The receiver `LiveTree` for chaining.
- */
-export function append(
-  this: LiveTree,
-  content: LiveTree,
-  index?: number,
-): LiveTree {
-  // Single-node anchor; throws if there is no node.
+export function append(this: LiveTree, content: LiveTree): LiveTree {
+  // CHANGED: append is end-only
+  return insert_at.call(this, content, Infinity);
+}
+
+export function prepend(this: LiveTree, content: LiveTree): LiveTree {
+  // NEW: explicit prepend
+  return insert_at.call(this, content, 0);
+}
+
+// CHANGED: add to LiveTree methods (where append is defined / exported)
+export function insertAt(this: LiveTree, content: LiveTree, index: number): LiveTree {
+  // CHANGED: forward directly; do not re-normalize here
+  return this.append(content, index);
+}
+
+// CHANGED: old append(content, index?) becomes internal primitive
+function insert_at(this: LiveTree, content: LiveTree, index: number): LiveTree {
   const targetNode = this.node;
 
-  // --- normalize content into HsonNode[] -------------------------------
+  // Normalize content into HsonNode[]
   let nodesToAppend: HsonNode[];
   if (is_Node(content)) {
     nodesToAppend = unwrap_root_elem(content);
   } else {
-    _throw_transform_err(
-      "[ERR] invalid content provided",
-      "append",
-      make_string(content),
-    );
+    _throw_transform_err("[ERR] invalid content provided", "insert_at", make_string(content));
   }
 
-
-  // find or create the `_elem` container
+  // Ensure container node
   let containerNode: HsonNode;
   const firstChild = targetNode._content[0];
 
@@ -86,21 +71,24 @@ export function append(
     containerNode = firstChild;
   } else {
     containerNode = CREATE_NODE({ _tag: ELEM_TAG, _content: [] });
-    // prepend container; leave existing siblings after it
-    targetNode._content = [containerNode, ...targetNode._content];
+
+    // CHANGED: migrate existing node-children into the container so indices mean what you think
+    const existing = targetNode._content.filter(is_Node);
+    const nonNodes = targetNode._content.filter(ch => !is_Node(ch));
+
+    containerNode._content.push(...existing);
+
+    // CHANGED: replace content with single container + any non-node content
+    targetNode._content = [containerNode, ...nonNodes];
   }
 
-  // if (!containerNode._content) containerNode._content = [];
   const childContent = containerNode._content;
 
-  // --- HSON INSERTION --------------------------------------------------
-  if (typeof index === "number") {
-    const insertIx = normalize_ix(index, childContent.length);
-    childContent.splice(insertIx, 0, ...nodesToAppend);
-  } else {
-    childContent.push(...nodesToAppend);
-  }
+  // HSON INSERTION
+  const insertIx = normalize_ix(index, childContent.length); // CHANGED: always compute once
+  childContent.splice(insertIx, 0, ...nodesToAppend);
 
+  // DOM SYNC
   // --- DOM SYNC --------------------------------------------------------
   const liveElement = element_for_node(targetNode);
   if (liveElement) {
@@ -110,7 +98,7 @@ export function append(
       let insertIx = normalize_ix(index, domChildren.length);
 
       for (const newNode of nodesToAppend) {
-        const dom = create_live_tree2(newNode); // Node | DocumentFragment
+        const dom = create_live_tree2(newNode);
         const refNode = domChildren[insertIx] ?? null;
         liveElement.insertBefore(dom, refNode);
         insertIx += 1;
@@ -125,4 +113,3 @@ export function append(
 
   return this;
 }
-
