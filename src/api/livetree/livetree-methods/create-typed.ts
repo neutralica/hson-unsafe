@@ -4,7 +4,7 @@ import { LiveTreeCreateHelper, TagName, TreeSelectorCreateHelper } from "../../.
 import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem";
 import { LiveTree } from "../livetree";
 import { make_tree_selector } from "../tree-selector";
-import { TreeSelector } from "../../../types-consts/livetree.types";
+import { TreeSelector2 } from "../tree-selector-2";
 
 
 /**
@@ -66,7 +66,7 @@ export function make_tree_create(tree: LiveTree): LiveTreeCreateHelper {
   function createForTags(
     tagOrTags: TagName | TagName[],
     index?: number,
-  ): LiveTree | TreeSelector {
+  ): LiveTree | TreeSelector2 {
     const tags: TagName[] = Array.isArray(tagOrTags) ? tagOrTags : [tagOrTags];
 
     // Ensure the tree has a bound node; mutators are allowed to throw if not.
@@ -119,9 +119,9 @@ export function make_tree_create(tree: LiveTree): LiveTreeCreateHelper {
 
   const helper: LiveTreeCreateHelper = {
     // Batch creation: tree.create.tags(["div","span"], index?)
-    tags(tags: TagName[], index?: number): TreeSelector {
+    tags(tags: TagName[], index?: number): TreeSelector2 {
       const result = createForTags(tags, index);
-      return result as TreeSelector;
+      return result as TreeSelector2;
     },
   } as LiveTreeCreateHelper;
 
@@ -161,7 +161,7 @@ export function make_tree_create(tree: LiveTree): LiveTreeCreateHelper {
 export function make_selector_create(items: LiveTree[]): TreeSelectorCreateHelper {
   const helper: TreeSelectorCreateHelper = {
     // Batch: selector.create.tags(["div","span"], index?)
-    tags(tags: TagName[], index?: number): TreeSelector {
+    tags(tags: TagName[], index?: number): TreeSelector2 {
       const created: LiveTree[] = [];
 
       for (const tree of items) {
@@ -176,7 +176,7 @@ export function make_selector_create(items: LiveTree[]): TreeSelectorCreateHelpe
 
   // Per-tag sugar: selector.create.div(index?), selector.create.span(index?), …
   for (const tag of HTML_TAGS) {
-    (helper as any)[tag] = (index?: number): TreeSelector => {
+    (helper as any)[tag] = (index?: number): TreeSelector2 => {
       const created: LiveTree[] = [];
 
       for (const tree of items) {

@@ -7,8 +7,8 @@ import { unwrap_root_elem } from "../../../utils/html-utils/unwrap-root-elem";
 import { element_for_node } from "../../../utils/tree-utils/node-map-helpers";
 import { create_live_tree2 } from "../livetree-constructors/create-live-tree";
 import { LiveTree } from "../livetree";
-import { TreeSelector } from "../../../types-consts/livetree.types";
 import { normalize_ix } from "./append";
+import { TreeSelector2 } from "../tree-selector-2";
 
 /**
  * Append one or more HSON nodes into a target node's `_elem` container
@@ -134,7 +134,7 @@ export function append_branch(
  */
 export function append_multi(
   this: LiveTree,
-  branches: TreeSelector | LiveTree[],
+  branches: TreeSelector2 | LiveTree[],
   index?: number,
 ): LiveTree {
   const targetNode = this.node;

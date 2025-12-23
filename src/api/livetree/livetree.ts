@@ -6,14 +6,14 @@ import { ListenerBuilder } from "../../types-consts/listen.types";
 import { element_for_node } from "../../utils/tree-utils/node-map-helpers";
 import { css_for_quids } from "./livetree-methods/css-manager";
 import { CssHandle } from "../../types-consts/css.types";
-import { remove_self } from "./livetree-methods/remove2";
+import { remove_livetree } from "./livetree-methods/remove";
 import { get_node_form_value, get_node_text, set_node_content, set_node_form_value } from "./livetree-methods/content-manager";
 import { DataManager } from "./livetree-methods/data-manager";
 import { empty_contents } from "./livetree-methods/empty2";
 import { build_listener } from "./livetree-methods/listen";
 import { FindMany, make_find_all_for, make_find_for } from "./livetree-methods/find"; // CHANGED
 import { clearFlagsImpl, getAttrImpl, removeAttrImpl, setAttrsImpl, setFlagsImpl } from "./livetree-methods/attrs-manager";
-import { remove_child } from "./livetree-methods/remove-child2";
+import { remove_child } from "./livetree-methods/remove-child";
 import { StyleManager } from "./livetree-methods/style-manager";
 import { LiveTreeCreateHelper } from "../../types-consts/livetree.types"; // CHANGED
 import { append_branch } from "./livetree-methods/append-other";
@@ -21,6 +21,9 @@ import { make_tree_create } from "./livetree-methods/create-typed";
 import { FindWithById, NodeRef } from "../../types-consts/livetree.types";
 import { Primitive } from "../../types-consts/core.types";
 import { StyleSetter } from "./livetree-methods/style-setter";
+import { LiveTreeDom } from "../../types-consts/dom.types";
+import { make_dom_api } from "./livetree-managers/dom-manager";
+import { is_Node } from "hson-live/diagnostics";
 // NEW: motion.ts (or livetree-methods/motion.ts)
 export type MotionVars = Readonly<{
   x?: string;   // "--x"
@@ -130,6 +133,7 @@ export class LiveTree {
    * @see makeRef
    */
   private setRef(input: HsonNode | LiveTree): void {
+    this.invalidate_dom_api();
     if (input instanceof LiveTree) {
       this.nodeRef = makeRef(input.node);
       return;
@@ -151,6 +155,7 @@ export class LiveTree {
    * @param input - Either a `HsonNode` or another `LiveTree`.
    */
   private setRoot(input: HsonNode | LiveTree): void {
+    this.invalidate_dom_api();
     if (input instanceof LiveTree) {
       this.hostRoot = input.hostRoot;
       if (!this.hostRoot) { throw new Error('could not set host root'); }
@@ -177,6 +182,22 @@ export class LiveTree {
   constructor(input: HsonNode | LiveTree) {
     this.setRoot(input);
     this.setRef(input);
+  }
+
+  private domApiInternal: LiveTreeDom | undefined = undefined;
+
+  // ADDED: public accessor
+  public get dom(): LiveTreeDom {
+    if (!this.domApiInternal) {
+      this.domApiInternal = make_dom_api(this);
+    }
+    return this.domApiInternal;
+  }
+
+  // OPTIONAL: if the underlying bound element can change during lifetime
+  // ADDED
+  private invalidate_dom_api(): void {
+    this.domApiInternal = undefined;
   }
 
   /**
@@ -206,18 +227,30 @@ export class LiveTree {
    * @see empty_contents
    */
   public empty = empty_contents;
+  // ADDED: remove all direct node-children
+  public removeChildren(): number {
+    const parent = this.nodeRef.resolveNode();
+    const kids = parent!._content;
 
-  /**
- * Remove a single child subtree from this tree's node.
- *
- * Delegates to `remove_child2`, which locates and removes the targeted
- * child in HSON and DOM according to the underlying implementation.
- *
- * @param q - A query identifying the child to remove (selector, quid, etc.).
- * @returns This `LiveTree` instance, for chaining.
- * @see remove_child
- */
-  public removeChild = remove_child;
+    if (!Array.isArray(kids) || kids.length === 0) return 0;
+
+    // CHANGED: only node children (not text leaves)
+    const nodeKids = kids.filter(is_Node);
+    if (nodeKids.length === 0) return 0;
+
+    let removed = 0;
+
+    // ADDED: snapshot direct children; remove each via the canonical funnel
+    for (const child of nodeKids) {
+      // CHANGED: wrap the child as a LiveTree bound to the same hostRoot context
+      const childTree = new LiveTree(child);
+      childTree.setRoot(this); // or whatever your “inherit hostRoot” API is
+      removed += remove_livetree.call(childTree);
+    }
+
+    return removed;
+  }
+
 
   /**
  * Remove this `LiveTree`'s node from its parent, disconnecting the
@@ -227,9 +260,13 @@ export class LiveTree {
  * are detached according to the underlying graph rules.
  *
  * @returns This `LiveTree` instance, for chaining.
- * @see remove_self
+ * @see remove_livetree
  */
-  public remove = remove_self;
+  public removeSelf(): number {
+    // CHANGED: funnel through the one implementation
+    return remove_livetree.call(this);
+  }
+
 
   /**
    * Find a single descendant subtree relative to this tree.
@@ -257,7 +294,7 @@ export class LiveTree {
    * @returns A `TreeSelector` over all matching subtrees.
    * @see find_all_in_tree
    */
-  public findAll: FindMany = make_find_all_for(this); 
+  public findAll: FindMany = make_find_all_for(this);
 
   /**
    * Typed element creation helper bound to this `LiveTree`.

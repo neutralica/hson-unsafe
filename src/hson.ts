@@ -5,7 +5,7 @@ import { DomQuerySourceConstructor } from "./types-consts/constructor.types";
 import { HsonNode } from "./types-consts/node.types";
 import { JsonValue } from "./types-consts/core.types";
 import { LiveTree } from "./api/livetree/livetree";
-import { construct_tree } from "./api/livetree/livetree-constructors/construct-tree";
+import { construct_tree } from "./api/constructors/construct-tree";
 
 
 (globalThis as any)._test_ON = () => { (globalThis as any).test = true; location.reload(); };
