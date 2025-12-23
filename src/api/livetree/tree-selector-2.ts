@@ -5,9 +5,6 @@
 
 import { LiveTree } from "./livetree";
 
-// import type { LiveTree } from "../livetree";                 // <-- adjust
-// import type { ListenerBuilder } from "./listen.types";       // <-- adjust
-// import { makeMultiListener } from "./tree-selector.listen";  // <-- adjust
 
 type LiveTreeStyle = LiveTree["style"];
 type LiveTreeCss = LiveTree["css"];

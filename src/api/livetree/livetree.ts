@@ -20,8 +20,8 @@ import { append_branch } from "./livetree-methods/append-other";
 import { make_tree_create } from "./livetree-methods/create-typed";
 import { FindWithById, NodeRef } from "../../types-consts/livetree.types";
 import { Primitive } from "../../types-consts/core.types";
-import { StyleSetter } from "./livetree-methods/style-setter";
-import { LiveTreeDom } from "../../types-consts/dom.types";
+import { make_class_api, make_id_api, StyleSetter } from "./livetree-methods/style-setter";
+import { ClassApi, IdApi, LiveTreeDom } from "../../types-consts/dom.types";
 import { make_dom_api } from "./livetree-managers/dom-manager";
 import { is_Node } from "hson-live/diagnostics";
 // NEW: motion.ts (or livetree-methods/motion.ts)
@@ -117,6 +117,10 @@ export class LiveTree {
   private styleManagerInternal: StyleManager | undefined = undefined;
   /*---------- .dataset editor */
   private datasetManagerInternal: DataManager | undefined = undefined;
+  
+   private idApi?: IdApi;
+  private classApi?: ClassApi;
+
   /**
    * Internal helper to assign `nodeRef` from either a raw `HsonNode`
    * or another `LiveTree`.
@@ -227,6 +231,7 @@ export class LiveTree {
    * @see empty_contents
    */
   public empty = empty_contents;
+
   // ADDED: remove all direct node-children
   public removeChildren(): number {
     const parent = this.nodeRef.resolveNode();
@@ -616,6 +621,23 @@ export class LiveTree {
     return get_node_form_value(this.node);
   }
 
+  public get id(): IdApi {
+    // ADDED: cached id namespace
+    if (!this.idApi) this.idApi = make_id_api(this);
+    return this.idApi;
+  }
+
+  public get class(): ClassApi {
+    // ADDED: cached class namespace
+    if (!this.classApi) this.classApi = make_class_api(this);
+    return this.classApi;
+  }
+
+  private invalidate_attr_api(): void {
+    // ADDED: if you ever need to rebind (rare)
+    this.idApi = undefined;
+    this.classApi = undefined;
+  }
   /*  ---------- DOM adapter ---------- */
   /**
    * Resolve this tree's node to its associated DOM `Element`, if any.

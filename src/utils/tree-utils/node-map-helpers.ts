@@ -21,25 +21,6 @@ import { make_string } from "../primitive-utils/make-string.nodes.utils";
 export function linkNodeToElement(node: HsonNode, el: Element): void {
   NODE_ELEMENT_MAP.set(node, el);
 }
-// OLD DNU
-// /**
-//  * Resolve the DOM `Element` currently associated with an `HsonNode`, if any.
-//  *
-//  * This is a safe lookup:
-//  * - Returns `undefined` when the node is not mounted / not linked.
-//  * - Does not create or mutate any mapping.
-//  *
-//  * Typical callers use this to decide whether a DOM-sync operation is needed,
-//  * e.g. “update the element if mounted, otherwise only update the HSON graph.”
-//  *
-//  * @param node - The HSON node to resolve.
-//  * @returns The linked DOM element, or `undefined` if none is registered.
-//  */
-// export function element_for_node(
-//   node: HsonNode): Element | undefined {
-//   return NODE_ELEMENT_MAP.get(node);
-// }
-
 //  optional helpers
 /**
  * Remove any existing node→element association for the given `HsonNode`.

@@ -12,16 +12,14 @@ import { TreeSelector2 } from "../tree-selector-2";
  *
  * These tags are chosen to keep the helper small, predictable, and in line
  * with the subset of structural elements LiveTree tends to operate on.
- */
-export type HtmlTag = keyof HTMLElementTagNameMap;
-/**
+ *
  * Canonical list backing the dot-sugar creation functions on
  * `LiveTreeCreateHelper`.
  *
  * Each entry corresponds to a method added to the helper at runtime
  * (e.g., `helper.div()`, `helper.span()`, etc.).
  */
-const HTML_TAGS: HtmlTag[] = [
+const HTML_TAGS: TagName[] = [
   "div",
   "span",
   "p",

@@ -61,15 +61,5 @@ export function construct_options_3<K extends RenderFormats>(
       return construct_render_4({ frame: updatedFrame, output });
     },
 
-    /**
-     * Apply linting / canonicalization rules to the output.
-     */
-    // linted(): RenderConstructor_4<K> {
-    //   const updatedFrame: FrameRender<K>["frame"] = {
-    //     ...frame,
-    //     options: { ...frame.options, linted: true },
-    //   };
-    //   return construct_render_4({ frame: updatedFrame, output });
-    // },
   };
 }

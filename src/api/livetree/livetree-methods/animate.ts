@@ -2,8 +2,6 @@
 
 import { AnimAdapters, AnimApi, AnimApiCore, AnimSpec, AnimationName, AnimationEndMode } from "./animate.types";
 
-// export type CssScope = Readonly<{ quids: readonly string[] }>;
-
 // CHANGED: single type parameter; output API matches the core + target type
 export function bind_anim_api<TTarget>(
   target: TTarget,
