@@ -2,11 +2,27 @@
 
 import { CssMap, CssValue } from "../../../types-consts/css.types";
 import { nrmlz_cssom_prop_key } from "../../../utils/attrs-utils/normalize-css";
-import { SetSurface } from "./css-manager";
+import { SetSurface } from "../../../types-consts/css.types";
 import { CssKey } from "../../../types-consts/css.types";
 import { LiveTree } from "hson-live/types";
 import { ClassApi, IdApi } from "../../../types-consts/dom.types";
 
+
+// CHANGED: generic “proxy surface” builder that returns whatever your setProp returns.
+export function make_set_surface<TReturn>(
+  setProp: (prop: CssKey, v: CssValue) => TReturn,
+): SetSurface<TReturn> {
+  return new Proxy({} as SetSurface<TReturn>, {
+    get(_t, rawKey: string | symbol) {
+      if (rawKey === "var") {
+        return (name: `--${string}`, v: CssValue) => setProp(name, v);
+      }
+      if (typeof rawKey !== "string") return undefined;
+
+      return (v: CssValue) => setProp(rawKey, v);
+    },
+  });
+}
 
 /**
  * Fluent write surface for styles.
@@ -23,22 +39,15 @@ import { ClassApi, IdApi } from "../../../types-consts/dom.types";
  *
  * All methods return the same `StyleSetter` for chaining.
  */
-export type StyleSetter = Readonly<{
+export type StyleSetter<TReturn> = {
   /** Proxy builder: setter.set.backgroundColor("aquamarine") */
-  set: SetSurface<StyleSetter>;
+  set: SetSurface<TReturn>;
 
-  /** stringly escape hatch (accepts camelCase or kebab-case) */
-  setProp: (prop: CssKey, v: CssValue) => StyleSetter;
-
-  /** set many props from an object (keys may be camel or kebab) */
-  setMany: (map: CssMap) => StyleSetter;
-
-  /** remove one prop (accepts camelCase or kebab-case) */
-  remove: (prop: CssKey) => StyleSetter;
-
-  /** clear all props for this handle */
-  clear: () => StyleSetter;
-}>;
+  setProp: (prop: CssKey, v: CssValue) => TReturn;
+  setMany: (map: CssMap) => TReturn;
+  remove: (prop: CssKey) => TReturn;
+  clear: () => TReturn;
+};
 
 /**
  * Backend interface used by `make_style_setter()` to perform actual writes.
@@ -80,19 +89,19 @@ export type StyleSetterAdapters = Readonly<{
  * Create a `StyleSetter`: a small, fluent, backend-agnostic “write surface” for CSS style.
  *
  * ## What this is
- * `StyleSetter` is intentionally dumb: it holds **no state** and performs **no DOM/CSSOM logic**
+ * `StyleSetter` is intentionally dumb: it holds no state and performs no DOM/CSSOM logic
  * itself. It only:
  *  1) normalizes property keys to a canonical CSS form, and
  *  2) renders/coerces values into strings (or “remove”),
  * then delegates the actual write/remove/clear work to the provided `adapters`.
  *
  * ## Where it sits in the system (wiring diagram)
- * - `LiveTree.style` / `TreeSelector.style` typically returns a `StyleSetter` backed by a
+ * - `LiveTree.style` / `TreeSelector.style` returns a StyleSetter backed by a
  *   `StyleManager` adapter (inline style on the element).
- * - `LiveTree.css` / `TreeSelector.css` typically returns a `StyleSetter` backed by a
+ * - `LiveTree.css` / `TreeSelector.css` typically returns a StyleSetter backed by a
  *   `CssManager` adapter (QUID-scoped rules in a stylesheet).
  *
- * That means: the *same* fluent API (setProp/setMany/remove/clear and the `setter.set.*` proxy)
+ * This means: the same API (setProp/setMany/remove/clear and the `setter.set.*` proxy)
  * can be used regardless of whether the underlying mechanism is inline styles or stylesheet rules.
  *
  * ## Adapter contract (important invariants)
@@ -120,79 +129,51 @@ export type StyleSetterAdapters = Readonly<{
  *
  * @returns A fluent `StyleSetter` that delegates mutations to the provided adapters.
  */
-export function make_style_setter(adapters: StyleSetterAdapters): StyleSetter {
-  const keySet: ReadonlySet<string> | null =
-    adapters.keys ? new Set(adapters.keys) : null;
+export function make_style_setter<TReturn>(
+  host: TReturn,
+  adapters: StyleSetterAdapters,
+): StyleSetter<TReturn> {
 
-  const setterApi: {
-    setProp: (prop: CssKey, v: CssValue) => StyleSetter;
-    setMany: (map: CssMap) => StyleSetter;
-    remove: (prop: CssKey) => StyleSetter;
-    clear: () => StyleSetter;
-    set: any;
-  } = {
-    setProp(prop: CssKey, v: CssValue): StyleSetter {
-      const canon = nrmlz_cssom_prop_key(prop);
-      const rendered = renderCssValue(v);
+  const setProp = (prop: CssKey, v: CssValue): TReturn => {
+    const canon = nrmlz_cssom_prop_key(prop);
+    const rendered = renderCssValue(v);
 
-      //  null/undefined => remove (predictable “delete semantics”)
-      if (rendered == null) {
-        adapters.remove(canon);
-        return api;
-      }
+    if (rendered == null) {
+      adapters.remove(canon);
+      return host;
+    }
 
-      adapters.apply(canon, rendered);
-      return api;
-    },
-
-    setMany(map: CssMap): StyleSetter {
-      for (const [k, v] of Object.entries(map)) {
-        if (v !== undefined && v !== null) setterApi.setProp(k, v);
-      }
-      return api;
-    },
-
-    remove(prop: CssKey): StyleSetter {
-      adapters.remove(nrmlz_cssom_prop_key(prop));
-      return api;
-    },
-
-    clear(): StyleSetter {
-      adapters.clear();
-      return api;
-    },
-
-    set: null as any,
+    adapters.apply(canon, rendered);
+    return host;
   };
 
-  // Proxy builder:
-  //   setter.set.backgroundColor("x")
-  //   setter.set["background-color"]("x")  (allowed)
-  //   setter.set.var("--bg", "#123")
-  const setProxy = new Proxy({} as StyleSetter["set"], {
-    get(_t, rawKey: string | symbol) {
-      if (rawKey === "var") {
-        return (name: `--${string}`, v: CssValue) => setterApi.setProp(name, v);
+  const api: StyleSetter<TReturn> = {
+    // CHANGED: build proxy surface right here; it returns host for chaining
+    set: make_set_surface<TReturn>((prop, v) => setProp(prop, v)),
+
+    setProp,
+
+    setMany(map: CssMap): TReturn {
+      for (const [k, v] of Object.entries(map)) {
+        if (v !== undefined && v !== null) setProp(k, v);
       }
-      if (typeof rawKey !== "string") return undefined;
-
-      // runtime normalization still happens inside setProp()
-      return (v: CssValue) => setterApi.setProp(rawKey, v);
+      return host;
     },
-  });
 
-  setterApi.set = setProxy;
+    remove(prop: CssKey): TReturn {
+      adapters.remove(nrmlz_cssom_prop_key(prop));
+      return host;
+    },
 
-  const api: StyleSetter = {
-    set: setProxy as StyleSetter["set"],
-    setProp: setterApi.setProp,
-    setMany: setterApi.setMany,
-    remove: setterApi.remove,
-    clear: setterApi.clear,
+    clear(): TReturn {
+      adapters.clear();
+      return host;
+    },
   };
 
   return api;
 }
+
 
 /* ----------------------------- normalization ----------------------------- */
 
@@ -249,13 +230,18 @@ export function make_id_api(tree: LiveTree): IdApi {
 }
 
 export function make_class_api(tree: LiveTree): ClassApi {
-  const getClassStr = (): string =>
-    (typeof tree.getAttr("class") === "string") ? tree.getAttr("class") as string : "";
-
+  const getClassStr = (): string => {
+    // CHANGED
+    const v = tree.getAttr("class");
+    return (typeof v === "string") ? v : "";
+  };
   // CHANGED: parse class string safely
-  const getSet = (): Set<string> =>
-    new Set(getClassStr().split(/\s+/).filter(Boolean));
-
+  const getSet = (): Set<string> => {
+    // CHANGED: guard because getAttr returns string | number | boolean
+    const raw = tree.getAttr("class");
+    const s = (typeof raw === "string") ? raw : "";
+    return new Set(s.split(/\s+/).filter(Boolean));
+  };
   return {
     get: () => tree.getAttr("class") as string ?? undefined,
     has: (name: string) => getSet().has(name),

@@ -1,8 +1,9 @@
 // css-manager.ts
 
+import { LiveTree } from "hson-live/types";
 import { PropertyManager } from "../../../types-consts/at-property.types";
 import { _DATA_QUID } from "../../../types-consts/constants";
-import { CssValue, CssProp, CssHandle, AllowedStyleKey } from "../../../types-consts/css.types";
+import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
 import { apply_animation, bind_anim_api } from "./animate";
 import { AnimAdapters, CssAnimHandle, CssAnimScope } from "./animate.types";
 import { manage_property } from "./at-property";
@@ -12,27 +13,6 @@ import { make_style_setter } from "./style-setter";
 const CSS_HOST_TAG = "hson-_style";
 const CSS_HOST_ID = "css-manager";
 const CSS_STYLE_ID = "_hson";
-
-/**
- * Proxy-call surface used by `StyleSetter.set`.
- *
- * This is a *type-level* convenience that provides ergonomic calls like:
- *   `handle.set.backgroundColor("aquamarine")`
- * while still permitting:
- *   `handle.set["background-color"]("aquamarine")`
- *   `handle.set.var("--k", 1)`
- *
- * `Next` is typically the handle type itself (for chaining).
- */
-export type SetSurface<Next> =
-  // enumerated known CSSStyleDeclaration keys → rich autocomplete
-  { [K in AllowedStyleKey]: (v: CssValue) => Next }
-  // allow these via bracket access too
-  & Record<`--${string}`, (v: CssValue) => Next>
-  & Record<`${string}-${string}`, (v: CssValue) => Next>
-  // convenience
-  & { var: (name: `--${string}`, v: CssValue) => Next };
-
 
 /**
  * Create a multi-QUID CSS handle.
@@ -52,31 +32,25 @@ export type SetSurface<Next> =
  * @see make_style_setter
  * @see CssManager
  */
-export function css_for_quids(quids: readonly string[]): CssHandle {
+
+export function css_for_quids(host: LiveTree, quids: readonly string[]): CssHandle {
   const mgr = CssManager.invoke();
   const ids = quids.map(q => q.trim()).filter(Boolean);
 
-  const setter = make_style_setter({
-    apply: (propCanon, value) => {
-      for (const quid of ids) mgr.setForQuid(quid, propCanon, value);
-    },
-    remove: (propCanon) => {
-      for (const quid of ids) mgr.unsetForQuid(quid, propCanon);
-    },
-    clear: () => {
-      for (const quid of ids) mgr.clearQuid(quid);
-    },
+  const setter = make_style_setter(host, {
+    apply: (propCanon, value) => { for (const q of ids) mgr.setForQuid(q, propCanon, value); },
+    remove: (propCanon) => { for (const q of ids) mgr.unsetForQuid(q, propCanon); },
+    clear: () => { for (const q of ids) mgr.clearQuid(q); },
   });
 
-  //  devSnapshot is a method that computes at call time
   return {
     ...setter,
-    atProperty: mgr.atProperty,   // keep whichever names you actually have
+    atProperty: mgr.atProperty,
     keyframes: mgr.keyframes,
     anim: mgr.animForQuids(ids),
     devSnapshot: () => mgr.devSnapshot(),
-    devReset: () => mgr.devReset(),
-    devFlush: () => mgr.devFlush(),
+    devReset: () => mgr.devReset?.(),
+    devFlush: () => mgr.devFlush?.(),
   };
 }
 
@@ -89,8 +63,8 @@ export function css_for_quids(quids: readonly string[]): CssHandle {
  * @returns A `CssHandle` targeting exactly one QUID.
  * @see css_for_quids
  */
-export function css_for_quid(quid: string): CssHandle {   // NEW
-  return css_for_quids([quid]);
+export function css_for_quid(host: LiveTree, quid: string): CssHandle {
+  return css_for_quids(host, [quid]);
 }
 
 /**

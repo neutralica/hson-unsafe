@@ -265,7 +265,7 @@ export class StyleManager {
     private readonly tree: LiveTree;
     private readonly runtimeKeys: ReadonlyArray<AllowedStyleKey>;
     // private readonly _set: StyleSetterFacade;
-    public readonly setter: StyleSetter;
+    public readonly setter: StyleSetter<LiveTree>;
 
     /**
      * Create a `StyleManager2` for a given `LiveTree`.
@@ -288,7 +288,9 @@ export class StyleManager {
         this.runtimeKeys = computeRuntimeKeys();
         // build the proxy using those keys.
         // this._set = buildSetFacade(this.tree, this.runtimeKeys);
-        this.setter = make_style_setter({
+        this.setter = make_style_setter<LiveTree>(
+            tree,
+            {
             // OPTIONAL: if you have runtimeKeys in camelCase, feed them
             keys: this.runtimeKeys,
 

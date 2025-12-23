@@ -1,5 +1,6 @@
 // css.types.ts
 
+import { LiveTree } from "hson-live/types";
 import { AnimationName, AnimSpec, CssAnimHandle } from "../api/livetree/livetree-methods/animate.types";
 import { KeyframesManager } from "../api/livetree/livetree-methods/keyframes";
 import { StyleSetter } from "../api/livetree/livetree-methods/style-setter";
@@ -188,8 +189,9 @@ export type CssMap = Readonly<
  * underlying `<style>` element, keeping the CSS in sync with the
  * current state of the handle.
  */
+// CHANGED: StyleSetter now requires a return type; css should chain back to LiveTree
 export type CssHandle = Readonly<
-  StyleSetter & {
+  StyleSetter<LiveTree> & {
     atProperty: PropertyManager;
     keyframes: KeyframesManager;
     anim: CssAnimHandle;
@@ -224,4 +226,30 @@ export type AllowedStyleKey = Exclude<KeysWithStringValues<CSSStyleDeclaration>,
  * system. For autocomplete, see `CssMap` (used by `setMany({ ... })`).
  */
 export type CssKey = string;
+/**
+ * Proxy-call surface used by `StyleSetter.set`.
+ *
+ * This is a *type-level* convenience that provides ergonomic calls like:
+ *   `handle.set.backgroundColor("aquamarine")`
+ * while still permitting:
+ *   `handle.set["background-color"]("aquamarine")`
+ *   `handle.set.var("--k", 1)`
+ *
+ * `Next` is typically the handle type itself (for chaining).
+ */
+
+export type SetSurface<Next> =
+  // enumerated known CSSStyleDeclaration keys → rich autocomplete
+  {
+    [K in AllowedStyleKey]: (v: CssValue) => Next;
+  }
+  // allow these via bracket access too
+  &
+
+  Record<`--${string}`, (v: CssValue) => Next> &
+  Record<`${string}-${string}`, (v: CssValue) => Next>
+  // convenience
+  &
+
+  { var: (name: `--${string}`, v: CssValue) => Next; };
 

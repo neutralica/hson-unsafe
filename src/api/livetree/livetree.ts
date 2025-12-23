@@ -390,7 +390,7 @@ export class LiveTree {
   * @see make_style_setter
   * @see StyleManager
   */
-  public get style(): StyleSetter {
+  public get style(): StyleSetter<LiveTree> {
     if (!this.styleManagerInternal) {
       this.styleManagerInternal = new StyleManager(this);
     }
@@ -436,7 +436,7 @@ export class LiveTree {
    * @see CssManager
    */
   public get css(): CssHandle {
-    return css_for_quids([this.quid]);
+    return css_for_quids(this, [this.quid]);
   }
 
   /**
