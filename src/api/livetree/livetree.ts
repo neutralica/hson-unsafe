@@ -117,8 +117,8 @@ export class LiveTree {
   private styleManagerInternal: StyleManager | undefined = undefined;
   /*---------- .dataset editor */
   private datasetManagerInternal: DataManager | undefined = undefined;
-  
-   private idApi?: IdApi;
+
+  private idApi?: IdApi;
   private classApi?: ClassApi;
 
   /**
@@ -627,7 +627,7 @@ export class LiveTree {
     return this.idApi;
   }
 
-  public get class(): ClassApi {
+  public get classlist(): ClassApi {
     // ADDED: cached class namespace
     if (!this.classApi) this.classApi = make_class_api(this);
     return this.classApi;
