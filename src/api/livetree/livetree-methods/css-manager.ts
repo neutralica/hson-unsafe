@@ -3,7 +3,7 @@
 import { LiveTree } from "hson-live/types";
 import { PropertyManager } from "../../../types-consts/at-property.types";
 import { _DATA_QUID } from "../../../types-consts/constants";
-import { CssValue, CssProp, CssHandle } from "../../../types-consts/css.types";
+import { CssValue, CssProp, CssHandle, CssHandleVoid, CssHandleBase } from "../../../types-consts/css.types";
 import { apply_animation, bind_anim_api } from "./animate";
 import { AnimAdapters, CssAnimHandle, CssAnimScope } from "./animate.types";
 import { manage_property } from "./at-property";
@@ -33,14 +33,55 @@ const CSS_STYLE_ID = "_hson";
  * @see CssManager
  */
 
-export function css_for_quids(host: LiveTree, quids: readonly string[]): CssHandle {
-  const mgr = CssManager.invoke();
-  const ids = quids.map(q => q.trim()).filter(Boolean);
+// css-handle.ts
 
-  const setter = make_style_setter(host, {
-    apply: (propCanon, value) => { for (const q of ids) mgr.setForQuid(q, propCanon, value); },
-    remove: (propCanon) => { for (const q of ids) mgr.unsetForQuid(q, propCanon); },
-    clear: () => { for (const q of ids) mgr.clearQuid(q); },
+// CHANGED: overloads
+// css-manager.ts (or wherever)
+
+// CHANGED: explicit type guard
+function isLiveTree(x: unknown): x is LiveTree {
+  return x instanceof LiveTree;
+}
+
+export function css_for_quids(quids: readonly string[]): CssHandleVoid;
+export function css_for_quids(host: LiveTree, quids: readonly string[]): CssHandle;
+
+export function css_for_quids(
+  a: LiveTree | readonly string[],
+  b?: readonly string[],
+): CssHandleBase<any> {
+  const mgr = CssManager.invoke();
+
+  // CHANGED: narrow via LiveTree guard (reliable)
+  if (isLiveTree(a)) {
+    const host: LiveTree = a;
+    const quids: readonly string[] = b ?? [];
+    const ids = quids.map(q => q.trim()).filter(Boolean);
+
+    const setter = make_style_setter<LiveTree>(host, {
+      apply: (propCanon, value) => { for (const quid of ids) mgr.setForQuid(quid, propCanon, value); },
+      remove: (propCanon) => { for (const quid of ids) mgr.unsetForQuid(quid, propCanon); },
+      clear: () => { for (const quid of ids) mgr.clearQuid(quid); },
+    });
+
+    return {
+      ...setter,
+      atProperty: mgr.atProperty,
+      keyframes: mgr.keyframes,
+      anim: mgr.animForQuids(ids),
+      devSnapshot: () => mgr.devSnapshot(),
+      devReset: () => mgr.devReset?.(),
+      devFlush: () => mgr.devFlush?.(),
+    };
+  }
+
+  // non-hosted case: a is the quid list
+  const ids = a.map(q => q.trim()).filter(Boolean);
+
+  const setter = make_style_setter<void>(undefined, {
+    apply: (propCanon, value) => { for (const quid of ids) mgr.setForQuid(quid, propCanon, value); },
+    remove: (propCanon) => { for (const quid of ids) mgr.unsetForQuid(quid, propCanon); },
+    clear: () => { for (const quid of ids) mgr.clearQuid(quid); },
   });
 
   return {

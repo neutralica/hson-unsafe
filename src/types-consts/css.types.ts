@@ -190,17 +190,25 @@ export type CssMap = Readonly<
  * current state of the handle.
  */
 // CHANGED: StyleSetter now requires a return type; css should chain back to LiveTree
-export type CssHandle = Readonly<
-  StyleSetter<LiveTree> & {
+// css.types.ts (or wherever CssHandle lives)
+
+// ADDED: generic base
+export type CssHandleBase<TReturn> = Readonly<
+  StyleSetter<TReturn> & {
     atProperty: PropertyManager;
     keyframes: KeyframesManager;
     anim: CssAnimHandle;
-    // TODO make private once dev helpers are formalized
     devSnapshot: () => string;
     devReset?: () => void;
     devFlush?: () => void;
   }
 >;
+
+// CHANGED: keep the public name as the “normal” hosted case
+export type CssHandle = CssHandleBase<LiveTree>;
+
+// ADDED: hostless case for “before mount”
+export type CssHandleVoid = CssHandleBase<void>;
 
 /**
  * Union of style keys supported by the style system.
