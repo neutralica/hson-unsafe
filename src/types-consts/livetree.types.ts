@@ -34,7 +34,7 @@ export interface HsonQuery {
  *
  * A `NodeRef` carries:
  *   - `q`              → the QUID string identifier,
- *   - `resolveNode()`  → lookup in the QUID→node registry,
+ *   - `resolveNode()`  → return the referenced node (or lookup by QUID),
  *   - `resolveElement()` → lookup the mounted DOM element,
  *                          typically via `NODE_ELEMENT_MAP`.
  *
@@ -72,7 +72,7 @@ export interface NodeRef {
  * Implementations typically:
  *   - run `search_nodes` starting from `tree.node`,
  *   - wrap found `HsonNode` instances via a child `LiveTree`
- *     constructor (`wrapInChildTree`),
+ *     constructor (`wrap_in_tree`),
  *   - maintain the host root identity across branches.
  **************************************************************/
 type FindOneHelpers<Return> = {
@@ -113,11 +113,13 @@ export type TagName = keyof HTMLElementTagNameMap;
  *   - Batch method:
  *       • `.create.tags([...], index?) → Many`
  *         where `Many` is `TreeSelector` for both cases.
+ *   - Fluent placement:
+ *       • `.create.prepend()` / `.create.at(index)` → helper
+ *         (applies to the next per-tag call).
  *
  * Implementations are expected to:
  *   - allocate new HSON nodes for each requested tag,
- *   - keep them *unattached* until the caller explicitly
- *     appends them (e.g. via `.append`),
+ *   - append them as children of the current parent node,
  *   - propagate the correct `Single` / `Many` return type
  *     according to the context (`tree` vs `selector`).
  **************************************************************/
@@ -190,4 +192,3 @@ export type CreateHelper<Single, Many> = {
  * further broadcast-style operations.
  **************************************************************/
 export type TreeSelectorCreateHelper = CreateHelper<TreeSelector2, TreeSelector2>;
-

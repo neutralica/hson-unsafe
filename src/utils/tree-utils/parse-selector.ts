@@ -1,4 +1,4 @@
-// parse-selector.utils.ts
+// parse-selector.ts
 
 import { HsonQuery } from "../../types-consts/livetree.types";
 
@@ -10,8 +10,8 @@ import { HsonQuery } from "../../types-consts/livetree.types";
  * - Tag selectors:        `div`, `span`
  * - ID selectors:         `#main`
  * - Class selectors:      `.item` (multiple classes are space-joined)
- * - Attribute presence:   `[disabled]`
  * - Attribute equality:   `[type="button"]`
+ * - Attribute presence (`[disabled]`) is currently ignored.
  *
  * Explicit non-goals (by design):
  * - No combinators (`>`, `+`, `~`, whitespace)
@@ -23,7 +23,7 @@ import { HsonQuery } from "../../types-consts/livetree.types";
  * - `#id` maps to `attrs.id`
  * - `.class` values accumulate into a single space-delimited `attrs.class`
  * - `[attr="value"]` sets `attrs[attr] = value`
- * - Bare `[attr]` is treated as a presence check only
+ * - Bare `[attr]` does not add a constraint (presence checks are not represented)
  *
  * This parser is intended for HSON’s internal querying needs, not as a
  * general-purpose CSS selector engine.

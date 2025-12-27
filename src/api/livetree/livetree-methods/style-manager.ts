@@ -268,19 +268,18 @@ export class StyleManager {
     public readonly setter: StyleSetter<LiveTree>;
 
     /**
-     * Create a `StyleManager2` for a given `LiveTree`.
+     * Create a `StyleManager` for a given `LiveTree`.
      *
      * Implementation details:
      * - Stores the `LiveTree` instance for all subsequent style operations.
      * - Computes `runtimeKeys` once via `computeRuntimeKeys()`, probing the
      *   runtime for supported style properties.
-     * - Builds `_set` via `buildSetFacade(tree, runtimeKeys)`, producing a
-     *   property-based setter surface (e.g. `style.set.width(240)`).
+     * - Builds `setter` via `make_style_setter`, producing a fluent style API.
      *
      * @param tree - The `LiveTree` whose node (and mapped DOM element) will
      *               be styled by this manager.
      * @see computeRuntimeKeys
-     * @see buildSetFacade
+     * @see make_style_setter
      */
     constructor(tree: LiveTree) {
         this.tree = tree;

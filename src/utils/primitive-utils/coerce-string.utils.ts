@@ -1,4 +1,4 @@
-// coerce-string.util.ts
+// coerce-string.utils.ts
 
 import { Primitive } from "../../types-consts/core.types.js";
 import { _throw_transform_err } from "../sys-utils/throw-transform-err.utils.js";

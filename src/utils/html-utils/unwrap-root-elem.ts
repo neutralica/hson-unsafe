@@ -1,4 +1,4 @@
-// unwrap-root.utils.ts
+// unwrap-root-elem.ts
 
 import { ROOT_TAG, ELEM_TAG } from "../../types-consts/constants";
 import { HsonNode } from "../../types-consts/node.types";
@@ -13,7 +13,7 @@ import { is_Node } from "../node-utils/node-guards";
  *
  * Behavior:
  * - If a node is `_root` whose first child is an `_elem`, returns the `_elem`’s child nodes.
- * - Otherwise, returns the node itself.
+ * - Otherwise, returns the node wrapped in a single-item array.
  * - Always returns an array.
  *
  * @param content - A single node or list of nodes that may include `_root`/`_elem` wrappers.

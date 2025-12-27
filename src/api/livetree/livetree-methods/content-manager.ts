@@ -63,6 +63,13 @@ function throw_missing_el(node: HsonNode, source: string): never {
  * Text/content (unchanged, but note the same "mounted vs not" question applies here too)
  * ---------------------------------------------------------------------------------------------- */
 
+/**
+ * Replace a node's content with a single text leaf and mirror it to the DOM.
+ *
+ * @param node - The HSON node to update.
+ * @param value - Primitive value to render as text (null becomes empty string).
+ * @returns void.
+ */
 export function set_node_content(node: HsonNode, value: Primitive): void {
   const leaf = make_leaf(value);
   node._content = [leaf];
@@ -77,6 +84,12 @@ export function set_node_content(node: HsonNode, value: Primitive): void {
   (el as HTMLElement).textContent = value === null ? "" : String(value);
 }
 
+/**
+ * Read concatenated text content under a node, preferring DOM when mounted.
+ *
+ * @param node - The HSON node to read from.
+ * @returns The concatenated text content.
+ */
 export function get_node_text(node: HsonNode): string {
   const el = element_for_node(node);
   if (el) return el.textContent ?? "";
@@ -110,6 +123,9 @@ export function get_node_text(node: HsonNode): string {
  * Form state: value / checked / selected
  * ---------------------------------------------------------------------------------------------- */
 
+/**
+ * Options for form state writers that mirror to the DOM when available.
+ */
 export type SetNodeFormOpts = Readonly<{
   // CHANGED: default should be "silent" (missing DOM is normal pre-mount)
   silent?: boolean;
@@ -119,8 +135,14 @@ export type SetNodeFormOpts = Readonly<{
 }>;
 
 /**
- * CHANGED: set value, but do NOT treat missing DOM as a structural error by default.
- * Node attrs are canonical; DOM is best-effort mirroring.
+ * Set a form value on the node and mirror it to the DOM when mounted.
+ *
+ * By default, missing DOM elements are ignored (attrs are canonical).
+ *
+ * @param node - The HSON node to update.
+ * @param value - Form value string to store.
+ * @param opts - Optional flags controlling missing DOM behavior.
+ * @returns void.
  */
 export function set_node_form_value(node: HsonNode, value: string, opts?: SetNodeFormOpts): void {
   const attrs = ensure_attrs(node);
@@ -140,7 +162,12 @@ export function set_node_form_value(node: HsonNode, value: string, opts?: SetNod
   }
 }
 
-/** Read value, preferring DOM when mounted. */
+/**
+ * Read a form value, preferring DOM when mounted.
+ *
+ * @param node - The HSON node to read from.
+ * @returns The current form value (empty string if missing).
+ */
 export function get_node_form_value(node: HsonNode): string {
   const el = element_for_node(node);
   if (el) {
@@ -154,8 +181,12 @@ export function get_node_form_value(node: HsonNode): string {
 }
 
 /**
- * ADDED: checked state for checkbox/radio (stored on attrs.checked).
- * Mirrors to DOM when mounted.
+ * Set the checked state for checkbox/radio inputs and mirror to the DOM.
+ *
+ * @param node - The HSON node to update.
+ * @param checked - New checked state.
+ * @param opts - Optional flags controlling missing DOM behavior.
+ * @returns void.
  */
 export function set_node_form_checked(node: HsonNode, checked: boolean, opts?: SetNodeFormOpts): void {
   const attrs = ensure_attrs(node);
@@ -173,7 +204,12 @@ export function set_node_form_checked(node: HsonNode, checked: boolean, opts?: S
   }
 }
 
-/** ADDED: read checked, preferring DOM when mounted. */
+/**
+ * Read the checked state for checkbox/radio inputs, preferring DOM when mounted.
+ *
+ * @param node - The HSON node to read from.
+ * @returns True when checked, otherwise false.
+ */
 export function get_node_form_checked(node: HsonNode): boolean {
   const el = form_el_for_node(node);
   if (el instanceof HTMLInputElement) return !!el.checked;
@@ -187,11 +223,16 @@ export function get_node_form_checked(node: HsonNode): boolean {
 }
 
 /**
- * ADDED: selected state for <select>.
+ * Set selected state for a <select>, mirroring to DOM when mounted.
  *
  * Storage:
  * - attrs.value: string (single select)
- * - attrs.values: readonly string[] (multi select)   <-- ADDED key
+ * - attrs.values: readonly string[] (multi select)
+ *
+ * @param node - The HSON node to update.
+ * @param selected - Selected value(s) for single or multi-select.
+ * @param opts - Optional flags controlling missing DOM behavior.
+ * @returns void.
  */
 export function set_node_form_selected(
   node: HsonNode,
@@ -235,6 +276,12 @@ export function set_node_form_selected(
   }
 }
 
+/**
+ * Read selected state from a <select>, preferring DOM when mounted.
+ *
+ * @param node - The HSON node to read from.
+ * @returns The selected value string or array of values for multi-select.
+ */
 export function get_node_form_selected(node: HsonNode): string | readonly string[] {
   const el = form_el_for_node(node);
 

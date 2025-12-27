@@ -1,4 +1,4 @@
-// escape-html.util.ts
+// escape-html.ts
 
 import { is_Primitive } from "../cote-utils/guards.core.js";
 import { _throw_transform_err } from "../sys-utils/throw-transform-err.utils.js";

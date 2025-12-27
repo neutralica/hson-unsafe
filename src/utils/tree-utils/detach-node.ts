@@ -1,4 +1,4 @@
-// detach.ts
+// detach-node.ts
 
 import { _listeners_off_for_target } from "../../api/livetree/livetree-methods/listen";
 import { HsonNode } from "../../types-consts/node.types";
@@ -30,6 +30,7 @@ type NodeWithKids = { _content?: unknown[] };
  * - Safe to call on nodes that were never mounted: no-op aside from map delete.
  *
  * @param node - Root HSON node to detach (deep).
+ * @returns void.
  */
 export function detach_node_deep(node: HsonNode): void {
   // 1) recurse first so children go away before parent

@@ -1,4 +1,4 @@
-// make-string.utils.ts
+// make-string.nodes.utils.ts
 
 import { is_Node } from "../node-utils/node-guards";
 import { HsonNode, HsonAttrs, HsonMeta } from "../../types-consts/node.types";
@@ -35,6 +35,12 @@ export function make_string_pretty(value: unknown, indent = 2): string {
 /** Backward-compatible alias */
 export const make_string = make_string_pretty;
 
+/**
+ * Check whether a value is reference-like (object or function).
+ *
+ * @param x - Value to test.
+ * @returns True when `x` is an object or function and not null.
+ */
 export function isRef(x: unknown): x is object {
   return x !== null && (typeof x === 'object' || typeof x === 'function');
 }

@@ -13,80 +13,13 @@ import { search_nodes } from "./search";
 import { parse_selector } from "../../../utils/tree-utils/parse-selector";
 
 /**
- * Recursively convert a HSON node into a JSON-shaped `JsonValue`.
+ * Collect QUID identifiers for the DOM subtree of a given HSON node.
  *
- * This is the core structural converter behind `serialize_json`. It walks
- * the HSON IR, interprets VSN tags, and reconstructs the nearest equivalent
- * JavaScript value (object, array, or primitive).
+ * If the node is not mounted, returns an empty set. Otherwise, scans the
+ * mapped DOM element and its descendants for the `_DATA_QUID` attribute.
  *
- * Tag-by-tag semantics:
- *
- * - `_root`:
- *   - Must have exactly one child.
- *   - That child is taken as the true data cluster; `_root` itself is not
- *     reflected in the JSON surface.
- *
- * - `_arr`:
- *   - Expects `_content` to be a list of `_ii` index nodes.
- *   - Each `_ii` is unwrapped and converted; the resulting array preserves
- *     element order and ignores the index metadata.
- *
- * - `_obj`:
- *   - If `_content` has a single child that is one of:
- *       `_str`, `_val`, `_arr`, `_obj`, `_elem`
- *     then this wrapper is treated as transparent and the child’s JSON
- *     representation is returned directly. This mirrors the “cluster”
- *     behavior in the rest of the system.
- *   - Otherwise:
- *     - Each child is treated as a property node:
- *       - The tag name (`propNode._tag`) becomes the object key.
- *       - The first child of that property node is converted recursively
- *         and used as the value.
- *     - Produces a plain `JsonObj` whose keys correspond to these tag names.
- *
- * - `_str` / `_val`:
- *   - Return their single primitive payload directly:
- *     - `_str` → string
- *     - `_val` → number | boolean | null
- *
- * - `_elem`:
- *   - Represents “element cluster” semantics in JSON form.
- *   - Each child in `_content` is converted recursively.
- *   - The result is wrapped as `{ "_elem": [ ...items ] }`, so that element
- *     mode remains distinguishable at the JSON layer.
- *
- * - `_ii`:
- *   - Index wrapper used inside `_arr`.
- *   - Must contain exactly one child node.
- *   - Unwrapped and converted directly via `jsonFromNode` on that child.
- *
- * - Default branch (standard or user-defined tag, e.g. `"div"`, `"recipe"`):
- *   - Build a property object of the shape:
- *       `{ [tag]: <payload>, _attrs?, _meta? }`
- *   - Content:
- *       - No children  → `{ [tag]: "" }` (empty string payload)
- *       - One child    → `{ [tag]: jsonFromNode(child) }`
- *       - Multiple children → error (a standard tag is not allowed to have
- *         multiple content clusters at this stage).
- *   - Attributes:
- *       - If `_attrs` is present and non-empty, it is attached as `_attrs`
- *         on the same object, merged with any existing `_attrs`.
- *   - Meta:
- *       - If `_meta` is present and non-empty, it is attached as `_meta`
- *         without further filtering; meta is preserved as-is in JSON mode.
- *
- * Safety / guardrails:
- * - Rejects any tag that starts with `_` but is not a known VSN
- *   (`EVERY_VSN`), to avoid leaking unknown control tags into JSON.
- * - For `_root`, `_arr`, `_ii`, `_elem`, and cluster shapes, checks that
- *   structural expectations are met (e.g., `_root` has exactly one child,
- *   `_ii` has exactly one child, etc.).
- *
- * @param $node - The HSON node to convert.
- * @returns A `JsonValue` (object, array, or primitive) suitable for
- *   `JSON.stringify`.
- * @throws If the node shape violates HSON invariants or contains unknown
- *   VSN-like tags.
+ * @param rootNode - The HSON node whose mapped DOM subtree should be scanned.
+ * @returns A set of QUID strings found on the root element and descendants.
  */
 function collectQuidsForSubtree(rootNode: HsonNode): Set<string> {
   const rootEl = element_for_node(rootNode) as HTMLElement | undefined;
@@ -107,8 +40,12 @@ function collectQuidsForSubtree(rootNode: HsonNode): Set<string> {
 
   return quids;
 }
-// CHANGED: new single cleanup primitive used by ALL removals.
-// This is the “one site of the action”.
+/**
+ * Detach a subtree, cleaning up CSS, DOM, and QUID state.
+ *
+ * @param node - The root HSON node of the subtree to detach.
+ * @returns void.
+ */
 function detach_subtree(node: HsonNode): void {
   // 1) Clear QUID-scoped CSS for the DOM subtree (if any).
   const css = CssManager.invoke();
@@ -123,7 +60,12 @@ function detach_subtree(node: HsonNode): void {
 }
 // remove.ts (or wherever remove_livetree lives)
 
-// ADDED: small helper so remove_livetree can be counted reliably
+/**
+ * Best-effort check for whether a node is still attached/mounted.
+ *
+ * @param node - The HSON node to check.
+ * @returns True when the node has a mapped DOM element.
+ */
 function is_attached(node: HsonNode): boolean {
   // CHANGED: replace this with your real invariant.
   // Common options:
@@ -133,7 +75,11 @@ function is_attached(node: HsonNode): boolean {
   return element_for_node(node)!== undefined;
 }
 
-// CHANGED: return number (0/1) instead of LiveTree
+/**
+ * Remove this `LiveTree`'s node from DOM and HSON, returning a count.
+ *
+ * @returns `1` when the node was removed, or `0` if already detached.
+ */
 export function remove_livetree(this: LiveTree): number {
   const node = this.node;
 
@@ -155,8 +101,12 @@ export function remove_livetree(this: LiveTree): number {
   return 1;
 }
 
-// CHANGED: remove_child delegates to detach_subtree per child
-// and returns how many were removed (not `this`).
+/**
+ * Remove matching direct child nodes and return how many were removed.
+ *
+ * @param query - Selector string or `HsonQuery` describing direct children.
+ * @returns The number of removed child nodes.
+ */
 export function remove_child(this: LiveTree, query: HsonQuery | string): number {
   const parent = this.node;
   const kids = parent._content;

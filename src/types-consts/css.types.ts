@@ -160,7 +160,7 @@ export interface CssRuleBuilder {
  *   - `null` → remove the property.
  *   - `undefined` → ignored (no-op).
  *
- * This shape is used by APIs like `StyleManager2.setMulti` to perform
+ * This shape is used by APIs like `StyleSetter.setMany` to perform
  * batch style updates on a node.
  */
 export type CssMap = Readonly<
@@ -198,9 +198,10 @@ export type CssHandleBase<TReturn> = Readonly<
     atProperty: PropertyManager;
     keyframes: KeyframesManager;
     anim: CssAnimHandle;
-    devSnapshot: () => string;
-    devReset?: () => void;
-    devFlush?: () => void;
+    // devSnapshot: () => string;
+    debug_viewCss: () => string;
+    debug_sync: () => void;
+    debug_hardReset: () => void;
   }
 >;
 
@@ -260,4 +261,3 @@ export type SetSurface<Next> =
   &
 
   { var: (name: `--${string}`, v: CssValue) => Next; };
-

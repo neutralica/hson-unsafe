@@ -1,4 +1,28 @@
-// src/api/livetree/tree-utils/gate-mutation.tree.utils.ts
+// gate-mutation.ts
+
+/**
+ * Opaque origin tag for a gated mutation batch.
+ */
+export type OriginTag = Readonly<{ id: string }>;
+
+/**
+ * Observer callback signature for mutation batches.
+ */
+export type GateObserver = (
+    records: readonly MutationRecord[],
+    origin: OriginTag | null
+) => void;
+
+/**
+ * Gate interface for origin-tagged writes and mutation observation.
+ */
+export interface MutationGate {
+    // All DOM writes must go through here
+    write(fn: (origin: OriginTag) => void): void;
+
+    // Subscribe to mutations; returns an unsubscriber
+    observe(cb: GateObserver): () => void;
+}
 
 /**
  * Create a scoped “mutation gate” around a DOM subtree.
@@ -27,23 +51,6 @@
  * @param target - Root node whose subtree will be observed.
  * @returns A `MutationGate` with `write` and `observe` methods.
  */
-export type OriginTag = Readonly<{ id: string }>;
-
-export type GateObserver = (
-    records: readonly MutationRecord[],
-    origin: OriginTag | null
-) => void;
-
-// exported interface for clarity and typing at call sites
-export interface MutationGate {
-    // All DOM writes must go through here
-    write(fn: (origin: OriginTag) => void): void;
-
-    // Subscribe to mutations; returns an unsubscriber
-    observe(cb: GateObserver): () => void;
-}
-
-// implement subscriber list instead of free `observerFn`
 export function createMutationGate(target: Node): MutationGate {
     // keep a list of observers; no global `observerFn`
     const observers: GateObserver[] = [];

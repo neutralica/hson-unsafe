@@ -1,4 +1,4 @@
-// node-element-map.ts
+// node-map-helpers.ts
 
 import { HsonNode } from "../../types-consts/node.types";
 import { NODE_ELEMENT_MAP } from "../../types-consts/constants";
@@ -45,13 +45,30 @@ export function hasElementForNode(node: HsonNode): boolean {
   return NODE_ELEMENT_MAP.has(node);
 }
 
+/**
+ * Policy for `element_for_node_checked` when an unexpected element is found.
+ */
 export type ElementLookupPolicy = "throw" | "warn" | "silent";
 
+/**
+ * Resolve the DOM element mapped to a given HSON node.
+ *
+ * @param node - HSON node to resolve.
+ * @returns The mapped DOM element, or `undefined` if none exists.
+ */
 export function element_for_node(node: HsonNode): Element | undefined {
   return NODE_ELEMENT_MAP.get(node);
 }
 
 // NEW: opt-in tripwire
+/**
+ * Resolve the mapped DOM element and optionally assert tag invariants.
+ *
+ * @param node - HSON node to resolve.
+ * @param purpose - Short label included in error/warn output.
+ * @param policy - Action to take when an unexpected element is found.
+ * @returns The mapped DOM element, or `undefined` if none exists.
+ */
 export function element_for_node_checked(
   node: HsonNode,
   purpose: string,

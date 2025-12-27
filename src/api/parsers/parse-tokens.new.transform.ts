@@ -50,7 +50,7 @@ export const make_leaf = (v: Primitive): HsonNode =>
  *   shaping content into `_elem` or `_obj` clusters based on the tag’s
  *   close kind (`CLOSE_KIND.elem` vs `CLOSE_KIND.obj`).
  * - Uses `readArray` to parse `ARR_OPEN`…`ARR_CLOSE` sequences into
- *   `_arr` nodes full of `_ii` children, each tagged with `_data-index`.
+ *   `_arr` nodes full of `_ii` children, each tagged with `data-_index`.
  * - Handles shorthand empty objects (`EMPTY_OBJ`, i.e. `<>`) both at
  *   top-level and inside arrays.
  * - Converts `TEXT` tokens into primitive leaves via `coerce`, or via

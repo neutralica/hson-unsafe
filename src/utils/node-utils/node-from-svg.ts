@@ -1,12 +1,24 @@
-// nodd-from-dom.utils.ts
+// node-from-svg.ts
 
 import { HsonNode } from "../../types-consts/node.types";
 import { STR_TAG } from "../../types-consts/constants";
 
 
 //  tiny helper once, reuse everywhere
+/**
+ * XML namespace URI for SVG elements.
+ */
 export const SVG_NS = "http://www.w3.org/2000/svg";
+/**
+ * XML namespace URI for HTML elements.
+ */
 export const HTML_NS = "http://www.w3.org/1999/xhtml";
+/**
+ * Detect whether a string looks like an SVG fragment.
+ *
+ * @param s - Raw markup string to test.
+ * @returns True when the string begins with an `<svg ...>` tag.
+ */
 export const isSvgMarkup = (s: string) => /^<\s*svg[\s>]/i.test(s);
 
 /**

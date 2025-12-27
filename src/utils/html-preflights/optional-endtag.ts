@@ -1,4 +1,4 @@
-// OPTIONAL-END-TAG BALANCER (XML preflight)
+// optional-endtag.ts
 // - Closes <li>, <dt>/<dd>, <p>, and basic table cells/rows/sections
 // - Skips raw-text elements and VSN tags (<_*>)
 // - Edits only the string fed to the XML parser (Nodes stay clean)

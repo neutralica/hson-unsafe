@@ -86,27 +86,18 @@ function makeRef(node: HsonNode): NodeRef {
 }
 
 /**
- * Instrumented rapper around a single `HsonNode` 
- * providing a high-level API for:
+ * Instrumented wrapper around a single `HsonNode`, providing a high-level API.
  *
+ * Core surfaces:
  * - Traversal and selection (`find`, `findAll`).
- * - Structural editing (`append`, `empty`, `removeChild`, `remove`).
- * - Attribute and flag management (`setAttrs`, `getAttr`, `setFlags`, …).
- * - Content and form value (`setText`, `getText`, `setFormValue`, …).
- * - Style, dataset, CSS, and event management (`style`, `data`, `css`,
- *   `listen`).
+ * - Structural editing (`append`, `empty`, `removeChildren`, `removeSelf`).
+ * - Attribute/flag, content/form, style/data/css, and event helpers.
  * - Typed element creation via `.create`.
  *
  * Instances maintain:
- * - nodeRef: A NodeRefthat pins the current node and QUID.
- * - hostRoot: HSON node representing the original or current root of
- *   the subtree.
- * - Lazily constructed managers for style (`StyleManager2`) and
- *   dataset (`DataManager2`).
- *
- * All mutating operations update the underlying HSON tree and, where
- * applicable, the live DOM, while returning the same `LiveTree` to
- * enable fluent chaining.
+ * - nodeRef: A `NodeRef` that pins the current node and QUID.
+ * - hostRoot: HSON node representing the historic root of the subtree.
+ * - Lazily constructed managers for style (`StyleManager`) and dataset (`DataManager`).
  */
 export class LiveTree {
   /*---------- the HsonNode being referenced */
@@ -205,14 +196,7 @@ export class LiveTree {
   }
 
   /**
-   * Append another `LiveTree` as a child branch of this tree.
-   *
-   * Delegates to `appendBranch`, which:
-   * - Unwraps any `_elem` wrapper on the source branch root.
-   * - Appends the resulting nodes under this tree's node in both HSON
-   *   and DOM.
-   * - Re-roots the appended branch so that it inherits this tree's
-   *   `hostRoot` for future operations.
+   * Append a branch as children of this tree.
    *
    * @param branch - The branch to append under this tree.
    * @param index - Optional insertion index relative to existing children.
@@ -224,15 +208,16 @@ export class LiveTree {
   /**
    * Remove all child content under this tree's node.
    *
-   * Delegates to `empty2`, which clears both the HSON `_content` and any
-   * corresponding DOM nodes for the subtree.
-   *
    * @returns This `LiveTree` instance, for chaining.
    * @see empty_contents
    */
   public empty = empty_contents;
 
-  // ADDED: remove all direct node-children
+  /**
+   * Remove all direct node children and return how many were removed.
+   *
+   * @returns The number of removed child nodes.
+   */
   public removeChildren(): number {
     const parent = this.nodeRef.resolveNode();
     const kids = parent!._content;
@@ -258,15 +243,11 @@ export class LiveTree {
 
 
   /**
- * Remove this `LiveTree`'s node from its parent, disconnecting the
- * subtree from both HSON and DOM.
- *
- * Delegates to `remove2`, which ensures the node and its descendants
- * are detached according to the underlying graph rules.
- *
- * @returns This `LiveTree` instance, for chaining.
- * @see remove_livetree
- */
+   * Remove this node from its parent (HSON + DOM).
+   *
+   * @returns `1` when removed, or `0` if already detached.
+   * @see remove_livetree
+   */
   public removeSelf(): number {
     // CHANGED: funnel through the one implementation
     return remove_livetree.call(this);
@@ -274,48 +255,27 @@ export class LiveTree {
 
 
   /**
-   * Find a single descendant subtree relative to this tree.
+   * Find the first matching descendant in this subtree.
    *
-   * This property is initialized via `makeFindFor(this)` and typically
-   * provides a fluent API such as:
-   * - `tree.find(query)` → `LiveTree | undefined`
-   * - `tree.find.byId(id)` → `LiveTree | undefined`
-   * - `tree.find.must(query)` → `LiveTree` or throws
-   *
-   * Exact query semantics are defined by `makeFindFor`, but this method
-   * always scopes searches to the subtree rooted at this `LiveTree`.
-   *
+   * @param q - Selector string or `HsonQuery`.
+   * @returns Matching `LiveTree`, or `undefined` if none.
    * @see make_find_for
    */
   public find: FindWithById = make_find_for(this);
 
   /**
-   * Find all descendant subtrees matching a query, relative to this tree.
+   * Find all matching descendants in this subtree.
    *
-   * Delegates to `findAllFor(this, q)`, which traverses the subtree and
-   * returns a `TreeSelector` containing all matching `LiveTree` instances.
-   *
-   * @param q - A structured `HsonQuery` or string query used to match nodes.
+   * @param q - Selector string or `HsonQuery` (or list of queries).
    * @returns A `TreeSelector` over all matching subtrees.
-   * @see find_all_in_tree
+   * @see make_find_all_for
    */
   public findAll: FindMany = make_find_all_for(this);
 
   /**
-   * Typed element creation helper bound to this `LiveTree`.
-   *
-   * Provides sugar such as:
-   * - `tree.create.div(index?)` → create a `<div>` child and return a
-   *   `LiveTree` for the new element.
-   * - `tree.create.tags(["div","span"], index?)` → create multiple
-   *   children and return a `TreeSelector` over the new nodes.
-   *
-   * All elements are created as children of this tree's node using the
-   * canonical HTML → HSON pipeline, and any `_elem` wrappers are
-   * unwrapped so that the handles point at real elements.
+   * Typed element creation helper bound to this tree.
    *
    * @returns A `LiveTreeCreateHelper` scoped to this tree.
-   * @see LiveTreeCreateHelper
    * @see make_tree_create
    */
   public get create(): LiveTreeCreateHelper {
@@ -375,19 +335,9 @@ export class LiveTree {
 
   /*---------- managers & adapters ---------- */
   /**
-  * Style write surface for this node’s **inline** `style=""`.
+  * Inline style setter for this node (lazy).
   *
-  * Returns a `StyleSetter` (fluent API) whose backend is this node’s `StyleManager`.
-  * The setter:
-  * - normalizes property keys (camelCase / kebab-case / `--vars`) into canonical CSS keys,
-  * - coerces values to strings (with `null|undefined` meaning “remove”),
-  * - applies mutations to inline style while keeping the DOM and HSON attrs in sync.
-  *
-  * Implementation note:
-  * - The underlying `StyleManager` is constructed lazily on first access and cached.
-  *
-  * @returns A `StyleSetter` bound to this tree’s node (inline style backend).
-  * @see make_style_setter
+  * @returns A `StyleSetter` bound to this tree’s node.
   * @see StyleManager
   */
   public get style(): StyleSetter<LiveTree> {
@@ -399,19 +349,9 @@ export class LiveTree {
   }
 
   /**
-   * Lazily constructed dataset manager for this tree's node.
+   * Dataset (`data-*`) manager for this node (lazy).
    *
-   * Behavior:
-   * - On first access, constructs a new `DataManager2` bound to this
-   *   `LiveTree` and caches it in `datasetManagerInternal`.
-   * - Subsequent accesses return the same manager instance.
-   *
-   * The data manager provides a structured interface over the node's
-   * dataset/attributes (e.g., `data-*` fields), keeping HSON and DOM in
-   * sync as needed.
-   *
-   * @returns A `DataManager2` instance bound to this tree.
-   * @see DataManager2
+   * @returns A `DataManager` instance bound to this tree.
    */
   public get data(): DataManager {
     if (!this.datasetManagerInternal) {
@@ -421,35 +361,20 @@ export class LiveTree {
   }
 
   /**
-   * Style write surface for this node’s stylesheet rule(s), data-_quid as the selector.
-   *
-   * Returns a `CssHandle` whose core mutation API is a `StyleSetter` backed by `CssManager`.
-   * Writes become QUID-scoped blocks of the form:
-   *   `[data-_quid="..."] { ... }`
-   *
-   * This is distinct from `style`:
-   * - `style` mutates inline `style=""` on the element,
-   * - `css` mutates stylesheet rules owned by `CssManager`.
+   * Stylesheet rule handle scoped to this node’s QUID selector.
    *
    * @returns A `CssHandle` targeting this node’s QUID selector.
    * @see css_for_quids
-   * @see CssManager
    */
   public get css(): CssHandle {
     return css_for_quids(this, [this.quid]);
   }
 
   /**
-   * Build an event listener configuration helper bound to this tree.
+   * Event listener builder bound to this tree’s DOM element.
    *
-   * Delegates to `buildListener(this)`, which exposes a fluent API for
-   * attaching DOM event listeners to the underlying element:
-   * - `tree.listen.on("click", handler).attach()`
-   * - `tree.listen.onClick(handler).once().attach()`
-   *
-   * @returns A `ListenerBuilder` bound to this tree's DOM element.
-   * @see buildListener
-   * @see ListenerBuilder
+   * @returns A `ListenerBuilder` for attaching events.
+   * @see build_listener
    */
   public get listen(): ListenerBuilder {
     return build_listener(this);
@@ -543,79 +468,42 @@ export class LiveTree {
 
   /*  ---------- content API ---------- */
   /**
-   * Replace this tree's node content with a single text/leaf value and
-   * mirror that into the associated DOM element's `textContent`.
-   *
-   * Behavior:
-   * - Delegates to `setNodeContent(node, value)`, which:
-   *   - Creates a leaf via `make_leaf(value)` and replaces `node._content`
-   *     with a single-element array containing that leaf.
-   *   - Looks up the mapped DOM element via `element_for_node(node)` and:
-   *     - Throws a transform error if no element is found.
-   *     - Sets `textContent` to `""` when `value === null`, otherwise to
-   *       `String(value)`.
-   *
-   * This method is a mutating operation: it updates the underlying HSON
-   * tree and DOM in place, then returns the same `LiveTree` instance to
-   * allow fluent chaining.
+   * Replace this node’s content with a single text/leaf value.
    *
    * @param value - The primitive value to render as text for this node.
    * @returns This `LiveTree` instance, for chaining.
+   * @see set_node_content
    */
   public setText(value: Primitive): LiveTree {
     set_node_content(this.node, value);
     return this;
   }
   /**
- * Return all text content rendered under this tree's node.
- *
- * Delegates to `getNodeText(this.node)`, which:
- * - Prefers the DOM's `textContent` when the node is mounted.
- * - Falls back to a depth-first walk over HSON `_content`, collecting
- *   `_str` nodes when no DOM element is available.
- *
- * @returns A string containing the concatenated text content.
- * @see getNodeText
- */
+   * Return all text content rendered under this node.
+   *
+   * @returns A string containing the concatenated text content.
+   * @see get_node_text
+   */
   public getText(): string {
     return get_node_text(this.node);
   }
   /**
-   * Set the "form value" for this node and its associated DOM element.
-   *
-   * Behavior:
-   * - Writes the provided `value` into `node._attrs.value`.
-   * - Looks up the DOM element via `element_for_node(node)` and, if it
-   *   is an `<input>`, `<textarea>`, or `<select>`, assigns its `.value`.
-   * - If no element is found and `opts?.silent` is not true, throws a
-   *   transform error.
-   *
-   * Delegates to `setNodeFormValue(this.node, value, opts)` for the
-   * underlying mechanics.
+   * Set the form value for this node and mirror to DOM when mounted.
    *
    * @param value - The string form value to apply.
-   * @param opts - Optional flags, e.g. `{ silent: true }` to suppress
-   *               errors when no DOM element is present.
+   * @param opts - Optional flags (`silent`, `strict`).
    * @returns This `LiveTree` instance, for chaining.
-   * @see setNodeFormValue
+   * @see set_node_form_value
    */
-  public setFormValue(value: string, opts?: { silent?: boolean }): LiveTree {
+  public setFormValue(value: string, opts?: { silent?: boolean; strict?: boolean }): LiveTree {
     set_node_form_value(this.node, value, opts);
     return this;
   }
   /**
-   * Read the "form value" for this node.
-   *
-   * Behavior:
-   * - If a mounted DOM element exists and is an `<input>`, `<textarea>`,
-   *   or `<select>`, returns its `.value`.
-   * - Otherwise, falls back to `node._attrs.value` if present.
-   * - Returns an empty string when no value is found.
-   *
-   * Delegates to `getNodeFormValue(this.node)` for the underlying logic.
+   * Read the form value for this node.
    *
    * @returns The current form value as a string (possibly empty).
-   * @see getNodeFormValue
+   * @see get_node_form_value
    */
   public getFormValue(): string {
     return get_node_form_value(this.node);

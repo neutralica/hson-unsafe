@@ -2,15 +2,14 @@
 
 import { Primitive } from "../../types-consts/core.types";
 /**
- * serializes a BasicValue type into its string representation
+ * Serialize a primitive into its string representation.
  *
- * handles two cases:
- * - for strings, it uses `json.stringify()` to ensure the value is correctly
- * wrapped in quotes and that any internal special characters are escaped.
- * - for numbers, booleans, and null, it returns their direct literal string value.
+ * Behavior:
+ * - Strings use `JSON.stringify` to preserve quotes and escapes.
+ * - Numbers, booleans, and null are stringified directly.
  *
- * @param {Primitive} prim - the primitive value to serialize.
- * @returns {string} the serialized string representation of the primitive.
+ * @param prim - The primitive value to serialize.
+ * @returns The serialized string representation.
  */
 
 export function serialize_primitive(prim: Primitive): string {
@@ -23,4 +22,3 @@ export function serialize_primitive(prim: Primitive): string {
     /* if it's bool/num/null, serialize it as a raw literal */
     return String(prim);
   }
-

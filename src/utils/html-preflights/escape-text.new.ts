@@ -1,4 +1,4 @@
-// escape-text-segments.util.ts
+// escape-text.new.ts
 
 /*******
  * Escape only *text* segments in an HTML-ish string, leaving markup intact.

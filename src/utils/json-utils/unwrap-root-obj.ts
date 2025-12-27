@@ -1,4 +1,4 @@
-// unwrap-obj.ts
+// unwrap-root-obj.ts
 
 import { ARR_TAG, ELEM_TAG, OBJ_TAG, ROOT_TAG } from "../../types-consts/constants";
 import { CREATE_NODE } from "../../types-consts/factories";

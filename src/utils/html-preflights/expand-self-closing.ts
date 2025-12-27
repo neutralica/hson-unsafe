@@ -1,4 +1,4 @@
-// expand self-closing.hson.util.ts
+// expand-self-closing.ts
 
 // TODO -- I do not want to be using a list of void tags for this if possible
 // check _content.length e.g.
@@ -8,8 +8,8 @@ const voidTags = [
     'img','input','link','meta','param',
     'source','track','wbr',
   ];
-  
-  /*******
+
+/*******
  * Normalize HTML void elements to an explicit self-closing form (`/>`).
  *
  * This rewrites opening tags for known “void” HTML elements (elements that do
@@ -40,7 +40,7 @@ const voidTags = [
  * @param $input - HTML source text to normalize.
  * @returns HTML with matching void tags rewritten as `<tag ... />`.
  *******/
- export  function expand_void_tags($input: string): string {
+export function expand_void_tags($input: string): string {
     const tagNames = voidTags.join('|');
     /* match <img ...> or <IMG ...> but not already <img .../> */
     const regex = new RegExp(

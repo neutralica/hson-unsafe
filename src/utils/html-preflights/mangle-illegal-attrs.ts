@@ -1,3 +1,4 @@
+// mangle-illegal-attrs.ts
 import { _TRANSIT_ATTRS, _TRANSIT_PREFIX } from "../../types-consts/constants";
 
 /*  XML 1.0 Name production (approx; good enough for preflight) */

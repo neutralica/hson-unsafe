@@ -1,4 +1,4 @@
-// expand-entities.hson.util.ts
+// expand-entities.ts
 
 const htmlNamedToNumeric: Record<string, string> = {
     copy: '&#169;',

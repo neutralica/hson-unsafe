@@ -424,9 +424,9 @@ export function nodeFromJson(
  *   then:
  *   - `jsonToProcess` is set to `<payload>`.
  *   - Any `_meta` entries whose keys begin with the data-meta prefix
- *     (`_data-*`) are copied into `rootMeta` and attached to the final
+ *     (`data-_*`) are copied into `rootMeta` and attached to the final
  *     `_root` node.
- * - All other keys (including non-`_data-*` meta) are ignored for the
+ * - All other keys (including non-`data-_*` meta) are ignored for the
  *   purposes of root metadata.
  *
  * Conversion:

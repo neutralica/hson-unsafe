@@ -1,4 +1,4 @@
-// strip-html-comments.util.ts
+// strip-html-comments.ts
 
 /**
  * Strip HTML (and ESI-style) comments from a markup string prior to XML parsing.

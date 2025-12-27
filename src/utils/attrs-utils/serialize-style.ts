@@ -1,4 +1,4 @@
-// serialize-css.ts
+// serialize-style.ts
 
 import { CssMap } from "../../types-consts/css.types";
 import { camel_to_kebab } from "./camel_to_kebab";

@@ -1,4 +1,4 @@
-// quote-unquoted.ts
+// quoted-unquoted.ts
 
 /*********
  * Quote unquoted HTML attribute values so the result is XML-friendly.
@@ -24,7 +24,8 @@
  *
  * @param src - Raw HTML-ish markup.
  * @returns The same markup, but with all unquoted attribute values quoted.
- *********/export function quote_unquoted_attrs(src: string): string {
+ *********/
+export function quote_unquoted_attrs(src: string): string {
   let out = "";
   let i = 0;
 

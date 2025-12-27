@@ -1,4 +1,4 @@
-// unescape_hson.ts 
+// unescape-hson.ts
 
 /*******
  * Decode a minimal, HSON-style escape sequence set inside a string literal.

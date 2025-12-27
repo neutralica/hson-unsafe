@@ -1,4 +1,4 @@
-// canonicalize.utils.hson.ts
+// canonicalize.ts
 
 /**
  * Produce a canonical JSON string for an arbitrary value.

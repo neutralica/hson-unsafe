@@ -109,8 +109,8 @@ export class DataManager {
     /**
      * Reads a `data-*` attribute from the first selected node.
      *
-     * @param key - Logical name (e.g. `"userId"`). Normalized to
-     *   `data-user-id` before lookup.
+     * @param key - Attribute suffix (e.g. `"user-id"` or `"state"`). This
+     *   method does not currently apply camel→kebab normalization.
      *
      * @returns The stored primitive string value, or `undefined` if the
      *   attribute does not exist or there is no selection.

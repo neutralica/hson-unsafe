@@ -69,9 +69,10 @@ export function css_for_quids(
       atProperty: mgr.atProperty,
       keyframes: mgr.keyframes,
       anim: mgr.animForQuids(ids),
-      devSnapshot: () => mgr.devSnapshot(),
-      devReset: () => mgr.devReset?.(),
-      devFlush: () => mgr.devFlush?.(),
+      // devSnapshot: () => mgr.devSnapshot(),
+      debug_viewCss: () => mgr.renderCss?.(),
+      debug_sync: () => mgr.syncNow?.(),
+      debug_hardReset: ()=> mgr.debug_hardReset?.()
     };
   }
 
@@ -89,9 +90,10 @@ export function css_for_quids(
     atProperty: mgr.atProperty,
     keyframes: mgr.keyframes,
     anim: mgr.animForQuids(ids),
-    devSnapshot: () => mgr.devSnapshot(),
-    devReset: () => mgr.devReset?.(),
-    devFlush: () => mgr.devFlush?.(),
+    // devSnapshot: () => mgr.devSnapshot(),
+    debug_viewCss: () => mgr.renderCss(),
+    debug_sync: () => mgr.syncNow(),
+    debug_hardReset: () => mgr.debug_hardReset(),
   };
 }
 
@@ -365,20 +367,18 @@ export class CssManager {
    * @throws Error if no connected mount point exists in the current document.
    * @returns The ensured `<style>` element used for rendered CSS output.
    */
-  private ensureStyleElement(): HTMLStyleElement {
-    const doc: Document = document;
+  private ensureStyleElement(): HTMLStyleElement | undefined {
+    // NEW: guard against true Node / no DOM
+    const doc = (globalThis as any).document as Document | undefined;
+    if (!doc) return undefined;
 
-    //  if happy-dom swapped the global document, drop cached nodes AND clear state
+    // CHANGED: use the local doc var instead of global `document`
     if (this.boundDoc !== doc) {
       this.boundDoc = doc;
       this.styleEl = null;
-
-      // reset rules and managers for the new document
       this.resetManagersAndRules();
     }
 
-
-    //  if cached styleEl exists but is detached or from a different doc, drop it
     if (this.styleEl) {
       if (!this.styleEl.isConnected || this.styleEl.ownerDocument !== doc) {
         this.styleEl = null;
@@ -390,7 +390,6 @@ export class CssManager {
       }
     }
 
-    //  choose a mount point that is actually in the document tree
     const mount =
       (doc.head && doc.head.isConnected ? doc.head : null) ??
       (doc.body && doc.body.isConnected ? doc.body : null) ??
@@ -404,8 +403,6 @@ export class CssManager {
     if (!host) {
       host = doc.createElement(CSS_HOST_TAG);
       host.id = CSS_HOST_ID;
-
-      //  append to the *connected* mount, not “head exists”
       mount.appendChild(host);
     }
 
@@ -416,7 +413,6 @@ export class CssManager {
       host.appendChild(styleEl);
     }
 
-    // If a test manually cleared the style tag, mirror that reset into memory.
     if (!this.changed && styleEl.textContent === "" && this.rulesByQuid.size > 0) {
       this.rulesByQuid.clear();
     }
@@ -441,9 +437,11 @@ export class CssManager {
    */
   public devSnapshot(): string {
     const cssText = this.buildCombinedCss();
-    const styleEl = this.ensureStyleElement();
-    styleEl.textContent = cssText;
-    this.changed = false;
+    const styleEl = this.ensureStyleElement(); // CHANGED: might be null
+    if (styleEl) {
+      styleEl.textContent = cssText;
+      this.changed = false;
+    }
     return cssText;
   }
 
@@ -459,9 +457,8 @@ export class CssManager {
    * This is primarily intended for tests (e.g. to avoid cross-test leakage)
    * and for manual debugging when the manager state must be rebuilt from zero.
    */
-  public devReset(): void {
-    this.resetManagersAndRules();
-    this.ensureStyleElement();
+  public renderCss(): string {
+    return this.buildCombinedCss();
   }
 
   /**
@@ -648,22 +645,9 @@ export class CssManager {
     if (!trimmedQuid) {
       throw new Error("CssManager.setManyForQuid: quid must be non-empty");
     }
-
-    let props = this.rulesByQuid.get(trimmedQuid);
-    if (!props) {
-      props = new Map<string, string>();
-      this.rulesByQuid.set(trimmedQuid, props);
+    for (const [propCanon, value] of Object.entries(decls)) {
+      this.setForQuid(trimmedQuid, propCanon, value as any);
     }
-
-    for (const [prop, v] of Object.entries(decls)) {
-      const trimmedProp = prop.trim();
-      if (!trimmedProp) {
-        continue;
-      }
-      props.set(trimmedProp, renderCssValue(v));
-    }
-
-    this.syncToDom();
   }
 
   /**
@@ -687,6 +671,37 @@ export class CssManager {
     if (props.size === 0) this.rulesByQuid.delete(quid);
 
     this.mark_changed();
+  }
+
+  /**
+ * Debug-only nuclear reset.
+ * Clears all CssManager-owned state:
+ * - QUID rules
+ * - global sheets (if present)
+ * - @property + keyframes managers
+ * - style element contents
+ * - scheduling flags
+ */
+  public debug_hardReset(): void {
+    // clear all internal state
+    this.rulesByQuid.clear();
+    this.changed = false;
+    this.scheduled = false;
+
+    if (this.rafId !== null && typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(this.rafId);
+    }
+    this.rafId = null;
+
+    // recreate managers to drop all registrations
+    this.atPropManager = manage_property({ onChange: () => this.mark_changed() });
+    this.keyframeManager = manage_keyframes({ onChange: () => this.mark_changed() });
+
+    // clear style element if it exists
+    const styleEl = this.ensureStyleElement();
+    if (styleEl) {
+      styleEl.textContent = "";
+    }
   }
 
   /**
@@ -802,21 +817,17 @@ export class CssManager {
     return typeof (globalThis as any).process !== "undefined"
       && !!(globalThis as any).process?.versions?.node;
   }
-  /** // changed
-   * Dev-only helper that forces a DOM sync of the stylesheet immediately.
-   * Useful in tests/debugging when you want the `<style>` tag updated right now.
-   */
-  public devFlush(): void {
-    // CHANGED: force immediate write (not scheduled)
-    this.syncNow();
-  }
-  /** // added
+
+  /** 
    * Immediately writes the current in-memory CSS to the DOM.
    * This is the "force it now" path used by devFlush and (optionally) tests.
    */
-  private syncNow(): void {
+  // TODO make private/dev mode
+  public syncNow(): void {
     // CHANGED: cancel any pending scheduled flush to avoid double work
-    if (this.rafId !== null) cancelAnimationFrame(this.rafId);
+    if (this.rafId !== null && typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(this.rafId);
+    }
     this.rafId = null;
     this.scheduled = false;
 
@@ -826,14 +837,12 @@ export class CssManager {
     // CHANGED: perform the actual write
     this.syncToDom();
   }
-  // changed
+
+
   private syncToDom(): void {
     const styleEl = this.ensureStyleElement();
-
-    // NOTE: keep this as a simple text update; do NOT replace the <style> node
+    if (!styleEl) return;
     styleEl.textContent = this.buildCombinedCss();
-
-    // CHANGED: clear dirty flag only after a successful write
     this.changed = false;
   }
 }

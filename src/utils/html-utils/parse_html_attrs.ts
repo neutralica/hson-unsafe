@@ -1,4 +1,4 @@
-// parse_html_attrs.utils.ts
+// parse_html_attrs.ts
 
 
 import { _DATA_INDEX, _DATA_QUID, _TRANSIT_PREFIX } from "../../types-consts/constants";

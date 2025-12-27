@@ -1,4 +1,4 @@
-// css-prop-utils.ts
+// normalize-css.ts
 
 import { kebab_to_camel } from "../primitive-utils/kebab-to-camel.util";
 import { camel_to_kebab } from "./camel_to_kebab";
@@ -17,6 +17,12 @@ const VENDOR_PREFIX_ALIASES: Readonly<Record<string, string>> = {
   "-o-": "O",
 };
 
+/**
+ * Convert a canonical internal style key into a CSS property name.
+ *
+ * @param propCanon - Canonical property name (camelCase or `--custom-prop`).
+ * @returns CSS property name suitable for serialized styles.
+ */
 export function canon_to_css_prop(propCanon: string): string {
   if (propCanon.startsWith("--")) return propCanon;
   if (propCanon === "cssFloat") return "float";

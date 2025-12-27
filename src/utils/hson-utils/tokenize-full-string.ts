@@ -5,6 +5,12 @@ import { _throw_transform_err } from "../sys-utils/throw-transform-err.utils";
 
 type QuoteDelim = '"' | "'" | '`';
 
+/**
+ * Check whether a character is a supported quote delimiter.
+ *
+ * @param ch - Single character to test.
+ * @returns True when `ch` is `"`, `'`, or `` ` ``.
+ */
 export function is_quote(ch: string): ch is QuoteDelim {
   return ch === '"' || ch === "'" || ch === '`';
 }

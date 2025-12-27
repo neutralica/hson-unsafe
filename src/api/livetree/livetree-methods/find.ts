@@ -44,7 +44,7 @@ function asManyQuery(q: FindQueryMany): readonly FindQuery[] {
  * - Rooted search: delegates to `search_nodes([tree.node], query, { findFirst: false })`,
  *   so the traversal is confined to this tree’s subtree.
  * - For each matching `HsonNode`, constructs a child `LiveTree` via
- *   `wrapInChildTree`, preserving the original host root.
+ *   `wrap_in_tree`, preserving the original host root.
  * - Packs the resulting `LiveTree[]` into a `TreeSelector` via
  *   `make_tree_selector`, giving the caller broadcast helpers
  *   (`setAttrs`, `style`, `listen`, etc.).
@@ -56,6 +56,10 @@ function asManyQuery(q: FindQueryMany): readonly FindQuery[] {
  * Return value:
  * - Always returns a `TreeSelector` (possibly empty). All mutation
  *   helpers on the selector are no-ops when the selection is empty.
+ *
+ * @param tree - The `LiveTree` whose subtree will be searched.
+ * @param q - A selector string or `HsonQuery` describing matches.
+ * @returns A `TreeSelector` containing all matching nodes.
  */
 export function find_all_in_tree(tree: LiveTree, q: HsonQuery | string): TreeSelector2 {
     const query = typeof q === "string" ? parse_selector(q) : q;
@@ -65,6 +69,13 @@ export function find_all_in_tree(tree: LiveTree, q: HsonQuery | string): TreeSel
     return make_tree_selector(trees);
 }
 
+/**
+ * Find *all* matching nodes for one or many queries and union the results.
+ *
+ * @param tree - The `LiveTree` whose subtree will be searched.
+ * @param q - A selector/query or list of queries to match (OR semantics).
+ * @returns A `TreeSelector` containing all matches across all queries.
+ */
 // NEW: many-query helper (OR/union semantics)
 export function find_all_in_tree_many(tree: LiveTree, q: FindQueryMany): TreeSelector2 {
     const qs = asManyQuery(q);
@@ -82,6 +93,16 @@ function normalizeOne(q: FindQuery): HsonQuery {
     return typeof q === "string" ? parse_selector(q) : q;
 }
 
+/**
+ * Build a single-result finder (`find`) bound to a `LiveTree` subtree.
+ *
+ * The returned function accepts a query and exposes helpers
+ * (`byId`, `byAttrs`, `byFlags`, `byTag`) plus a `.must(...)` variant that
+ * throws when no match is found.
+ *
+ * @param tree - The `LiveTree` whose subtree will be searched.
+ * @returns A `FindWithById` helper bound to that tree.
+ */
 export function make_find_for(tree: LiveTree): FindWithById {
   const base = ((q: FindQuery): LiveTree | undefined => {
     const query = typeof q === "string" ? parse_selector(q) : q;
@@ -129,6 +150,16 @@ export function make_find_for(tree: LiveTree): FindWithById {
   return base;
 }
 
+/**
+ * Build a multi-result finder (`findAll`) bound to a `LiveTree` subtree.
+ *
+ * The returned function accepts a single query or list of queries and
+ * exposes helper shortcuts (`id`, `byAttribute`, `byFlag`, `byTag`) plus
+ * a `.must(...)` variant that throws when empty.
+ *
+ * @param tree - The `LiveTree` whose subtree will be searched.
+ * @returns A `FindMany` helper bound to that tree.
+ */
 export function make_find_all_for(tree: LiveTree): FindMany {
     const base = ((q: FindQueryMany): TreeSelector2 => {
         const qs = asManyQuery(q);
@@ -199,8 +230,11 @@ export function make_find_all_for(tree: LiveTree): FindMany {
  * - Used by search helpers (`find` / `find_all_in_tree`) to ensure that
  *   returned child trees still know which root they belong to, even
  *   though they are focused on a single node.
+ *
+ * @param parent - The `LiveTree` providing the host root context.
+ * @param node - The raw `HsonNode` to wrap.
+ * @returns A `LiveTree` bound to `node` with inherited host roots.
  */
 export function wrap_in_tree(parent: LiveTree, node: HsonNode): LiveTree {
     return new LiveTree(node).adoptRoots(parent.getHostRoots());
 }
-

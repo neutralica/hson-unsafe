@@ -1,35 +1,20 @@
-// expand-booleans.hson.util.ts
+// expand-flags.ts
 
 /*******
- * Expand selected named HTML entities into numeric character references.
- *
- * This is a conservative, whitelist-based expander. It replaces only a small,
- * explicitly defined set of named entities with their numeric equivalents and
- * leaves everything else untouched.
+ * Expand boolean/flag-style attributes into explicit key="key" values.
  *
  * Behavior:
- * - Known named entities listed in `htmlNamedToNumeric` are replaced with their
- *   numeric form (e.g. `&copy;` → `&#169;`).
- * - Core XML/HTML entities are preserved verbatim:
- *   `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`
- * - Unknown named entities are left unchanged rather than guessed or stripped.
+ * - Scans only tag headers (`<tag ...>` and `<tag ... />`).
+ * - For attributes without a value (e.g. `disabled`), rewrites them to
+ *   `disabled="disabled"`.
+ * - Attributes that already have values are left unchanged.
+ * - End tags, comments, and doctypes are not modified.
  *
- * Rationale:
- * - Numeric entities are unambiguous and easier to reason about downstream,
- *   especially in custom parsers or non-browser contexts.
- * - Leaving unknown entities intact allows later validation stages to decide
- *   whether to error, strip, or pass them through.
+ * This keeps downstream XML-ish parsers happy by ensuring attributes always
+ * have an explicit value while preserving HTML boolean semantics.
  *
- * Limitations:
- * - This does not handle numeric entities on input (they are already numeric).
- * - This does not attempt to validate entity names against the full HTML spec.
- *
- * Intended use:
- * - Normalizing a limited set of human-friendly entities into a canonical,
- *   numeric form before tokenization or parsing.
- *
- * @param input - A string that may contain named HTML entities.
- * @returns The string with selected named entities expanded to numeric form.
+ * @param input - Markup string containing tag attributes.
+ * @returns Markup with flag-style attributes expanded to key="key".
  *******/
 export function expand_flags(input: string): string {
     /* regex finds opening tags (<tag ...>) or self-closing tags (<tag ... />)

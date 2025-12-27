@@ -47,6 +47,8 @@ const HTML_TAGS: TagName[] = [
  *     child created for that tag.
  *   - The batch form (`tree.create.tags([...], index?)`) creates children
  *     for each tag and returns a `TreeSelector` of all new children.
+ *   - Fluent placement helpers (`prepend()`, `at(index)`) apply to the next
+ *     per-tag call only; batch calls use their explicit `index` argument.
  *
  * Index semantics:
  * - `index` is interpreted as the insertion index in the current node's
@@ -155,10 +157,8 @@ export function make_tree_create(tree: LiveTree): LiveTreeCreateHelper {
  *   the result of each call.
  *
  * Index semantics:
- * - The optional `index` is interpreted *per parent tree*: each source tree
- *   uses the same insertion index relative to its own children. This keeps
- *   behavior predictable without coupling insert positions across different
- *   subtrees.
+ * - The optional `index` argument is currently reserved and ignored; each
+ *   call appends to the end of each parent tree.
  *
  * @param items - The `LiveTree` instances comprising the selector.
  * @returns A `TreeSelectorCreateHelper` bound to those items.
